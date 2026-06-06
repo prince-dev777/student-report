@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import https from 'https';
 
 // Import Models
 import Student from './models/Student.js';
@@ -211,4 +212,14 @@ app.get('/', (req, res) => {
 // Start listening
 app.listen(PORT, () => {
   console.log(`🚀 Server listening at http://localhost:${PORT}`);
+
+  // Self-ping service to prevent Render free-tier spin down (every 10 minutes)
+  const SELF_PING_URL = 'https://student-report-ezgw.onrender.com';
+  setInterval(() => {
+    https.get(SELF_PING_URL, (res) => {
+      console.log(`[Self-Ping] Pinged ${SELF_PING_URL} - Status: ${res.statusCode}`);
+    }).on('error', (err) => {
+      console.error('[Self-Ping] Error pinging:', err.message);
+    });
+  }, 10 * 60 * 1000);
 });

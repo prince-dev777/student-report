@@ -4,7 +4,7 @@
 // Interacts with Node.js + Express backend (http://localhost:5000)
 // and handles fallback to localStorage if backend is down.
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://student-report-ezgw.onrender.com/api';
 
 // Helper to check if backend is online
 export async function checkBackendStatus() {
