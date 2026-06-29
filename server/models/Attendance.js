@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 const attendanceSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
+  instituteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institute', required: true },
+  id: { type: String, required: true },
   studentId: { type: String, required: true },
   date: { type: String, required: true }, // YYYY-MM-DD
   status: { type: String, required: true, enum: ['present', 'absent', 'late'] },

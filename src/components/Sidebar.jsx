@@ -11,6 +11,7 @@ import {
   Brain,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 
 const mainMenuItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -26,6 +27,7 @@ const commMenuItems = [
 
 export default function Sidebar() {
   const { sidebarOpen, setSidebarOpen, smsHistory } = useApp();
+  const { user } = useAuth();
 
   const linkClass = ({ isActive }) =>
     `sidebar-link${isActive ? ' active' : ''}`;
@@ -74,7 +76,7 @@ export default function Sidebar() {
             <GraduationCap size={20} color="white" />
           </div>
           <div className="sidebar-brand-text">
-            <h2>EduTrack Pro</h2>
+            <h2>{user?.instituteName || 'EduTrack Pro'}</h2>
             <span>Student Management</span>
           </div>
         </div>

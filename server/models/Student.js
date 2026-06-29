@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 const studentSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
+  instituteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institute', required: true },
+  id: { type: String, required: true },
   name: { type: String, required: true },
   rollNo: { type: String, required: true },
   batch: { type: String, required: true },

@@ -19,11 +19,20 @@ export async function checkBackendStatus() {
 // Generic fetch handler
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+  
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
     ...options,
+    headers,
   });
 
   if (!response.ok) {
@@ -35,6 +44,10 @@ async function apiRequest(endpoint, options = {}) {
 }
 
 export const api = {
+  // Auth
+  login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
+  register: (data) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+
   // Students
   getStudents: () => apiRequest('/students'),
   createStudent: (student) => apiRequest('/students', { method: 'POST', body: JSON.stringify(student) }),

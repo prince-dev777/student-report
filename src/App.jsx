@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -8,9 +10,10 @@ import MouseTrail from './components/MouseTrail';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Attendance from './pages/Attendance';
-import Tests from './pages/Tests';
 import SMSCenter from './pages/SMSCenter';
 import AIInsights from './pages/AIInsights';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 function AppLayout() {
   return (
@@ -37,8 +40,18 @@ function AppLayout() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
-        <AppLayout />
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/*" element={
+            <ProtectedRoute>
+              <AppProvider>
+                <AppLayout />
+              </AppProvider>
+            </ProtectedRoute>
+          } />
+        </Routes>
         <Toaster
           position="top-right"
           toastOptions={{
@@ -65,7 +78,7 @@ export default function App() {
             },
           }}
         />
-      </AppProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

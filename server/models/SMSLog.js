@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 const smsLogSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
+  instituteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institute', required: true },
+  id: { type: String, required: true },
   type: { type: String, required: true },
   studentId: { type: String, required: true },
   parentPhone: { type: String, required: true },

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Menu, Search, Bell, RefreshCw } from 'lucide-react';
+import { Menu, Search, Bell, RefreshCw, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Topbar() {
   const { setSidebarOpen, resetData } = useApp();
+  const { logout, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isResetting, setIsResetting] = useState(false);
 
@@ -59,7 +61,19 @@ export default function Topbar() {
           <RefreshCw size={18} />
         </motion.button>
 
-        <div className="topbar-avatar">AD</div>
+        <button 
+          className="topbar-btn logout-btn" 
+          onClick={logout} 
+          aria-label="Logout"
+          title="Logout"
+          style={{ color: '#ef4444' }}
+        >
+          <LogOut size={18} />
+        </button>
+
+        <div className="topbar-avatar" title={user?.username || 'Admin'}>
+          {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
+        </div>
       </div>
     </motion.header>
   );
