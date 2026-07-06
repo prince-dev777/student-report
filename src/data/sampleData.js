@@ -3,13 +3,13 @@
 // ============================================
 
 export const batches = [
-  { id: 'batch-1', name: 'JEE Advanced 2026', class: '12th', timing: '6:00 AM - 8:00 AM' },
-  { id: 'batch-2', name: 'NEET 2026', class: '12th', timing: '8:30 AM - 10:30 AM' },
-  { id: 'batch-3', name: 'Foundation Batch', class: '10th', timing: '4:00 PM - 6:00 PM' },
-  { id: 'batch-4', name: 'Board Prep 12th', class: '12th', timing: '2:00 PM - 4:00 PM' },
+  { id: 'batch-4', name: 'JEE Mains', class: '12th', timing: '2:00 PM - 4:00 PM' },
+  { id: 'batch-1', name: 'JEE Advanced', class: '12th', timing: '6:00 AM - 8:00 AM' },
+  { id: 'batch-2', name: 'NEET', class: '12th', timing: '8:30 AM - 10:30 AM' },
+  { id: 'batch-3', name: 'MHCET', class: '12th', timing: '4:00 PM - 6:00 PM' },
 ];
 
-export const subjects = ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'English'];
+export const subjects = ['Physics', 'Chemistry', 'Mathematics', 'Biology'];
 
 export const initialStudents = [
   {
@@ -69,7 +69,7 @@ export const initialStudents = [
     name: 'Arjun Verma',
     rollNo: '105',
     batch: 'batch-3',
-    class: '10th',
+    class: '12th',
     parentName: 'Ramesh Verma',
     parentPhone: '9876543214',
     address: '56, Talwandi, Kota',
@@ -121,7 +121,7 @@ export const initialStudents = [
     name: 'Vivaan Joshi',
     rollNo: '109',
     batch: 'batch-3',
-    class: '10th',
+    class: '12th',
     parentName: 'Deepak Joshi',
     parentPhone: '9876543218',
     address: '90, Borkhera, Kota',
@@ -173,7 +173,7 @@ export const initialStudents = [
     name: 'Ayush Tiwari',
     rollNo: '113',
     batch: 'batch-3',
-    class: '10th',
+    class: '12th',
     parentName: 'Naveen Tiwari',
     parentPhone: '9876543222',
     address: '33, Dadabari, Kota',
@@ -275,7 +275,7 @@ function generateTests(students) {
     { id: 'TEST002', name: 'Weekly Test 2', subject: 'Chemistry', date: '2025-05-12', totalMarks: 100, batch: 'batch-1' },
     { id: 'TEST003', name: 'Monthly Test - May', subject: 'Mathematics', date: '2025-05-20', totalMarks: 150, batch: 'batch-1' },
     { id: 'TEST004', name: 'NEET Mock 1', subject: 'Biology', date: '2025-05-15', totalMarks: 200, batch: 'batch-2' },
-    { id: 'TEST005', name: 'Foundation Quiz 1', subject: 'Mathematics', date: '2025-05-18', totalMarks: 50, batch: 'batch-3' },
+    { id: 'TEST005', name: 'MHCET Quiz 1', subject: 'Mathematics', date: '2025-05-18', totalMarks: 50, batch: 'batch-3' },
   ];
 
   const testResults = [];

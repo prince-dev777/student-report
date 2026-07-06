@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { calcAttendancePercent } from '../utils/helpers';
 import { getAvatarClass, getInitials } from '../data/sampleData';
@@ -15,6 +15,7 @@ export default function Students() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
+  const [createdStudentCreds, setCreatedStudentCreds] = useState(null);
 
   // Filters
   const filteredStudents = students.filter((student) => {
@@ -42,11 +43,18 @@ export default function Students() {
     setModalOpen(true);
   };
 
-  const handleSave = (formData) => {
+  const handleSave = async (formData) => {
     if (editingStudent) {
-      updateStudent(editingStudent.id, formData);
+      await updateStudent(editingStudent.id, formData);
     } else {
-      addStudent(formData);
+      const res = await addStudent(formData);
+      if (res && res.parentUserId && res.parentPlainPassword) {
+        setCreatedStudentCreds({
+          name: res.name,
+          parentUserId: res.parentUserId,
+          parentPlainPassword: res.parentPlainPassword
+        });
+      }
     }
     setModalOpen(false);
     setEditingStudent(null);
@@ -267,6 +275,49 @@ export default function Students() {
           tests={tests}
           smsHistory={smsHistory}
         />
+      )}
+
+      {/* Parent Credentials Modal */}
+      {createdStudentCreds && (
+        <div className="modal-overlay" onClick={() => setCreatedStudentCreds(null)}>
+          <div className="modal-content" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>Parent App Credentials</h3>
+              <button className="modal-close" onClick={() => setCreatedStudentCreds(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '20px', textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                Please save these login credentials for <strong>{createdStudentCreds.name}</strong>'s parent. They will not be shown again.
+              </p>
+              <div className="card" style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '12px', textAlign: 'left', marginBottom: '20px' }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Parent User ID</span>
+                  <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{createdStudentCreds.parentUserId}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Parent Password</span>
+                  <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{createdStudentCreds.parentPlainPassword}</strong>
+                </div>
+              </div>
+              <button 
+                className="btn btn-primary w-full justify-center" 
+                onClick={() => {
+                  navigator.clipboard.writeText(`User ID: ${createdStudentCreds.parentUserId}\nPassword: ${createdStudentCreds.parentPlainPassword}`);
+                  alert('Credentials copied to clipboard!');
+                }}
+              >
+                Copy to Clipboard
+              </button>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost w-full justify-center" onClick={() => setCreatedStudentCreds(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </motion.div>
   );

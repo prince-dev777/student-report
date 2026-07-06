@@ -1,20 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Menu, Search, Bell, RefreshCw, LogOut } from 'lucide-react';
+import { Menu, Search, Bell, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function Topbar() {
-  const { setSidebarOpen, resetData } = useApp();
+  const { setSidebarOpen } = useApp();
   const { logout, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isResetting, setIsResetting] = useState(false);
-
-  const handleReset = () => {
-    setIsResetting(true);
-    resetData();
-    setTimeout(() => setIsResetting(false), 600);
-  };
 
   return (
     <motion.header
@@ -50,16 +43,6 @@ export default function Topbar() {
           <Bell size={19} />
           <span className="notification-dot" />
         </button>
-
-        <motion.button
-          className="topbar-btn"
-          onClick={handleReset}
-          aria-label="Reset data"
-          animate={{ rotate: isResetting ? 360 : 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <RefreshCw size={18} />
-        </motion.button>
 
         <button 
           className="topbar-btn logout-btn" 

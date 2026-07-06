@@ -8,9 +8,12 @@ const testResultSchema = new mongoose.Schema({
   marks: { type: Number, required: true },
   totalMarks: { type: Number, required: true },
   percentage: { type: Number, required: true },
-  rank: { type: Number, required: true },
-  totalStudents: { type: Number, required: true },
-  smsSent: { type: Boolean, default: false }
+  rank: { type: Number, default: null },
+  totalStudents: { type: Number, default: null },
+  smsSent: { type: Boolean, default: false },
+  status: { type: String, enum: ['Draft', 'Published'], default: 'Draft' },
+  studentAnswers: { type: [String], default: [] },
+  omrSheetImage: { type: String, default: null }
 }, { timestamps: true });
 
 // Ensure unique result per student per test

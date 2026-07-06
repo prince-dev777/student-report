@@ -9,6 +9,7 @@ import {
   ClipboardList,
   MessageSquare,
   Brain,
+  FileJson,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +23,6 @@ const mainMenuItems = [
 
 const commMenuItems = [
   { to: '/sms', icon: MessageSquare, label: 'SMS Center', hasBadge: true },
-  { to: '/ai-insights', icon: Brain, label: 'AI Insights' },
 ];
 
 export default function Sidebar() {

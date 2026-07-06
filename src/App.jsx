@@ -11,9 +11,10 @@ import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import SMSCenter from './pages/SMSCenter';
-import AIInsights from './pages/AIInsights';
+
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Tests from './pages/Tests';
 
 function AppLayout() {
   return (
@@ -29,7 +30,6 @@ function AppLayout() {
             <Route path="/attendance" element={<Attendance />} />
             <Route path="/tests" element={<Tests />} />
             <Route path="/sms" element={<SMSCenter />} />
-            <Route path="/ai-insights" element={<AIInsights />} />
           </Routes>
         </div>
       </div>
@@ -82,3 +82,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+

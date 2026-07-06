@@ -2,40 +2,50 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
-  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload 
+  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2 
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { subjects } from '../data/sampleData';
 import { formatDate, calcTestAverage, getMarksCategory, getRankBadgeClass } from '../utils/helpers';
 import toast from 'react-hot-toast';
+import { api } from '../utils/api';
 
 export default function Tests() {
   const { 
     tests, testResults, students, batches, 
-    addTest, submitTestResults 
+    addTest, updateTestAnswerKey, deleteTest, submitTestResults 
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('all-tests');
   const [selectedTestResults, setSelectedTestResults] = useState(null);
   const [showResultsModal, setShowResultsModal] = useState(false);
 
-  // For Create Test form
+  // For Create Test form (Answer Key input removed as it is now moved to Enter Marks page)
   const [testForm, setTestForm] = useState({
     name: '',
     batch: '',
     date: new Date().toISOString().split('T')[0],
-    totalMarks: 100
+    totalMarks: 100,
+    marksPerQuestion: 4,
+    negativeMarking: 1,
+    templateId: 'neet_180',
+    questionsToDetect: 180,
   });
-  const [selectedSubjects, setSelectedSubjects] = useState([subjects[0] || 'Physics']);
+  const [selectedSubjects, setSelectedSubjects] = useState(subjects.length > 0 ? [subjects[0]] : []);
 
   // For Marks Entry
   const [entryTestId, setEntryTestId] = useState('');
   const [marksData, setMarksData] = useState({}); // studentId: marks
+  const [omrStats, setOmrStats] = useState({}); // studentId: { correct, wrong }
+  const [scannedAnswersData, setScannedAnswersData] = useState({}); // studentId: [selectedOption1, selectedOption2, ...]
+  const [omrUploading, setOmrUploading] = useState(false);
+  const [omrTemplate, setOmrTemplate] = useState('neet_180');
+  const [detectQuestions, setDetectQuestions] = useState(180);
 
-  // Filter tests by having results
-  const getTestsWithoutResults = () => {
-    return tests.filter(t => !testResults.some(r => r.testId === t.id));
-  };
+  // Memoize selected test for marks entry
+  const selectedEntryTest = React.useMemo(() => {
+    return tests.find(t => t.id === entryTestId) || null;
+  }, [tests, entryTestId]);
 
   // Handle test creation
   const handleCreateTest = (e) => {
@@ -51,16 +61,25 @@ export default function Tests() {
       subject: selectedSubjects.join(', '),
       batch: testForm.batch,
       date: testForm.date,
-      totalMarks: Number(testForm.totalMarks)
+      totalMarks: Number(testForm.totalMarks),
+      marksPerQuestion: Number(testForm.marksPerQuestion) || 1,
+      negativeMarking: Number(testForm.negativeMarking) || 0,
+      templateId: testForm.templateId || 'neet_180',
+      questionsToDetect: Number(testForm.questionsToDetect) || 180,
+      answerKey: [] // Created without answer key initially
     });
 
     setTestForm({
       name: '',
       batch: '',
       date: new Date().toISOString().split('T')[0],
-      totalMarks: 100
+      totalMarks: 100,
+      marksPerQuestion: 4,
+      negativeMarking: 1,
+      templateId: 'neet_180',
+      questionsToDetect: 180,
     });
-    setSelectedSubjects([subjects[0] || 'Physics']);
+    setSelectedSubjects(subjects.length > 0 ? [subjects[0]] : []);
 
     setActiveTab('all-tests');
   };
@@ -70,11 +89,24 @@ export default function Tests() {
     setEntryTestId(testId);
     if (!testId) {
       setMarksData({});
+      setOmrStats({});
+      setScannedAnswersData({});
       return;
     }
 
     const test = tests.find(t => t.id === testId);
     if (!test) return;
+
+    if (test.templateId) {
+      setOmrTemplate(test.templateId);
+    } else {
+      setOmrTemplate('neet_180');
+    }
+    if (test.questionsToDetect) {
+      setDetectQuestions(test.questionsToDetect);
+    } else {
+      setDetectQuestions(180);
+    }
 
     // Get all active students in the selected test's batch
     const batchStudents = students.filter(s => s.batch === test.batch && s.status === 'active');
@@ -82,13 +114,23 @@ export default function Tests() {
     // Check if there are existing results for this test to pre-fill
     const existing = testResults.filter(r => r.testId === testId);
     const initialMarks = {};
+    const initialScannedAnswers = {};
+    const initialOmrStats = {};
     
     batchStudents.forEach(s => {
       const match = existing.find(r => r.studentId === s.id);
       initialMarks[s.id] = match ? match.marks : '';
+      initialScannedAnswers[s.id] = (match && match.studentAnswers) ? match.studentAnswers : [];
+      if (match && match.studentAnswers && match.studentAnswers.length > 0) {
+        initialOmrStats[s.id] = {
+          correct: match.marks,
+          wrong: match.studentAnswers.length - match.marks
+        };
+      }
     });
-    
     setMarksData(initialMarks);
+    setScannedAnswersData(initialScannedAnswers);
+    setOmrStats(initialOmrStats);
   };
 
   // Handle marks changes
@@ -104,7 +146,7 @@ export default function Tests() {
     e.preventDefault();
     if (!entryTestId) return toast.error('Select a test first');
 
-    const test = tests.find(t => t.id === entryTestId);
+    const test = selectedEntryTest;
     if (!test) return;
 
     // Check if any mark exceeds totalMarks or is negative
@@ -113,77 +155,309 @@ export default function Tests() {
 
     for (const student of batchStudents) {
       const mark = marksData[student.id];
+      // Skip empty fields to allow partial submissions (as requested)
       if (mark === '' || mark === undefined) {
-        return toast.error(`Please enter marks for ${student.name}`);
+        continue;
       }
       if (mark < 0 || mark > test.totalMarks) {
         return toast.error(`Marks for ${student.name} must be between 0 and ${test.totalMarks}`);
       }
       resultsPayload.push({
         studentId: student.id,
-        marks: Number(mark)
+        marks: Number(mark),
+        studentAnswers: scannedAnswersData[student.id] || []
       });
+    }
+
+    if (resultsPayload.length === 0) {
+      return toast.error('No student marks have been entered.');
     }
 
     await submitTestResults(entryTestId, resultsPayload);
     setEntryTestId('');
     setMarksData({});
+    setOmrStats({});
+    setScannedAnswersData({});
     setActiveTab('all-tests');
   };
 
-  // Handle OMR CSV File Upload
-  const handleOMRUpload = (e) => {
+  // Handle OMR Images Upload
+  const handleOMRUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const test = selectedEntryTest;
+    if (!test) return toast.error('Please select a test first');
+
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) return toast.error('Please select valid image files (.jpg, .png)');
+
+    setOmrUploading(true);
+    const formData = new FormData();
+    formData.append('testId', entryTestId);
+    formData.append('templateId', omrTemplate);
+    formData.append('questionsToDetect', detectQuestions);
+    imageFiles.forEach(file => {
+      formData.append('images', file);
+    });
+
+    try {
+      const res = await api.uploadOMRImages(formData);
+      
+      const newMarksData = { ...marksData };
+      const newOmrStats = { ...omrStats };
+      const newScannedAnswers = { ...scannedAnswersData };
+      let matchedCount = 0;
+
+      res.results.forEach(r => {
+        newMarksData[r.studentId] = r.marks;
+        
+        let flatAnswers = [];
+        if (r.studentAnswers) {
+          flatAnswers = r.studentAnswers.map(ans => ans.selectedOption);
+        } else if (r.subjects) {
+          const subjectNames = Object.keys(r.subjects).sort();
+          for (const subj of subjectNames) {
+            flatAnswers = flatAnswers.concat(r.subjects[subj].map(ans => ans.selectedOption));
+          }
+        }
+        newScannedAnswers[r.studentId] = flatAnswers;
+
+        const totalQ = flatAnswers.length;
+        newOmrStats[r.studentId] = {
+          correct: r.marks,
+          wrong: totalQ - r.marks
+        };
+        matchedCount++;
+      });
+
+      setMarksData(newMarksData);
+      setOmrStats(newOmrStats);
+      setScannedAnswersData(newScannedAnswers);
+      toast.success(`Successfully scanned and matched ${matchedCount} students!`);
+      
+      if (res.errors && res.errors.length > 0) {
+        toast.error(`${res.errors.length} images could not be scanned. See details.`);
+        console.error('OMR Errors:', res.errors);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to scan OMR images');
+    } finally {
+      setOmrUploading(false);
+      e.target.value = null; // reset input
+    }
+  };
+
+  // Handle Answer Key File Upload (CSV/TXT)
+  const handleAnswerKeyFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const test = tests.find(t => t.id === entryTestId);
-    if (!test) return toast.error('Please select a test first');
-
     const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target.result;
-        const lines = text.split(/\r?\n/);
-        const parsedData = {}; // rollNo -> marks
-
-        let startIdx = 0;
-        // Skip header line if present
-        if (lines[0].toLowerCase().includes('roll') || lines[0].toLowerCase().includes('mark') || lines[0].toLowerCase().includes('score')) {
-          startIdx = 1;
+    reader.onload = (evt) => {
+      const text = evt.target.result;
+      
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      const parsedLines = lines.map(line => line.split(',').map(c => c.trim()));
+      
+      // Group questions by subject
+      const subjectsList = ['PHYSICS', 'CHEMISTRY', 'MATHEMATICS', 'MATHS', 'MATH', 'BIOLOGY', 'BIO', 'ENGLISH', 'GENERAL'];
+      let currentSubject = 'GENERAL';
+      const subjectGroups = {}; // subjectName: [ { qNum, answer } ]
+      const subjectOrder = []; // to keep track of the order of subjects in the file
+      
+      parsedLines.forEach(cols => {
+        if (cols.length === 0 || cols[0] === '') return;
+        
+        const firstColUpper = cols[0].toUpperCase();
+        
+        // Check if this row is a subject header
+        if (subjectsList.includes(firstColUpper) || (cols.length === 1 && isNaN(cols[0]))) {
+          currentSubject = firstColUpper;
+          if (!subjectOrder.includes(currentSubject)) {
+            subjectOrder.push(currentSubject);
+          }
+          return;
         }
-
-        for (let i = startIdx; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
+        
+        // If it's a question row: first column is question number, second is answer
+        if (cols.length >= 2 && /^\d+$/.test(cols[0])) {
+          const qNum = parseInt(cols[0], 10);
+          const answer = cols[1].toUpperCase();
           
-          const parts = line.split(',');
-          if (parts.length >= 2) {
-            const rollNo = parts[0].trim();
-            const score = Number(parts[1].trim());
-            if (rollNo && !isNaN(score)) {
-              parsedData[rollNo] = score;
+          if (!subjectGroups[currentSubject]) {
+            subjectGroups[currentSubject] = [];
+            if (!subjectOrder.includes(currentSubject)) {
+              subjectOrder.push(currentSubject);
             }
           }
+          
+          subjectGroups[currentSubject].push({ qNum, answer });
         }
-
-        const batchStudents = students.filter(s => s.batch === test.batch && s.status === 'active');
-        const newMarksData = { ...marksData };
-        let matchedCount = 0;
-
-        batchStudents.forEach(student => {
-          if (parsedData[student.rollNo] !== undefined) {
-            const score = Math.min(parsedData[student.rollNo], test.totalMarks);
-            newMarksData[student.id] = score;
-            matchedCount++;
-          }
+      });
+      
+      // Assemble flat answers array
+      let tokens = [];
+      if (subjectOrder.length > 0) {
+        subjectOrder.forEach(subj => {
+          const group = subjectGroups[subj] || [];
+          // Sort questions within this subject section by question number
+          group.sort((a, b) => a.qNum - b.qNum);
+          group.forEach(item => {
+            tokens.push(item.answer);
+          });
         });
-
-        setMarksData(newMarksData);
-        toast.success(`Matched ${matchedCount} / ${batchStudents.length} students from OMR scanner sheet!`);
-      } catch (err) {
-        console.error(err);
-        toast.error('Failed to read OMR file format.');
+      } else {
+        // Fallback: split by all common separators and read flat array
+        tokens = text.split(/[\s,;\t\r\n]+/)
+          .map(t => t.trim().toUpperCase())
+          .filter(t => t.length > 0);
+          
+        if (tokens.length > 0 && (tokens[0] === 'QUESTION' || tokens[0] === 'ANSWER')) {
+          tokens.shift();
+        }
       }
+      
+      if (tokens.length === 0) {
+        toast.error('No answers found in the uploaded file.');
+        return;
+      }
+      
+      setTestForm(prev => ({
+        ...prev,
+        answerKeyInput: tokens.join(', ')
+      }));
+      toast.success(`Successfully loaded ${tokens.length} answers from file!`);
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read the answer key file.');
+    };
+    reader.readAsText(file);
+    e.target.value = null; // reset input
+  };
+
+  // Handle Answer Key Upload & Update on the Enter Marks page (for re-grading)
+  const handleAnswerKeyUpdateUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!entryTestId) return toast.error('Please select a test first');
+
+    const test = selectedEntryTest;
+    if (!test) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      const parsedLines = lines.map(line => line.split(',').map(c => c.trim()));
+      
+      // Group questions by subject
+      const subjectsList = ['PHYSICS', 'CHEMISTRY', 'MATHEMATICS', 'MATHS', 'MATH', 'BIOLOGY', 'BIO', 'ENGLISH', 'GENERAL'];
+      let currentSubject = 'GENERAL';
+      const subjectGroups = {};
+      const subjectOrder = [];
+      
+      parsedLines.forEach(cols => {
+        if (cols.length === 0 || cols[0] === '') return;
+        
+        const firstColUpper = cols[0].toUpperCase();
+        
+        // Check if this row is a subject header
+        if (subjectsList.includes(firstColUpper) || (cols.length === 1 && isNaN(cols[0]))) {
+          currentSubject = firstColUpper;
+          if (!subjectOrder.includes(currentSubject)) {
+            subjectOrder.push(currentSubject);
+          }
+          return;
+        }
+        
+        // Question row
+        if (cols.length >= 2 && /^\d+$/.test(cols[0])) {
+          const qNum = parseInt(cols[0], 10);
+          const answer = cols[1].toUpperCase();
+          
+          if (!subjectGroups[currentSubject]) {
+            subjectGroups[currentSubject] = [];
+            if (!subjectOrder.includes(currentSubject)) {
+              subjectOrder.push(currentSubject);
+            }
+          }
+          
+          subjectGroups[currentSubject].push({ qNum, answer });
+        }
+      });
+      
+      // Assemble flat answers array
+      let tokens = [];
+      if (subjectOrder.length > 0) {
+        subjectOrder.forEach(subj => {
+          const group = subjectGroups[subj] || [];
+          group.sort((a, b) => a.qNum - b.qNum);
+          group.forEach(item => {
+            tokens.push(item.answer);
+          });
+        });
+      } else {
+        tokens = text.split(/[\s,;\t\r\n]+/)
+          .map(t => t.trim().toUpperCase())
+          .filter(t => t.length > 0);
+          
+        if (tokens.length > 0 && (tokens[0] === 'QUESTION' || tokens[0] === 'ANSWER')) {
+          tokens.shift();
+        }
+      }
+      
+      if (tokens.length === 0) {
+        toast.error('No answers found in the uploaded file.');
+        return;
+      }
+
+      // 1. Save new Answer Key to MongoDB
+      const updatedTest = await updateTestAnswerKey(entryTestId, tokens);
+      if (!updatedTest) return;
+
+      // 2. Re-grade all students currently loaded in state
+      const newMarksData = { ...marksData };
+      const newOmrStats = { ...omrStats };
+      let regradedCount = 0;
+
+      Object.keys(scannedAnswersData).forEach(studentId => {
+        const studentAnswers = scannedAnswersData[studentId];
+        if (studentAnswers && studentAnswers.length > 0) {
+          const marksPerQ = selectedEntryTest?.marksPerQuestion || 1;
+          const negMarks = selectedEntryTest?.negativeMarking || 0;
+          let correct = 0;
+          let wrong = 0;
+          studentAnswers.forEach((ans, idx) => {
+            if (
+              idx < tokens.length && 
+              ans && 
+              tokens[idx] && 
+              String(ans).trim().toUpperCase() === String(tokens[idx]).trim().toUpperCase()
+            ) {
+              correct++;
+            } else if (ans && String(ans).trim() !== '') {
+              wrong++;
+            }
+          });
+          const score = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
+          newMarksData[studentId] = score;
+          newOmrStats[studentId] = {
+            correct,
+            wrong
+          };
+          regradedCount++;
+        }
+      });
+
+      setMarksData(newMarksData);
+      setOmrStats(newOmrStats);
+      toast.success(`Loaded ${tokens.length} answers. Re-graded ${regradedCount} students. Click "Publish & Send SMS" to publish these corrected scores.`);
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read the answer key file.');
     };
     reader.readAsText(file);
     e.target.value = null; // reset input
@@ -281,7 +555,7 @@ export default function Tests() {
                   <div>
                     <div className="flex justify-between items-center mb-8">
                       <div className="flex flex-wrap gap-4">
-                        {test.subject.split(', ').map(s => (
+                        {test.subject?.split(', ').map(s => (
                           <span key={s} className="badge badge-info">{s}</span>
                         ))}
                       </div>
@@ -293,6 +567,11 @@ export default function Tests() {
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }} className="mb-16">
                       <div><strong>Batch:</strong> {getBatchName(test.batch)}</div>
                       <div><strong>Total Marks:</strong> {test.totalMarks}</div>
+                      {(test.negativeMarking > 0 || test.marksPerQuestion > 1) && (
+                        <div>
+                          <strong>Marking:</strong> +{test.marksPerQuestion || 1} / -{test.negativeMarking || 0}
+                        </div>
+                      )}
                       <div><strong>Appeared:</strong> {appeared > 0 ? `${appeared} students` : 'Results pending'}</div>
                     </div>
                   </div>
@@ -309,26 +588,46 @@ export default function Tests() {
                           <strong style={{ color: 'var(--accent-green)', fontSize: '1rem' }}>{highest}/{test.totalMarks}</strong>
                         </div>
                       </div>
-                      <button 
-                        className="btn btn-secondary w-full justify-center btn-sm"
-                        onClick={() => handleViewResults(test)}
-                      >
-                        <Award size={14} />
-                        View Leaderboard
-                      </button>
+                      <div className="flex gap-8">
+                        <button 
+                          className="btn btn-secondary flex-1 justify-center btn-sm"
+                          onClick={() => handleViewResults(test)}
+                        >
+                          <Award size={14} />
+                          View Leaderboard
+                        </button>
+                        <button 
+                          className="btn btn-sm justify-center"
+                          onClick={() => { if(confirm('Delete this test and all results?')) deleteTest(test.id); }}
+                          style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 10px' }}
+                          title="Delete Test"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   ) : (
-                    <button 
-                      className="btn btn-primary w-full justify-center btn-sm mt-8"
-                      onClick={() => {
-                        setEntryTestId(test.id);
-                        handleEntryTestChange(test.id);
-                        setActiveTab('enter-marks');
-                      }}
-                    >
-                      <FileSpreadsheet size={14} />
-                      Enter Marks
-                    </button>
+                    <div className="flex gap-8">
+                      <button 
+                        className="btn btn-primary flex-1 justify-center btn-sm mt-8"
+                        onClick={() => {
+                          setEntryTestId(test.id);
+                          handleEntryTestChange(test.id);
+                          setActiveTab('enter-marks');
+                        }}
+                      >
+                        <FileSpreadsheet size={14} />
+                        Enter Marks
+                      </button>
+                      <button 
+                        className="btn btn-sm mt-8 justify-center"
+                        onClick={() => { if(confirm('Delete this test?')) deleteTest(test.id); }}
+                        style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 10px' }}
+                        title="Delete Test"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   )}
                 </div>
               );
@@ -427,6 +726,33 @@ export default function Tests() {
                   </div>
                 </div>
 
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Marks per Correct Answer</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      placeholder="e.g. 4 for NEET"
+                      min="1"
+                      value={testForm.marksPerQuestion}
+                      onChange={e => setTestForm(prev => ({ ...prev, marksPerQuestion: e.target.value }))}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Negative Marking (per wrong)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      placeholder="e.g. 1 for NEET"
+                      min="0"
+                      step="0.25"
+                      value={testForm.negativeMarking}
+                      onChange={e => setTestForm(prev => ({ ...prev, negativeMarking: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+
                 <div className="flex justify-end gap-8 mt-16 pt-16" style={{ borderTop: '1px solid var(--border-color-light)' }}>
                   <button type="submit" className="btn btn-primary">
                     <BookOpen size={16} />
@@ -454,7 +780,7 @@ export default function Tests() {
                   onChange={e => handleEntryTestChange(e.target.value)}
                 >
                   <option value="">-- Select Test to Enter Marks --</option>
-                  {getTestsWithoutResults().map(t => (
+                  {tests.map(t => (
                     <option key={t.id} value={t.id}>
                       {t.name} ({getBatchName(t.batch)}) - {t.subject}
                     </option>
@@ -474,22 +800,94 @@ export default function Tests() {
                     <div>
                       <h3 className="card-title">Marksheet Entry</h3>
                       <p className="card-subtitle">
-                        Test: <strong>{tests.find(t => t.id === entryTestId)?.name}</strong> | 
-                        Max Marks: <strong>{tests.find(t => t.id === entryTestId)?.totalMarks}</strong>
+                        Test: <strong>{selectedEntryTest?.name}</strong> | 
+                        Max Marks: <strong>{selectedEntryTest?.totalMarks}</strong>
                       </p>
                     </div>
-                    <div className="flex items-center gap-12">
-                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', gap: '6px' }} title="Upload CSV with columns: rollNo, marks">
-                        <Upload size={14} />
-                        Upload OMR CSV
+                    <div className="flex items-center gap-12 flex-wrap">
+                      <div className="flex items-center gap-4">
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>OMR Layout:</span>
+                        <select 
+                          className="form-select form-select-sm"
+                          value={omrTemplate}
+                          onChange={e => {
+                            const tempId = e.target.value;
+                            setOmrTemplate(tempId);
+                            let defaultDetect = 180;
+                            if (tempId === 'neet_90') defaultDetect = 90;
+                            else if (tempId === 'jee_75' || tempId === 'jee_75_with_numerical') defaultDetect = 75;
+                            else if (tempId === 'omr_50') defaultDetect = 50;
+                            else if (tempId === 'mhcet_200' || tempId === 'mhcet_200_bio') defaultDetect = 200;
+                            setDetectQuestions(defaultDetect);
+                          }}
+                          style={{ width: '180px', padding: '4px 8px', fontSize: '0.85rem' }}
+                        >
+                          <option value="neet_180">NEET 180 (MCQs)</option>
+                          <option value="neet_90">NEET 90 (Biology)</option>
+                          <option value="jee_75">JEE 75 (MCQ Only)</option>
+                          <option value="jee_75_with_numerical">JEE 75 (MCQ + Num)</option>
+                          <option value="omr_50">50-Question OMR (Universal)</option>
+                          <option value="mhcet_200">MHCET 200 (PCB/PCM)</option>
+                          <option value="mhcet_200_bio">MHCET 200 (Biology Only)</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Detect:</span>
+                        {omrTemplate === 'omr_50' ? (
+                          <select
+                            className="form-select form-select-sm"
+                            value={detectQuestions}
+                            onChange={e => setDetectQuestions(Number(e.target.value))}
+                            style={{ width: '150px', padding: '4px 8px', fontSize: '0.85rem' }}
+                          >
+                            <option value={25}>25</option>
+                            <option value={45}>45</option>
+                            <option value={50}>50</option>
+                          </select>
+                        ) : (
+                          <input
+                            type="number"
+                            className="form-input form-input-sm"
+                            value={detectQuestions}
+                            onChange={e => setDetectQuestions(Number(e.target.value))}
+                            min="1"
+                            max={
+                              omrTemplate === 'mhcet_200' ? 200 :
+                              omrTemplate === 'neet_180' ? 180 :
+                              omrTemplate === 'neet_90' ? 90 :
+                              (omrTemplate === 'jee_75' || omrTemplate === 'jee_75_with_numerical') ? 75 : 50
+                            }
+                            style={{ width: '80px', padding: '4px 8px', fontSize: '0.85rem', display: 'inline-block' }}
+                          />
+                        )}
+                      </div>
+                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', gap: '6px' }} title="Upload Answer Key CSV to update evaluation">
+                        <FileSpreadsheet size={14} />
+                        Upload Answer Key CSV
                         <input 
                           type="file" 
-                          accept=".csv" 
+                          accept=".csv"
+                          onChange={handleAnswerKeyUpdateUpload} 
+                          style={{ display: 'none' }} 
+                        />
+                      </label>
+                      <label className={`btn btn-secondary btn-sm ${omrUploading ? 'opacity-50 pointer-events-none' : ''}`} style={{ cursor: 'pointer', display: 'inline-flex', gap: '6px' }} title="Upload folder of OMR images">
+                        {omrUploading ? (
+                          <div className="btn-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', marginRight: '4px' }}></div>
+                        ) : (
+                          <Upload size={14} />
+                        )}
+                        {omrUploading ? 'Scanning...' : 'Scan OMR Images'}
+                        <input 
+                          type="file" 
+                          accept="image/jpeg, image/png"
+                          multiple
                           onChange={handleOMRUpload} 
                           style={{ display: 'none' }} 
                         />
                       </label>
-                      <button type="submit" className="btn btn-success">
+                      <button type="submit" className="btn btn-success" disabled={omrUploading}>
                         <UserCheck size={16} />
                         Publish & Send SMS
                       </button>
@@ -508,7 +906,7 @@ export default function Tests() {
                       </thead>
                       <tbody>
                         {students
-                          .filter(s => s.batch === tests.find(t => t.id === entryTestId)?.batch && s.status === 'active')
+                          .filter(s => s.batch === selectedEntryTest?.batch && s.status === 'active')
                           .map((student) => (
                             <tr key={student.id}>
                               <td>{student.rollNo}</td>
@@ -522,7 +920,7 @@ export default function Tests() {
                                   className="form-input"
                                   placeholder="Enter marks"
                                   min="0"
-                                  max={tests.find(t => t.id === entryTestId)?.totalMarks}
+                                  max={selectedEntryTest?.totalMarks}
                                   value={marksData[student.id] ?? ''}
                                   onChange={e => handleMarksChange(student.id, e.target.value)}
                                   style={{ padding: '6px 12px' }}
@@ -530,15 +928,22 @@ export default function Tests() {
                               </td>
                               <td>
                                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                  / {tests.find(t => t.id === entryTestId)?.totalMarks}
+                                  / {selectedEntryTest?.totalMarks}
                                 </span>
                                 {marksData[student.id] !== '' && marksData[student.id] !== undefined && (
-                                  <span style={{ marginLeft: '12px', fontSize: '0.8rem', fontWeight: '600' }} className={
-                                    ((marksData[student.id] / tests.find(t => t.id === entryTestId)?.totalMarks) >= 0.85) ? 'text-success' :
-                                    ((marksData[student.id] / tests.find(t => t.id === entryTestId)?.totalMarks) >= 0.60) ? 'text-warning' : 'text-danger'
-                                  }>
-                                    ({Math.round((marksData[student.id] / tests.find(t => t.id === entryTestId)?.totalMarks) * 100)}%)
-                                  </span>
+                                  <div style={{ marginTop: '4px' }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: '600' }} className={
+                                      ((marksData[student.id] / selectedEntryTest?.totalMarks) >= 0.85) ? 'text-success' :
+                                      ((marksData[student.id] / selectedEntryTest?.totalMarks) >= 0.60) ? 'text-warning' : 'text-danger'
+                                    }>
+                                      ({Math.round((marksData[student.id] / selectedEntryTest?.totalMarks) * 100)}%)
+                                    </span>
+                                    {omrStats[student.id] && (
+                                      <span style={{ fontSize: '0.75rem', marginLeft: '8px', color: 'var(--text-tertiary)' }}>
+                                        <span className="text-success">{omrStats[student.id].correct} ✓</span> | <span className="text-danger">{omrStats[student.id].wrong} ✗</span>
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </td>
                             </tr>
@@ -578,18 +983,19 @@ export default function Tests() {
                       <th>Student</th>
                       <th style={{ width: '120px' }}>Marks</th>
                       <th>Percentage</th>
+                      <th>OMR Sheet</th>
                     </tr>
                   </thead>
                   <tbody>
                     {selectedTestResults.results.map((res) => {
-                      const rankClass = getRankBadgeClass(res.rank);
-                      const marksCategory = getMarksCategory(res.percentage);
+                      const rankClass = res.rank !== undefined ? getRankBadgeClass(res.rank) : 'rank-badge-default';
+                      const marksCategory = res.percentage !== undefined ? getMarksCategory(res.percentage) : 'badge-default';
 
                       return (
                         <tr key={res.id}>
                           <td>
                             <span className={`rank-badge ${rankClass}`}>
-                              {res.rank}
+                              {res.rank !== undefined ? res.rank : 'N/A'}
                             </span>
                           </td>
                           <td>{res.rollNo}</td>
@@ -597,8 +1003,23 @@ export default function Tests() {
                           <td>{res.marks} / {res.totalMarks}</td>
                           <td>
                             <span className={`marks-pill ${marksCategory}`}>
-                              {res.percentage}%
+                              {res.percentage !== undefined ? `${res.percentage}%` : 'N/A'}
                             </span>
+                          </td>
+                          <td>
+                            {res.omrSheetImage ? (
+                              <a 
+                                href={`${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`}
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="btn btn-ghost btn-xs text-accent"
+                                style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
+                              >
+                                View OMR
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>N/A</span>
+                            )}
                           </td>
                         </tr>
                       );

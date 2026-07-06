@@ -13,6 +13,8 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
     parentPhone: '',
     address: '',
     photo: null,
+    parentUserId: '',
+    parentPassword: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -28,6 +30,8 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
         parentPhone: studentData.parentPhone || '',
         address: studentData.address || '',
         photo: studentData.photo || null,
+        parentUserId: studentData.parentUserId || '',
+        parentPassword: '',
       });
     }
   }, [isEdit, studentData]);
@@ -227,6 +231,31 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
                         {errors.parentPhone}
                       </span>
                     )}
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Parent User ID (Optional)</label>
+                    <input
+                      type="text"
+                      name="parentUserId"
+                      value={form.parentUserId}
+                      onChange={handleChange}
+                      className="form-input"
+                      placeholder="Leave blank to auto-generate"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Parent Password (Optional)</label>
+                    <input
+                      type="text"
+                      name="parentPassword"
+                      value={form.parentPassword}
+                      onChange={handleChange}
+                      className="form-input"
+                      placeholder={isEdit ? "Leave blank to keep unchanged" : "Leave blank to auto-generate"}
+                    />
                   </div>
                 </div>
 

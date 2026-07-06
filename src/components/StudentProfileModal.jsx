@@ -10,8 +10,25 @@ import {
 } from 'recharts';
 import { getAvatarClass, getInitials } from '../data/sampleData';
 import { formatDate, formatTime, calcAttendancePercent } from '../utils/helpers';
+import { useApp } from '../context/AppContext';
 
-export default function StudentProfileModal({ student, onClose, attendance, testResults, tests, smsHistory }) {
+export default function StudentProfileModal({ student: initialStudent, onClose, attendance, testResults, tests, smsHistory }) {
+  const { students, regenerateParentCredentials } = useApp();
+  const [regenPassword, setRegenPassword] = useState('');
+
+  const student = useMemo(() => {
+    return students.find((s) => s.id === initialStudent.id) || initialStudent;
+  }, [students, initialStudent]);
+
+  const handleRegenCreds = async () => {
+    if (window.confirm('Are you sure you want to regenerate new parent portal credentials? The old password will stop working.')) {
+      const res = await regenerateParentCredentials(initialStudent.id);
+      if (res && res.parentPlainPassword) {
+        setRegenPassword(res.parentPlainPassword);
+      }
+    }
+  };
+
   const [activeTab, setActiveTab] = useState('overview');
 
   // Filter attendance records for this student
@@ -180,6 +197,38 @@ export default function StudentProfileModal({ student, onClose, attendance, test
                             <strong>{student.address || 'No address logged'}</strong>
                           </div>
                         </div>
+
+                        {/* Parent Portal Mobile App Credentials */}
+                        <div className="border-glass pt-12 mt-12" style={{ borderTop: '1px dashed var(--border-color-light)' }}>
+                          <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>PARENT MOBILE APP CREDENTIALS</span>
+                          <div className="flex justify-between items-center flex-wrap gap-8" style={{ fontSize: '0.85rem' }}>
+                            <div>
+                              <div>
+                                <span style={{ color: 'var(--text-tertiary)' }}>User ID:</span>{' '}
+                                <strong style={{ color: 'var(--text-primary)' }}>{student.parentUserId || 'None'}</strong>
+                              </div>
+                              <div style={{ marginTop: '4px' }}>
+                                <span style={{ color: 'var(--text-tertiary)' }}>Password:</span>{' '}
+                                <strong style={{ color: 'var(--text-primary)' }}>{student.parentPasswordPlain || 'Not Set (Click Regenerate)'}</strong>
+                              </div>
+                            </div>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={handleRegenCreds}
+                              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                            >
+                              Regenerate Password
+                            </button>
+                          </div>
+                          {regenPassword && (
+                            <div className="mt-8" style={{ padding: '8px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '6px', fontSize: '0.8rem', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                              <p style={{ margin: '0 0 4px 0', color: 'var(--accent-blue-light)' }}><strong>New Credentials Generated:</strong></p>
+                              <div>User ID: <strong>{student.parentUserId}</strong></div>
+                              <div>Password: <strong>{regenPassword}</strong></div>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', display: 'block', marginTop: '4px' }}>Save these! The password will not be displayed again.</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -305,6 +354,7 @@ export default function StudentProfileModal({ student, onClose, attendance, test
                               <th>Score</th>
                               <th>Percentage</th>
                               <th>Rank</th>
+                              <th>OMR Sheet</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -325,6 +375,21 @@ export default function StudentProfileModal({ student, onClose, attendance, test
                                 </td>
                                 <td>
                                   <strong>{res.rank}</strong> <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>/ {res.totalStudents}</span>
+                                </td>
+                                <td>
+                                  {res.omrSheetImage ? (
+                                    <a 
+                                      href={`${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`}
+                                      target="_blank" 
+                                      rel="noreferrer" 
+                                      className="btn btn-ghost btn-xs text-accent"
+                                      style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
+                                    >
+                                      View OMR
+                                    </a>
+                                  ) : (
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>N/A</span>
+                                  )}
                                 </td>
                               </tr>
                             ))}

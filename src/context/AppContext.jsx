@@ -53,23 +53,14 @@ export function AppProvider({ children }) {
           console.log('🔌 Backend is online. Fetching data from MongoDB...');
           const serverStudents = await api.getStudents();
           
-          // Seed if database is completely empty
+          // If database is completely empty
           if (serverStudents.length === 0) {
-            console.log('🌱 Database is empty. Seeding with sample data...');
-            await api.seedDatabase({
-              students: initialStudents,
-              attendance: initialAttendance,
-              tests: initialTests,
-              testResults: initialTestResults,
-              smsHistory: initialSMSHistory
-            });
-            
-            setStudents(initialStudents);
-            setAttendance(initialAttendance);
-            setTests(initialTests);
-            setTestResults(initialTestResults);
-            setSMSHistory(initialSMSHistory);
-            toast.success('Database seeded with sample data!');
+            console.log('🌱 Database is empty. Starting fresh...');
+            setStudents([]);
+            setAttendance([]);
+            setTests([]);
+            setTestResults([]);
+            setSMSHistory([]);
           } else {
             // Load all from server
             const serverAttendance = await api.getAttendance();
@@ -97,11 +88,11 @@ export function AppProvider({ children }) {
     }
 
     function loadFallbackData() {
-      setStudents(loadLocalData('students', initialStudents));
-      setAttendance(loadLocalData('attendance', initialAttendance));
-      setTests(loadLocalData('tests', initialTests));
-      setTestResults(loadLocalData('testResults', initialTestResults));
-      setSMSHistory(loadLocalData('smsHistory', initialSMSHistory));
+      setStudents(loadLocalData('students', []));
+      setAttendance(loadLocalData('attendance', []));
+      setTests(loadLocalData('tests', []));
+      setTestResults(loadLocalData('testResults', []));
+      setSMSHistory(loadLocalData('smsHistory', []));
     }
 
     initData();
@@ -195,6 +186,22 @@ export function AppProvider({ children }) {
 
     setStudents((prev) => prev.filter((s) => s.id !== id));
     toast.success('Student removed locally!');
+  }, [backendOnline]);
+
+  const regenerateParentCredentials = useCallback(async (id) => {
+    if (backendOnline) {
+      try {
+        const updated = await api.regenerateParentCredentials(id);
+        setStudents((prev) => prev.map((s) => (s.id === id ? updated : s)));
+        toast.success('✅ Hashed credentials updated on server!');
+        return updated;
+      } catch (err) {
+        toast.error('Failed to regenerate credentials on server');
+      }
+    } else {
+      toast.error('Cannot regenerate parent credentials in offline mode.');
+    }
+    return null;
   }, [backendOnline]);
 
   // ---- Attendance ----
@@ -304,35 +311,87 @@ export function AppProvider({ children }) {
     return newTest;
   }, [backendOnline]);
 
+  const updateTestAnswerKey = useCallback(async (testId, answerKey) => {
+    if (backendOnline) {
+      try {
+        const updatedTest = await api.updateTest(testId, { answerKey });
+        setTests((prev) => prev.map((t) => (t.id === testId ? updatedTest : t)));
+        toast.success('Answer Key updated successfully!');
+        return updatedTest;
+      } catch (err) {
+        toast.error('Failed to update Answer Key on server');
+        return null;
+      }
+    } else {
+      setTests((prev) =>
+        prev.map((t) => (t.id === testId ? { ...t, answerKey } : t))
+      );
+      toast.success('Answer Key updated locally!');
+      return null;
+    }
+  }, [backendOnline]);
+
+  const deleteTest = useCallback(async (testId) => {
+    if (backendOnline) {
+      try {
+        await api.deleteTest(testId);
+        setTests((prev) => prev.filter((t) => t.id !== testId));
+        setTestResults((prev) => prev.filter((r) => r.testId !== testId));
+        toast.success('Test and results deleted from MongoDB!');
+        return;
+      } catch (err) {
+        toast.error('Failed to delete test from server');
+      }
+    }
+    setTests((prev) => prev.filter((t) => t.id !== testId));
+    setTestResults((prev) => prev.filter((r) => r.testId !== testId));
+    toast.success('Test deleted locally!');
+  }, [backendOnline]);
+
   const submitTestResults = useCallback(async (testId, results) => {
     const test = tests.find((t) => t.id === testId);
     if (!test) return;
 
+    const marksPerQ = test.marksPerQuestion || 1;
+    const negMarks = test.negativeMarking || 0;
+
     const ranked = calculateRanks(results);
     const totalStudents = ranked.length;
 
-    const newResults = ranked.map((r) => ({
-      id: generateId('RES'),
-      testId,
-      studentId: r.studentId,
-      marks: r.marks,
-      totalMarks: test.totalMarks,
-      percentage: Math.round((r.marks / test.totalMarks) * 1000) / 10,
-      rank: r.rank,
-      totalStudents,
-      smsSent: true,
-    }));
+    const newResults = ranked.map((r) => {
+      const payloadItem = results.find(item => item.studentId === r.studentId);
+      return {
+        id: generateId('RES'),
+        testId,
+        studentId: r.studentId,
+        marks: r.marks,
+        totalMarks: test.totalMarks,
+        percentage: Math.round((r.marks / test.totalMarks) * 1000) / 10,
+        rank: r.rank,
+        totalStudents,
+        smsSent: true,
+        status: 'Published',
+        studentAnswers: payloadItem ? payloadItem.studentAnswers : []
+      };
+    });
 
     if (backendOnline) {
       try {
         const savedResults = await api.saveTestResultsBulk(newResults);
-        setTestResults((prev) => [...prev, ...savedResults]);
+        // Replace existing results for this test instead of duplicating
+        setTestResults((prev) => {
+          const filteredPrev = prev.filter((r) => r.testId !== testId);
+          return [...filteredPrev, ...savedResults];
+        });
       } catch (err) {
         toast.error('Failed to upload test scores to server');
         return;
       }
     } else {
-      setTestResults((prev) => [...prev, ...newResults]);
+      setTestResults((prev) => {
+        const filteredPrev = prev.filter((r) => r.testId !== testId);
+        return [...filteredPrev, ...newResults];
+      });
     }
 
     // Send SMS for each result
@@ -409,11 +468,11 @@ export function AppProvider({ children }) {
         toast.error('Server reset failed');
       }
     }
-    setStudents(initialStudents);
-    setAttendance(initialAttendance);
-    setTests(initialTests);
-    setTestResults(initialTestResults);
-    setSMSHistory(initialSMSHistory);
+    setStudents([]);
+    setAttendance([]);
+    setTests([]);
+    setTestResults([]);
+    setSMSHistory([]);
     localStorage.clear();
     toast.success('All data reset to defaults!');
   }, [backendOnline]);
@@ -432,8 +491,11 @@ export function AppProvider({ children }) {
     addStudent,
     updateStudent,
     deleteStudent,
+    regenerateParentCredentials,
     markAttendance,
     addTest,
+    updateTestAnswerKey,
+    deleteTest,
     submitTestResults,
     sendManualSMS,
     sendBulkManualSMS,

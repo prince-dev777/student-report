@@ -1,0 +1,14 @@
+{
+  "image_paths": ["non_existent_image.jpg"],
+  "answer_keys": {
+    "Physics": ["A", "B", "C"],
+    "Chemistry": ["A", "B", "C"]
+  },
+  "template_config": {
+    "roll_number_cols": 6,
+    "sections": [
+      { "name": "Physics", "questions": 3, "columns": 1, "options": 4 },
+      { "name": "Chemistry", "questions": 3, "columns": 1, "options": 4 }
+    ]
+  }
+}

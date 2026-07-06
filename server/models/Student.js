@@ -12,7 +12,13 @@ const studentSchema = new mongoose.Schema({
   address: { type: String },
   joinDate: { type: String },
   status: { type: String, default: 'active', enum: ['active', 'inactive'] },
-  photo: { type: String, default: null }
+  photo: { type: String, default: null },
+  parentUserId: { type: String },
+  parentPasswordHash: { type: String },
+  parentPasswordPlain: { type: String }
 }, { timestamps: true });
+
+// Ensure parentUserId is unique if populated
+studentSchema.index({ parentUserId: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model('Student', studentSchema);

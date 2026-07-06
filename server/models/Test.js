@@ -7,7 +7,19 @@ const testSchema = new mongoose.Schema({
   subject: { type: String, required: true },
   date: { type: String, required: true },
   totalMarks: { type: Number, required: true },
-  batch: { type: String, required: true }
+  batch: { type: String, required: true },
+  // Answer key: can be flat array ["A","B",...] or subject-wise { "Physics": ["A","B",...], "Chemistry": [...] }
+  answerKey: { type: mongoose.Schema.Types.Mixed, default: [] },
+  // Negative marking support (e.g., NEET: marksPerQuestion=4, negativeMarking=1)
+  marksPerQuestion: { type: Number, default: 1 },
+  negativeMarking: { type: Number, default: 0 },
+  // OMR template configuration
+  optionsPerQuestion: { type: Number, default: 4 },
+  columns: { type: Number },
+  rollNumberCols: { type: Number, default: 0 },
+  templateConfig: { type: mongoose.Schema.Types.Mixed },
+  templateId: { type: String },
+  questionsToDetect: { type: Number },
 }, { timestamps: true });
 
 export default mongoose.model('Test', testSchema);
