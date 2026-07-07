@@ -5,7 +5,7 @@ from zk import ZK, const
 # Configuration
 DEVICE_IP = '192.168.0.12'
 DEVICE_PORT = 71
-RENDER_API_URL = 'https://crx-api.onrender.com/api/attendance/biometric'
+RENDER_API_URL = 'https://cxr-api.onrender.com/api/attendance/biometric'
 INSTITUTE_ID = '6a4234d917e9263d070eab02' # Replace with your actual Mongo Institute ID
 POLL_INTERVAL = 10 # Check for new scans every 10 seconds
 

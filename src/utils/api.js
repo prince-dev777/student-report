@@ -4,7 +4,7 @@
 // Interacts with Node.js + Express backend (http://localhost:5000)
 // and handles fallback to localStorage if backend is down.
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://crx-api.onrender.com/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://cxr-api.onrender.com/api';
 
 // Helper to check if backend is online
 export async function checkBackendStatus() {

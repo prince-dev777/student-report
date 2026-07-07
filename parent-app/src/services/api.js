@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_BASE = 'https://crx-api.onrender.com/api';
-export const IMAGE_HOST = 'https://crx-api.onrender.com';
+const API_BASE = 'https://cxr-api.onrender.com/api';
+export const IMAGE_HOST = 'https://cxr-api.onrender.com';
 
 const apiClient = axios.create({
   baseURL: API_BASE,
