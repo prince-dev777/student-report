@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   StyleSheet, Text, View, TextInput, TouchableOpacity, 
   ActivityIndicator, SafeAreaView, KeyboardAvoidingView, 
-  Platform, ScrollView, Alert, StatusBar
+  Platform, ScrollView, Alert, StatusBar, Image
 } from 'react-native';
 import { GraduationCap, User, Key, LogIn, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
@@ -41,10 +41,11 @@ export default function LoginScreen() {
           
           {/* Logo Section */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <GraduationCap size={40} color={colors.white} />
-            </View>
-            <Text style={styles.title}>EduTrack Parent</Text>
+            <Image 
+              source={require('../../assets/logo.jpg')} 
+              style={{ width: 100, height: 100, borderRadius: 20, marginBottom: 16, resizeMode: 'contain' }} 
+            />
+            <Text style={styles.title}>CAREER XONE</Text>
             <Text style={styles.subtitle}>Log in to track your child's academic progress</Text>
           </View>
 

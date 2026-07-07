@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-// Note: Change to your computer's local IP address (e.g. 'http://192.168.1.10:5000/api') 
-const API_BASE = 'http://10.20.41.146:5000/api';
-export const IMAGE_HOST = 'http://10.20.41.146:5000';
+const API_BASE = 'https://student-report-ezgw.onrender.com/api';
+export const IMAGE_HOST = 'https://student-report-ezgw.onrender.com';
 
 const apiClient = axios.create({
   baseURL: API_BASE,

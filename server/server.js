@@ -32,6 +32,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
+app.use('/iclock', express.text({ type: '*/*' }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -510,7 +511,194 @@ app.delete('/api/students/:id', async (req, res) => {
   }
 });
 
+// ---- 🔗 Biometric ADMS Relay / Proxy for Edofox ----
+async function processBiometricPunch(rollNo, type, time) {
+  try {
+    const student = await Student.findOne({ rollNo: String(rollNo) });
+    if (!student) {
+      console.warn(`[ADMS Relay] Student with Roll Number ${rollNo} not found in DB.`);
+      return;
+    }
+
+    const instituteId = student.instituteId;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    let record = await Attendance.findOne({ studentId: student.id, date: todayStr, instituteId });
+    
+    if (record) {
+      if (type === 'IN') {
+        record.entryTime = punchTime;
+      } else {
+        record.exitTime = punchTime;
+      }
+      record.status = 'present';
+      await record.save();
+    } else {
+      record = new Attendance({
+        studentId: student.id,
+        date: todayStr,
+        status: 'present',
+        entryTime: type === 'IN' ? punchTime : '--',
+        exitTime: type === 'OUT' ? punchTime : '--',
+        instituteId,
+        smsSent: false
+      });
+      await record.save();
+    }
+
+    if (student.parentPhone) {
+      await sendWhatsAppAlert({
+        instituteId,
+        studentId: student.id,
+        parentPhone: student.parentPhone,
+        studentName: student.name,
+        type: type || 'IN',
+        detail: punchTime
+      });
+      record.smsSent = true;
+      await record.save();
+    }
+  } catch (err) {
+    console.error('[ADMS Relay] Error saving log or sending WhatsApp:', err.message);
+  }
+}
+
+app.all('/iclock/*', async (req, res) => {
+  const targetUrl = `http://13.126.240.100:71${req.originalUrl}`;
+  console.log(`[ADMS Relay] Relaying request to Edofox: ${req.method} ${targetUrl}`);
+  
+  try {
+    // 1. If it's a cdata upload (POST) containing attendance logs, parse it!
+    if (req.method === 'POST' && req.path.includes('/cdata')) {
+      const tableName = req.query.table;
+      
+      if (tableName === 'ATTLOG' && req.body) {
+        const bodyText = typeof req.body === 'string' ? req.body : req.body.toString();
+        const lines = bodyText.split('\n');
+        
+        for (let line of lines) {
+          line = line.trim();
+          if (!line) continue;
+          
+          const parts = line.split('\t');
+          if (parts.length >= 2) {
+            const rollNo = parts[0].trim();
+            const datetimeStr = parts[1].trim(); // "YYYY-MM-DD HH:MM:SS"
+            const statusVal = parts[2] ? parts[2].trim() : '0';
+            
+            // Format time
+            const timePart = datetimeStr.split(' ')[1] || '';
+            let formattedTime = '';
+            if (timePart) {
+              const timeParts = timePart.split(':');
+              if (timeParts.length >= 2) {
+                let hours = parseInt(timeParts[0], 10);
+                const minutes = timeParts[1];
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+                formattedTime = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+              }
+            }
+            
+            // Process punch
+            processBiometricPunch(rollNo, statusVal === '1' ? 'OUT' : 'IN', formattedTime);
+          }
+        }
+      }
+    }
+
+    // 2. Relay raw request to Edofox
+    const headers = { ...req.headers };
+    delete headers.host;
+
+    const options = {
+      method: req.method,
+      headers
+    };
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      options.body = req.body;
+    }
+
+    const response = await fetch(targetUrl, options);
+    const responseBody = await response.text();
+
+    res.status(response.status);
+    
+    // Copy headers safely
+    response.headers.forEach((value, key) => {
+      res.set(key, value);
+    });
+    
+    res.send(responseBody);
+
+  } catch (err) {
+    console.error(`[ADMS Relay] Error relaying request to Edofox:`, err.message);
+    res.status(200).set('Content-Type', 'text/plain').send('OK');
+  }
+});
+
 // ---- 🔐 Attendance API ----
+app.post('/api/attendance/biometric', async (req, res) => {
+  try {
+    const { instituteId, rollNumber, type, time } = req.body;
+    if (!instituteId || !rollNumber) {
+      return res.status(400).json({ error: 'Missing instituteId or rollNumber' });
+    }
+
+    const student = await Student.findOne({ rollNo: String(rollNumber), instituteId });
+    if (!student) {
+      return res.status(404).json({ error: `Student with Roll Number ${rollNumber} not found` });
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    let record = await Attendance.findOne({ studentId: student.id, date: todayStr, instituteId });
+    
+    if (record) {
+      if (type === 'IN') {
+        record.entryTime = punchTime;
+      } else {
+        record.exitTime = punchTime;
+      }
+      record.status = 'present';
+      await record.save();
+    } else {
+      record = new Attendance({
+        studentId: student.id,
+        date: todayStr,
+        status: 'present',
+        entryTime: type === 'IN' ? punchTime : '--',
+        exitTime: type === 'OUT' ? punchTime : '--',
+        instituteId,
+        smsSent: false
+      });
+      await record.save();
+    }
+
+    if (student.parentPhone) {
+      sendWhatsAppAlert({
+        instituteId,
+        studentId: student.id,
+        parentPhone: student.parentPhone,
+        studentName: student.name,
+        type: type || 'IN',
+        detail: punchTime
+      }).then(() => {
+        record.smsSent = true;
+        record.save();
+      }).catch(err => console.error('Failed to send biometric WhatsApp alert:', err.message));
+    }
+
+    res.json({ message: 'Biometric attendance successfully recorded', record });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/attendance', async (req, res) => {
   try {
     const records = await Attendance.find({ instituteId: req.user.instituteId });
@@ -1054,7 +1242,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Server listening at http://localhost:${PORT}`);
 
   // Self-ping service to prevent Render free-tier spin down (every 10 minutes)
-  const SELF_PING_URL = process.env.SELF_PING_URL;
+  const SELF_PING_URL = process.env.SELF_PING_URL || 'https://student-report-ezgw.onrender.com';
   if (SELF_PING_URL) {
     setInterval(() => {
       https.get(SELF_PING_URL, (res) => {

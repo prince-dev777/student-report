@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/logo.jpg",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.careerxone.parent"
@@ -12,6 +13,7 @@
     "android": {
       "package": "com.careerxone.parent",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.jpg",
         "backgroundColor": "#050714"
       }
     },

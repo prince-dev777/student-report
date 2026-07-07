@@ -24,10 +24,14 @@ export default function Login() {
     <div className="login-container">
       <div className="login-box">
         <div className="login-header">
-          <div className="logo-icon-login">
-            <Lock size={32} color="#ffffff" />
+          <div className="logo-icon-login" style={{ background: 'none', width: 'auto', height: 'auto', marginBottom: '16px' }}>
+            <img 
+              src="/logo.jpg" 
+              alt="Logo" 
+              style={{ width: '80px', height: '80px', borderRadius: '16px', objectFit: 'contain' }} 
+            />
           </div>
-          <h2>EduTrack Pro</h2>
+          <h2>CAREER XONE</h2>
           <p>Admin Security Portal</p>
         </div>
 

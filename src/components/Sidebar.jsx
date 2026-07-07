@@ -71,12 +71,14 @@ export default function Sidebar() {
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
       >
         {/* Brand */}
-        <div className="sidebar-brand">
-          <div className="sidebar-brand-icon">
-            <GraduationCap size={20} color="white" />
-          </div>
+        <div className="sidebar-brand" style={{ gap: '10px' }}>
+          <img 
+            src="/logo.jpg" 
+            alt="Logo" 
+            style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover' }} 
+          />
           <div className="sidebar-brand-text">
-            <h2>{user?.instituteName || 'EduTrack Pro'}</h2>
+            <h2>{user?.instituteName || 'CAREER XONE'}</h2>
             <span>Student Management</span>
           </div>
         </div>
