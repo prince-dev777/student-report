@@ -1,6 +1,6 @@
 from zk import ZK
 
-ip = '192.168.0.13'
+ip = '192.168.0.12'
 print(f"Testing ZK UDP connection on {ip}:4370...")
 
 zk = ZK(ip, port=4370, timeout=5, force_udp=True)

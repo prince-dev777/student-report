@@ -1245,7 +1245,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Server listening at http://localhost:${PORT}`);
 
   // Self-ping service to prevent Render free-tier spin down (every 10 minutes)
-  const SELF_PING_URL = process.env.SELF_PING_URL || 'https://student-report-ezgw.onrender.com';
+  const SELF_PING_URL = process.env.SELF_PING_URL || 'https://crx-api.onrender.com';
   if (SELF_PING_URL) {
     setInterval(() => {
       https.get(SELF_PING_URL, (res) => {
