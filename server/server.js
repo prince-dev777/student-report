@@ -27,6 +27,9 @@ import { sendWhatsAppAlert } from './services/whatsappService.js';
 
 dotenv.config();
 
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/edutrack?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
+const JWT_SECRET = process.env.JWT_SECRET || '8f5b8a6d4e2c9a1f3c7e6b5d4a9f8e2d1c3b5a4f7e6d8c9b0a1f2e3d4c5b6a7f';
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -77,7 +80,7 @@ if (!fs.existsSync(uploadDir)) {
 const upload = multer({ dest: uploadDir });
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/edutrack')
+mongoose.connect(MONGODB_URI)
   .then(async () => {
     console.log('🔌 Connected to MongoDB database.');
 
@@ -175,7 +178,7 @@ app.post('/api/auth/register', async (req, res) => {
     // Generate Token
     const token = jwt.sign(
       { id: user._id, username: user.username, instituteId: institute._id, instituteName: institute.name },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '30d' }
     );
 
@@ -192,7 +195,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (user && (await user.comparePassword(password))) {
       const token = jwt.sign(
         { id: user._id, username: user.username, instituteId: user.instituteId._id, instituteName: user.instituteId.name },
-        process.env.JWT_SECRET,
+        JWT_SECRET,
         { expiresIn: '30d' }
       );
       res.json({ token, username: user.username, instituteName: user.instituteId.name });
@@ -219,7 +222,7 @@ app.post('/api/parent/login', async (req, res) => {
 
     const token = jwt.sign(
       { studentId: student._id, instituteId: student.instituteId, role: 'parent' },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '7d' } // 7 days token expiration
     );
 
