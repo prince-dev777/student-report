@@ -294,6 +294,131 @@ app.post('/api/attendance/biometric', async (req, res) => {
   }
 });
 
+// ---- 📡 Biometric ADMS API (Direct Machine Connection) ----
+
+// 1. Initialization Request
+app.get('/iclock/cdata', (req, res) => {
+  res.send('OK');
+});
+
+// 2. Command Request
+app.get('/iclock/getrequest', (req, res) => {
+  res.send('OK');
+});
+
+// 3. Data Push Request (Raw Text)
+app.post('/iclock/cdata', async (req, res) => {
+  try {
+    const rawData = req.body; // text/plain
+    if (!rawData || typeof rawData !== 'string') return res.send('OK');
+
+    const lines = rawData.split('\\n');
+    let successCount = 0;
+
+    for (let line of lines) {
+      line = line.trim();
+      if (!line) continue;
+
+      // Format: "user_id	YYYY-MM-DD HH:MM:SS	status	verify_type	work_code"
+      const parts = line.split(/\\s+/);
+      if (parts.length < 3) continue;
+
+      const rollNumber = parts[0];
+      const dateStr = parts[1]; // YYYY-MM-DD
+      const timeStr = parts[2]; // HH:MM:SS
+
+      let type = 'IN';
+      // Usually status is at index 3. 0=IN, 1=OUT
+      if (parts.length > 3 && parts[3] === '1') {
+        type = 'OUT';
+      }
+
+      // Convert HH:MM:SS to HH:MM AM/PM
+      let formattedTime = timeStr;
+      if (timeStr.includes(':')) {
+        const tParts = timeStr.split(':');
+        let hours = parseInt(tParts[0], 10);
+        const minutes = tParts[1];
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        formattedTime = hours.toString().padStart(2, '0') + ':' + minutes + ' ' + ampm;
+      }
+
+      // Find Student to get Institute ID
+      const student = await Student.findOne({ rollNo: String(rollNumber) });
+      if (!student) {
+        console.warn(`[ADMS] Unrecognized Roll Number: ${rollNumber}`);
+        continue;
+      }
+
+      const instituteId = student.instituteId;
+      const today = dateStr;
+
+      // Find or create attendance record
+      let record = await Attendance.findOne({ studentId: student.id, date: today, instituteId });
+
+      let isNewPunch = false;
+      if (!record) {
+        record = new Attendance({
+          instituteId,
+          studentId: student.id,
+          date: today,
+          status: 'present',
+          entryTime: type === 'IN' ? formattedTime : '',
+          exitTime: type === 'OUT' ? formattedTime : ''
+        });
+        isNewPunch = true;
+      } else {
+        if (type === 'IN' && (!record.entryTime || record.entryTime === '--')) {
+          record.entryTime = formattedTime;
+          isNewPunch = true;
+        }
+        if (type === 'OUT' && (!record.exitTime || record.exitTime === '--')) {
+          record.exitTime = formattedTime;
+          isNewPunch = true;
+        }
+      }
+
+      if (isNewPunch) {
+        await record.save();
+
+        // Create Notification
+        const title = type === 'IN' ? 'Check-In Alert' : 'Check-Out Alert';
+        const message = `${student.name} has checked ${type} at ${formattedTime}.`;
+
+        const notification = new Notification({
+          instituteId,
+          studentId: student._id,
+          title,
+          message,
+          type: 'ATTENDANCE'
+        });
+        await notification.save();
+
+        // Trigger WhatsApp
+        if (student.parentPhone) {
+          sendWhatsAppAlert({
+            instituteId,
+            studentId: student.id,
+            parentPhone: student.parentPhone,
+            studentName: student.name,
+            type: type,
+            detail: formattedTime
+          }).catch(err => console.error('Failed to send ADMS WhatsApp alert:', err.message));
+        }
+        successCount++;
+      }
+    }
+    
+    console.log(`[ADMS] Successfully processed ${successCount} new attendance logs.`);
+    res.send('OK');
+  } catch (err) {
+    console.error('[ADMS] Processing Error:', err);
+    res.send('OK');
+  }
+});
+
 // Apply protection middleware to all other API routes
 app.use('/api/students', protect);
 app.use('/api/attendance', protect);
