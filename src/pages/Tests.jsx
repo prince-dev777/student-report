@@ -225,8 +225,8 @@ export default function Tests() {
 
         const totalQ = flatAnswers.length;
         newOmrStats[r.studentId] = {
-          correct: r.marks,
-          wrong: totalQ - r.marks
+          correct: r.correctCount !== undefined ? r.correctCount : 0,
+          wrong: r.wrongCount !== undefined ? r.wrongCount : 0
         };
         matchedCount++;
       });
@@ -431,15 +431,30 @@ export default function Tests() {
           let correct = 0;
           let wrong = 0;
           studentAnswers.forEach((ans, idx) => {
+            const ansStr = String(ans).trim().toUpperCase();
             if (
               idx < tokens.length && 
-              ans && 
-              tokens[idx] && 
-              String(ans).trim().toUpperCase() === String(tokens[idx]).trim().toUpperCase()
+              ansStr && 
+              ansStr !== 'NULL' && 
+              tokens[idx]
             ) {
-              correct++;
-            } else if (ans && String(ans).trim() !== '') {
-              wrong++;
+              const corStr = String(tokens[idx]).trim().toUpperCase();
+              let matched = false;
+              if (ansStr === corStr) {
+                matched = true;
+              } else {
+                const parsedAns = parseFloat(ansStr);
+                const parsedCor = parseFloat(corStr);
+                if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
+                  matched = true;
+                }
+              }
+
+              if (matched) {
+                correct++;
+              } else {
+                wrong++;
+              }
             }
           });
           const score = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
@@ -752,6 +767,46 @@ export default function Tests() {
                   </div>
                 </div>
 
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Default OMR Layout</label>
+                    <select
+                      className="form-select"
+                      value={testForm.templateId}
+                      onChange={e => {
+                        const tempId = e.target.value;
+                        let defaultDetect = 180;
+                        if (tempId === 'neet_90') defaultDetect = 90;
+                        else if (tempId === 'jee_75' || tempId === 'jee_75_with_numerical') defaultDetect = 75;
+                        else if (tempId === 'omr_50') defaultDetect = 50;
+                        else if (tempId === 'mhcet_200') defaultDetect = 200;
+                        
+                        setTestForm(prev => ({ 
+                          ...prev, 
+                          templateId: tempId,
+                          questionsToDetect: defaultDetect
+                        }));
+                      }}
+                    >
+                      <option value="neet_180">NEET 180 (MCQs)</option>
+                      <option value="neet_90">NEET 90 (MCQs)</option>
+                      <option value="jee_75">JEE 75 (MCQs)</option>
+                      <option value="jee_75_with_numerical">JEE 75 (MCQ + Num)</option>
+                      <option value="mhcet_200">MHCET 200</option>
+                      <option value="omr_50">50-Question OMR</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Default Questions to Detect</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      min="1"
+                      value={testForm.questionsToDetect}
+                      onChange={e => setTestForm(prev => ({ ...prev, questionsToDetect: e.target.value }))}
+                    />
+                  </div>
+                </div>
 
                 <div className="flex justify-end gap-8 mt-16 pt-16" style={{ borderTop: '1px solid var(--border-color-light)' }}>
                   <button type="submit" className="btn btn-primary">
@@ -881,7 +936,7 @@ export default function Tests() {
                         {omrUploading ? 'Scanning...' : 'Scan OMR Images'}
                         <input 
                           type="file" 
-                          accept="image/jpeg, image/png"
+                          accept="image/*"
                           multiple
                           onChange={handleOMRUpload} 
                           style={{ display: 'none' }} 

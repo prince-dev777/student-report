@@ -968,10 +968,23 @@ app.post('/api/tests/:id/regrade', async (req, res) => {
       let correct = 0;
       let wrong = 0;
       result.studentAnswers.forEach((ans, idx) => {
-        if (idx < flatAnswerKey.length && ans && flatAnswerKey[idx]) {
-          if (String(ans).trim().toUpperCase() === String(flatAnswerKey[idx]).trim().toUpperCase()) {
+        const ansStr = String(ans).trim().toUpperCase();
+        if (idx < flatAnswerKey.length && ansStr && ansStr !== 'NULL' && flatAnswerKey[idx]) {
+          const corStr = String(flatAnswerKey[idx]).trim().toUpperCase();
+          let matched = false;
+          if (ansStr === corStr) {
+            matched = true;
+          } else {
+            const parsedAns = parseFloat(ansStr);
+            const parsedCor = parseFloat(corStr);
+            if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
+              matched = true;
+            }
+          }
+
+          if (matched) {
             correct++;
-          } else if (String(ans).trim() !== '') {
+          } else {
             wrong++;
           }
         }
@@ -1046,6 +1059,23 @@ app.post('/api/test-results/bulk', async (req, res) => {
             type: 'TEST_RESULT'
           });
           await notification.save();
+          
+          if (student.parentPhone) {
+            sendWhatsAppAlert({
+              instituteId: req.user.instituteId,
+              studentId: student.id,
+              parentPhone: student.parentPhone,
+              studentName: student.name,
+              type: 'TEST_RESULT',
+              detail: {
+                marks: r.marks,
+                totalMarks: test.totalMarks,
+                subject: test.subject,
+                rank: r.rank,
+                totalStudents: r.totalStudents
+              }
+            }).catch(err => console.error('Failed to send test result WhatsApp alert:', err.message));
+          }
         }
       }
     }
@@ -1148,21 +1178,30 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
     const jsonPayload = {
       image_paths: imagePaths,
       original_names: req.files.map(file => file.originalname),
-      answer_keys: answer_keys
+      answer_keys: answer_keys,
+      marks_per_question: test.marksPerQuestion || 1,
+      negative_marking: test.negativeMarking !== undefined ? test.negativeMarking : 0
     };
     if (templateId) jsonPayload.template_id = templateId;
     if (template_config) jsonPayload.template_config = template_config;
 
     fs.writeFileSync(tempArgsPath, JSON.stringify(jsonPayload));
 
-    let pythonCmd = process.env.PYTHON_CMD;
-    if (!pythonCmd) {
-      const python3Check = spawnSync('python3', ['--version']);
-      pythonCmd = python3Check.error ? 'python' : 'python3';
+    let pythonProcess;
+    const exePath = path.join(__dirname, 'omr_engine_v2.exe');
+    
+    if (fs.existsSync(exePath)) {
+      // Spawn compiled executable directly
+      pythonProcess = spawn(exePath, [tempArgsPath]);
+    } else {
+      let pythonCmd = process.env.PYTHON_CMD;
+      if (!pythonCmd) {
+        const python3Check = spawnSync('python3', ['--version']);
+        pythonCmd = python3Check.error ? 'python' : 'python3';
+      }
+      // Spawn Python Process
+      pythonProcess = spawn(pythonCmd, [pythonScriptPath, tempArgsPath]);
     }
-
-    // Spawn Python Process
-    const pythonProcess = spawn(pythonCmd, [pythonScriptPath, tempArgsPath]);
 
     let pythonOutput = '';
     let pythonError = '';
@@ -1176,6 +1215,9 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
     });
 
     pythonProcess.on('close', async (code) => {
+      // Save python output for debugging
+      fs.writeFileSync(path.join(uploadDir, 'last_python_output.txt'), pythonOutput);
+      fs.writeFileSync(path.join(uploadDir, 'last_python_error.txt'), pythonError);
       // Clean up temp payload
       safeUnlink(tempArgsPath);
 
@@ -1210,12 +1252,17 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
 
           if (r.error) {
             errors.push({ error: r.error, details: r.details || '', rollNumber: r.rollNumber || 'Unknown' });
-            safeUnlink(imgPath); // Delete failed image file
+            // safeUnlink(imgPath); // Delete failed image file
             continue;
           }
 
-          // Find student by rollNumber
-          const student = await Student.findOne({ rollNo: String(r.rollNumber), instituteId: req.user.instituteId });
+          // Find student by rollNumber, handling potential leading zeros from OMR scan
+          const rollRaw = String(r.rollNumber);
+          const rollIntStr = String(parseInt(rollRaw, 10));
+          const student = await Student.findOne({ 
+            $or: [ { rollNo: rollRaw }, { rollNo: rollIntStr } ],
+            instituteId: req.user.instituteId 
+          });
           if (student) {
             let studentAnswers = [];
             if (r.subjects) {
@@ -1236,12 +1283,14 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
               studentName: student.name,
               rollNo: r.rollNumber,
               marks: r.totalMarks !== undefined ? r.totalMarks : (r.marks || 0),
+              correctCount: r.correctCount,
+              wrongCount: r.wrongCount,
               studentAnswers: studentAnswers,
               omrSheetImage: webPath
             });
           } else {
             errors.push({ error: 'Student not found in database', rollNumber: r.rollNumber });
-            safeUnlink(imgPath); // Delete image since no student matches
+            // safeUnlink(imgPath); // Delete image since no student matches
           }
         }
 
@@ -1360,9 +1409,186 @@ app.post('/api/reset', async (req, res) => {
   }
 });
 
-// Root route
+// Root route - SaaS Landing Page
 app.get('/', (req, res) => {
-  res.send('EduTrack Pro Backend API is running...');
+  const landingPageHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Career Xone Pro - Smart OMR & Biometric System</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Outfit', sans-serif;
+    }
+    
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.15), transparent 40%);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .blob {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+      filter: blur(80px);
+      border-radius: 50%;
+      z-index: -1;
+      top: -200px;
+      right: -200px;
+    }
+
+    .container {
+      max-width: 900px;
+      padding: 40px;
+      text-align: center;
+      z-index: 10;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 8px 16px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+    }
+    
+    h1 {
+      font-size: 4rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      background: linear-gradient(to right, #f8fafc, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    p.subtitle {
+      font-size: 1.2rem;
+      color: #94a3b8;
+      margin-bottom: 48px;
+      line-height: 1.6;
+      max-width: 600px;
+      margin-inline: auto;
+    }
+    
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.5);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 24px;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 40px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      text-decoration: none;
+      font-size: 1.2rem;
+      font-weight: 600;
+      border-radius: 50px;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .download-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px -5px rgba(59, 130, 246, 0.6);
+      background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    }
+    
+    .features {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 20px;
+      color: #cbd5e1;
+      font-weight: 300;
+    }
+    
+    .features div {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .icon-check {
+      color: #10b981;
+    }
+    
+    footer {
+      margin-top: 60px;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+      h1 { font-size: 2.5rem; }
+      .features { flex-direction: column; gap: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob"></div>
+  <div class="container">
+    <div class="badge">DESKTOP APP NOW AVAILABLE</div>
+    <h1>Career Xone Pro</h1>
+    <p class="subtitle">Experience lightning-fast OMR scanning on your PC, seamlessly integrated with Biometric ADMS and automated WhatsApp alerts.</p>
+    
+    <div class="glass-panel">
+      <!-- Link updated to point to Google Drive .exe -->
+      <a href="https://drive.google.com/file/d/1zUJUDCCSyfvduGfNRmSN7Qi4iWRv6yve/view?usp=sharing" target="_blank" class="download-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Download for Windows (.exe)
+      </a>
+      
+      <div class="features">
+        <div><span class="icon-check">✔</span> Offline OMR Processing</div>
+        <div><span class="icon-check">✔</span> Biometric Integration</div>
+        <div><span class="icon-check">✔</span> Auto WhatsApp Alerts</div>
+      </div>
+    </div>
+    
+    <footer>
+      &copy; ${new Date().getFullYear()} Career Xone. All rights reserved. <br>
+      Cloud Server is Active & Synchronizing.
+    </footer>
+  </div>
+</body>
+</html>
+  `;
+  res.send(landingPageHtml);
 });
 
 // Start listening

@@ -29,6 +29,8 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
     messageText = `Check-Out Alert:\nDear Parent, your child ${studentName} has checked out at ${detail}.\n- CAREER XONE`;
   } else if (type === 'ABSENT') {
     messageText = `Absent Alert:\nDear Parent, your child ${studentName} is marked ABSENT for today (${detail}).\n- CAREER XONE`;
+  } else if (type === 'TEST_RESULT') {
+    messageText = `Result Alert:\nDear Parent, ${studentName} scored ${detail.marks}/${detail.totalMarks} in ${detail.subject} test. Rank: ${detail.rank}/${detail.totalStudents}.\n- CAREER XONE`;
   }
 
   const provider = (process.env.WHATSAPP_PROVIDER || 'mock').toLowerCase();

@@ -1,5 +1,5 @@
 // ============================================
-// EduTrack Pro - Helper Utilities
+// Career Xone Pro - Helper Utilities
 // ============================================
 
 // Format date to readable string

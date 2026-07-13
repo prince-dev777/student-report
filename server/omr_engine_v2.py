@@ -41,14 +41,14 @@ def detect_registration_corners(image):
             mask = np.zeros(thresh.shape, dtype="uint8")
             cv2.drawContours(mask, [c], -1, 255, -1)
             mean_val = cv2.mean(thresh, mask=mask)[0]
-            if mean_val > 180:
+            if mean_val > 40:
                 cx = x + w / 2.0
                 cy = y + h / 2.0
                 markers.append((cx, cy, area))
                 
     # Assign candidate markers to the 4 corners using dynamic boundary boxes
-    margin_x = int(w_orig * 0.25)
-    margin_y = int(h_orig * 0.25)
+    margin_x = int(w_orig * 0.35)
+    margin_y = int(h_orig * 0.35)
     
     tl, tr, bl, br = None, None, None, None
     for cx, cy, area in markers:
@@ -91,12 +91,24 @@ def detect_registration_corners(image):
         
     return tl, tr, bl, br
 
-def evaluate_bubble_row(pixel_counts, options=['A', 'B', 'C', 'D'], threshold=50):
-    marked_indices = [i for i, val in enumerate(pixel_counts) if val > threshold]
+def evaluate_bubble_row(pixel_counts, options=['A', 'B', 'C', 'D'], threshold=90):
+    if not pixel_counts:
+        return None, "blank"
+        
+    min_val = min(pixel_counts)
+    adjusted_counts = [val - min_val for val in pixel_counts]
+    max_adj = max(adjusted_counts)
+    
+    # If the darkest bubble doesn't stand out by at least 55 pixels from the lightest, it's blank
+    if max_adj < 55:
+        return None, "blank"
+        
+    # We consider a bubble marked if its adjusted count is > 0.6 * max_adj
+    # but the threshold must be at least 55 to avoid picking up noise
+    marked_indices = [i for i, val in enumerate(adjusted_counts) if val > max(55, max_adj * 0.6)]
+    
     if len(marked_indices) == 1:
-        idx = marked_indices[0]
-        selected = options[idx] if idx < len(options) else None
-        return selected, "valid"
+        return options[marked_indices[0]], "valid"
     elif len(marked_indices) > 1:
         return None, "invalid"
     else:
@@ -182,7 +194,7 @@ def determine_template(filename, answer_keys, template_config=None, template_id=
         
     return "NEET 180 (Physics, Chemistry, Biology)" # Default fallback
 
-def process_omr_image(image_path, answer_keys, template_config=None, original_name=None, template_id=None):
+def process_omr_image(image_path, answer_keys, template_config=None, original_name=None, template_id=None, marks_per_question=1, negative_marking=0):
     if not os.path.exists(image_path):
         return {"error": f"Image not found: {image_path}"}
         
@@ -205,15 +217,16 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
     src_pts = np.array([tl[:2], tr[:2], br[:2], bl[:2]], dtype="float32")
     width, height = 963, 1472
     dst_pts = np.array([
-        [0, 0],
-        [width - 1, 0],
-        [width - 1, height - 1],
-        [0, height - 1]], dtype="float32")
+        [30, 30],
+        [width - 30, 30],
+        [width - 30, height - 30],
+        [30, height - 30]], dtype="float32")
         
     M = cv2.getPerspectiveTransform(src_pts, dst_pts)
     warped = cv2.warpPerspective(image, M, (width, height))
     warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
     thresh = cv2.threshold(warped_gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+    cv2.imwrite(r"C:\Users\sawar\MyProjects\student-report\server\uploads\warped_debug.png", thresh)
     
     h_w, w_w = thresh.shape[:2]
     options = ['A', 'B', 'C', 'D']
@@ -261,7 +274,7 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
                     x1, x2 = max(0, x_c - 7), min(w_w, x_c + 7)
                     box = thresh[y1:y2, x1:x2]
                     pixel_counts.append(cv2.countNonZero(box))
-                ans, status = evaluate_bubble_row(pixel_counts, options, 50)
+                ans, status = evaluate_bubble_row(pixel_counts, options)
                 answers.append((ans, status))
             return answers
             
@@ -285,7 +298,7 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
                         x1, x2 = max(0, x_c - 7), min(w_w, x_c + 7)
                         box = thresh[y1:y2, x1:x2]
                         counts.append(cv2.countNonZero(box))
-                    val, status = evaluate_bubble_row(counts, digits, 50)
+                    val, status = evaluate_bubble_row(counts, digits)
                     row_vals.append(val)
                     row_statuses.append(status)
                 
@@ -334,7 +347,7 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
                     x1, x2 = max(0, x_c - 7), min(w_w, x_c + 7)
                     box = thresh[y1:y2, x1:x2]
                     pixel_counts.append(cv2.countNonZero(box))
-                ans, status = evaluate_bubble_row(pixel_counts, options, 50)
+                ans, status = evaluate_bubble_row(pixel_counts, options)
                 answers.append((ans, status))
             return answers
             
@@ -362,7 +375,7 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
                     x1, x2 = max(0, x_c - 7), min(w_w, x_c + 7)
                     box = thresh[y1:y2, x1:x2]
                     pixel_counts.append(cv2.countNonZero(box))
-                ans, status = evaluate_bubble_row(pixel_counts, options, 50)
+                ans, status = evaluate_bubble_row(pixel_counts, options)
                 answers.append((ans, status))
             return answers
             
@@ -390,7 +403,7 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
                     x1, x2 = max(0, x_c - 7), min(w_w, x_c + 7)
                     box = thresh[y1:y2, x1:x2]
                     pixel_counts.append(cv2.countNonZero(box))
-                ans, status = evaluate_bubble_row(pixel_counts, options, 50)
+                ans, status = evaluate_bubble_row(pixel_counts, options)
                 answers.append((ans, status))
             return answers
             
@@ -413,7 +426,7 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
                     x1, x2 = max(0, x_c - 7), min(w_w, x_c + 7)
                     box = thresh[y1:y2, x1:x2]
                     pixel_counts.append(cv2.countNonZero(box))
-                ans, status = evaluate_bubble_row(pixel_counts, options, 50)
+                ans, status = evaluate_bubble_row(pixel_counts, options)
                 answers.append((ans, status))
             return answers
             
@@ -440,7 +453,7 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
                     x1, x2 = max(0, x_c - 7), min(w_w, x_c + 7)
                     box = thresh[y1:y2, x1:x2]
                     pixel_counts.append(cv2.countNonZero(box))
-                ans, status = evaluate_bubble_row(pixel_counts, options, 50)
+                ans, status = evaluate_bubble_row(pixel_counts, options)
                 answers.append((ans, status))
             return answers
             
@@ -452,6 +465,8 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
     # Evaluate answers dynamically against sections config
     current_q_idx = 0
     total_marks = 0
+    total_correct = 0
+    total_wrong = 0
     subjects_results = {}
     
     sections = template_config.get("sections", []) if template_config else []
@@ -486,13 +501,37 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
                 
             # Grade answer
             is_correct = False
+            is_wrong = False
+            marks = 0
+            
             if status == "valid" and selected and correct:
-                if str(selected).strip().upper() == str(correct).strip().upper():
+                sel_str = str(selected).strip().upper()
+                cor_str = str(correct).strip().upper()
+                
+                matched = False
+                if sel_str == cor_str:
+                    matched = True
+                else:
+                    try:
+                        if float(sel_str) == float(cor_str):
+                            matched = True
+                    except ValueError:
+                        pass
+                        
+                if matched:
                     is_correct = True
-                    
-            marks = 1 if is_correct else 0
-            if is_correct:
-                total_marks += 1
+                    marks = marks_per_question
+                    total_correct += 1
+                else:
+                    is_wrong = True
+                    marks = -negative_marking
+                    total_wrong += 1
+            elif status == "invalid":
+                is_wrong = True
+                marks = -negative_marking
+                total_wrong += 1
+                
+            total_marks += marks
                 
             subj_results.append({
                 "questionNo": q_idx + 1,
@@ -506,9 +545,14 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
         subjects_results[sec_name] = subj_results
         current_q_idx += num_questions
         
+    if total_marks < 0:
+        total_marks = 0
+        
     return {
         "rollNumber": roll_number,
         "totalMarks": total_marks,
+        "correctCount": total_correct,
+        "wrongCount": total_wrong,
         "subjects": subjects_results
     }
 
@@ -530,6 +574,8 @@ def main():
             answer_keys = data.get('answer_keys', {})
             template_config = data.get('template_config', None)
             template_id = data.get('template_id', None)
+            marks_per_question = data.get('marks_per_question', 1)
+            negative_marking = data.get('negative_marking', 0)
     except Exception as e:
         print(json.dumps({"error": "Invalid or corrupt JSON file"}))
         sys.exit(1)
@@ -541,7 +587,7 @@ def main():
     results = []
     for idx, path in enumerate(image_paths):
         orig_name = original_names[idx] if idx < len(original_names) else os.path.basename(path)
-        result = process_omr_image(path, answer_keys, template_config, orig_name, template_id)
+        result = process_omr_image(path, answer_keys, template_config, orig_name, template_id, marks_per_question, negative_marking)
         results.append(result)
         
     print(json.dumps(results))

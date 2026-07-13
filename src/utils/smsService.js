@@ -1,5 +1,5 @@
 // ============================================
-// EduTrack Pro - SMS Service (Simulated)
+// Career Xone Pro - SMS Service (Simulated)
 // ============================================
 // In production, replace sendSMS() with actual API call
 // to MSG91, Fast2SMS, Twilio, etc.
@@ -9,22 +9,22 @@ import { generateId, getCurrentTime, getTodayStr } from './helpers';
 // SMS Templates
 export const smsTemplates = {
   attendanceEntry: (parentName, studentName, time) =>
-    `Namaste ${parentName} ji, aapka bachha ${studentName} aaj ${time} par coaching me aa gaya hai. - EduTrack Pro`,
+    `Namaste ${parentName} ji, aapka bachha ${studentName} aaj ${time} par coaching me aa gaya hai. - Career Xone Pro`,
 
   attendanceExit: (parentName, studentName, time) =>
-    `Namaste ${parentName} ji, aapka bachha ${studentName} aaj ${time} par coaching se nikal gaya hai. - EduTrack Pro`,
+    `Namaste ${parentName} ji, aapka bachha ${studentName} aaj ${time} par coaching se nikal gaya hai. - Career Xone Pro`,
 
   testResult: (parentName, studentName, testName, marks, totalMarks, percentage, rank, totalStudents) =>
-    `Namaste ${parentName} ji, ${studentName} ka ${testName} result: Marks ${marks}/${totalMarks} (${percentage}%), Rank: ${rank}/${totalStudents}. Keep motivating! - EduTrack Pro`,
+    `Namaste ${parentName} ji, ${studentName} ka ${testName} result: Marks ${marks}/${totalMarks} (${percentage}%), Rank: ${rank}/${totalStudents}. Keep motivating! - Career Xone Pro`,
 
   absentNotice: (parentName, studentName, date) =>
-    `Namaste ${parentName} ji, aapka bachha ${studentName} aaj ${date} ko coaching me nahi aaya. Kripya dhyan dein. - EduTrack Pro`,
+    `Namaste ${parentName} ji, aapka bachha ${studentName} aaj ${date} ko coaching me nahi aaya. Kripya dhyan dein. - Career Xone Pro`,
 
   general: (parentName, message) =>
-    `Namaste ${parentName} ji, ${message} - EduTrack Pro`,
+    `Namaste ${parentName} ji, ${message} - Career Xone Pro`,
 
   feeReminder: (parentName, studentName, amount, dueDate) =>
-    `Namaste ${parentName} ji, ${studentName} ki fees ₹${amount} ka last date ${dueDate} hai. Kripya samay par jama karein. - EduTrack Pro`,
+    `Namaste ${parentName} ji, ${studentName} ki fees ₹${amount} ka last date ${dueDate} hai. Kripya samay par jama karein. - Career Xone Pro`,
 };
 
 // Simulate sending SMS (returns a Promise)

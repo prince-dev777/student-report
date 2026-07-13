@@ -41,7 +41,7 @@ export default function Register() {
               <Building size={18} className="input-icon" />
               <input
                 type="text"
-                placeholder="e.g. Apex Classes"
+                placeholder="e.g. Career Xone"
                 value={instituteName}
                 onChange={(e) => setInstituteName(e.target.value)}
                 required

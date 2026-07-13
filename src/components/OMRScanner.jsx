@@ -13,8 +13,11 @@ export default function OMRScanner() {
   const [omrTemplate, setOmrTemplate] = useState('neet_180');
   const [detectQuestions, setDetectQuestions] = useState(180);
 
+  const [students, setStudents] = useState([]);
+
   useEffect(() => {
     fetchTests();
+    fetchStudents();
   }, []);
 
   const fetchTests = async () => {
@@ -23,6 +26,15 @@ export default function OMRScanner() {
       setTests(data);
     } catch (err) {
       console.error('Failed to load tests', err);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const data = await api.getStudents();
+      setStudents(data);
+    } catch (err) {
+      console.error('Failed to load students', err);
     }
   };
 
@@ -53,10 +65,19 @@ export default function OMRScanner() {
     if (!selectedTest || selectedFiles.length === 0) return;
     setStatus('uploading');
     
+    const test = tests.find(t => t.id === selectedTest);
+    
     const formData = new FormData();
     formData.append('testId', selectedTest);
     formData.append('templateId', omrTemplate);
     formData.append('questionsToDetect', detectQuestions);
+    formData.append('testData', JSON.stringify({
+      marksPerQuestion: test?.marksPerQuestion || 1,
+      negativeMarking: test?.negativeMarking || 0,
+      answer_keys: test?.answerKey || {},
+      template_config: test?.templateConfig
+    }));
+    
     selectedFiles.forEach(file => {
       formData.append('images', file);
     });
@@ -65,12 +86,43 @@ export default function OMRScanner() {
       const res = await api.uploadOMRImages(formData);
       setStatus('success');
       setSelectedFiles([]);
-      const scannedResults = res.results || [];
-      setDraftResults(scannedResults);
-      setErrorMsg(`Success! Scanned ${selectedFiles.length} images and matched ${scannedResults.length} students.`);
+      
+      const rawResults = res.results || [];
+      const mappedResults = [];
+      const localErrors = res.errors || [];
+      
+      for (const r of rawResults) {
+        const rollRaw = String(r.rollNo);
+        const rollIntStr = String(parseInt(rollRaw, 10));
+        
+        const student = students.find(s => String(s.rollNo) === rollRaw || String(s.rollNo) === rollIntStr);
+        if (student) {
+          mappedResults.push({
+            studentId: student.id,
+            mongoStudentId: student._id,
+            studentName: student.name,
+            rollNo: r.rollNo,
+            marks: r.marks,
+            correctCount: r.correctCount,
+            wrongCount: r.wrongCount,
+            studentAnswers: r.studentAnswers,
+            omrSheetImage: r.omrSheetImage
+          });
+        } else {
+          localErrors.push({ error: 'Student not found in database', rollNumber: r.rollNo });
+        }
+      }
+      
+      setDraftResults(mappedResults);
+      if (localErrors.length > 0) {
+        console.warn('OMR Mapping Errors:', localErrors);
+        setErrorMsg(`Success! Matched ${mappedResults.length} students, but failed to match ${localErrors.length} roll numbers.`);
+      } else {
+        setErrorMsg(`Success! Scanned ${selectedFiles.length} images and matched ${mappedResults.length} students.`);
+      }
     } catch (err) {
       setStatus('error');
-      setErrorMsg(err.message || 'Failed to process OMR images. Ensure python is installed on the server.');
+      setErrorMsg(err.message || 'Failed to process OMR images. Is the local engine running?');
     }
   };
 

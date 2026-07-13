@@ -298,7 +298,7 @@ export function AppProvider({ children }) {
     if (backendOnline) {
       try {
         const saved = await api.createTest(newTest);
-        setTests((prev) => [...prev, saved]);
+        setTests((prev) => [saved, ...prev]);
         toast.success(`✅ Scheduled test saved to MongoDB!`);
         return saved;
       } catch (err) {
@@ -306,7 +306,7 @@ export function AppProvider({ children }) {
       }
     }
 
-    setTests((prev) => [...prev, newTest]);
+    setTests((prev) => [newTest, ...prev]);
     toast.success(`Test "${newTest.name}" created locally!`);
     return newTest;
   }, [backendOnline]);
