@@ -26,7 +26,7 @@ export default function Login() {
         <div className="login-header">
           <div className="logo-icon-login" style={{ background: 'none', width: 'auto', height: 'auto', marginBottom: '16px' }}>
             <img 
-              src="/logo.jpg" 
+              src="./logo.jpg" 
               alt="Logo" 
               style={{ width: '80px', height: '80px', borderRadius: '16px', objectFit: 'contain' }} 
             />

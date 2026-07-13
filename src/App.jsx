@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import SMSCenter from './pages/SMSCenter';
+import WebLandingPage from './pages/WebLandingPage';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -37,9 +38,15 @@ function AppLayout() {
   );
 }
 
+const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
+
 export default function App() {
+  if (!isElectron) {
+    return <WebLandingPage />;
+  }
+
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -79,7 +86,7 @@ export default function App() {
           }}
         />
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 

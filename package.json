@@ -1,21 +1,60 @@
 {
   "name": "student-report",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
+  "description": "Career Xone OMR Desktop Application",
+  "author": "Career Xone",
   "type": "module",
+  "main": "main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"npm run dev\" \"node server/server.js\" \"wait-on http://localhost:5173 && wait-on http://localhost:5000 && electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "electron:publish": "npm run build && electron-builder -p always"
+  },
+  "build": {
+    "appId": "com.careerxone.omr",
+    "productName": "Career Xone Pro",
+    "directories": {
+      "output": "dist-electron-v2"
+    },
+    "files": [
+      "dist/**/*",
+      "main.cjs",
+      "server/**/*"
+    ],
+    "asarUnpack": [
+      "server/**/*.py",
+      "server/**/*.exe"
+    ],
+    "icon": "public/logo.png",
+    "win": {
+      "target": "nsis"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "prince-dev777",
+      "repo": "student-report"
+    }
   },
   "devDependencies": {
+    "concurrently": "^10.0.3",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
     "typescript": "~6.0.2",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "wait-on": "^9.0.10"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^6.0.2",
+    "cors": "^2.8.6",
+    "electron-updater": "^6.8.9",
+    "express": "^5.2.1",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.17.0",
+    "multer": "^2.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hot-toast": "^2.6.0",

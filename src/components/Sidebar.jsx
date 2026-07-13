@@ -73,12 +73,12 @@ export default function Sidebar() {
         {/* Brand */}
         <div className="sidebar-brand" style={{ gap: '10px' }}>
           <img 
-            src="/logo.jpg" 
+            src="./logo.jpg" 
             alt="Logo" 
             style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover' }} 
           />
           <div className="sidebar-brand-text">
-            <h2>{user?.instituteName || 'CAREER XONE'}</h2>
+            <h2>{user?.instituteName || 'CAREER XONE PRO'}</h2>
             <span>Student Management</span>
           </div>
         </div>

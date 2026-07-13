@@ -1,10 +1,13 @@
 // ============================================
-// EduTrack Pro - Frontend API Client
+// Career Xone Pro - Frontend API Client
 // ============================================
 // Interacts with Node.js + Express backend (http://localhost:5000)
 // and handles fallback to localStorage if backend is down.
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://student-report-ezgw.onrender.com/api';
+const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
+const API_BASE = isElectron 
+  ? '/api' 
+  : (import.meta.env.VITE_API_BASE_URL || 'https://student-report-ezgw.onrender.com/api');
 
 // Helper to check if backend is online
 export async function checkBackendStatus() {
@@ -82,7 +85,26 @@ export const api = {
 
   // Test Results
   getTestResults: () => apiRequest('/test-results'),
-  uploadOMRImages: (formData) => apiRequest('/test-results/omr-process', { method: 'POST', body: formData }),
+  uploadOMRImages: async (formData) => {
+    // Check if running inside Electron Desktop App
+    const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
+    
+    if (isElectron) {
+      // Edge Computing: Send heavy images to LOCAL server instead of cloud
+      const response = await fetch('http://localhost:5001/api/local-omr-process', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `Local Server Error: ${response.status}`);
+      }
+      return response.json();
+    } else {
+      // Running on Web (Browser), fallback to Cloud API
+      return apiRequest('/test-results/omr-process', { method: 'POST', body: formData });
+    }
+  },
   saveTestResultsBulk: (results) => apiRequest('/test-results/bulk', { method: 'POST', body: JSON.stringify(results) }),
 
   // SMS Logs
