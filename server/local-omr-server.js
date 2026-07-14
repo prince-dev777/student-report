@@ -106,6 +106,9 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
     const marksPerQuestion = testData.marksPerQuestion || 1;
     const negativeMarking = testData.negativeMarking !== undefined ? testData.negativeMarking : 0;
     let answer_keys = testData.answer_keys || {};
+    if (Array.isArray(answer_keys)) {
+      answer_keys = { "General": answer_keys };
+    }
     let template_config = testData.template_config;
 
     const tempArgsPath = path.join(uploadDir, `omr_args_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.json`);

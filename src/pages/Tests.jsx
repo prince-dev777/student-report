@@ -25,12 +25,26 @@ export default function Tests() {
     name: '',
     batch: '',
     date: new Date().toISOString().split('T')[0],
-    totalMarks: 100,
+    totalMarks: 720,
     marksPerQuestion: 4,
     negativeMarking: 1,
     templateId: 'neet_180',
     questionsToDetect: 180,
   });
+
+  // Auto-calculate Total Marks when questions or marks-per-question change
+  React.useEffect(() => {
+    setTestForm(prev => {
+      const qCount = Number(prev.questionsToDetect) || 0;
+      const mPerQ = Number(prev.marksPerQuestion) || 0;
+      const expectedTotal = qCount * mPerQ;
+      if (prev.totalMarks !== expectedTotal) {
+        return { ...prev, totalMarks: expectedTotal };
+      }
+      return prev;
+    });
+  }, [testForm.questionsToDetect, testForm.marksPerQuestion]);
+
   const [selectedSubjects, setSelectedSubjects] = useState(subjects.length > 0 ? [subjects[0]] : []);
 
   // For Marks Entry
@@ -229,20 +243,56 @@ export default function Tests() {
         const sId = matchedStudent.id;
         newMarksData[sId] = r.marks;
         
-        let flatAnswers = [];
+        let rawAnswers = [];
         if (r.studentAnswers) {
-          flatAnswers = r.studentAnswers.map(ans => typeof ans === 'object' ? ans.selectedOption : ans);
+          rawAnswers = r.studentAnswers; // Fallback if no subjects
         } else if (r.subjects) {
           const subjectNames = Object.keys(r.subjects).sort();
           for (const subj of subjectNames) {
-            flatAnswers = flatAnswers.concat(r.subjects[subj].map(ans => typeof ans === 'object' ? ans.selectedOption : ans));
+            rawAnswers = rawAnswers.concat(r.subjects[subj]);
           }
         }
+
+        if (detectQuestions > 0 && rawAnswers.length > detectQuestions) {
+          rawAnswers = rawAnswers.slice(0, detectQuestions);
+        }
+
+        const answerKey = test.answerKey || [];
+        const marksPerQ = test.marksPerQuestion || 1;
+        const negMarks = test.negativeMarking || 0;
+        let correct = 0;
+        let wrong = 0;
+
+        const flatAnswers = rawAnswers.map((ans, idx) => {
+           // ans could be string or object depending on python output version
+           const isObj = typeof ans === 'object' && ans !== null;
+           const status = isObj ? ans.status : (ans ? 'valid' : 'blank');
+           const selected = isObj ? ans.selectedOption : ans;
+           
+           if (status === 'invalid') {
+              wrong++;
+           } else if (status === 'valid' && selected && selected !== 'NULL') {
+              if (idx < answerKey.length) {
+                 const corStr = String(answerKey[idx]).trim().toUpperCase();
+                 const selStr = String(selected).trim().toUpperCase();
+                 
+                 let matched = false;
+                 if (selStr === corStr) matched = true;
+                 else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) matched = true;
+                 
+                 if (matched) correct++;
+                 else wrong++;
+              }
+           }
+           return selected;
+        });
+
         newScannedAnswers[sId] = flatAnswers;
+        newMarksData[sId] = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
 
         newOmrStats[sId] = {
-          correct: r.correctCount !== undefined ? r.correctCount : 0,
-          wrong: r.wrongCount !== undefined ? r.wrongCount : 0
+          correct: correct,
+          wrong: wrong
         };
         matchedCount++;
       });
