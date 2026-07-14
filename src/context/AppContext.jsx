@@ -10,6 +10,7 @@ import {
 import { generateId, getTodayStr, getCurrentTime, calculateRanks } from '../utils/helpers';
 import { sendAttendanceSMS, sendTestResultSMS, sendCustomSMS } from '../utils/smsService';
 import { api, checkBackendStatus } from '../utils/api';
+import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
 
 const AppContext = createContext(null);
@@ -41,6 +42,8 @@ export function AppProvider({ children }) {
   const [backendOnline, setBackendOnline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  const { user } = useAuth();
 
   // Sync / Load data on startup
   useEffect(() => {
@@ -68,11 +71,13 @@ export function AppProvider({ children }) {
             const serverResults = await api.getTestResults();
             const serverSMS = await api.getSMSLogs();
 
+            const validIds = new Set(serverStudents.map((s) => s.id));
             setStudents(serverStudents);
-            setAttendance(serverAttendance);
+            setAttendance(serverAttendance.filter((a) => validIds.has(a.studentId)));
             setTests(serverTests);
-            setTestResults(serverResults);
-            setSMSHistory(serverSMS);
+            setTestResults(serverResults.filter((r) => validIds.has(r.studentId)));
+            setSMSHistory(serverSMS.filter((sms) => validIds.has(sms.studentId)));
+            
             toast.success('Synced successfully with MongoDB!');
           }
         } catch (e) {
@@ -88,11 +93,14 @@ export function AppProvider({ children }) {
     }
 
     function loadFallbackData() {
-      setStudents(loadLocalData('students', []));
-      setAttendance(loadLocalData('attendance', []));
+      const localStudents = loadLocalData('students', []);
+      const validIds = new Set(localStudents.map((s) => s.id));
+      
+      setStudents(localStudents);
+      setAttendance(loadLocalData('attendance', []).filter((a) => validIds.has(a.studentId)));
       setTests(loadLocalData('tests', []));
-      setTestResults(loadLocalData('testResults', []));
-      setSMSHistory(loadLocalData('smsHistory', []));
+      setTestResults(loadLocalData('testResults', []).filter((r) => validIds.has(r.studentId)));
+      setSMSHistory(loadLocalData('smsHistory', []).filter((sms) => validIds.has(sms.studentId)));
     }
 
     initData();
@@ -177,6 +185,9 @@ export function AppProvider({ children }) {
       try {
         await api.deleteStudent(id);
         setStudents((prev) => prev.filter((s) => s.id !== id));
+        setAttendance((prev) => prev.filter((a) => a.studentId !== id));
+        setTestResults((prev) => prev.filter((r) => r.studentId !== id));
+        setSMSHistory((prev) => prev.filter((sms) => sms.studentId !== id));
         toast.success('✅ Student deleted from MongoDB!');
         return;
       } catch (err) {
@@ -185,6 +196,9 @@ export function AppProvider({ children }) {
     }
 
     setStudents((prev) => prev.filter((s) => s.id !== id));
+    setAttendance((prev) => prev.filter((a) => a.studentId !== id));
+    setTestResults((prev) => prev.filter((r) => r.studentId !== id));
+    setSMSHistory((prev) => prev.filter((sms) => sms.studentId !== id));
     toast.success('Student removed locally!');
   }, [backendOnline]);
 
@@ -244,8 +258,9 @@ export function AppProvider({ children }) {
       };
     }
 
+    const instName = user?.instituteName || 'Career Xone Pro';
     // Trigger SMS and update log
-    sendAttendanceSMS(student, type, currentTime).then(async (smsLog) => {
+    sendAttendanceSMS(student, type, currentTime, instName).then(async (smsLog) => {
       if (backendOnline) {
         try {
           const savedLog = await api.createSMSLog(smsLog);
@@ -398,9 +413,11 @@ export function AppProvider({ children }) {
     for (const result of newResults) {
       const student = students.find((s) => s.id === result.studentId);
       if (student) {
+        const instName = user?.instituteName || 'Career Xone Pro';
         const smsLog = await sendTestResultSMS(
           student, test.name, result.marks, result.totalMarks,
-          result.percentage, result.rank, totalStudents
+          result.percentage, result.rank, totalStudents,
+          instName
         );
         
         if (backendOnline) {
@@ -417,14 +434,15 @@ export function AppProvider({ children }) {
     }
 
     toast.success(`Results submitted & ${newResults.length} SMS sent! 🎉`);
-  }, [tests, students, backendOnline]);
+  }, [tests, students, backendOnline, user]);
 
   // ---- SMS ----
   const sendManualSMS = useCallback(async (studentId, message) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
 
-    const smsLog = await sendCustomSMS(student, message);
+    const instName = user?.instituteName || 'Career Xone Pro';
+    const smsLog = await sendCustomSMS(student, message, instName);
     
     if (backendOnline) {
       try {
@@ -438,12 +456,13 @@ export function AppProvider({ children }) {
     }
     
     toast.success(`SMS sent to ${student.parentName}!`);
-  }, [students, backendOnline]);
+  }, [students, backendOnline, user]);
 
   const sendBulkManualSMS = useCallback(async (studentIds, message) => {
     const targetStudents = students.filter((s) => studentIds.includes(s.id));
+    const instName = user?.instituteName || 'Career Xone Pro';
     for (const student of targetStudents) {
-      const smsLog = await sendCustomSMS(student, message);
+      const smsLog = await sendCustomSMS(student, message, instName);
       if (backendOnline) {
         try {
           const savedLog = await api.createSMSLog(smsLog);
@@ -456,7 +475,22 @@ export function AppProvider({ children }) {
       }
     }
     toast.success(`SMS sent to ${targetStudents.length} parents! 📱`);
-  }, [students, backendOnline]);
+  }, [students, backendOnline, user]);
+
+  const deleteSMS = useCallback(async (id) => {
+    if (backendOnline) {
+      try {
+        await api.deleteSMSLog(id);
+        setSMSHistory((prev) => prev.filter((sms) => (sms._id || sms.id) !== id));
+        toast.success('SMS deleted from database!');
+        return;
+      } catch (err) {
+        toast.error('Failed to delete SMS from server');
+      }
+    }
+    setSMSHistory((prev) => prev.filter((sms) => (sms._id || sms.id) !== id));
+    toast.success('SMS deleted locally!');
+  }, [backendOnline]);
 
   // ---- Reset Data ----
   const resetData = useCallback(async () => {
@@ -499,6 +533,7 @@ export function AppProvider({ children }) {
     submitTestResults,
     sendManualSMS,
     sendBulkManualSMS,
+    deleteSMS,
     resetData,
   };
 

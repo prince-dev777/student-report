@@ -45,3 +45,9 @@ server/uploads/
 *.pyc
 __pycache__/
 
+
+# WhatsApp Web JS Session & Cache
+.wwebjs_auth/
+.wwebjs_cache/
+server/.wwebjs_auth/
+server/.wwebjs_cache/

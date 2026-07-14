@@ -149,8 +149,8 @@ export default function Dashboard() {
   );
 
   const todayStats = useMemo(
-    () => getTodayAttendanceStats(attendance, activeStudents.length),
-    [attendance, activeStudents.length]
+    () => getTodayAttendanceStats(attendance, students),
+    [attendance, students]
   );
 
   const trendData = useMemo(

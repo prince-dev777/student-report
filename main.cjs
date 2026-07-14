@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, Tray, Menu } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -6,6 +6,12 @@ const fs = require('fs');
 
 let mainWindow;
 let serverProcess;
+
+// Disable disk caching to prevent "Access is denied" and "Gpu Cache Creation failed" errors
+app.commandLine.appendSwitch('disable-http-cache');
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+app.commandLine.appendSwitch('disable-gpu-disk-cache');
+app.commandLine.appendSwitch('disable-disk-cache');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -30,6 +36,47 @@ function createWindow() {
     // Load from local Express server to avoid file:// cross-origin issues
     mainWindow.loadURL('http://localhost:5001');
   }
+  // Prevent window from closing, hide it instead
+  mainWindow.on('close', (event) => {
+    if (!app.isQuiting) {
+      event.preventDefault();
+      mainWindow.hide();
+      // Optional: Show notification to user that it's in the tray
+      // mainWindow.webContents.send('show-notification', 'App running in background');
+    }
+    return false;
+  });
+}
+
+let tray = null;
+
+function createTray() {
+  const iconPath = path.join(__dirname, app.isPackaged ? 'dist' : 'public', 'logo.jpg');
+  tray = new Tray(iconPath);
+  
+  const contextMenu = Menu.buildFromTemplate([
+    { 
+      label: 'Open Career Xone Pro', 
+      click: () => {
+        mainWindow.show();
+      } 
+    },
+    { type: 'separator' },
+    { 
+      label: 'Quit', 
+      click: () => {
+        app.isQuiting = true;
+        app.quit();
+      } 
+    }
+  ]);
+  
+  tray.setToolTip('Career Xone Pro - Background Server Running');
+  tray.setContextMenu(contextMenu);
+  
+  tray.on('double-click', () => {
+    mainWindow.show();
+  });
 }
 
 function startServer() {
@@ -38,7 +85,6 @@ function startServer() {
   // Path to local OMR server
   const serverPath = path.join(__dirname, 'server', 'local-omr-server.js');
   
-  const fs = require('fs');
   const logFile = 'C:\\Users\\sawar\\MyProjects\\student-report\\electron_debug.log';
   fs.appendFileSync(logFile, `Starting server at: ${serverPath}\n`);
 
@@ -72,7 +118,10 @@ function startServer() {
 app.whenReady().then(() => {
   startServer();
   // Wait a moment for server to start before creating window
-  setTimeout(createWindow, 3000);
+  setTimeout(() => {
+    createWindow();
+    createTray();
+  }, 3000);
 
   // Auto Updater Logic
   if (app.isPackaged) {
@@ -86,6 +135,7 @@ app.whenReady().then(() => {
         buttons: ['Restart Now', 'Later']
       }).then((result) => {
         if (result.response === 0) {
+          app.isQuiting = true;
           autoUpdater.quitAndInstall();
         }
       });
@@ -98,12 +148,16 @@ app.whenReady().then(() => {
   }
 
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    } else {
+      mainWindow.show();
+    }
   });
 });
 
 app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit();
+  // Overridden: Do nothing here so the app stays running in background
 });
 
 app.on('before-quit', () => {

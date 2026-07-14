@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await api.login({ username, password });
       setToken(response.token);
-      const userData = { username: response.username, instituteName: response.instituteName };
+      const userData = { username: response.username, instituteName: response.instituteName, logo: response.logo };
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
       toast.success('Login successful!');
@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await api.register({ instituteName, adminName, username, password });
       setToken(response.token);
-      const userData = { username: response.username, instituteName: response.instituteName };
+      const userData = { username: response.username, instituteName: response.instituteName, logo: response.logo };
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
       toast.success('Registration successful!');
@@ -51,13 +51,19 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateUser = (newData) => {
+    const updated = { ...user, ...newData };
+    setUser(updated);
+    localStorage.setItem('user', JSON.stringify(updated));
+  };
+
   const logout = () => {
     setToken(null);
     toast.success('Logged out successfully');
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, isAuthenticated, login, register, logout }}>
+    <AuthContext.Provider value={{ token, user, isAuthenticated, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

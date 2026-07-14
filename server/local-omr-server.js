@@ -5,11 +5,45 @@ import { spawn, spawnSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import os from 'os';
+import dotenv from 'dotenv';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import os from 'os';
+// Load root .env (for VITE_API_BASE_URL) and server/.env (for local configurations)
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.warn('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+// Handle graceful shutdown to avoid zombie Chromium/Node processes locking port 5001
+const gracefulShutdown = async () => {
+  console.log('\nShutting down local-omr-server gracefully...');
+  try {
+    const { disconnectWhatsAppClient } = await import('./services/whatsappClient.js');
+    disconnectWhatsAppClient(); // Safely closes Puppeteer and releases session locks
+  } catch (err) {
+    console.error('Error during shutdown:', err);
+  }
+  process.exit(0);
+};
+
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+process.on('exit', () => console.log('Local Server Exited.'));
+
+import { 
+  initializeWhatsAppClient, 
+  getWhatsAppClientState, 
+  disconnectWhatsAppClient, 
+  sendWhatsAppMessageWeb 
+} from './services/whatsappClient.js';
 
 const app = express();
 const PORT = 5001;
@@ -237,14 +271,119 @@ app.post('/iclock/cdata', async (req, res) => {
   }
 });
 
+// ---- 📱 Local WhatsApp Client API Endpoints ----
+app.get('/api/whatsapp/local-status', (req, res) => {
+  res.json(getWhatsAppClientState());
+});
+
+app.post('/api/whatsapp/local-initialize', (req, res) => {
+  initializeWhatsAppClient();
+  res.json({ success: true, message: 'WhatsApp client initialization started.' });
+});
+
+app.post('/api/whatsapp/local-disconnect', (req, res) => {
+  const success = disconnectWhatsAppClient();
+  res.json({ success, message: success ? 'WhatsApp client disconnected.' : 'Failed to disconnect.' });
+});
+
+// ---- 🖥️ System Info API ----
+app.get('/api/system/local-ip', (req, res) => {
+  const nets = os.networkInterfaces();
+  let localIp = '127.0.0.1';
+  
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
+      if (net.family === 'IPv4' && !net.internal) {
+        // Return the first one found (usually the active Wi-Fi or Ethernet adapter)
+        localIp = net.address;
+        break;
+      }
+    }
+    if (localIp !== '127.0.0.1') break;
+  }
+  
+  res.json({ ip: localIp, port: 5001 });
+});
+
+// ---- 📡 Background Polling Loop for Pending WhatsApp Messages ----
+let isPolling = false;
+
+async function pollPendingWhatsAppMessages() {
+  if (isPolling) return;
+  if (process.env.WHATSAPP_PROVIDER !== 'whatsapp-web') return;
+
+  const state = getWhatsAppClientState();
+  if (state.status !== 'ready') return;
+
+  isPolling = true;
+
+  try {
+    const cloudUrl = getCloudApiUrl();
+    const token = process.env.WHATSAPP_TOKEN;
+
+    if (!token) {
+      isPolling = false;
+      return;
+    }
+
+    const response = await fetch(`${cloudUrl}/api/whatsapp/pending?token=${token}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const pendingLogs = await response.json();
+
+    if (pendingLogs && pendingLogs.length > 0) {
+      console.log(`[WhatsApp Poller] Found ${pendingLogs.length} pending messages.`);
+      
+      for (const log of pendingLogs) {
+        try {
+          await sendWhatsAppMessageWeb(log.parentPhone, log.message);
+          
+          await fetch(`${cloudUrl}/api/whatsapp/status?token=${token}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ logId: log.id, status: 'delivered' })
+          });
+          console.log(`[WhatsApp Poller] Message sent to ${log.parentPhone} and status updated to delivered.`);
+        } catch (sendErr) {
+          console.error(`[WhatsApp Poller] Failed to send message to ${log.parentPhone}:`, sendErr.message);
+          
+          await fetch(`${cloudUrl}/api/whatsapp/status?token=${token}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ logId: log.id, status: 'failed' })
+          });
+        }
+        
+        // Rate limit: 2 seconds delay between messages to prevent bans
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+  } catch (err) {
+    console.error('[WhatsApp Poller] Polling error:', err.message);
+  } finally {
+    isPolling = false;
+  }
+}
+
+// Auto-initialize local WhatsApp client if configured as provider
+if (process.env.WHATSAPP_PROVIDER === 'whatsapp-web') {
+  initializeWhatsAppClient();
+}
+
+// Poll every 5 seconds
+setInterval(pollPendingWhatsAppMessages, 5000);
+
 // ============================================
 // Cloud API Proxy - Forward non-local API requests to Render server
 // This keeps everything same-origin (no CORS issues in Electron)
 // ============================================
-const CLOUD_API = 'https://student-report-ezgw.onrender.com';
+
 
 app.all('/api/*', async (req, res) => {
-  const targetUrl = `${CLOUD_API}${req.originalUrl}`;
+  const targetUrl = `${getCloudApiUrl()}${req.originalUrl}`;
   
   try {
     const proxyHeaders = {};

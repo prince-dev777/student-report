@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "EduTrack Parent",
-    "slug": "edutrack-parent",
+    "name": "Career Xone Parent",
+    "slug": "career-xone-parent",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -20,9 +20,13 @@
     "plugins": [
       "expo-asset"
     ],
+    "updates": {
+      "url": "https://u.expo.dev/ffe711f7-a2a0-4e70-993d-c7ea330018a7"
+    },
+    "runtimeVersion": "1.0.0",
     "extra": {
       "eas": {
-        "projectId": "39e5ad05-8400-47a0-9b85-7d6bc75b6639"
+        "projectId": "ffe711f7-a2a0-4e70-993d-c7ea330018a7"
       }
     }
   }

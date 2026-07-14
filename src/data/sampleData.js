@@ -327,15 +327,16 @@ function generateSMSHistory(students, attendance, testResults) {
     const student = students.find((s) => s.id === att.studentId);
     if (!student) return;
 
-    if (att.entryTime) {
+    const isEntry = Boolean(att.entryTime);
+    if (isEntry) {
       smsHistory.push({
         id: `SMS${String(smsId++).padStart(4, '0')}`,
         type: 'attendance-entry',
         studentId: student.id,
         parentPhone: student.parentPhone,
-        message: `Namaste ${student.parentName} ji, aapka bachha ${student.name} aaj ${att.date} ko ${att.entryTime} par coaching me aa gaya hai. - Career Xone Pro`,
+        message: `Dear ${student.parentName}, this is to inform you that your ward ${student.name} has safely arrived at the institute at ${att.entryTime}. - Career Xone Pro`,
         timestamp: `${att.date}T${att.entryTime}:00`,
-        status: Math.random() > 0.05 ? 'delivered' : 'sent',
+        status: 'delivered',
       });
     }
 
@@ -345,7 +346,7 @@ function generateSMSHistory(students, attendance, testResults) {
         type: 'attendance-exit',
         studentId: student.id,
         parentPhone: student.parentPhone,
-        message: `Namaste ${student.parentName} ji, aapka bachha ${student.name} aaj ${att.date} ko ${att.exitTime} par coaching se nikal gaya hai. - Career Xone Pro`,
+        message: `Dear ${student.parentName}, this is to inform you that your ward ${student.name} has left the institute at ${att.exitTime}. - Career Xone Pro`,
         timestamp: `${att.date}T${att.exitTime}:00`,
         status: 'delivered',
       });
@@ -362,7 +363,7 @@ function generateSMSHistory(students, attendance, testResults) {
       type: 'test-result',
       studentId: student.id,
       parentPhone: student.parentPhone,
-      message: `Namaste ${student.parentName} ji, ${student.name} ka test result: Marks ${result.marks}/${result.totalMarks} (${result.percentage}%), Rank: ${result.rank}/${result.totalStudents}. - Career Xone Pro`,
+      message: `Dear ${student.parentName}, ${student.name}'s result for the recent test has been declared. Score: ${result.marks}/${result.totalMarks} (${result.percentage}%), Rank: ${result.rank}/${result.totalStudents}. - Career Xone Pro`,
       timestamp: `${new Date().toISOString().split('T')[0]}T10:00:00`,
       status: 'delivered',
     });

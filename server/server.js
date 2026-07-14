@@ -25,7 +25,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { sendWhatsAppAlert } from './services/whatsappService.js';
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 const JWT_SECRET = process.env.JWT_SECRET || '8f5b8a6d4e2c9a1f3c7e6b5d4a9f8e2d1c3b5a4f7e6d8c9b0a1f2e3d4c5b6a7f';
@@ -36,7 +36,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use('/iclock', express.text({ type: '*/*' }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 function generateServerId(prefix = 'ID') {
@@ -177,12 +178,12 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Generate Token
     const token = jwt.sign(
-      { id: user._id, username: user.username, instituteId: institute._id, instituteName: institute.name },
+      { id: user._id, username: user.username, instituteId: institute._id, instituteName: institute.name, logo: institute.logo },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
 
-    res.status(201).json({ token, username: user.username, instituteName: institute.name });
+    res.status(201).json({ token, username: user.username, instituteName: institute.name, logo: institute.logo });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -194,14 +195,46 @@ app.post('/api/auth/login', async (req, res) => {
     const user = await User.findOne({ username }).populate('instituteId');
     if (user && (await user.comparePassword(password))) {
       const token = jwt.sign(
-        { id: user._id, username: user.username, instituteId: user.instituteId._id, instituteName: user.instituteId.name },
+        { id: user._id, username: user.username, instituteId: user.instituteId._id, instituteName: user.instituteId.name, logo: user.instituteId.logo },
         JWT_SECRET,
         { expiresIn: '30d' }
       );
-      res.json({ token, username: user.username, instituteName: user.instituteId.name });
+      res.json({ token, username: user.username, instituteName: user.instituteId.name, logo: user.instituteId.logo });
     } else {
       res.status(401).json({ error: 'Invalid username or password' });
     }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update Institute Settings (Logo & Password)
+app.put('/api/settings', protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, logoBase64 } = req.body;
+    const user = await User.findById(req.user.id);
+    const institute = await Institute.findById(req.user.instituteId);
+
+    // If changing password, verify current password first
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Current password is required to change password' });
+      }
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(401).json({ error: 'Incorrect current password' });
+      }
+      user.password = newPassword;
+      await user.save();
+    }
+
+    // Update Logo if provided
+    if (logoBase64 !== undefined) {
+      institute.logo = logoBase64;
+      await institute.save();
+    }
+
+    res.json({ message: 'Settings updated successfully', logo: institute.logo });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -419,6 +452,48 @@ app.post('/iclock/cdata', async (req, res) => {
   }
 });
 
+// ---- 📞 Cloud WhatsApp Queue Endpoints (Token Authenticated) ----
+app.get('/api/whatsapp/pending', async (req, res) => {
+  const token = req.query.token || req.headers['x-whatsapp-token'];
+  if (!token || token !== process.env.WHATSAPP_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid WhatsApp token' });
+  }
+
+  try {
+    const pendingLogs = await SMSLog.find({ status: 'pending' }).sort({ createdAt: 1 });
+    res.json(pendingLogs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/whatsapp/status', async (req, res) => {
+  const token = req.query.token || req.headers['x-whatsapp-token'];
+  if (!token || token !== process.env.WHATSAPP_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid WhatsApp token' });
+  }
+
+  const { logId, status } = req.body;
+  if (!logId || !status) {
+    return res.status(400).json({ error: 'Missing logId or status' });
+  }
+
+  try {
+    const updatedLog = await SMSLog.findOneAndUpdate(
+      { id: logId },
+      { status },
+      { new: true }
+    );
+    if (!updatedLog) {
+      return res.status(404).json({ error: 'SMS log not found' });
+    }
+    console.log(`[Cloud WhatsApp API] Updated log ${logId} status to: ${status}`);
+    res.json(updatedLog);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Apply protection middleware to all other API routes
 app.use('/api/students', protect);
 app.use('/api/attendance', protect);
@@ -633,7 +708,13 @@ app.delete('/api/students/:id', async (req, res) => {
   try {
     const student = await Student.findOneAndDelete({ id: req.params.id, instituteId: req.user.instituteId });
     if (!student) return res.status(404).json({ error: 'Student not found' });
-    res.json({ message: 'Student deleted successfully' });
+    
+    // Cascade delete associated records
+    await Attendance.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
+    await TestResult.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
+    await SMSLog.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
+    
+    res.json({ message: 'Student and all associated records deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1333,11 +1414,25 @@ app.get('/api/sms-logs', async (req, res) => {
 
 app.post('/api/sms-logs', async (req, res) => {
   try {
-    const log = new SMSLog({ ...req.body, instituteId: req.user.instituteId });
+    const body = { ...req.body };
+    if (process.env.WHATSAPP_PROVIDER === 'whatsapp-web') {
+      body.status = 'pending';
+    }
+    const log = new SMSLog({ ...body, instituteId: req.user.instituteId });
     await log.save();
     res.status(201).json(log);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/sms-logs/:id', async (req, res) => {
+  try {
+    const log = await SMSLog.findOneAndDelete({ _id: req.params.id, instituteId: req.user.instituteId });
+    if (!log) return res.status(404).json({ error: 'SMS log not found' });
+    res.json({ message: 'SMS log deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

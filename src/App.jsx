@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import SMSCenter from './pages/SMSCenter';
+import ShareApp from './pages/ShareApp';
 import WebLandingPage from './pages/WebLandingPage';
 
 import Login from './pages/Login';
@@ -31,6 +32,7 @@ function AppLayout() {
             <Route path="/attendance" element={<Attendance />} />
             <Route path="/tests" element={<Tests />} />
             <Route path="/sms" element={<SMSCenter />} />
+            <Route path="/share-app" element={<ShareApp />} />
           </Routes>
         </div>
       </div>

@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "54050f50-3b7a-4592-b69c-1232b6edf75c"
+      }
+    },
+    "android": {
+      "package": "com.myrentalaap.studentreport"
+    }
+  }
+}

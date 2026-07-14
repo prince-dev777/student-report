@@ -66,9 +66,13 @@ export function calcAttendancePercent(attendance, studentId) {
 }
 
 // Get today's attendance stats
-export function getTodayAttendanceStats(attendance, totalStudents) {
+export function getTodayAttendanceStats(attendance, students) {
+  const activeStudents = students.filter(s => s.status === 'active');
+  const validIds = new Set(activeStudents.map(s => s.id));
+  const totalStudents = activeStudents.length;
+
   const today = getTodayStr();
-  const todayAtt = attendance.filter((a) => a.date === today);
+  const todayAtt = attendance.filter((a) => a.date === today && validIds.has(a.studentId));
   const present = todayAtt.filter((a) => a.status === 'present').length;
   const late = todayAtt.filter((a) => a.status === 'late').length;
   const absent = totalStudents - present - late;
@@ -228,7 +232,9 @@ export const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function getAttendanceTrend(attendance, students, days = 14) {
   const trend = [];
   const today = new Date();
-  const activeCount = students.filter((s) => s.status === 'active').length;
+  const activeStudents = students.filter((s) => s.status === 'active');
+  const validIds = new Set(activeStudents.map(s => s.id));
+  const activeCount = activeStudents.length;
 
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
@@ -236,7 +242,7 @@ export function getAttendanceTrend(attendance, students, days = 14) {
     if (date.getDay() === 0) continue; // Skip Sundays
 
     const dateStr = date.toISOString().split('T')[0];
-    const dayAtt = attendance.filter((a) => a.date === dateStr);
+    const dayAtt = attendance.filter((a) => a.date === dateStr && validIds.has(a.studentId));
     const present = dayAtt.filter((a) => a.status === 'present' || a.status === 'late').length;
     const percentage = activeCount > 0 ? Math.round((present / activeCount) * 100) : 0;
 

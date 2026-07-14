@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap,
@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Brain,
   FileJson,
+  Smartphone
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -23,11 +24,22 @@ const mainMenuItems = [
 
 const commMenuItems = [
   { to: '/sms', icon: MessageSquare, label: 'SMS Center', hasBadge: true },
+  { to: '/share-app', icon: Smartphone, label: 'Share App', hasBadge: false },
 ];
 
 export default function Sidebar() {
   const { sidebarOpen, setSidebarOpen, smsHistory } = useApp();
   const { user } = useAuth();
+  const location = useLocation();
+  const [lastSeenSmsCount, setLastSeenSmsCount] = useState(smsHistory.length);
+
+  useEffect(() => {
+    if (location.pathname === '/sms') {
+      setLastSeenSmsCount(smsHistory.length);
+    }
+  }, [location.pathname, smsHistory.length]);
+
+  const unreadCount = smsHistory.length - lastSeenSmsCount;
 
   const linkClass = ({ isActive }) =>
     `sidebar-link${isActive ? ' active' : ''}`;
@@ -73,7 +85,7 @@ export default function Sidebar() {
         {/* Brand */}
         <div className="sidebar-brand" style={{ gap: '10px' }}>
           <img 
-            src="./logo.jpg" 
+            src={user?.logo || "./logo.jpg"} 
             alt="Logo" 
             style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover' }} 
           />
@@ -111,8 +123,8 @@ export default function Sidebar() {
             >
               <item.icon className="sidebar-link-icon" size={20} />
               <span>{item.label}</span>
-              {item.hasBadge && smsHistory.length > 0 && (
-                <span className="sidebar-link-badge">{smsHistory.length}</span>
+              {item.hasBadge && unreadCount > 0 && (
+                <span className="sidebar-link-badge">{unreadCount}</span>
               )}
             </NavLink>
           ))}

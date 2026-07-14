@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Select from 'react-select';
 import {
   MessageSquare,
   Send,
@@ -14,6 +15,11 @@ import {
   MessageCircle,
   Phone,
   AlertCircle,
+  RefreshCw,
+  QrCode,
+  Wifi,
+  WifiOff,
+  Trash2
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getRelativeTime } from '../utils/helpers';
@@ -37,7 +43,67 @@ const typeFilterOptions = [
 ];
 
 export default function SMSCenter() {
-  const { students, smsHistory, sendManualSMS, sendBulkManualSMS } = useApp();
+  const { students, smsHistory, sendManualSMS, sendBulkManualSMS, deleteSMS } = useApp();
+
+  // WhatsApp Local Client State
+  const [whatsappStatus, setWhatsappStatus] = useState('offline');
+  const [qrCode, setQrCode] = useState(null);
+  const [loadingAction, setLoadingAction] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+
+  useEffect(() => {
+    const fetchWhatsAppStatus = async () => {
+      try {
+        const res = await fetch('http://localhost:5001/api/whatsapp/local-status');
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setWhatsappStatus(data.status);
+        setQrCode(data.qrCode);
+      } catch (err) {
+        setWhatsappStatus('offline');
+        setQrCode(null);
+      }
+    };
+
+    fetchWhatsAppStatus();
+    const interval = setInterval(fetchWhatsAppStatus, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const initializeWhatsApp = async () => {
+    setLoadingAction(true);
+    try {
+      await fetch('http://localhost:5001/api/whatsapp/local-initialize', { method: 'POST' });
+      toast.success('Initializing WhatsApp Client...');
+      setTimeout(async () => {
+        try {
+          const res = await fetch('http://localhost:5001/api/whatsapp/local-status');
+          const data = await res.json();
+          setWhatsappStatus(data.status);
+          setQrCode(data.qrCode);
+        } catch (e) {}
+      }, 1000);
+    } catch (err) {
+      toast.error('Failed to connect to local OMR server');
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  const disconnectWhatsApp = async () => {
+    if (!window.confirm('Are you sure you want to disconnect and log out from WhatsApp?')) return;
+    setLoadingAction(true);
+    try {
+      await fetch('http://localhost:5001/api/whatsapp/local-disconnect', { method: 'POST' });
+      toast.success('WhatsApp disconnected.');
+      setWhatsappStatus('disconnected');
+      setQrCode(null);
+    } catch (err) {
+      toast.error('Failed to disconnect');
+    } finally {
+      setLoadingAction(false);
+    }
+  };
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -86,6 +152,14 @@ export default function SMSCenter() {
 
     return list;
   }, [smsHistory, typeFilter, searchQuery, students]);
+
+  const studentOptions = useMemo(() => {
+    const opts = students.filter(s => s.status === 'active').map(s => ({
+      value: s.id,
+      label: `${s.name} - ${s.parentPhone} (Roll: ${s.rollNo})`
+    }));
+    return [{ value: 'all', label: '📢 All Students (Bulk SMS)' }, ...opts];
+  }, [students]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE));
@@ -171,6 +245,63 @@ export default function SMSCenter() {
           Send Custom SMS
         </button>
       </motion.div>
+
+      {/* WhatsApp Local Status Banner */}
+      <div className="card" style={{ marginBottom: '24px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="flex items-center gap-12">
+          {whatsappStatus === 'connected' ? (
+            <div className="flex items-center justify-center" style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--accent-green)' }}>
+              <MessageCircle size={24} />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center" style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-red)' }}>
+              <WifiOff size={24} />
+            </div>
+          )}
+          
+          <div>
+            <h3 style={{ margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              WhatsApp Integration Status
+              {whatsappStatus === 'connected' && (
+                <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Online</span>
+              )}
+              {whatsappStatus === 'disconnected' && (
+                <span className="badge badge-danger" style={{ fontSize: '0.7rem' }}>Offline</span>
+              )}
+              {whatsappStatus === 'qr_ready' && (
+                <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>QR Code Scan Required</span>
+              )}
+              {whatsappStatus === 'initializing' && (
+                <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>Starting up...</span>
+              )}
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              {whatsappStatus === 'connected' ? 'Ready to send automated messages via local WhatsApp.' : 'Link your WhatsApp account to enable automated messaging.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-12">
+          {whatsappStatus === 'connected' && (
+            <button className="btn btn-outline" onClick={disconnectWhatsApp} disabled={loadingAction} style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}>
+              <WifiOff size={16} /> Disconnect
+            </button>
+          )}
+          
+          {(whatsappStatus === 'disconnected' || whatsappStatus === 'offline') && (
+            <button className="btn btn-primary" onClick={initializeWhatsApp} disabled={loadingAction}>
+              {loadingAction ? <RefreshCw size={16} className="spin" /> : <QrCode size={16} />}
+              Link WhatsApp
+            </button>
+          )}
+
+          {whatsappStatus === 'qr_ready' && qrCode && (
+            <button className="btn btn-primary" onClick={() => window.open('http://localhost:5001', '_blank')} disabled={loadingAction}>
+              <QrCode size={16} /> Show QR Code
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Stats Row */}
       <motion.div
@@ -313,6 +444,10 @@ export default function SMSCenter() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: idx * 0.02 }}
+                      onClick={() => setSelectedMessage(sms)}
+                      style={{ cursor: 'pointer' }}
+                      title="Click to view full message"
+                      className="hover-row"
                     >
                       <td>
                         <span className={badge.className}>{badge.label}</span>
@@ -411,20 +546,33 @@ export default function SMSCenter() {
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Select Student</label>
-                  <select
-                    className="form-select"
-                    value={selectedStudent}
-                    onChange={(e) => setSelectedStudent(e.target.value)}
-                  >
-                    <option value="all">📢 All Students (Bulk SMS)</option>
-                    {students
-                      .filter((s) => s.status === 'active')
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} - {s.parentPhone}
-                        </option>
-                      ))}
-                  </select>
+                  <Select
+                    options={studentOptions}
+                    value={studentOptions.find(o => o.value === selectedStudent) || studentOptions[0]}
+                    onChange={(selected) => setSelectedStudent(selected.value)}
+                    isSearchable={true}
+                    placeholder="Search by Name, Mobile, or Roll No..."
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        borderRadius: '0.5rem',
+                        borderColor: 'var(--border-color)',
+                        padding: '2px',
+                        boxShadow: 'none',
+                        '&:hover': {
+                          borderColor: 'var(--accent-blue)'
+                        }
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        borderRadius: '0.5rem',
+                        overflow: 'hidden',
+                        zIndex: 9999
+                      })
+                    }}
+                  />
                 </div>
 
                 <div className="form-group">
@@ -456,6 +604,77 @@ export default function SMSCenter() {
                 >
                   <Send size={16} />
                   {sending ? 'Sending...' : selectedStudent === 'all' ? 'Send to All' : 'Send SMS'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Message Preview Modal */}
+      <AnimatePresence>
+        {selectedMessage && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedMessage(null)}
+          >
+            <motion.div
+              className="modal-content"
+              style={{ maxWidth: '500px' }}
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h3>Message Details</h3>
+                <button className="modal-close" onClick={() => setSelectedMessage(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="modal-body" style={{ lineHeight: '1.6' }}>
+                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong>Student:</strong> <span style={{ color: 'var(--text-secondary)' }}>{getStudentName(selectedMessage.studentId)}</span>
+                  </div>
+                  <div>
+                    <strong>Phone:</strong> <span style={{ color: 'var(--text-secondary)' }}>{selectedMessage.parentPhone}</span>
+                  </div>
+                </div>
+                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong>Type:</strong> <span className={typeBadgeMap[selectedMessage.type]?.className || 'badge badge-info'}>{typeBadgeMap[selectedMessage.type]?.label || 'SMS'}</span>
+                  </div>
+                  <div>
+                    <strong>Status:</strong> <span className={`sms-status ${selectedMessage.status || 'sent'}`}>{selectedMessage.status || 'sent'}</span>
+                  </div>
+                </div>
+                <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--text-primary)' }}>
+                  {selectedMessage.message}
+                </div>
+                <div style={{ marginTop: '16px', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+                  {selectedMessage.timestamp ? new Date(selectedMessage.timestamp).toLocaleString() : '-'}
+                </div>
+              </div>
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <button 
+                  className="btn btn-outline" 
+                  style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete this SMS log?')) {
+                      deleteSMS(selectedMessage._id || selectedMessage.id);
+                      setSelectedMessage(null);
+                    }
+                  }}
+                >
+                  <Trash2 size={16} />
+                  Delete SMS
+                </button>
+                <button className="btn btn-primary" onClick={() => setSelectedMessage(null)}>
+                  Close
                 </button>
               </div>
             </motion.div>

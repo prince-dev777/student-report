@@ -8,23 +8,23 @@ import { generateId, getCurrentTime, getTodayStr } from './helpers';
 
 // SMS Templates
 export const smsTemplates = {
-  attendanceEntry: (parentName, studentName, time) =>
-    `Namaste ${parentName} ji, aapka bachha ${studentName} aaj ${time} par coaching me aa gaya hai. - Career Xone Pro`,
+  attendanceEntry: (parentName, studentName, time, instituteName = 'Institute') =>
+    `Dear ${parentName}, this is to inform you that your ward ${studentName} has safely arrived at the institute at ${time}. - ${instituteName}`,
 
-  attendanceExit: (parentName, studentName, time) =>
-    `Namaste ${parentName} ji, aapka bachha ${studentName} aaj ${time} par coaching se nikal gaya hai. - Career Xone Pro`,
+  attendanceExit: (parentName, studentName, time, instituteName = 'Institute') =>
+    `Dear ${parentName}, this is to inform you that your ward ${studentName} has left the institute at ${time}. - ${instituteName}`,
 
-  testResult: (parentName, studentName, testName, marks, totalMarks, percentage, rank, totalStudents) =>
-    `Namaste ${parentName} ji, ${studentName} ka ${testName} result: Marks ${marks}/${totalMarks} (${percentage}%), Rank: ${rank}/${totalStudents}. Keep motivating! - Career Xone Pro`,
+  testResult: (parentName, studentName, testName, marks, totalMarks, percentage, rank, totalStudents, instituteName = 'Institute') =>
+    `Dear ${parentName}, ${studentName}'s result for ${testName} has been declared. Score: ${marks}/${totalMarks} (${percentage}%), Rank: ${rank}/${totalStudents}. - ${instituteName}`,
 
-  absentNotice: (parentName, studentName, date) =>
-    `Namaste ${parentName} ji, aapka bachha ${studentName} aaj ${date} ko coaching me nahi aaya. Kripya dhyan dein. - Career Xone Pro`,
+  absentNotice: (parentName, studentName, date, instituteName = 'Institute') =>
+    `Dear ${parentName}, this is to inform you that your ward ${studentName} is absent from the institute today (${date}). - ${instituteName}`,
 
-  general: (parentName, message) =>
-    `Namaste ${parentName} ji, ${message} - Career Xone Pro`,
+  general: (parentName, message, instituteName = 'Institute') =>
+    `Dear ${parentName}, ${message} - ${instituteName}`,
 
-  feeReminder: (parentName, studentName, amount, dueDate) =>
-    `Namaste ${parentName} ji, ${studentName} ki fees ₹${amount} ka last date ${dueDate} hai. Kripya samay par jama karein. - Career Xone Pro`,
+  feeReminder: (parentName, studentName, amount, dueDate, instituteName = 'Institute') =>
+    `Dear ${parentName}, a fee payment of ₹${amount} for ${studentName} is due on or before ${dueDate}. Kindly ensure timely payment. - ${instituteName}`,
 };
 
 // Simulate sending SMS (returns a Promise)
@@ -58,10 +58,10 @@ export function createSMSLog(type, student, parentPhone, message, status = 'sent
 }
 
 // Send attendance SMS and return log
-export async function sendAttendanceSMS(student, type, time) {
+export async function sendAttendanceSMS(student, type, time, instituteName = 'Institute') {
   const template = type === 'entry'
-    ? smsTemplates.attendanceEntry(student.parentName, student.name, time)
-    : smsTemplates.attendanceExit(student.parentName, student.name, time);
+    ? smsTemplates.attendanceEntry(student.parentName, student.name, time, instituteName)
+    : smsTemplates.attendanceExit(student.parentName, student.name, time, instituteName);
 
   const result = await sendSMS(student.parentPhone, template);
 
@@ -75,10 +75,11 @@ export async function sendAttendanceSMS(student, type, time) {
 }
 
 // Send test result SMS and return log
-export async function sendTestResultSMS(student, testName, marks, totalMarks, percentage, rank, totalStudents) {
+export async function sendTestResultSMS(student, testName, marks, totalMarks, percentage, rank, totalStudents, instituteName = 'Institute') {
   const template = smsTemplates.testResult(
     student.parentName, student.name, testName,
-    marks, totalMarks, percentage, rank, totalStudents
+    marks, totalMarks, percentage, rank, totalStudents,
+    instituteName
   );
 
   const result = await sendSMS(student.parentPhone, template);
@@ -93,8 +94,8 @@ export async function sendTestResultSMS(student, testName, marks, totalMarks, pe
 }
 
 // Send custom SMS
-export async function sendCustomSMS(student, message) {
-  const template = smsTemplates.general(student.parentName, message);
+export async function sendCustomSMS(student, message, instituteName = 'Institute') {
+  const template = smsTemplates.general(student.parentName, message, instituteName);
   const result = await sendSMS(student.parentPhone, template);
 
   return createSMSLog(

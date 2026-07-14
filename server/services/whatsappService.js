@@ -95,6 +95,10 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       }
       console.log('[WhatsAppService] Twilio response:', resData);
       status = 'delivered';
+    } else if (provider === 'whatsapp-web') {
+      // Set status to pending. It will be picked up by the local client polling.
+      console.log('[WhatsAppService] Queued WhatsApp message in pending status.');
+      status = 'pending';
     } else {
       // Mock / Simulation mode
       console.log('[WhatsAppService] Simulated message sent successfully.');

@@ -5,7 +5,8 @@
 // and handles fallback to localStorage if backend is down.
 
 const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
-const API_BASE = isElectron 
+const isDev = window.location.port === '5173';
+const API_BASE = (isElectron && !isDev)
   ? '/api' 
   : (import.meta.env.VITE_API_BASE_URL || 'https://student-report-ezgw.onrender.com/api');
 
@@ -60,6 +61,7 @@ export const api = {
   // Auth
   login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   register: (data) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+  updateSettings: (data) => apiRequest('/settings', { method: 'PUT', body: JSON.stringify(data) }),
   parentLogin: (data) => apiRequest('/parent/login', { method: 'POST', body: JSON.stringify(data) }),
   regenerateParentCredentials: (id) => apiRequest(`/students/${id}/regenerate-parent`, { method: 'POST' }),
   
@@ -110,6 +112,7 @@ export const api = {
   // SMS Logs
   getSMSLogs: () => apiRequest('/sms-logs'),
   createSMSLog: (log) => apiRequest('/sms-logs', { method: 'POST', body: JSON.stringify(log) }),
+  deleteSMSLog: (id) => apiRequest(`/sms-logs/${id}`, { method: 'DELETE' }),
 
   // Seed / Reset
   seedDatabase: (data) => apiRequest('/seed', { method: 'POST', body: JSON.stringify(data) }),
