@@ -78,7 +78,7 @@ export function AppProvider({ children }) {
             setTestResults(serverResults.filter((r) => validIds.has(r.studentId)));
             setSMSHistory(serverSMS.filter((sms) => validIds.has(sms.studentId)));
             
-            toast.success('Synced successfully with MongoDB!');
+            toast.success('Synced successfully!');
           }
         } catch (e) {
           console.error('Failed to load from server. Falling back to local.', e);
@@ -151,10 +151,10 @@ export function AppProvider({ children }) {
       try {
         const saved = await api.createStudent(newStudent);
         setStudents((prev) => [saved, ...prev]);
-        toast.success(`✅ Saved to MongoDB: ${saved.name}`);
+        toast.success(`✅ Saved successfully: ${saved.name}`);
         return saved;
       } catch (err) {
-        toast.error('Failed to save to backend');
+        toast.error('Failed to save data');
       }
     }
 
@@ -169,10 +169,10 @@ export function AppProvider({ children }) {
       try {
         const updated = await api.updateStudent(id, updates);
         setStudents((prev) => prev.map((s) => (s.id === id ? updated : s)));
-        toast.success('✅ Student updated in MongoDB!');
+        toast.success('✅ Student updated successfully!');
         return;
       } catch (err) {
-        toast.error('Failed to update student on server');
+        toast.error('Failed to update student');
       }
     }
 
@@ -188,10 +188,10 @@ export function AppProvider({ children }) {
         setAttendance((prev) => prev.filter((a) => a.studentId !== id));
         setTestResults((prev) => prev.filter((r) => r.studentId !== id));
         setSMSHistory((prev) => prev.filter((sms) => sms.studentId !== id));
-        toast.success('✅ Student deleted from MongoDB!');
+        toast.success('✅ Student deleted successfully!');
         return;
       } catch (err) {
-        toast.error('Failed to delete student from server');
+        toast.error('Failed to delete student');
       }
     }
 
@@ -207,10 +207,10 @@ export function AppProvider({ children }) {
       try {
         const updated = await api.regenerateParentCredentials(id);
         setStudents((prev) => prev.map((s) => (s.id === id ? updated : s)));
-        toast.success('✅ Hashed credentials updated on server!');
+        toast.success('✅ Hashed credentials updated!');
         return updated;
       } catch (err) {
-        toast.error('Failed to regenerate credentials on server');
+        toast.error('Failed to regenerate credentials');
       }
     } else {
       toast.error('Cannot regenerate parent credentials in offline mode.');
@@ -314,10 +314,10 @@ export function AppProvider({ children }) {
       try {
         const saved = await api.createTest(newTest);
         setTests((prev) => [saved, ...prev]);
-        toast.success(`✅ Scheduled test saved to MongoDB!`);
+        toast.success(`✅ Scheduled test saved!`);
         return saved;
       } catch (err) {
-        toast.error('Failed to save test to server');
+        toast.error('Failed to save test');
       }
     }
 
@@ -334,7 +334,7 @@ export function AppProvider({ children }) {
         toast.success('Answer Key updated successfully!');
         return updatedTest;
       } catch (err) {
-        toast.error('Failed to update Answer Key on server');
+        toast.error('Failed to update Answer Key');
         return null;
       }
     } else {
@@ -352,10 +352,10 @@ export function AppProvider({ children }) {
         await api.deleteTest(testId);
         setTests((prev) => prev.filter((t) => t.id !== testId));
         setTestResults((prev) => prev.filter((r) => r.testId !== testId));
-        toast.success('Test and results deleted from MongoDB!');
+        toast.success('Test and results deleted!');
         return;
       } catch (err) {
-        toast.error('Failed to delete test from server');
+        toast.error('Failed to delete test');
       }
     }
     setTests((prev) => prev.filter((t) => t.id !== testId));
@@ -399,7 +399,7 @@ export function AppProvider({ children }) {
           return [...filteredPrev, ...savedResults];
         });
       } catch (err) {
-        toast.error('Failed to upload test scores to server');
+        toast.error('Failed to upload test scores');
         return;
       }
     } else {
@@ -449,7 +449,7 @@ export function AppProvider({ children }) {
         const savedLog = await api.createSMSLog(smsLog);
         setSMSHistory((h) => [savedLog, ...h]);
       } catch (err) {
-        toast.error('SMS log failed on server');
+        toast.error('SMS log failed to save');
       }
     } else {
       setSMSHistory((h) => [smsLog, ...h]);
@@ -485,7 +485,7 @@ export function AppProvider({ children }) {
         toast.success('SMS deleted from database!');
         return;
       } catch (err) {
-        toast.error('Failed to delete SMS from server');
+        toast.error('Failed to delete SMS');
       }
     }
     setSMSHistory((prev) => prev.filter((sms) => (sms._id || sms.id) !== id));
@@ -497,9 +497,9 @@ export function AppProvider({ children }) {
     if (backendOnline) {
       try {
         await api.resetDatabase();
-        toast.success('MongoDB Database cleared!');
+        toast.success('Database cleared!');
       } catch (e) {
-        toast.error('Server reset failed');
+        toast.error('Reset failed');
       }
     }
     setStudents([]);

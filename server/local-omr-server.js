@@ -152,25 +152,28 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
       fs.writeFileSync(path.join(uploadDir, 'last_python_error.txt'), pythonError);
       safeUnlink(tempArgsPath);
 
-      if (code !== 0) {
+      let parsedResults = null;
+      let parseSuccess = false;
+      try {
+        parsedResults = JSON.parse(pythonOutput);
+        parseSuccess = true;
+      } catch (e) {}
+
+      // If python failed AND it didn't produce a valid results array
+      if (code !== 0 && (!parseSuccess || !Array.isArray(parsedResults))) {
         imagePaths.forEach(safeUnlink);
         console.error('Python Error:', pythonError);
-        try {
-          const errJSON = JSON.parse(pythonOutput);
-          if (errJSON.error) {
-            return res.status(500).json({ error: errJSON.error, details: pythonError });
-          }
-        } catch (e) { }
+        if (parseSuccess && parsedResults && parsedResults.error) {
+          return res.status(500).json({ error: parsedResults.error, details: pythonError });
+        }
         return res.status(500).json({ error: 'OMR Processing failed', details: pythonError });
       }
 
-      try {
-        const results = JSON.parse(pythonOutput);
-
-        if (results.error) {
-          imagePaths.forEach(safeUnlink);
-          return res.status(400).json({ error: results.error });
-        }
+      const results = parsedResults;
+      if (!results || results.error) {
+        imagePaths.forEach(safeUnlink);
+        return res.status(400).json({ error: results ? results.error : 'Unknown error' });
+      }
 
         const parsedData = [];
         const errors = [];
@@ -208,9 +211,7 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
         }
 
         res.status(200).json({ message: 'Images Processed Successfully.', results: parsedData, errors });
-      } catch (parseErr) {
-        res.status(500).json({ error: 'Failed to parse python output', output: pythonOutput });
-      }
+
     });
 
   } catch (err) {

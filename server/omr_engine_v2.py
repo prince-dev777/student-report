@@ -479,9 +479,13 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
         subj_results = []
         
         # Determine correct answers list
-        correct_answers = answer_keys.get(sec_name, [])
-        if not correct_answers and "General" in answer_keys:
-            correct_answers = answer_keys["General"][current_q_idx : current_q_idx + num_questions]
+        if isinstance(answer_keys, list):
+            # If frontend sends a simple list of answers, treat it as the general section
+            correct_answers = answer_keys if sec_name == "General" else []
+        else:
+            correct_answers = answer_keys.get(sec_name, [])
+            if not correct_answers and "General" in answer_keys:
+                correct_answers = answer_keys["General"][current_q_idx : current_q_idx + num_questions]
             
         for q_idx in range(num_questions):
             global_q_idx = current_q_idx + q_idx
@@ -496,7 +500,7 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
             correct = None
             if q_idx < len(correct_answers):
                 correct = correct_answers[q_idx]
-            elif "General" in answer_keys and global_q_idx < len(answer_keys["General"]):
+            elif isinstance(answer_keys, dict) and "General" in answer_keys and global_q_idx < len(answer_keys["General"]):
                 correct = answer_keys["General"][global_q_idx]
                 
             # Grade answer

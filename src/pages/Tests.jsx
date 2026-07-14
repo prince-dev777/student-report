@@ -485,7 +485,9 @@ export default function Tests() {
 
       setMarksData(newMarksData);
       setOmrStats(newOmrStats);
-      toast.success(`Loaded ${tokens.length} answers. Re-graded ${regradedCount} students. Click "Publish & Send SMS" to publish these corrected scores.`);
+      if (regradedCount > 0) {
+        toast.success(`✅ Re-graded ${regradedCount} students!`);
+      }
     };
     reader.onerror = () => {
       toast.error('Failed to read the answer key file.');
