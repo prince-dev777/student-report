@@ -70,6 +70,13 @@ export default function SMSCenter() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (whatsappStatus === 'ready') {
+      setShowQrModal(false);
+      toast.success('WhatsApp Connected Successfully!', { id: 'wa-connected' });
+    }
+  }, [whatsappStatus]);
+
   const initializeWhatsApp = async () => {
     setLoadingAction(true);
     try {
@@ -107,6 +114,7 @@ export default function SMSCenter() {
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState('all');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -249,7 +257,7 @@ export default function SMSCenter() {
       {/* WhatsApp Local Status Banner */}
       <div className="card" style={{ marginBottom: '24px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div className="flex items-center gap-12">
-          {whatsappStatus === 'connected' ? (
+          {whatsappStatus === 'ready' ? (
             <div className="flex items-center justify-center" style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--accent-green)' }}>
               <MessageCircle size={24} />
             </div>
@@ -262,41 +270,44 @@ export default function SMSCenter() {
           <div>
             <h3 style={{ margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
               WhatsApp Integration Status
-              {whatsappStatus === 'connected' && (
+              {whatsappStatus === 'ready' && (
                 <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Online</span>
               )}
               {whatsappStatus === 'disconnected' && (
                 <span className="badge badge-danger" style={{ fontSize: '0.7rem' }}>Offline</span>
               )}
-              {whatsappStatus === 'qr_ready' && (
+              {whatsappStatus === 'qr' && (
                 <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>QR Code Scan Required</span>
               )}
-              {whatsappStatus === 'initializing' && (
+              {whatsappStatus === 'connecting' && (
                 <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>Starting up...</span>
+              )}
+              {whatsappStatus === 'auth_failure' && (
+                <span className="badge badge-danger" style={{ fontSize: '0.7rem' }}>Auth Failed</span>
               )}
             </h3>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              {whatsappStatus === 'connected' ? 'Ready to send automated messages via local WhatsApp.' : 'Link your WhatsApp account to enable automated messaging.'}
+              {whatsappStatus === 'ready' ? 'Ready to send automated messages via local WhatsApp.' : 'Link your WhatsApp account to enable automated messaging.'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-12">
-          {whatsappStatus === 'connected' && (
+          {whatsappStatus === 'ready' && (
             <button className="btn btn-outline" onClick={disconnectWhatsApp} disabled={loadingAction} style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}>
               <WifiOff size={16} /> Disconnect
             </button>
           )}
           
-          {(whatsappStatus === 'disconnected' || whatsappStatus === 'offline') && (
+          {(whatsappStatus === 'disconnected' || whatsappStatus === 'offline' || whatsappStatus === 'auth_failure') && (
             <button className="btn btn-primary" onClick={initializeWhatsApp} disabled={loadingAction}>
               {loadingAction ? <RefreshCw size={16} className="spin" /> : <QrCode size={16} />}
               Link WhatsApp
             </button>
           )}
 
-          {whatsappStatus === 'qr_ready' && qrCode && (
-            <button className="btn btn-primary" onClick={() => window.open('http://localhost:5001', '_blank')} disabled={loadingAction}>
+          {whatsappStatus === 'qr' && qrCode && (
+            <button className="btn btn-primary" onClick={() => setShowQrModal(true)} disabled={loadingAction}>
               <QrCode size={16} /> Show QR Code
             </button>
           )}
@@ -674,6 +685,48 @@ export default function SMSCenter() {
                   Delete SMS
                 </button>
                 <button className="btn btn-primary" onClick={() => setSelectedMessage(null)}>
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Code Modal */}
+      <AnimatePresence>
+        {showQrModal && qrCode && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowQrModal(false)}
+          >
+            <motion.div
+              className="modal-content"
+              style={{ maxWidth: '400px', textAlign: 'center' }}
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h3>Scan QR to Link WhatsApp</h3>
+                <button className="modal-close" onClick={() => setShowQrModal(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="modal-body" style={{ padding: '24px' }}>
+                <p style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>
+                  Open WhatsApp on your phone and scan this QR code to connect your account.
+                </p>
+                <div style={{ background: 'white', padding: '16px', borderRadius: '12px', display: 'inline-block' }}>
+                  <img src={qrCode} alt="WhatsApp QR Code" style={{ width: '256px', height: '256px' }} />
+                </div>
+              </div>
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'center' }}>
+                <button className="btn btn-primary" onClick={() => setShowQrModal(false)}>
                   Close
                 </button>
               </div>

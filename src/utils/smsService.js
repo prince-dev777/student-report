@@ -95,7 +95,11 @@ export async function sendTestResultSMS(student, testName, marks, totalMarks, pe
 
 // Send custom SMS
 export async function sendCustomSMS(student, message, instituteName = 'Institute') {
-  const template = smsTemplates.general(student.parentName, message, instituteName);
+  const parsedMessage = message
+    .replace(/\{\{rollNo\}\}/gi, student.rollNo || '')
+    .replace(/\{\{password\}\}/gi, student.parentPasswordPlain || student.password || '123456');
+
+  const template = smsTemplates.general(student.parentName, parsedMessage, instituteName);
   const result = await sendSMS(student.parentPhone, template);
 
   return createSMSLog(

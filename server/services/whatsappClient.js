@@ -16,14 +16,17 @@ export function getWhatsAppClientState() {
   return { status: clientStatus, qrCode: qrCodeData };
 }
 
-export function disconnectWhatsAppClient() {
+export async function disconnectWhatsAppClient() {
   if (client) {
     try {
-      client.destroy();
+      await client.destroy();
       client = null;
       clientStatus = 'disconnected';
       qrCodeData = null;
       console.log('[WhatsAppClient] Client destroyed successfully.');
+      
+      // Give it a brief moment to ensure processes are fully terminated
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Delete authentication session folder
       const authPath = path.join(__dirname, '..', '.wwebjs_auth');
@@ -34,6 +37,9 @@ export function disconnectWhatsAppClient() {
       return true;
     } catch (err) {
       console.error('[WhatsAppClient] Error during disconnect:', err.message);
+      // Even on error, force status reset
+      client = null;
+      clientStatus = 'disconnected';
       return false;
     }
   }

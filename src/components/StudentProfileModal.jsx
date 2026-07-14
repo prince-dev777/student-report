@@ -191,6 +191,13 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
                           </div>
                         </div>
                         <div className="flex items-center gap-12 text-secondary">
+                          <BookOpen size={16} className="text-accent" />
+                          <div>
+                            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>School Name</span>
+                            <strong>{student.schoolName || 'Not specified'}</strong>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-12 text-secondary">
                           <MapPin size={16} className="text-accent" />
                           <div>
                             <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Residential Address</span>

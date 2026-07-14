@@ -197,6 +197,15 @@ export default function Tests() {
     formData.append('testId', entryTestId);
     formData.append('templateId', omrTemplate);
     formData.append('questionsToDetect', detectQuestions);
+    
+    // Pass test configurations for grading
+    const testData = {
+      marksPerQuestion: test.marksPerQuestion || 1,
+      negativeMarking: test.negativeMarking || 0,
+      answer_keys: test.answerKey || {}
+    };
+    formData.append('testData', JSON.stringify(testData));
+    
     imageFiles.forEach(file => {
       formData.append('images', file);
     });
@@ -210,21 +219,28 @@ export default function Tests() {
       let matchedCount = 0;
 
       res.results.forEach(r => {
-        newMarksData[r.studentId] = r.marks;
+        // Map rollNo to studentId using the students list
+        const matchedStudent = students.find(s => String(s.rollNo) === String(r.rollNo));
+        if (!matchedStudent) {
+          console.warn(`OMR Scan: Student with Roll No ${r.rollNo} not found in database.`);
+          return;
+        }
+        
+        const sId = matchedStudent.id;
+        newMarksData[sId] = r.marks;
         
         let flatAnswers = [];
         if (r.studentAnswers) {
-          flatAnswers = r.studentAnswers.map(ans => ans.selectedOption);
+          flatAnswers = r.studentAnswers.map(ans => typeof ans === 'object' ? ans.selectedOption : ans);
         } else if (r.subjects) {
           const subjectNames = Object.keys(r.subjects).sort();
           for (const subj of subjectNames) {
-            flatAnswers = flatAnswers.concat(r.subjects[subj].map(ans => ans.selectedOption));
+            flatAnswers = flatAnswers.concat(r.subjects[subj].map(ans => typeof ans === 'object' ? ans.selectedOption : ans));
           }
         }
-        newScannedAnswers[r.studentId] = flatAnswers;
+        newScannedAnswers[sId] = flatAnswers;
 
-        const totalQ = flatAnswers.length;
-        newOmrStats[r.studentId] = {
+        newOmrStats[sId] = {
           correct: r.correctCount !== undefined ? r.correctCount : 0,
           wrong: r.wrongCount !== undefined ? r.wrongCount : 0
         };

@@ -281,8 +281,8 @@ app.post('/api/whatsapp/local-initialize', (req, res) => {
   res.json({ success: true, message: 'WhatsApp client initialization started.' });
 });
 
-app.post('/api/whatsapp/local-disconnect', (req, res) => {
-  const success = disconnectWhatsAppClient();
+app.post('/api/whatsapp/local-disconnect', async (req, res) => {
+  const success = await disconnectWhatsAppClient();
   res.json({ success, message: success ? 'WhatsApp client disconnected.' : 'Failed to disconnect.' });
 });
 

@@ -35,7 +35,7 @@ export default function ShareApp() {
         const studentIds = students.map(s => s.id);
         const instituteName = user?.instituteName || 'Career Xone Pro';
         
-        const message = `Dear Parent, please download our Institute's official App to track your child's Attendance and Marks.\n\nDownload Link: ${appLink}\n\nYour Login ID: {{rollNo}}\nPassword: {{password}}\n\nRegards,\n${instituteName}`;
+        const message = `please download our Institute's official App to track your child's Attendance and Marks.\n\nDownload Link: ${appLink}\n\nYour Login ID: {{rollNo}}\nPassword: {{password}}`;
         
         await sendBulkManualSMS(studentIds, message);
       } catch (error) {

@@ -15,6 +15,7 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
     photo: null,
     parentUserId: '',
     parentPassword: '',
+    schoolName: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -32,6 +33,7 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
         photo: studentData.photo || null,
         parentUserId: studentData.parentUserId || '',
         parentPassword: '',
+        schoolName: studentData.schoolName || '',
       });
     }
   }, [isEdit, studentData]);
@@ -257,6 +259,18 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
                       placeholder={isEdit ? "Leave blank to keep unchanged" : "Leave blank to auto-generate"}
                     />
                   </div>
+                </div>
+
+        <div className="form-group">
+                  <label className="form-label">School Name</label>
+                  <input
+                    type="text"
+                    name="schoolName"
+                    value={form.schoolName}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="Enter school name"
+                  />
                 </div>
 
                 <div className="form-group">
