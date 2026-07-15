@@ -89,6 +89,38 @@ function safeUnlink(filePath) {
   }
 }
 
+function cleanupOldOMRFiles() {
+  try {
+    const files = fs.readdirSync(uploadDir);
+    const now = Date.now();
+    // Delete files older than 24 hours
+    const maxAge = 24 * 60 * 60 * 1000;
+    
+    let deletedCount = 0;
+    files.forEach(file => {
+      const filePath = path.join(uploadDir, file);
+      const stats = fs.statSync(filePath);
+      
+      // Delete old binary images (they don't have .txt extension)
+      if (stats.isFile() && !file.endsWith('.txt')) {
+        if (now - stats.mtimeMs > maxAge) {
+          safeUnlink(filePath);
+          deletedCount++;
+        }
+      }
+    });
+    if (deletedCount > 0) {
+      console.log(`[Cleanup] Deleted ${deletedCount} old OMR files from uploads directory.`);
+    }
+  } catch (err) {
+    console.warn('[Cleanup] Failed to clean up old OMR files:', err.message);
+  }
+}
+
+// Run cleanup immediately on server startup, and every 12 hours thereafter
+cleanupOldOMRFiles();
+setInterval(cleanupOldOMRFiles, 12 * 60 * 60 * 1000);
+
 app.post('/api/local-omr-process', upload.array('images', 500), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {

@@ -74,12 +74,16 @@ export default function SMSCenter() {
     if (whatsappStatus === 'ready') {
       setShowQrModal(false);
       toast.success('WhatsApp Connected Successfully!', { id: 'wa-connected' });
+    } else if (whatsappStatus === 'qr' && qrCode) {
+      setShowQrModal(true);
     }
-  }, [whatsappStatus]);
+  }, [whatsappStatus, qrCode]);
 
   const initializeWhatsApp = async () => {
+    if (loadingAction || whatsappStatus === 'connecting') return;
     setLoadingAction(true);
     try {
+      setWhatsappStatus('connecting');
       await fetch('http://localhost:5001/api/whatsapp/local-initialize', { method: 'POST' });
       toast.success('Initializing WhatsApp Client...');
       setTimeout(async () => {
@@ -92,6 +96,7 @@ export default function SMSCenter() {
       }, 1000);
     } catch (err) {
       toast.error('Failed to connect to local OMR server');
+      setWhatsappStatus('offline');
     } finally {
       setLoadingAction(false);
     }
@@ -303,6 +308,12 @@ export default function SMSCenter() {
             <button className="btn btn-primary" onClick={initializeWhatsApp} disabled={loadingAction}>
               {loadingAction ? <RefreshCw size={16} className="spin" /> : <QrCode size={16} />}
               Link WhatsApp
+            </button>
+          )}
+
+          {whatsappStatus === 'connecting' && (
+            <button className="btn btn-primary" disabled={true}>
+              <RefreshCw size={16} className="spin" /> Initializing...
             </button>
           )}
 

@@ -494,10 +494,10 @@ export default function Dashboard() {
                     </div>
                   )}
                   <div className="flex-1">
-                    <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#f1f5f9' }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-color)' }}>
                       {performer.name}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                       Avg: {performer.avg}%
                     </div>
                   </div>
