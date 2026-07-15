@@ -29,7 +29,8 @@ export async function disconnectWhatsAppClient() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Delete authentication session folder
-      const authPath = path.join(__dirname, '..', '.wwebjs_auth');
+      const dataPath = process.env.USER_DATA_PATH || path.join(__dirname, '..');
+      const authPath = path.join(dataPath, '.wwebjs_auth');
       if (fs.existsSync(authPath)) {
         fs.rmSync(authPath, { recursive: true, force: true });
         console.log('[WhatsAppClient] Deleted session folder.');
@@ -58,9 +59,11 @@ export function initializeWhatsAppClient() {
   qrCodeData = null;
 
   try {
+    const dataPath = process.env.USER_DATA_PATH || path.join(__dirname, '..');
+    
     client = new Client({
       authStrategy: new LocalAuth({
-        dataPath: path.join(__dirname, '..', '.wwebjs_auth')
+        dataPath: path.join(dataPath, '.wwebjs_auth')
       }),
       puppeteer: {
         headless: true,
