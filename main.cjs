@@ -85,8 +85,12 @@ function startServer() {
   // Path to local OMR server
   const serverPath = path.join(__dirname, 'server', 'local-omr-server.js');
   
-  const logFile = 'C:\\Users\\sawar\\MyProjects\\student-report\\electron_debug.log';
-  fs.appendFileSync(logFile, `Starting server at: ${serverPath}\n`);
+  const logFile = path.join(app.getPath('userData'), 'electron_debug.log');
+  try {
+    fs.appendFileSync(logFile, `Starting server at: ${serverPath}\n`);
+  } catch (e) {
+    console.error('Failed to write log', e);
+  }
 
   // Use fork which natively supports running scripts inside app.asar
   const { fork } = require('child_process');
@@ -103,15 +107,15 @@ function startServer() {
   });
 
   serverProcess.stdout?.on('data', (data) => {
-    fs.appendFileSync(logFile, `Server: ${data}\n`);
+    try { fs.appendFileSync(logFile, `Server: ${data}\n`); } catch(e) {}
   });
 
-  serverProcess.stderr.on('data', (data) => {
-    fs.appendFileSync(logFile, `Server Error: ${data}\n`);
+  serverProcess.stderr?.on('data', (data) => {
+    try { fs.appendFileSync(logFile, `Server Error: ${data}\n`); } catch(e) {}
   });
 
   serverProcess.on('close', (code) => {
-    fs.appendFileSync(logFile, `Server exited with code ${code}\n`);
+    try { fs.appendFileSync(logFile, `Server exited with code ${code}\n`); } catch(e) {}
   });
 }
 
@@ -142,8 +146,8 @@ app.whenReady().then(() => {
     });
 
     autoUpdater.on('error', (err) => {
-      const logFile = 'C:\\Users\\sawar\\MyProjects\\student-report\\electron_debug.log';
-      fs.appendFileSync(logFile, `Updater Error: ${err.message}\n`);
+      const logFile = path.join(app.getPath('userData'), 'electron_debug.log');
+      try { fs.appendFileSync(logFile, `Updater Error: ${err.message}\n`); } catch(e) {}
     });
   }
 

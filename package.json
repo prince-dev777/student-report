@@ -31,7 +31,15 @@
     ],
     "icon": "public/logo.png",
     "win": {
-      "target": "nsis"
+      "target": ["nsis", "portable", "dir"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "publish": {
       "provider": "github",
