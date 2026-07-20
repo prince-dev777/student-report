@@ -1,4 +1,5 @@
-module.exports = {
+// ESM syntax to match server's "type": "module" in package.json
+export default {
   apps: [
     {
       name: 'edutrack-saas',

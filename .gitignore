@@ -1,4 +1,4 @@
-﻿# Logs
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -6,6 +6,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+electron_debug.log
+electron_log.txt
 
 node_modules
 dist
@@ -23,31 +25,35 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment & Server files
+# Environment files
 .env
-*.local
 server/.env
-server/node_modules
+server/.env.production
 
 # Electron build output
 dist-electron
+dist-electron-v2
 .icon-ico
 
-dist-electron-v2
+# Server build & temp files
 server/build/
 server/uploads/
-*.exe
-*.pyc
-__pycache__/
-server/build/
-server/uploads/
-*.exe
-*.pyc
-__pycache__/
+server/myenv/
+server/scratch/
+server/node_modules
 
+# Binary & compiled files
+*.exe
+*.pyc
+__pycache__/
+*.spec
 
 # WhatsApp Web JS Session & Cache
 .wwebjs_auth/
 .wwebjs_cache/
 server/.wwebjs_auth/
 server/.wwebjs_cache/
+
+# Test output files
+server/test_scan_out*.txt
+server/warped_*.png

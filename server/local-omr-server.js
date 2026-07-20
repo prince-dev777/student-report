@@ -42,7 +42,8 @@ import {
   initializeWhatsAppClient, 
   getWhatsAppClientState, 
   disconnectWhatsAppClient, 
-  sendWhatsAppMessageWeb 
+  sendWhatsAppMessageWeb,
+  resetRetryCount
 } from './services/whatsappClient.js';
 
 const app = express();
@@ -313,6 +314,7 @@ app.get('/api/whatsapp/local-status', (req, res) => {
 });
 
 app.post('/api/whatsapp/local-initialize', (req, res) => {
+  resetRetryCount(); // Reset retry counter on manual user action
   initializeWhatsAppClient();
   res.json({ success: true, message: 'WhatsApp client initialization started.' });
 });
@@ -461,6 +463,56 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`🔌 Local Edge OMR Server & Biometric Relay listening on http://localhost:${PORT}`);
+// Helper: kill process using a specific port (Windows)
+function killProcessOnPort(port) {
+  return new Promise((resolve) => {
+    const { exec } = require('child_process');
+    exec(`netstat -ano | findstr :${port} | findstr LISTENING`, (err, stdout) => {
+      if (err || !stdout.trim()) return resolve(false);
+      const lines = stdout.trim().split('\n');
+      const pids = new Set();
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        const pid = parts[parts.length - 1];
+        if (pid && pid !== '0' && pid !== String(process.pid)) {
+          pids.add(pid);
+        }
+      }
+      if (pids.size === 0) return resolve(false);
+      let killed = 0;
+      for (const pid of pids) {
+        exec(`taskkill /PID ${pid} /F`, (killErr) => {
+          killed++;
+          if (killed === pids.size) resolve(true);
+        });
+      }
+    });
+  });
+}
+
+function startListening(retryCount = 0) {
+  const server = app.listen(PORT, () => {
+    console.log(`🔌 Local Edge OMR Server & Biometric Relay listening on http://localhost:${PORT}`);
+  });
+
+  server.on('error', async (err) => {
+    if (err.code === 'EADDRINUSE' && retryCount < 3) {
+      console.warn(`[Server] Port ${PORT} in use. Killing old process and retrying... (attempt ${retryCount + 1})`);
+      await killProcessOnPort(PORT);
+      // Wait a moment for port to be released
+      setTimeout(() => startListening(retryCount + 1), 2000);
+    } else {
+      console.error(`[Server] Fatal error starting server:`, err.message);
+    }
+  });
+}
+
+// Listen for shutdown message from Electron parent process
+process.on('message', (msg) => {
+  if (msg === 'shutdown') {
+    console.log('[Server] Received shutdown signal from Electron.');
+    gracefulShutdown();
+  }
 });
+
+startListening();

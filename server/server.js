@@ -265,67 +265,8 @@ app.post('/api/parent/login', async (req, res) => {
   }
 });
 
-// Biometric Hardware Webhook (unprotected for hardware compatibility)
-app.post('/api/attendance/biometric', async (req, res) => {
-  try {
-    const { instituteId, rollNumber, type, time } = req.body;
-
-    // 1. Find Student by roll number and institute
-    const student = await Student.findOne({ rollNo: String(rollNumber), instituteId });
-    if (!student) {
-      return res.status(404).json({ error: 'Student not found' });
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-
-    // 2. Find or create attendance record for today
-    let record = await Attendance.findOne({ studentId: student.id, date: today, instituteId });
-
-    if (!record) {
-      record = new Attendance({
-        instituteId,
-        studentId: student.id,
-        date: today,
-        status: 'present',
-        entryTime: type === 'IN' ? time : '',
-        exitTime: type === 'OUT' ? time : ''
-      });
-    } else {
-      if (type === 'IN') record.entryTime = time;
-      if (type === 'OUT') record.exitTime = time;
-    }
-    await record.save();
-
-    // 3. Create Notification for Parent App
-    const title = type === 'IN' ? 'Check-In Alert' : 'Check-Out Alert';
-    const message = `${student.name} has checked ${type} at ${time}.`;
-
-    const notification = new Notification({
-      instituteId,
-      studentId: student._id,
-      title,
-      message,
-      type: 'ATTENDANCE'
-    });
-    await notification.save();
-
-    // Trigger WhatsApp Alert for Biometric Check-In / Check-Out
-    if (student.parentPhone) {
-      sendWhatsAppAlert({
-        instituteId,
-        studentId: student.id,
-        parentPhone: student.parentPhone,
-        studentName: student.name,
-        type: type, // 'IN' or 'OUT'
-        detail: time
-      }).catch(err => console.error('Failed to send check-in/out WhatsApp alert:', err.message));
-    }
-
-    res.status(200).json({ message: 'Success', record, notification });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+// NOTE: Biometric webhook endpoint moved to line ~853 (before protect middleware)
+// to avoid duplicate route registration.
 
 // ---- 📡 Biometric ADMS API (Direct Machine Connection) ----
 
@@ -489,6 +430,65 @@ app.post('/api/whatsapp/status', async (req, res) => {
     }
     console.log(`[Cloud WhatsApp API] Updated log ${logId} status to: ${status}`);
     res.json(updatedLog);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- 🔐 Biometric Hardware Webhook (unprotected for hardware compatibility) ----
+app.post('/api/attendance/biometric', async (req, res) => {
+  try {
+    const { instituteId, rollNumber, type, time } = req.body;
+    if (!instituteId || !rollNumber) {
+      return res.status(400).json({ error: 'Missing instituteId or rollNumber' });
+    }
+
+    const student = await Student.findOne({ rollNo: String(rollNumber), instituteId });
+    if (!student) {
+      return res.status(404).json({ error: `Student with Roll Number ${rollNumber} not found` });
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    let record = await Attendance.findOne({ studentId: student.id, date: todayStr, instituteId });
+    
+    if (record) {
+      if (type === 'IN') {
+        record.entryTime = punchTime;
+      } else {
+        record.exitTime = punchTime;
+      }
+      record.status = 'present';
+      await record.save();
+    } else {
+      record = new Attendance({
+        studentId: student.id,
+        date: todayStr,
+        status: 'present',
+        entryTime: type === 'IN' ? punchTime : '--',
+        exitTime: type === 'OUT' ? punchTime : '--',
+        instituteId,
+        smsSent: false
+      });
+      await record.save();
+    }
+
+    if (student.parentPhone) {
+      sendWhatsAppAlert({
+        instituteId,
+        studentId: student.id,
+        parentPhone: student.parentPhone,
+        studentName: student.name,
+        type: type || 'IN',
+        detail: punchTime
+      }).then(() => {
+        record.smsSent = true;
+        record.save();
+      }).catch(err => console.error('Failed to send biometric WhatsApp alert:', err.message));
+    }
+
+    res.json({ message: 'Biometric attendance successfully recorded', record });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -850,63 +850,6 @@ app.all('/iclock/*', async (req, res) => {
 });
 
 // ---- 🔐 Attendance API ----
-app.post('/api/attendance/biometric', async (req, res) => {
-  try {
-    const { instituteId, rollNumber, type, time } = req.body;
-    if (!instituteId || !rollNumber) {
-      return res.status(400).json({ error: 'Missing instituteId or rollNumber' });
-    }
-
-    const student = await Student.findOne({ rollNo: String(rollNumber), instituteId });
-    if (!student) {
-      return res.status(404).json({ error: `Student with Roll Number ${rollNumber} not found` });
-    }
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-    let record = await Attendance.findOne({ studentId: student.id, date: todayStr, instituteId });
-    
-    if (record) {
-      if (type === 'IN') {
-        record.entryTime = punchTime;
-      } else {
-        record.exitTime = punchTime;
-      }
-      record.status = 'present';
-      await record.save();
-    } else {
-      record = new Attendance({
-        studentId: student.id,
-        date: todayStr,
-        status: 'present',
-        entryTime: type === 'IN' ? punchTime : '--',
-        exitTime: type === 'OUT' ? punchTime : '--',
-        instituteId,
-        smsSent: false
-      });
-      await record.save();
-    }
-
-    if (student.parentPhone) {
-      sendWhatsAppAlert({
-        instituteId,
-        studentId: student.id,
-        parentPhone: student.parentPhone,
-        studentName: student.name,
-        type: type || 'IN',
-        detail: punchTime
-      }).then(() => {
-        record.smsSent = true;
-        record.save();
-      }).catch(err => console.error('Failed to send biometric WhatsApp alert:', err.message));
-    }
-
-    res.json({ message: 'Biometric attendance successfully recorded', record });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 app.get('/api/attendance', async (req, res) => {
   try {

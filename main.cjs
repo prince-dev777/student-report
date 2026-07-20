@@ -1,7 +1,7 @@
 const { app, BrowserWindow, dialog, Tray, Menu } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 const fs = require('fs');
 
 let mainWindow;
@@ -12,6 +12,33 @@ app.commandLine.appendSwitch('disable-http-cache');
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 app.commandLine.appendSwitch('disable-gpu-disk-cache');
 app.commandLine.appendSwitch('disable-disk-cache');
+
+// Helper: kill any process using port 5001 (cleanup leftover from previous run)
+function killPort(port) {
+  return new Promise((resolve) => {
+    exec(`netstat -ano | findstr :${port} | findstr LISTENING`, (err, stdout) => {
+      if (err || !stdout.trim()) return resolve();
+      const lines = stdout.trim().split('\n');
+      const pids = new Set();
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        const pid = parts[parts.length - 1];
+        if (pid && pid !== '0') pids.add(pid);
+      }
+      if (pids.size === 0) return resolve();
+      let done = 0;
+      for (const pid of pids) {
+        exec(`taskkill /PID ${pid} /F`, () => {
+          done++;
+          if (done === pids.size) {
+            // Give OS time to release the port
+            setTimeout(resolve, 1000);
+          }
+        });
+      }
+    });
+  });
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -41,8 +68,6 @@ function createWindow() {
     if (!app.isQuiting) {
       event.preventDefault();
       mainWindow.hide();
-      // Optional: Show notification to user that it's in the tray
-      // mainWindow.webContents.send('show-notification', 'App running in background');
     }
     return false;
   });
@@ -79,9 +104,10 @@ function createTray() {
   });
 }
 
-function startServer() {
-  const isDev = !app.isPackaged;
-  
+async function startServer() {
+  // Kill any leftover process on port 5001 from a previous session
+  await killPort(5001);
+
   // Path to local OMR server
   const serverPath = path.join(__dirname, 'server', 'local-omr-server.js');
   
@@ -98,7 +124,8 @@ function startServer() {
   const env = { 
     ...process.env, 
     ELECTRON_RUN_AS_NODE: '1',
-    USER_DATA_PATH: app.getPath('userData')
+    USER_DATA_PATH: app.getPath('userData'),
+    ELECTRON_EXEC_PATH: process.execPath // Pass the Electron binary path for Puppeteer
   };
   
   serverProcess = fork(serverPath, [], {
@@ -119,8 +146,8 @@ function startServer() {
   });
 }
 
-app.whenReady().then(() => {
-  startServer();
+app.whenReady().then(async () => {
+  await startServer();
   // Wait a moment for server to start before creating window
   setTimeout(() => {
     createWindow();
@@ -129,7 +156,12 @@ app.whenReady().then(() => {
 
   // Auto Updater Logic
   if (app.isPackaged) {
-    autoUpdater.checkForUpdatesAndNotify();
+    // Suppress noisy auto-updater errors (e.g., private repo 404)
+    autoUpdater.logger = null;
+
+    autoUpdater.checkForUpdatesAndNotify().catch(() => {
+      // Silently ignore update check failures (private repo, no internet, etc.)
+    });
     
     autoUpdater.on('update-downloaded', (info) => {
       dialog.showMessageBox({
@@ -146,8 +178,11 @@ app.whenReady().then(() => {
     });
 
     autoUpdater.on('error', (err) => {
-      const logFile = path.join(app.getPath('userData'), 'electron_debug.log');
-      try { fs.appendFileSync(logFile, `Updater Error: ${err.message}\n`); } catch(e) {}
+      // Only log critical errors, not 404s from private repos
+      if (err && err.message && !err.message.includes('404')) {
+        const logFile = path.join(app.getPath('userData'), 'electron_debug.log');
+        try { fs.appendFileSync(logFile, `Updater Error: ${err.message}\n`); } catch(e) {}
+      }
     });
   }
 
@@ -166,6 +201,16 @@ app.on('window-all-closed', function () {
 
 app.on('before-quit', () => {
   if (serverProcess) {
-    serverProcess.kill();
+    // Send clean shutdown signal first, then force kill after timeout
+    try {
+      serverProcess.send('shutdown');
+    } catch (e) {
+      // IPC channel might be closed already
+    }
+    setTimeout(() => {
+      try {
+        serverProcess.kill();
+      } catch (e) {}
+    }, 3000);
   }
 });

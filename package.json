@@ -1,7 +1,7 @@
 {
   "name": "student-report",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Career Xone OMR Desktop Application",
   "author": "Career Xone",
   "type": "module",
@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "postinstall": "cd server && npm install --omit=dev",
     "electron:dev": "concurrently \"npm run dev\" \"node server/server.js\" \"wait-on http://localhost:5173 && wait-on http://localhost:5000 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:publish": "npm run build && electron-builder -p always"
@@ -23,11 +24,35 @@
     "files": [
       "dist/**/*",
       "main.cjs",
-      "server/**/*"
+      "server/**/*",
+      "!server/myenv/**",
+      "!server/__pycache__/**",
+      "!server/scratch/**",
+      "!server/uploads/**",
+      "!server/.wwebjs_auth/**",
+      "!server/.wwebjs_cache/**",
+      "!server/test_*.py",
+      "!server/debug_*.py",
+      "!server/dump_*.py",
+      "!server/check_*.py",
+      "!server/crop.py",
+      "!server/verify_*.py",
+      "!server/sync_biometric.py",
+      "!server/*.spec",
+      "!server/warped_*.png",
+      "!server/test_scan_out*.txt",
+      "!server/.env"
     ],
     "asarUnpack": [
       "server/**/*.py",
       "server/**/*.exe"
+    ],
+    "compression": "normal",
+    "extraFiles": [
+      {
+        "from": "server/.env.production",
+        "to": "resources/app.asar.unpacked/server/.env"
+      }
     ],
     "icon": "public/logo.png",
     "win": {
