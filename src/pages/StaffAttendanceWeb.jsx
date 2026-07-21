@@ -17,14 +17,37 @@ export default function StaffAttendanceWeb() {
   const [batchFilter, setBatchFilter] = useState('ALL');
   const [savingId, setSavingId] = useState(null);
 
-  // Passcode Auth
+  // Passcode Auth with Backend Token
   const [passcode, setPasscode] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(
     sessionStorage.getItem('staff_authed') === 'true'
   );
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const baseUrl = isLocalHost ? 'http://localhost:5001/api' : 'https://student-report-ezgw.onrender.com/api';
+
+    try {
+      const res = await fetch(`${baseUrl}/auth/staff-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passcode })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          localStorage.setItem('staff_token', data.token);
+        }
+        setIsAuthenticated(true);
+        sessionStorage.setItem('staff_authed', 'true');
+        toast.success(`Welcome to Staff Portal! (${data.instituteName || 'Career Xone'})`);
+        return;
+      }
+    } catch(err) {}
+
+    // Fallback to local passcode check
     const storedCode = localStorage.getItem('staff_passcode') || '1234';
     if (passcode.trim() === storedCode.trim()) {
       setIsAuthenticated(true);
@@ -45,7 +68,7 @@ export default function StaffAttendanceWeb() {
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const baseUrl = isLocalHost ? 'http://localhost:5001/api' : 'https://student-report-ezgw.onrender.com/api';
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('staff_token') || localStorage.getItem('token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
       try {
@@ -71,6 +94,17 @@ export default function StaffAttendanceWeb() {
         if (savedAtt) {
           try { attData = JSON.parse(savedAtt); } catch(e) {}
         }
+      }
+
+      // Deduplicate student records by ID/RollNo
+      if (stdData && stdData.length > 0) {
+        const seen = new Set();
+        stdData = stdData.filter(s => {
+          const key = s.id || `${s.rollNo}_${s.name}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
       }
 
       setStudents(stdData || []);

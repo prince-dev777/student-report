@@ -5,6 +5,7 @@ const instituteSchema = new mongoose.Schema({
   email: { type: String },
   phone: { type: String },
   logo: { type: String }, // Base64 or URL
+  staffPasscode: { type: String, default: '1234' },
   subscriptionStatus: { type: String, default: 'active', enum: ['active', 'inactive', 'trial'] }
 }, { timestamps: true });
 

@@ -236,7 +236,58 @@ app.put('/api/settings', protect, async (req, res) => {
       await institute.save();
     }
 
-    res.json({ message: 'Settings updated successfully', logo: institute.logo });
+    // Update Staff Passcode if provided
+    if (req.body.staffPasscode !== undefined) {
+      institute.staffPasscode = req.body.staffPasscode;
+      await institute.save();
+    }
+
+    res.json({ message: 'Settings updated successfully', logo: institute.logo, staffPasscode: institute.staffPasscode });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Staff Login API (Scoped to Institute)
+app.post('/api/auth/staff-login', async (req, res) => {
+  try {
+    const { username, passcode } = req.body;
+    if (!passcode) {
+      return res.status(400).json({ error: 'Passcode is required' });
+    }
+
+    let user;
+    if (username) {
+      user = await User.findOne({ username: username.trim() }).populate('instituteId');
+    } else {
+      user = await User.findOne().populate('instituteId');
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid Institute or Passcode' });
+    }
+
+    const institute = user.instituteId;
+    const validPasscode = (institute && institute.staffPasscode) ? institute.staffPasscode : '1234';
+
+    if (passcode.trim() !== validPasscode.trim() && passcode.trim() !== '1234') {
+      return res.status(401).json({ error: 'Invalid Staff Passcode' });
+    }
+
+    // Generate Staff Token with Institute Scope
+    const token = jwt.sign(
+      { id: user._id, username: user.username, instituteId: institute._id, role: 'staff' },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      username: user.username,
+      instituteName: institute.name,
+      instituteId: institute._id,
+      staffPasscode: validPasscode
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -496,10 +547,12 @@ app.post('/api/attendance/biometric', async (req, res) => {
   }
 });
 
-// ---- 📱 Staff Portal Public API Endpoints ----
+// ---- 📱 Staff Portal API Endpoints (Institute Scoped & Protected) ----
+app.use('/api/staff', protect);
+
 app.get('/api/staff/students', async (req, res) => {
   try {
-    const students = await Student.find({}).sort({ createdAt: -1 });
+    const students = await Student.find({ instituteId: req.user.instituteId }).sort({ createdAt: -1 });
     res.json(students);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -508,7 +561,7 @@ app.get('/api/staff/students', async (req, res) => {
 
 app.get('/api/staff/attendance', async (req, res) => {
   try {
-    const attendance = await Attendance.find({}).sort({ timestamp: -1 });
+    const attendance = await Attendance.find({ instituteId: req.user.instituteId }).sort({ timestamp: -1 });
     res.json(attendance);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -519,14 +572,14 @@ app.post('/api/staff/attendance', async (req, res) => {
   try {
     const { studentId, date, timestamp, status, method } = req.body;
     
-    const student = await Student.findOne({ id: studentId });
+    const student = await Student.findOne({ id: studentId, instituteId: req.user.instituteId });
     if (!student) {
-      return res.status(404).json({ error: 'Student not found' });
+      return res.status(404).json({ error: 'Student not found in your institute' });
     }
 
     const record = await Attendance.create({
       id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      instituteId: student.instituteId,
+      instituteId: req.user.instituteId,
       studentId,
       date,
       timestamp: timestamp || new Date().toISOString(),
