@@ -151,8 +151,17 @@ app.whenReady().then(async () => {
     // Suppress noisy auto-updater errors (e.g., private repo 404)
     autoUpdater.logger = null;
 
+    // Set GitHub token for private repo access on client machines
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: 'prince-dev777',
+      repo: 'student-report',
+      private: true,
+      token: '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'
+    });
+
     autoUpdater.checkForUpdatesAndNotify().catch(() => {
-      // Silently ignore update check failures (private repo, no internet, etc.)
+      // Silently ignore update check failures (no internet, etc.)
     });
     
     autoUpdater.on('update-downloaded', (info) => {
