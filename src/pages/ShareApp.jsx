@@ -3,22 +3,50 @@ import { QRCodeSVG } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { Smartphone, Link as LinkIcon, MessageSquare, Copy, CheckCircle2, Download, Send, Sparkles } from 'lucide-react';
+import { 
+  Smartphone, Link as LinkIcon, MessageSquare, Copy, CheckCircle2, 
+  Download, Send, Sparkles, UserCheck, Key, User, Users 
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ShareApp() {
-  const { students, sendBulkManualSMS } = useApp();
+  const { students, sendBulkManualSMS, sendManualSMS } = useApp();
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [staffCopied, setStaffCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  const appLink = "https://expo.dev/accounts/myrentalaap/projects/career-xone-parent/builds/b719907b-68c3-4f54-b987-43b203a4fe81";
+  // WhatsApp Mode: 'BULK' or 'SINGLE'
+  const [sendMode, setSendMode] = useState('BULK');
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+
+  // Staff Passcode (Stored in localStorage or default '1234')
+  const [staffPasscode, setStaffPasscode] = useState(
+    localStorage.getItem('staff_passcode') || '1234'
+  );
+
+  const parentAppLink = "https://expo.dev/accounts/myrentalaap/projects/career-xone-parent/builds/b719907b-68c3-4f54-b987-43b203a4fe81";
+  const staffWebLink = "https://student-report-ezgw.onrender.com/#staff";
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(appLink);
+    navigator.clipboard.writeText(parentAppLink);
     setCopied(true);
-    toast.success("Link copied to clipboard!");
+    toast.success("Parents App link copied!");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyStaffInvite = () => {
+    const inviteText = `Career Xone Staff Portal Access:\n🔗 Link: ${staffWebLink}\n🔑 Access Passcode: ${staffPasscode}`;
+    navigator.clipboard.writeText(inviteText);
+    setStaffCopied(true);
+    toast.success("Staff Portal Invite copied to clipboard!");
+    setTimeout(() => setStaffCopied(false), 2000);
+  };
+
+  const handleSaveStaffPasscode = (newCode) => {
+    setStaffPasscode(newCode);
+    localStorage.setItem('staff_passcode', newCode);
+    toast.success("Staff Passcode updated!");
   };
 
   const handleDownloadQR = () => {
@@ -46,6 +74,7 @@ export default function ShareApp() {
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   };
 
+  // Handle Bulk Send
   const handleSendToAll = async () => {
     if (!students || students.length === 0) {
       toast.error("No students found to send the link!");
@@ -53,16 +82,16 @@ export default function ShareApp() {
     }
 
     const confirmSend = window.confirm(
-      `Are you sure you want to send the Parents App link via WhatsApp to all ${students.length} parents?`
+      `Are you sure you want to send the Parents App link via WhatsApp to ALL ${students.length} parents?`
     );
     
     if (confirmSend) {
       setIsSending(true);
       try {
         const studentIds = students.map(s => s.id);
-        const message = `Dear Parent, please download our Institute's official Parents App to track your child's Attendance and Marks.\n\n📱 Download Link: ${appLink}\n\nUser ID: {{parentPhone}}\nPassword: {{password}}`;
+        const message = `Dear Parent, please download our Institute's official Parents App to track your child's Attendance and Marks.\n\n📱 Download Link: ${parentAppLink}\n\nUser ID: {{parentPhone}}\nPassword: {{password}}`;
         await sendBulkManualSMS(studentIds, message);
-        toast.success(`WhatsApp blast initiated for ${students.length} parents!`);
+        toast.success(`WhatsApp blast queued for ${students.length} parents!`);
       } catch (error) {
         toast.error("Failed to send links.");
         console.error(error);
@@ -71,6 +100,30 @@ export default function ShareApp() {
       }
     }
   };
+
+  // Handle Single Student Send
+  const handleSendToSingle = async () => {
+    const student = students.find(s => s.id === selectedStudentId);
+    if (!student) {
+      toast.error("Please select a student first!");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const instName = user?.instituteName || 'Career Xone Pro';
+      const message = `Dear Parent (${student.name}), please download our Institute's official Parents App to track your child's Attendance and Marks.\n\n📱 Download Link: ${parentAppLink}\n\nUser ID: ${student.parentPhone}\nPassword: ${student.parentPasswordPlain || '123456'}\n- ${instName}`;
+      
+      await sendManualSMS(student.id, message, 'custom');
+      toast.success(`App link sent to ${student.name}'s parent via WhatsApp!`);
+    } catch (error) {
+      toast.error("Failed to send SMS.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const selectedStudent = students.find(s => s.id === selectedStudentId);
 
   return (
     <div style={{ paddingBottom: '40px' }}>
@@ -82,7 +135,7 @@ export default function ShareApp() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            Share Parents App
+            Share & Distribute Apps
           </h1>
           <span style={{
             background: 'linear-gradient(135deg, #2563eb15, #7c3aed15)',
@@ -93,11 +146,11 @@ export default function ShareApp() {
             fontSize: '0.75rem',
             fontWeight: 600
           }}>
-            Official App Link
+            Parents & Staff Portals
           </span>
         </div>
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>
-          Distribute your branded Parents App to parents via QR Code, Direct Link, or Automated WhatsApp Blast.
+          Share Parents Mobile App with parents or give Staff Attendance Web Portal access to your staff.
         </p>
       </motion.div>
 
@@ -140,10 +193,10 @@ export default function ShareApp() {
           </div>
 
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Scan to Download
+            Parents App — Scan to Download
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-tertiary)', marginBottom: '20px', maxWidth: '300px' }}>
-            Parents can scan this QR code with their mobile phone camera to instantly open and install the app.
+            Parents can scan this QR code with their mobile camera to instantly install the app.
           </p>
 
           <div style={{
@@ -154,7 +207,7 @@ export default function ShareApp() {
             boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
             marginBottom: '20px'
           }}>
-            <QRCodeSVG id="parent-app-qr" value={appLink} size={190} level="H" includeMargin={true} />
+            <QRCodeSVG id="parent-app-qr" value={parentAppLink} size={180} level="H" includeMargin={true} />
           </div>
 
           <button
@@ -189,11 +242,11 @@ export default function ShareApp() {
             gap: '6px'
           }}>
             <Sparkles size={14} />
-            Tip: Print this QR code and paste it on your institute notice board
+            Tip: Print this QR code and paste it on your notice board
           </div>
         </motion.div>
 
-        {/* Card 2: Direct Link & WhatsApp Blast */}
+        {/* Card 2: WhatsApp Share (Bulk vs Separate Mode) */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -210,8 +263,8 @@ export default function ShareApp() {
             justifyContent: 'space-between'
           }}
         >
-          {/* Section 1: Copy Link */}
-          <div style={{ marginBottom: '24px' }}>
+          {/* Direct Link */}
+          <div style={{ marginBottom: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
               <div style={{
                 width: '36px', height: '36px', borderRadius: '10px',
@@ -222,7 +275,7 @@ export default function ShareApp() {
               </div>
               <div>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Direct App Link
+                  Direct Parents App Link
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
                   Copy this link to share manually anywhere.
@@ -230,22 +283,18 @@ export default function ShareApp() {
               </div>
             </div>
 
-            <div style={{
-              display: 'flex',
-              gap: '8px',
-              marginTop: '12px'
-            }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
               <input
                 type="text"
                 readOnly
-                value={appLink}
+                value={parentAppLink}
                 style={{
                   flex: 1,
-                  padding: '10px 14px',
+                  padding: '9px 12px',
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border-color)',
                   borderRadius: 'var(--radius-md)',
-                  fontSize: '0.82rem',
+                  fontSize: '0.8rem',
                   color: 'var(--text-secondary)',
                   outline: 'none',
                   fontFamily: 'monospace'
@@ -254,7 +303,7 @@ export default function ShareApp() {
               <button
                 onClick={handleCopyLink}
                 style={{
-                  padding: '10px 18px',
+                  padding: '9px 16px',
                   background: copied ? 'var(--accent-green)' : 'var(--accent-blue)',
                   color: '#ffffff',
                   border: 'none',
@@ -264,85 +313,280 @@ export default function ShareApp() {
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s ease',
-                  flexShrink: 0
+                  gap: '6px'
                 }}
               >
                 {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-                <span>{copied ? 'Copied!' : 'Copy'}</span>
+                <span>{copied ? 'Copied' : 'Copy'}</span>
               </button>
             </div>
           </div>
 
-          <div style={{ height: '1px', background: 'var(--border-color-light)', margin: '12px 0 24px' }} />
+          <div style={{ height: '1px', background: 'var(--border-color-light)', margin: '8px 0 16px' }} />
 
-          {/* Section 2: WhatsApp Blast */}
+          {/* WhatsApp Mode Toggle */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageSquare size={18} color="var(--accent-green)" />
+                Send via WhatsApp
+              </h3>
+
+              {/* Toggle Buttons: Bulk vs Separate */}
+              <div style={{
+                display: 'flex', background: 'rgba(0,0,0,0.05)',
+                padding: '3px', borderRadius: '10px', gap: '2px'
+              }}>
+                <button
+                  onClick={() => setSendMode('BULK')}
+                  style={{
+                    padding: '4px 10px', borderRadius: '8px', border: 'none',
+                    fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                    background: sendMode === 'BULK' ? '#ffffff' : 'transparent',
+                    color: sendMode === 'BULK' ? 'var(--accent-blue)' : 'var(--text-tertiary)',
+                    boxShadow: sendMode === 'BULK' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  <Users size={12} style={{ display: 'inline', marginRight: 4 }} />
+                  Bulk (All)
+                </button>
+                <button
+                  onClick={() => setSendMode('SINGLE')}
+                  style={{
+                    padding: '4px 10px', borderRadius: '8px', border: 'none',
+                    fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                    background: sendMode === 'SINGLE' ? '#ffffff' : 'transparent',
+                    color: sendMode === 'SINGLE' ? 'var(--accent-blue)' : 'var(--text-tertiary)',
+                    boxShadow: sendMode === 'SINGLE' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  <User size={12} style={{ display: 'inline', marginRight: 4 }} />
+                  Separate (Single)
+                </button>
+              </div>
+            </div>
+
+            {/* BULK MODE */}
+            {sendMode === 'BULK' ? (
+              <div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginBottom: '12px' }}>
+                  Send Parents App download link + credentials to all <strong>{students?.length || 0}</strong> registered parents.
+                </p>
+
+                <div style={{
+                  background: 'rgba(5, 150, 105, 0.04)',
+                  border: '1px solid rgba(5, 150, 105, 0.15)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px',
+                  marginBottom: '14px'
+                }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-green)', display: 'block', marginBottom: '2px' }}>
+                    BULK MESSAGE PREVIEW:
+                  </span>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontStyle: 'italic' }}>
+                    "Dear Parent, please download our Institute's official Parents App... Link: {parentAppLink}"
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleSendToAll}
+                  disabled={isSending || !students || students.length === 0}
+                  style={{
+                    width: '100%', padding: '11px 18px',
+                    background: isSending || !students || students.length === 0 ? '#94a3b8' : 'linear-gradient(135deg, #059669, #10b981)',
+                    color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)',
+                    fontSize: '0.88rem', fontWeight: 600,
+                    cursor: isSending || !students || students.length === 0 ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    boxShadow: isSending ? 'none' : '0 4px 14px rgba(5, 150, 105, 0.35)'
+                  }}
+                >
+                  <Send size={16} />
+                  <span>{isSending ? 'Sending...' : `Send Bulk WhatsApp Blast to ${students?.length || 0} Parents`}</span>
+                </button>
+              </div>
+            ) : (
+              /* SEPARATE MODE */
+              <div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginBottom: '10px' }}>
+                  Select a student to send their parent a personalized App link via WhatsApp.
+                </p>
+
+                <select
+                  value={selectedStudentId}
+                  onChange={(e) => setSelectedStudentId(e.target.value)}
+                  style={{
+                    width: '100%', padding: '9px 12px',
+                    borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)',
+                    background: 'var(--bg-primary)', fontSize: '0.85rem', fontWeight: 500,
+                    color: 'var(--text-primary)', outline: 'none', marginBottom: '12px'
+                  }}
+                >
+                  <option value="">-- Select Student --</option>
+                  {(students || []).map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} (Roll: {s.rollNo || 'N/A'}) — Parent: {s.parentPhone}
+                    </option>
+                  ))}
+                </select>
+
+                {selectedStudent && (
+                  <div style={{
+                    background: 'rgba(37, 99, 235, 0.04)',
+                    border: '1px solid rgba(37, 99, 235, 0.15)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '12px',
+                    marginBottom: '14px'
+                  }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-blue)', display: 'block', marginBottom: '2px' }}>
+                      INDIVIDUAL PREVIEW FOR {selectedStudent.name.toUpperCase()}:
+                    </span>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontStyle: 'italic' }}>
+                      "Dear Parent ({selectedStudent.name}), download Parents App... User ID: {selectedStudent.parentPhone}, Password: {selectedStudent.parentPasswordPlain || '123456'}"
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSendToSingle}
+                  disabled={isSending || !selectedStudentId}
+                  style={{
+                    width: '100%', padding: '11px 18px',
+                    background: isSending || !selectedStudentId ? '#94a3b8' : 'linear-gradient(135deg, #2563eb, #3b82f6)',
+                    color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)',
+                    fontSize: '0.88rem', fontWeight: 600,
+                    cursor: isSending || !selectedStudentId ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    boxShadow: isSending || !selectedStudentId ? 'none' : '0 4px 14px rgba(37, 99, 235, 0.35)'
+                  }}
+                >
+                  <Send size={16} />
+                  <span>{isSending ? 'Sending...' : `Send Link to ${selectedStudent?.name || 'Selected Student'}`}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Card 3: Staff Web App Access Portal */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="glass-card"
+          style={{
+            padding: '28px',
+            borderRadius: 'var(--radius-xl)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--shadow-md)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gridColumn: 'span 1'
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <div style={{
                 width: '36px', height: '36px', borderRadius: '10px',
-                background: 'rgba(5, 150, 105, 0.1)', color: 'var(--accent-green)',
+                background: 'rgba(16, 185, 129, 0.1)', color: '#10b981',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
-                <MessageSquare size={18} />
+                <UserCheck size={20} />
               </div>
               <div>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  WhatsApp Blast to All Parents
+                  Staff Attendance Web App
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
-                  Send app download link to all <strong>{students?.length || 0}</strong> registered parents.
+                  Give staff members web access to mark manual attendance on mobile/laptop.
                 </p>
               </div>
             </div>
 
-            {/* Message Preview Box */}
-            <div style={{
-              background: 'rgba(5, 150, 105, 0.04)',
-              border: '1px solid rgba(5, 150, 105, 0.15)',
-              borderRadius: 'var(--radius-md)',
-              padding: '14px',
-              margin: '14px 0 18px'
-            }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-green)', display: 'block', marginBottom: '4px' }}>
-                MESSAGE PREVIEW:
-              </span>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, fontStyle: 'italic' }}>
-                "Dear Parent, please download our Institute's official Parents App to track your child's Attendance and Marks... Link: {appLink}"
-              </p>
+            {/* Staff Link */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', display: 'block', marginBottom: '4px' }}>
+                STAFF WEB APP URL:
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={staffWebLink}
+                  style={{
+                    flex: 1, padding: '9px 12px', background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)',
+                    fontSize: '0.8rem', color: 'var(--text-secondary)', outline: 'none', fontFamily: 'monospace'
+                  }}
+                />
+              </div>
             </div>
 
-            <button
-              onClick={handleSendToAll}
-              disabled={isSending || !students || students.length === 0}
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                background: isSending || !students || students.length === 0 
-                  ? '#94a3b8' 
-                  : 'linear-gradient(135deg, #059669, #10b981)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.92rem',
-                fontWeight: 600,
-                cursor: isSending || !students || students.length === 0 ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: isSending ? 'none' : '0 4px 14px rgba(5, 150, 105, 0.35)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <Send size={18} />
-              <span>{isSending ? 'Sending to all parents...' : `Send WhatsApp Blast to ${students?.length || 0} Parents`}</span>
-            </button>
+            {/* Staff Passcode */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', display: 'block', marginBottom: '4px' }}>
+                STAFF ACCESS PASSCODE:
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <Key size={14} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    type="text"
+                    value={staffPasscode}
+                    onChange={(e) => handleSaveStaffPasscode(e.target.value)}
+                    placeholder="Enter 4-digit passcode"
+                    maxLength={10}
+                    style={{
+                      width: '100%', padding: '9px 12px 9px 32px',
+                      background: '#ffffff', border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-md)', fontSize: '0.85rem',
+                      fontWeight: 700, color: 'var(--accent-purple)', outline: 'none',
+                      letterSpacing: '1px'
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Editable</span>
+              </div>
+            </div>
+
+            {/* Staff Invite Box Preview */}
+            <div style={{
+              background: 'rgba(124, 58, 237, 0.04)',
+              border: '1px solid rgba(124, 58, 237, 0.15)',
+              borderRadius: 'var(--radius-md)',
+              padding: '12px',
+              marginBottom: '16px'
+            }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-purple)', display: 'block', marginBottom: '2px' }}>
+                STAFF INVITE MESSAGE PREVIEW:
+              </span>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontFamily: 'monospace' }}>
+                Link: {staffWebLink}<br />
+                Passcode: {staffPasscode}
+              </p>
+            </div>
           </div>
+
+          <button
+            onClick={handleCopyStaffInvite}
+            style={{
+              width: '100%', padding: '11px 18px',
+              background: staffCopied ? 'var(--accent-green)' : 'linear-gradient(135deg, #7c3aed, #6366f1)',
+              color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)',
+              fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)'
+            }}
+          >
+            {staffCopied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+            <span>{staffCopied ? 'Invite Copied!' : 'Copy Staff App Invite & Passcode'}</span>
+          </button>
         </motion.div>
       </div>
     </div>
   );
 }
+
 

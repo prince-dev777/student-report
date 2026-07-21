@@ -17,26 +17,148 @@ export default function StaffAttendanceWeb() {
   const [batchFilter, setBatchFilter] = useState('ALL');
   const [savingId, setSavingId] = useState(null);
 
-  // Fetch students and attendance on date change
+  // Passcode Auth
+  const [passcode, setPasscode] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    sessionStorage.getItem('staff_authed') === 'true'
+  );
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const storedCode = localStorage.getItem('staff_passcode') || '1234';
+    if (passcode.trim() === storedCode.trim()) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('staff_authed', 'true');
+      toast.success('Welcome to Staff Attendance Portal!');
+    } else {
+      toast.error('Invalid Staff Access Passcode!');
+    }
+  };
+
+  // Fetch students and attendance on date change with robust fallbacks
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [stdData, attData] = await Promise.all([
-        api.getStudents(),
-        api.getAttendance()
-      ]);
+      let stdData = [];
+      let attData = [];
+      
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const baseUrl = isLocalHost ? 'http://localhost:5001/api' : 'https://student-report-ezgw.onrender.com/api';
+      
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      try {
+        const resStd = await fetch(`${baseUrl}/students`, { headers });
+        if (resStd.ok) stdData = await resStd.json();
+
+        const resAtt = await fetch(`${baseUrl}/attendance`, { headers });
+        if (resAtt.ok) attData = await resAtt.json();
+      } catch(e) {
+        console.warn('Backend API fetch failed, switching to localStorage fallback...');
+      }
+
+      // Fallback to localStorage if API returned empty/failed
+      if (!stdData || stdData.length === 0) {
+        const savedStudents = localStorage.getItem('students');
+        if (savedStudents) {
+          try { stdData = JSON.parse(savedStudents); } catch(e) {}
+        }
+      }
+
+      if (!attData || attData.length === 0) {
+        const savedAtt = localStorage.getItem('attendance');
+        if (savedAtt) {
+          try { attData = JSON.parse(savedAtt); } catch(e) {}
+        }
+      }
+
       setStudents(stdData || []);
       setAttendance(attData || []);
     } catch (err) {
-      toast.error('Failed to load data from server');
+      console.error(err);
+      toast.error('Failed to load student data');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: '#0f172a',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: "'Inter', sans-serif", padding: '20px'
+      }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          style={{
+            background: 'rgba(30, 41, 59, 0.7)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '24px',
+            padding: '36px',
+            maxWidth: '400px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            color: '#f8fafc'
+          }}
+        >
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '16px',
+            background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 16px'
+          }}>
+            <UserCheck size={28} />
+          </div>
+
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '6px' }}>Staff Portal</h2>
+          <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '24px' }}>
+            Enter your Staff Access Passcode to unlock Attendance Management
+          </p>
+
+          <form onSubmit={handleLogin}>
+            <input
+              type="password"
+              placeholder="Enter Passcode (e.g. 1234)"
+              value={passcode}
+              onChange={(e) => setPasscode(e.target.value)}
+              autoFocus
+              style={{
+                width: '100%', padding: '12px 16px',
+                borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)',
+                background: 'rgba(15, 23, 42, 0.6)', color: '#ffffff',
+                fontSize: '1rem', textAlign: 'center', letterSpacing: '4px',
+                outline: 'none', marginBottom: '16px'
+              }}
+            />
+
+            <button
+              type="submit"
+              style={{
+                width: '100%', padding: '12px 20px',
+                background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+                color: '#ffffff', border: 'none', borderRadius: '12px',
+                fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)'
+              }}
+            >
+              Unlock Staff Portal
+            </button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
 
   // Filter attendance for the selected date
   const dayRecords = attendance.filter(record => {
@@ -70,14 +192,31 @@ export default function StaffAttendanceWeb() {
     };
 
     try {
-      await api.markAttendance(record);
-      toast.success(`${student.name}: Marked ${status}`);
-      
-      // Update local state
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const baseUrl = isLocalHost ? 'http://localhost:5001/api' : 'https://student-report-ezgw.onrender.com/api';
+      const token = localStorage.getItem('token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      try {
+        await fetch(`${baseUrl}/attendance`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(record)
+        });
+      } catch(e) {
+        console.warn('Backend markAttendance API failed, saving to localStorage...');
+      }
+
+      // Update local state & localStorage
       setAttendance(prev => {
         const filtered = prev.filter(r => !(r.studentId === student.id && (r.date || r.timestamp).substring(0, 10) === selectedDate));
-        return [...filtered, record];
+        const updated = [...filtered, record];
+        try { localStorage.setItem('attendance', JSON.stringify(updated)); } catch(e) {}
+        return updated;
       });
+
+      toast.success(`${student.name}: Marked ${status}`);
     } catch (err) {
       toast.error('Failed to save attendance');
     } finally {
