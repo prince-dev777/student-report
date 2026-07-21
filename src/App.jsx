@@ -18,6 +18,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Tests from './pages/Tests';
 
+import StaffAttendanceWeb from './pages/StaffAttendanceWeb';
+
 function AppLayout() {
   return (
     <div className="app-layout">
@@ -44,7 +46,7 @@ const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 
 export default function App() {
   if (!isElectron) {
-    return <WebLandingPage />;
+    return <StaffAttendanceWeb />;
   }
 
   return (
