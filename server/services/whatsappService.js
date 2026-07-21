@@ -32,7 +32,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   } else if (type === 'TEST_RESULT') {
     messageText = `Result Alert:\nDear Parent, ${studentName} scored ${detail.marks}/${detail.totalMarks} in ${detail.subject} test. Rank: ${detail.rank}/${detail.totalStudents}.\n- CAREER XONE`;
   } else if (type === 'WELCOME') {
-    messageText = `Welcome to Career Xone!\nDear Parent, ${studentName} has been successfully registered.\n\n*Parent App Login Details:*\nUser ID: ${detail.parentUserId}\nPassword: ${detail.parentPassword}\nLink: https://student-report-ezgw.onrender.com\n\nThank you!\n- CAREER XONE`;
+    messageText = `Welcome to Career Xone!\nDear Parent, ${studentName} has been successfully registered.\n\n*Parent App Login Details:*\nUser ID: ${detail.parentUserId}\nPassword: ${detail.parentPassword}\n\n📱 Download Parents App:\nhttps://expo.dev/accounts/myrentalaap/projects/career-xone-parent/builds/b719907b-68c3-4f54-b987-43b203a4fe81\n\nThank you!\n- CAREER XONE`;
   }
 
   const provider = (process.env.WHATSAPP_PROVIDER || 'mock').toLowerCase();

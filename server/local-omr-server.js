@@ -436,6 +436,29 @@ app.get('/api/whatsapp/local-status', (req, res) => {
 });
 
 // ============================================
+// System Update API Routes
+// ============================================
+let updateInfo = { updateAvailable: false, version: '' };
+
+process.on('message', (msg) => {
+  if (msg && msg.type === 'UPDATE_DOWNLOADED') {
+    updateInfo = { updateAvailable: true, version: msg.version || 'new' };
+    console.log('[Local OMR] Update downloaded from main process:', msg.version);
+  }
+});
+
+app.get('/api/system/update-status', (req, res) => {
+  res.json(updateInfo);
+});
+
+app.post('/api/system/restart-and-update', (req, res) => {
+  if (process.send) {
+    try { process.send({ type: 'QUIT_AND_INSTALL' }); } catch(e) {}
+  }
+  res.json({ success: true, message: 'Restarting application...' });
+});
+
+// ============================================
 // Cloud API Proxy - Forward non-local API requests to Render server
 // This keeps everything same-origin (no CORS issues in Electron)
 // ============================================

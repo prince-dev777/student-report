@@ -160,16 +160,6 @@ export function AppProvider({ children }) {
         const saved = await api.createStudent(newStudent);
         setStudents((prev) => [saved, ...prev]);
         toast.success(`✅ Saved successfully: ${saved.name}`);
-        
-        // Auto-send Welcome SMS via WhatsApp
-        const instName = user?.instituteName || 'Career Xone Pro';
-        const welcomeMsg = `Welcome to ${instName}! Your student ${saved.name} has been enrolled.\nUser ID: ${saved.userId || saved.parentPhone}\nPassword: ${saved.parentPasswordPlain || '123456'}\nDownload our Parents App to track progress.`;
-        sendCustomSMS(saved, welcomeMsg, instName).then(async (smsLog) => {
-          try {
-            const savedLog = await api.createSMSLog(smsLog);
-            setSMSHistory((h) => [savedLog, ...h]);
-          } catch (e) { console.error('Failed to save welcome SMS log'); }
-        });
 
         return saved;
       } catch (err) {

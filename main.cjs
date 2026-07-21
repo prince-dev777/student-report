@@ -136,6 +136,12 @@ async function startServer() {
   serverProcess.stderr?.on('data', (data) => {
     try { fs.appendFileSync(logFile, `Local OMR Error: ${data}\n`); } catch(e) {}
   });
+  serverProcess.on('message', (msg) => {
+    if (msg && msg.type === 'QUIT_AND_INSTALL') {
+      app.isQuiting = true;
+      autoUpdater.quitAndInstall();
+    }
+  });
 }
 
 app.whenReady().then(async () => {
@@ -165,17 +171,12 @@ app.whenReady().then(async () => {
     });
     
     autoUpdater.on('update-downloaded', (info) => {
-      dialog.showMessageBox({
-        type: 'info',
-        title: 'Update Ready',
-        message: 'A new version of Career Xone Pro has been downloaded. The application will restart to install the update.',
-        buttons: ['Restart Now', 'Later']
-      }).then((result) => {
-        if (result.response === 0) {
-          app.isQuiting = true;
-          autoUpdater.quitAndInstall();
-        }
-      });
+      const ver = info ? (info.version || '') : '';
+      if (serverProcess) {
+        try {
+          serverProcess.send({ type: 'UPDATE_DOWNLOADED', version: ver });
+        } catch(e) {}
+      }
     });
 
     autoUpdater.on('error', (err) => {

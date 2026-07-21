@@ -118,4 +118,18 @@ export const api = {
 
   // Notifications
   markNotificationRead: (id) => apiRequest(`/notifications/${id}/read`, { method: 'PUT' }),
+
+  // System Updates
+  getUpdateStatus: async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/system/update-status');
+      if (response.ok) return await response.json();
+    } catch (e) {}
+    return { updateAvailable: false, version: '' };
+  },
+  restartAndUpdate: async () => {
+    try {
+      await fetch('http://localhost:5001/api/system/restart-and-update', { method: 'POST' });
+    } catch (e) {}
+  },
 };
