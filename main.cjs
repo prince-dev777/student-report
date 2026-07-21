@@ -109,11 +109,11 @@ async function startServer() {
   await killPort(5001);
 
   // Path to local OMR server
-  const serverPath = path.join(__dirname, 'server', 'local-omr-server.js');
+  const localOmrPath = path.join(__dirname, 'server', 'local-omr-server.js');
   
   const logFile = path.join(app.getPath('userData'), 'electron_debug.log');
   try {
-    fs.appendFileSync(logFile, `Starting server at: ${serverPath}\n`);
+    fs.appendFileSync(logFile, `Starting servers...\n`);
   } catch (e) {
     console.error('Failed to write log', e);
   }
@@ -127,22 +127,14 @@ async function startServer() {
     USER_DATA_PATH: app.getPath('userData'),
     ELECTRON_EXEC_PATH: process.execPath // Pass the Electron binary path for Puppeteer
   };
-  
-  serverProcess = fork(serverPath, [], {
-    env: env,
-    silent: true // Required to access stdout/stderr
-  });
 
+  // 2. Start Local OMR Server (Port 5001)
+  serverProcess = fork(localOmrPath, [], { env: env, silent: true });
   serverProcess.stdout?.on('data', (data) => {
-    try { fs.appendFileSync(logFile, `Server: ${data}\n`); } catch(e) {}
+    try { fs.appendFileSync(logFile, `Local OMR: ${data}\n`); } catch(e) {}
   });
-
   serverProcess.stderr?.on('data', (data) => {
-    try { fs.appendFileSync(logFile, `Server Error: ${data}\n`); } catch(e) {}
-  });
-
-  serverProcess.on('close', (code) => {
-    try { fs.appendFileSync(logFile, `Server exited with code ${code}\n`); } catch(e) {}
+    try { fs.appendFileSync(logFile, `Local OMR Error: ${data}\n`); } catch(e) {}
   });
 }
 
@@ -200,6 +192,10 @@ app.on('window-all-closed', function () {
 });
 
 app.on('before-quit', () => {
+  if (mainApiServerProcess) {
+    try { mainApiServerProcess.kill(); } catch (e) {}
+  }
+  
   if (serverProcess) {
     // Send clean shutdown signal first, then force kill after timeout
     try {
@@ -211,6 +207,6 @@ app.on('before-quit', () => {
       try {
         serverProcess.kill();
       } catch (e) {}
-    }, 3000);
+    }, 1000);
   }
 });

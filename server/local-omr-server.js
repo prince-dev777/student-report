@@ -259,8 +259,12 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
 // Forward local network requests from biometric machine to Cloud Server
 
 function getCloudApiUrl() {
-  // In development, this could be localhost:5000, in prod it's the render URL.
-  // We can read it from an env var or default to the known production URL
+  // If running inside the packaged app.asar, always use the Render Cloud URL
+  // This prevents the bundled .env file from incorrectly forcing localhost:5000
+  if (__dirname.includes('app.asar')) {
+    return 'https://student-report-ezgw.onrender.com';
+  }
+  // In development, use VITE_API_BASE_URL (defaults to localhost:5000)
   return process.env.VITE_API_BASE_URL ? process.env.VITE_API_BASE_URL.replace('/api', '') : 'https://student-report-ezgw.onrender.com';
 }
 

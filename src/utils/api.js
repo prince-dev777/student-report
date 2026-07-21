@@ -6,17 +6,15 @@
 
 const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 const isDev = window.location.port === '5173';
-const API_BASE = (isElectron && !isDev)
-  ? '/api' 
-  : (import.meta.env.VITE_API_BASE_URL || 'https://student-report-ezgw.onrender.com/api');
+const API_BASE = 'https://student-report-ezgw.onrender.com/api';
 
 // Helper to check if backend is online
 export async function checkBackendStatus() {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1000);
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes for Render free tier wake up
     const signal = typeof AbortSignal.timeout === 'function' 
-      ? AbortSignal.timeout(1000) 
+      ? AbortSignal.timeout(180000) 
       : controller.signal;
     
     const res = await fetch(`${API_BASE.replace('/api', '')}/`, { method: 'GET', signal });

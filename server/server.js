@@ -38,7 +38,9 @@ app.use(cors());
 app.use('/iclock', express.text({ type: '*/*' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+const dataPath = process.env.USER_DATA_PATH || __dirname;
+app.use('/uploads', express.static(path.join(dataPath, 'uploads')));
 
 function generateServerId(prefix = 'ID') {
   return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
@@ -74,7 +76,7 @@ async function attachTestDetailsToResults(results, instituteId) {
 }
 
 // Multer setup for OMR image uploads
-const uploadDir = path.join(__dirname, 'uploads', 'omr');
+const uploadDir = path.join(dataPath, 'uploads', 'omr');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -178,7 +180,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Generate Token
     const token = jwt.sign(
-      { id: user._id, username: user.username, instituteId: institute._id, instituteName: institute.name, logo: institute.logo },
+      { id: user._id, username: user.username, instituteId: institute._id, instituteName: institute.name },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
@@ -195,7 +197,7 @@ app.post('/api/auth/login', async (req, res) => {
     const user = await User.findOne({ username }).populate('instituteId');
     if (user && (await user.comparePassword(password))) {
       const token = jwt.sign(
-        { id: user._id, username: user.username, instituteId: user.instituteId._id, instituteName: user.instituteId.name, logo: user.instituteId.logo },
+        { id: user._id, username: user.username, instituteId: user.instituteId._id, instituteName: user.instituteId.name },
         JWT_SECRET,
         { expiresIn: '30d' }
       );
@@ -1123,7 +1125,7 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
     }
 
     const imagePaths = req.files.map(file => file.path);
-    const pythonScriptPath = path.join(__dirname, 'omr_engine_v2.py');
+    const pythonScriptPath = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_v2.py');
 
     // Use template ID and questions count from request (if changing on the fly) or from test document
     const templateId = req.body.templateId || test.templateId;
@@ -1212,7 +1214,7 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
     fs.writeFileSync(tempArgsPath, JSON.stringify(jsonPayload));
 
     let pythonProcess;
-    const exePath = path.join(__dirname, 'omr_engine_v2.exe');
+    const exePath = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_v2.exe');
     
     if (fs.existsSync(exePath)) {
       // Spawn compiled executable directly
