@@ -40,20 +40,13 @@
       "!server/sync_biometric.py",
       "!server/*.spec",
       "!server/warped_*.png",
-      "!server/test_scan_out*.txt",
-      "!server/.env"
+      "!server/test_scan_out*.txt"
     ],
     "asarUnpack": [
       "server/**/*.py",
       "server/**/*.exe"
     ],
     "compression": "normal",
-    "extraFiles": [
-      {
-        "from": "server/.env.production",
-        "to": "resources/app.asar.unpacked/server/.env"
-      }
-    ],
     "icon": "public/logo.png",
     "win": {
       "target": ["nsis", "portable", "dir"]
