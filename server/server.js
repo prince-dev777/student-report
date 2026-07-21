@@ -496,6 +496,50 @@ app.post('/api/attendance/biometric', async (req, res) => {
   }
 });
 
+// ---- 📱 Staff Portal Public API Endpoints ----
+app.get('/api/staff/students', async (req, res) => {
+  try {
+    const students = await Student.find({}).sort({ createdAt: -1 });
+    res.json(students);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/staff/attendance', async (req, res) => {
+  try {
+    const attendance = await Attendance.find({}).sort({ timestamp: -1 });
+    res.json(attendance);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/staff/attendance', async (req, res) => {
+  try {
+    const { studentId, date, timestamp, status, method } = req.body;
+    
+    const student = await Student.findOne({ id: studentId });
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const record = await Attendance.create({
+      id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      instituteId: student.instituteId,
+      studentId,
+      date,
+      timestamp: timestamp || new Date().toISOString(),
+      status,
+      method: method || 'MANUAL_STAFF',
+    });
+
+    res.status(201).json(record);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Apply protection middleware to all other API routes
 app.use('/api/students', protect);
 app.use('/api/attendance', protect);

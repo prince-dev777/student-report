@@ -49,10 +49,10 @@ export default function StaffAttendanceWeb() {
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
       try {
-        const resStd = await fetch(`${baseUrl}/students`, { headers });
+        const resStd = await fetch(`${baseUrl}/staff/students`, { headers });
         if (resStd.ok) stdData = await resStd.json();
 
-        const resAtt = await fetch(`${baseUrl}/attendance`, { headers });
+        const resAtt = await fetch(`${baseUrl}/staff/attendance`, { headers });
         if (resAtt.ok) attData = await resAtt.json();
       } catch(e) {
         console.warn('Backend API fetch failed, switching to localStorage fallback...');
@@ -199,7 +199,7 @@ export default function StaffAttendanceWeb() {
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       try {
-        await fetch(`${baseUrl}/attendance`, {
+        await fetch(`${baseUrl}/staff/attendance`, {
           method: 'POST',
           headers,
           body: JSON.stringify(record)
