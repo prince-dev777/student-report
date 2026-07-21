@@ -1,8 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Monitor, ShieldCheck, Zap } from 'lucide-react';
+import { Download, Monitor, ShieldCheck, Zap, UserCheck, ArrowRight } from 'lucide-react';
+import StaffAttendanceWeb from './StaffAttendanceWeb';
 
 export default function WebLandingPage() {
+  const [showStaffPortal, setShowStaffPortal] = useState(
+    window.location.hash.includes('staff') || window.location.search.includes('staff')
+  );
+
+  if (showStaffPortal) {
+    return (
+      <div>
+        <div style={{
+          background: '#0f172a', color: '#ffffff', padding: '8px 16px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          fontSize: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          <span>📍 Staff Attendance Mode</span>
+          <button 
+            onClick={() => setShowStaffPortal(false)}
+            style={{
+              background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none',
+              padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer'
+            }}
+          >
+            ← Back to Download Page
+          </button>
+        </div>
+        <StaffAttendanceWeb />
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
       <div style={styles.blob}></div>
@@ -13,24 +42,40 @@ export default function WebLandingPage() {
         transition={{ duration: 0.8, ease: "easeOut" }}
         style={styles.content}
       >
-        <div style={styles.badge}>DESKTOP EXCLUSIVE SOFTWARE</div>
+        <div style={styles.badge}>DESKTOP & STAFF WEB PORTAL</div>
         
         <h1 style={styles.title}>Career Xone Pro</h1>
         
         <p style={styles.subtitle}>
           This software requires edge-computing for high-speed OMR processing and Local Biometric sync.
-          <strong> Please download the Desktop Application to continue.</strong>
+          <strong> Please download the Desktop Application to continue, or access Staff Attendance Web Portal.</strong>
         </p>
 
-        <motion.div 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <a href="https://drive.google.com/file/d/1zUJUDCCSyfvduGfNRmSN7Qi4iWRv6yve/view?usp=sharing" target="_blank" style={styles.downloadBtn}>
-            <Download size={24} />
-            Download for Windows (.exe)
-          </a>
-        </motion.div>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '40px' }}>
+          <motion.div 
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+          >
+            <a href="https://drive.google.com/file/d/1zUJUDCCSyfvduGfNRmSN7Qi4iWRv6yve/view?usp=sharing" target="_blank" rel="noreferrer" style={styles.downloadBtn}>
+              <Download size={22} />
+              Download Desktop (.exe)
+            </a>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+          >
+            <button 
+              onClick={() => setShowStaffPortal(true)}
+              style={styles.staffBtn}
+            >
+              <UserCheck size={22} />
+              <span>Staff Attendance Web App</span>
+              <ArrowRight size={18} />
+            </button>
+          </motion.div>
+        </div>
 
         <div style={styles.features}>
           <div style={styles.featureItem}>
@@ -124,16 +169,30 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '16px 40px',
+    padding: '14px 28px',
     background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
     color: 'white',
     textDecoration: 'none',
-    fontSize: '1.2rem',
+    fontSize: '1rem',
     fontWeight: '600',
     borderRadius: '50px',
     boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.5)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
-    marginBottom: '40px'
+    cursor: 'pointer'
+  },
+  staffBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '14px 28px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    color: '#38bdf8',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    fontSize: '1rem',
+    fontWeight: '600',
+    borderRadius: '50px',
+    cursor: 'pointer',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.2)'
   },
   features: {
     display: 'flex',
