@@ -632,6 +632,21 @@ app.post('/api/students', async (req, res) => {
     });
     await student.save();
 
+    // Trigger WhatsApp Welcome Alert
+    if (student.parentPhone && student.parentPhone.trim() !== '') {
+      sendWhatsAppAlert({
+        instituteId: req.user.instituteId,
+        studentId: student.id,
+        parentPhone: student.parentPhone,
+        studentName: student.name,
+        type: 'WELCOME',
+        detail: {
+          parentUserId: student.parentUserId,
+          parentPassword: plainPassword
+        }
+      }).catch(err => console.error('Failed to send WhatsApp welcome alert:', err.message));
+    }
+
     const responseData = student.toObject();
     responseData.parentPlainPassword = plainPassword;
 

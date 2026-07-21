@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { spawn, spawnSync } from 'child_process';
+import { spawn, spawnSync, exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -14,6 +14,8 @@ const __dirname = path.dirname(__filename);
 // Load root .env (for VITE_API_BASE_URL) and server/.env (for local configurations)
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '.env') });
+// Fallback to .env.production if .env doesn't have the tokens
+dotenv.config({ path: path.join(__dirname, '.env.production') });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.warn('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -259,13 +261,10 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
 // Forward local network requests from biometric machine to Cloud Server
 
 function getCloudApiUrl() {
-  // If running inside the packaged app.asar, always use the Render Cloud URL
-  // This prevents the bundled .env file from incorrectly forcing localhost:5000
-  if (__dirname.includes('app.asar')) {
-    return 'https://student-report-ezgw.onrender.com';
-  }
-  // In development, use VITE_API_BASE_URL (defaults to localhost:5000)
-  return process.env.VITE_API_BASE_URL ? process.env.VITE_API_BASE_URL.replace('/api', '') : 'https://student-report-ezgw.onrender.com';
+  // Always use Render Cloud URL for WhatsApp polling and cloud communication.
+  // In dev mode, VITE_API_BASE_URL points to localhost:5000 which doesn't have
+  // the WHATSAPP_TOKEN configured locally, causing 401 errors.
+  return 'https://student-report-ezgw.onrender.com';
 }
 
 app.get('/iclock/cdata', async (req, res) => {
@@ -419,11 +418,27 @@ if (process.env.WHATSAPP_PROVIDER === 'whatsapp-web') {
 setInterval(pollPendingWhatsAppMessages, 5000);
 
 // ============================================
+// WhatsApp Local API Routes
+// ============================================
+
+app.post('/api/whatsapp/local-initialize', (req, res) => {
+  initializeWhatsAppClient();
+  res.json({ success: true, message: 'Initialization started' });
+});
+
+app.post('/api/whatsapp/local-disconnect', async (req, res) => {
+  const success = await disconnectWhatsAppClient();
+  res.json({ success, message: success ? 'Disconnected' : 'Not connected' });
+});
+
+app.get('/api/whatsapp/local-status', (req, res) => {
+  res.json(getWhatsAppClientState());
+});
+
+// ============================================
 // Cloud API Proxy - Forward non-local API requests to Render server
 // This keeps everything same-origin (no CORS issues in Electron)
 // ============================================
-
-
 app.all('/api/*', async (req, res) => {
   const targetUrl = `${getCloudApiUrl()}${req.originalUrl}`;
   
@@ -470,7 +485,6 @@ if (fs.existsSync(distPath)) {
 // Helper: kill process using a specific port (Windows)
 function killProcessOnPort(port) {
   return new Promise((resolve) => {
-    const { exec } = require('child_process');
     exec(`netstat -ano | findstr :${port} | findstr LISTENING`, (err, stdout) => {
       if (err || !stdout.trim()) return resolve(false);
       const lines = stdout.trim().split('\n');

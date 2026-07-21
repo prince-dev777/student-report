@@ -47,6 +47,7 @@ export default function SMSCenter() {
 
   // WhatsApp Local Client State
   const [whatsappStatus, setWhatsappStatus] = useState('offline');
+  const [whatsappInfo, setWhatsappInfo] = useState(null);
   const [qrCode, setQrCode] = useState(null);
   const [loadingAction, setLoadingAction] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -59,9 +60,11 @@ export default function SMSCenter() {
         const data = await res.json();
         setWhatsappStatus(data.status);
         setQrCode(data.qrCode);
+        setWhatsappInfo(data.info || null);
       } catch (err) {
         setWhatsappStatus('offline');
         setQrCode(null);
+        setWhatsappInfo(null);
       }
     };
 
@@ -92,6 +95,7 @@ export default function SMSCenter() {
           const data = await res.json();
           setWhatsappStatus(data.status);
           setQrCode(data.qrCode);
+          setWhatsappInfo(data.info || null);
         } catch (e) {}
       }, 1000);
     } catch (err) {
@@ -292,7 +296,16 @@ export default function SMSCenter() {
               )}
             </h3>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              {whatsappStatus === 'ready' ? 'Ready to send automated messages via local WhatsApp.' : 'Link your WhatsApp account to enable automated messaging.'}
+              {whatsappStatus === 'ready' ? (
+                <>
+                  Ready to send automated messages via local WhatsApp.
+                  {whatsappInfo && (
+                    <span style={{ display: 'block', marginTop: '4px', color: 'var(--text-primary)', fontWeight: '500' }}>
+                      Connected as: {whatsappInfo.pushname || 'User'} ({whatsappInfo.wid?.user || 'Unknown Number'})
+                    </span>
+                  )}
+                </>
+              ) : 'Link your WhatsApp account to enable automated messaging.'}
             </p>
           </div>
         </div>

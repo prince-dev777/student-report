@@ -4,7 +4,7 @@ import qrcode from 'qrcode';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,7 +21,14 @@ function getAuthDataPath() {
 }
 
 export function getWhatsAppClientState() {
-  return { status: clientStatus, qrCode: qrCodeData };
+  return { 
+    status: clientStatus, 
+    qrCode: qrCodeData,
+    info: client && client.info ? {
+      pushname: client.info.pushname,
+      wid: client.info.wid
+    } : null
+  };
 }
 
 // Helper: safely delete a directory with retry for EBUSY errors
@@ -51,12 +58,23 @@ async function safeDeleteDir(dirPath, maxRetries = 3) {
 // Helper: kill any leftover Chromium/Chrome processes from whatsapp-web.js
 function killLeftoverChromium() {
   return new Promise((resolve) => {
-    // Only kill Chrome processes that belong to wwebjs (by checking command line for wwebjs_auth)
-    exec('tasklist /FI "IMAGENAME eq chrome.exe" /FO CSV /NH', (err, stdout) => {
-      if (err || !stdout.trim()) return resolve();
-      // Simple approach: don't kill all chrome, just resolve. The EBUSY retry handles it.
-      resolve();
-    });
+    try {
+      const out = execSync('powershell -Command "Get-CimInstance Win32_Process -Filter \\"Name=\'chrome.exe\'\\" | Select-Object CommandLine, ProcessId | ConvertTo-Json"').toString();
+      if (!out || out.trim() === '') return resolve();
+      
+      const processes = JSON.parse(out);
+      for (const proc of Array.isArray(processes) ? processes : [processes]) {
+        if (proc && proc.CommandLine && proc.CommandLine.includes('wwebjs_auth')) {
+          console.log(`[WhatsAppClient] Killing zombie Chrome (PID: ${proc.ProcessId})`);
+          try {
+            execSync('taskkill /F /PID ' + proc.ProcessId);
+          } catch (e) {}
+        }
+      }
+    } catch (e) {
+      console.log('[WhatsAppClient] Failed to kill zombie Chrome processes:', e.message);
+    }
+    resolve();
   });
 }
 
@@ -112,8 +130,10 @@ export function initializeWhatsAppClient() {
   clientStatus = 'connecting';
   qrCodeData = null;
 
-  try {
-    const dataPath = getAuthDataPath();
+  // Proactively kill any zombie Chromium processes before attempting to start
+  killLeftoverChromium().then(() => {
+    try {
+      const dataPath = getAuthDataPath();
     
     const puppeteerOptions = {
       headless: true,
@@ -128,9 +148,28 @@ export function initializeWhatsAppClient() {
       ]
     };
 
-    // Use Electron's own Chromium binary if running in packaged app
-    if (process.env.ELECTRON_EXEC_PATH) {
-      puppeteerOptions.executablePath = process.env.ELECTRON_EXEC_PATH;
+    // In a packaged app, the bundled Chromium might not be available.
+    // Electron's own binary cannot be used as a drop-in Chrome replacement for Puppeteer.
+    // Find system Chrome/Edge:
+    if (process.env.ELECTRON_EXEC_PATH || __dirname.includes('app.asar')) {
+      const browserPaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+      ];
+      
+      for (const bPath of browserPaths) {
+        if (fs.existsSync(bPath)) {
+          puppeteerOptions.executablePath = bPath;
+          console.log(`[WhatsAppClient] Found browser at: ${bPath}`);
+          break;
+        }
+      }
+      
+      if (!puppeteerOptions.executablePath) {
+        console.warn('[WhatsAppClient] WARNING: Could not find system Chrome or Edge! WhatsApp initialization may fail.');
+      }
     }
 
     client = new Client({
@@ -156,6 +195,7 @@ export function initializeWhatsAppClient() {
 
     client.on('ready', () => {
       console.log('[WhatsAppClient] WhatsApp Client is READY and authenticated!');
+      console.log('[WhatsAppClient] Info:', client.info ? client.info.pushname : 'No info');
       clientStatus = 'ready';
       qrCodeData = null;
       initRetryCount = 0; // Reset on success
@@ -212,6 +252,7 @@ export function initializeWhatsAppClient() {
     client = null;
     initRetryCount++;
   }
+  }); // end of killLeftoverChromium
 }
 
 // Reset retry counter (called externally when user manually triggers re-init)

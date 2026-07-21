@@ -27,19 +27,13 @@ export const smsTemplates = {
     `Dear ${parentName}, a fee payment of ₹${amount} for ${studentName} is due on or before ${dueDate}. Kindly ensure timely payment. - ${instituteName}`,
 };
 
-// Simulate sending SMS (returns a Promise)
+// Send SMS (returns a Promise with pending status for local whatsapp client to pick up)
 export async function sendSMS(phoneNumber, message) {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 500));
-
-  // Simulate 95% success rate
-  const success = Math.random() > 0.05;
-
-  console.log(`📱 SMS ${success ? 'Sent' : 'Failed'} to ${phoneNumber}: ${message.slice(0, 50)}...`);
+  console.log(`📱 SMS queued for ${phoneNumber}: ${message.slice(0, 50)}...`);
 
   return {
-    success,
-    status: success ? 'delivered' : 'failed',
+    success: true,
+    status: 'pending', // Important: Must be pending so local whatsapp poller picks it up
     timestamp: new Date().toISOString(),
   };
 }
