@@ -154,8 +154,9 @@ app.whenReady().then(async () => {
 
   // Auto Updater Logic
   if (app.isPackaged) {
-    // Suppress noisy auto-updater errors (e.g., private repo 404)
-    autoUpdater.logger = null;
+    const log = require('electron-log');
+    autoUpdater.logger = log;
+    autoUpdater.logger.transports.file.level = 'info';
 
     // Set GitHub token for private repo access on client machines
     autoUpdater.setFeedURL({
@@ -166,26 +167,60 @@ app.whenReady().then(async () => {
       token: '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'
     });
 
-    autoUpdater.checkForUpdatesAndNotify().catch(() => {
-      // Silently ignore update check failures (no internet, etc.)
+    autoUpdater.on('checking-for-update', () => {
+      log.info('[AutoUpdater] Checking for update...');
     });
-    
+
+    autoUpdater.on('update-available', (info) => {
+      log.info('[AutoUpdater] Update available:', info.version);
+    });
+
+    autoUpdater.on('update-not-available', (info) => {
+      log.info('[AutoUpdater] Already on latest version:', info.version);
+    });
+
+    autoUpdater.on('download-progress', (progress) => {
+      log.info(`[AutoUpdater] Download: ${Math.round(progress.percent)}%`);
+    });
+
     autoUpdater.on('update-downloaded', (info) => {
-      const ver = info ? (info.version || '') : '';
+      const ver = info ? (info.version || 'new version') : 'new version';
+      log.info(`[AutoUpdater] Update v${ver} downloaded! Showing install dialog.`);
+
+      // Notify local server
       if (serverProcess) {
-        try {
-          serverProcess.send({ type: 'UPDATE_DOWNLOADED', version: ver });
-        } catch(e) {}
+        try { serverProcess.send({ type: 'UPDATE_DOWNLOADED', version: ver }); } catch(e) {}
       }
+
+      // Show dialog to user
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Update Available',
+        message: `Career Xone Pro v${ver} download ho gaya hai!`,
+        detail: 'Naya update install karne ke liye app restart karna hoga. Abhi restart karein?',
+        buttons: ['Restart Now', 'Baad Me'],
+        defaultId: 0,
+        cancelId: 1
+      }).then((result) => {
+        if (result.response === 0) {
+          autoUpdater.quitAndInstall(false, true);
+        }
+      });
     });
 
     autoUpdater.on('error', (err) => {
-      // Only log critical errors, not 404s from private repos
-      if (err && err.message && !err.message.includes('404')) {
-        const logFile = path.join(app.getPath('userData'), 'electron_debug.log');
-        try { fs.appendFileSync(logFile, `Updater Error: ${err.message}\n`); } catch(e) {}
-      }
+      log.error('[AutoUpdater] Error:', err.message);
+      // Also write to our debug log
+      const logFile = path.join(app.getPath('userData'), 'electron_debug.log');
+      try { fs.appendFileSync(logFile, `[${new Date().toISOString()}] Updater Error: ${err.message}\n`); } catch(e) {}
     });
+
+    // Check for updates after a short delay to let app fully load
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch((err) => {
+        log.error('[AutoUpdater] Check failed:', err.message);
+      });
+    }, 5000);
   }
 
   app.on('activate', function () {
