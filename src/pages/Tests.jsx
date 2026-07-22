@@ -59,6 +59,7 @@ export default function Tests() {
   const [omrTemplate, setOmrTemplate] = useState('neet_180');
   const [detectQuestions, setDetectQuestions] = useState(180);
   const [submittingAction, setSubmittingAction] = useState(null);
+  const [omrImagesData, setOmrImagesData] = useState({}); // studentId: image dataURI
 
   // Memoize selected test for marks entry
   const selectedEntryTest = React.useMemo(() => {
@@ -116,6 +117,7 @@ export default function Tests() {
       setMarksData({});
       setOmrStats({});
       setScannedAnswersData({});
+      setOmrImagesData({});
       return;
     }
 
@@ -141,11 +143,15 @@ export default function Tests() {
     const initialMarks = {};
     const initialScannedAnswers = {};
     const initialOmrStats = {};
+    const initialOmrImages = {};
     
     batchStudents.forEach(s => {
       const match = existing.find(r => r.studentId === s.id);
       initialMarks[s.id] = match ? match.marks : '';
       initialScannedAnswers[s.id] = (match && match.studentAnswers) ? match.studentAnswers : [];
+      if (match && match.omrSheetImage) {
+        initialOmrImages[s.id] = match.omrSheetImage;
+      }
       if (match && match.studentAnswers && match.studentAnswers.length > 0) {
         initialOmrStats[s.id] = {
           correct: match.marks,
@@ -156,6 +162,7 @@ export default function Tests() {
     setMarksData(initialMarks);
     setScannedAnswersData(initialScannedAnswers);
     setOmrStats(initialOmrStats);
+    setOmrImagesData(initialOmrImages);
   };
 
   // Handle marks changes
@@ -194,7 +201,8 @@ export default function Tests() {
       resultsPayload.push({
         studentId: student.id,
         marks: Number(mark),
-        studentAnswers: scannedAnswersData[student.id] || []
+        studentAnswers: scannedAnswersData[student.id] || [],
+        omrSheetImage: omrImagesData[student.id] || null
       });
     }
 
@@ -207,6 +215,7 @@ export default function Tests() {
       setMarksData({});
       setOmrStats({});
       setScannedAnswersData({});
+      setOmrImagesData({});
       setActiveTab('all-tests');
     } finally {
       setSubmittingAction(null);
@@ -249,6 +258,7 @@ export default function Tests() {
       const newMarksData = { ...marksData };
       const newOmrStats = { ...omrStats };
       const newScannedAnswers = { ...scannedAnswersData };
+      const newOmrImagesData = { ...omrImagesData };
       let matchedCount = 0;
       const currentErrors = res.errors || [];
       const seenRolls = new Set();
@@ -284,6 +294,9 @@ export default function Tests() {
         
         const sId = matchedStudent.id;
         newMarksData[sId] = r.marks;
+        if (r.omrSheetImage) {
+          newOmrImagesData[sId] = r.omrSheetImage;
+        }
         
         let rawAnswers = [];
         if (r.studentAnswers) {
@@ -343,6 +356,7 @@ export default function Tests() {
       setMarksData(newMarksData);
       setScannedAnswersData(newScannedAnswers);
       setOmrStats(newOmrStats);
+      setOmrImagesData(newOmrImagesData);
       setOmrScanErrors(currentErrors);
 
       toast.success(`Successfully scanned and matched ${matchedCount} OMR sheets.`);
@@ -1265,7 +1279,7 @@ export default function Tests() {
                           <td>
                             {res.omrSheetImage ? (
                               <a 
-                                href={`${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`}
+                                href={res.omrSheetImage.startsWith('data:') ? res.omrSheetImage : `${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`}
                                 target="_blank" 
                                 rel="noreferrer" 
                                 className="btn btn-ghost btn-xs text-accent"

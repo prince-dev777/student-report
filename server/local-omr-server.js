@@ -236,7 +236,13 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
           }
 
           // Return raw data to React, React will match with Student DB
-          const webPath = 'http://localhost:5001/uploads/omr/' + path.basename(imgPath);
+          let webPath = 'http://localhost:5001/uploads/omr/' + path.basename(imgPath);
+          try {
+             const base64Data = fs.readFileSync(imgPath).toString('base64');
+             webPath = 'data:image/jpeg;base64,' + base64Data;
+          } catch (imgErr) {
+             console.error('Failed to read image for base64 conversion:', imgErr.message);
+          }
 
           parsedData.push({
             rollNo: r.rollNumber,
