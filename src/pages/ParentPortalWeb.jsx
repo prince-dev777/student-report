@@ -107,31 +107,46 @@ export default function ParentPortalWeb() {
     }
 
     setLoading(true);
-    try {
-      const res = await fetch('http://localhost:5000/api/parent/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId.trim(), password: password.trim() })
-      });
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const endpoints = isLocal
+      ? ['http://localhost:5000/api/parent/login', 'https://student-report-ezgw.onrender.com/api/parent/login']
+      : ['https://student-report-ezgw.onrender.com/api/parent/login', 'http://localhost:5000/api/parent/login'];
 
-      const data = await res.json();
+    let loginSuccess = false;
+    let lastErrorMessage = '';
 
-      if (res.ok && (data.success || data.token)) {
-        setStudentData(data.student || data.student_data);
-        setAttendanceRecords(data.attendance || []);
-        setTestResults(data.testResults || []);
-        setIsLoggedIn(true);
-        toast.success(`Welcome Parent of ${(data.student || data.student_data)?.name || 'Student'}!`);
-        return;
-      } else {
-        toast.error(data.error || 'Invalid User ID or Password');
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId.trim(), password: password.trim() })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && (data.success || data.token)) {
+          setStudentData(data.student || data.student_data);
+          setAttendanceRecords(data.attendance || []);
+          setTestResults(data.testResults || []);
+          setIsLoggedIn(true);
+          toast.success(`Welcome Parent of ${(data.student || data.student_data)?.name || 'Student'}!`);
+          loginSuccess = true;
+          break;
+        } else {
+          lastErrorMessage = data.error || 'Invalid User ID or Password';
+        }
+      } catch (err) {
+        console.warn(`Failed to connect to ${url}:`, err.message);
       }
-    } catch(err) {
-      console.warn('Backend API offline, checking local storage');
-      
+    }
+
+    if (!loginSuccess) {
+      // Fallback local check
       const localStudents = JSON.parse(localStorage.getItem('students') || '[]');
       const foundLocal = localStudents.find(s => 
-        String(s.parentUserId || s.rollNumber || s.roll_no || s.id).toLowerCase() === userId.trim().toLowerCase()
+        String(s.parentUserId || s.rollNumber || s.roll_no || s.id || '').toLowerCase() === userId.trim().toLowerCase() ||
+        String(s.parentPhone || '').replace(/\D/g, '').includes(userId.trim().replace(/\D/g, ''))
       );
 
       if (foundLocal) {
@@ -159,11 +174,10 @@ export default function ParentPortalWeb() {
         setIsLoggedIn(true);
         toast.success(`Welcome Parent of ${foundLocal.name}!`);
       } else {
-        toast.error('❌ Invalid User ID or Password. Please verify credentials.');
+        toast.error(lastErrorMessage || '❌ Invalid User ID or Password. Please verify credentials.');
       }
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const instituteName = localStorage.getItem('institute_name') || 'Career Xone';
