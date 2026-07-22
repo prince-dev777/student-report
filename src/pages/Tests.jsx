@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
-  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2
+  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2, ZoomIn, ZoomOut
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
@@ -61,6 +61,7 @@ export default function Tests() {
   const [submittingAction, setSubmittingAction] = useState(null);
   const [omrImagesData, setOmrImagesData] = useState({}); // studentId: image dataURI
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
+  const [omrZoomScale, setOmrZoomScale] = useState(1);
 
   // Memoize selected test for marks entry
   const selectedEntryTest = React.useMemo(() => {
@@ -1317,11 +1318,32 @@ export default function Tests() {
           backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex',
           alignItems: 'center', justifyContent: 'center', padding: '16px'
         }}>
-          <div style={{ background: 'var(--bg-primary)', borderRadius: '18px', padding: '18px', maxWidth: '460px', width: '100%', textAlign: 'center', border: '1px solid var(--border-color)' }}>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
-            <img src={selectedOmrImage} alt="OMR Sheet" style={{ width: '100%', borderRadius: '10px', maxHeight: '500px', objectFit: 'contain' }} />
+          <div style={{ background: 'var(--bg-primary)', borderRadius: '18px', padding: '18px', maxWidth: '560px', width: '100%', textAlign: 'center', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="btn btn-sm btn-ghost" onClick={() => setOmrZoomScale(s => Math.max(0.5, s - 0.25))}><ZoomOut size={16} /></button>
+                <button className="btn btn-sm btn-ghost" onClick={() => setOmrZoomScale(1)}>Reset</button>
+                <button className="btn btn-sm btn-ghost" onClick={() => setOmrZoomScale(s => Math.min(3, s + 0.25))}><ZoomIn size={16} /></button>
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, overflow: 'auto', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '10px' }}>
+              <img 
+                src={selectedOmrImage} 
+                alt="OMR Sheet" 
+                style={{ 
+                  transform: `scale(${omrZoomScale})`, 
+                  transformOrigin: 'top center',
+                  transition: 'transform 0.2s ease-in-out',
+                  maxWidth: '100%', 
+                  objectFit: 'contain' 
+                }} 
+              />
+            </div>
+
             <button
-              onClick={() => setSelectedOmrImage(null)}
+              onClick={() => { setSelectedOmrImage(null); setOmrZoomScale(1); }}
               className="btn btn-primary"
               style={{ marginTop: '14px', width: '100%' }}
             >

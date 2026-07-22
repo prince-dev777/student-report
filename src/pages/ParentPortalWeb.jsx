@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, Image as ImageIcon, Smartphone, ExternalLink, X } from 'lucide-react';
+import { User, Lock, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function ParentPortalWeb() {
@@ -11,7 +11,9 @@ export default function ParentPortalWeb() {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [testResults, setTestResults] = useState([]);
   const [activeTab, setActiveTab] = useState('attendance'); // 'attendance' | 'tests'
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
+  const [omrZoomScale, setOmrZoomScale] = useState(1);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showForceInstallModal, setShowForceInstallModal] = useState(false);
 
@@ -665,12 +667,32 @@ export default function ParentPortalWeb() {
           backdropFilter: 'blur(6px)', zIndex: 100, display: 'flex',
           alignItems: 'center', justifyContent: 'center', padding: '16px'
         }}>
-          <div style={{ background: '#fff', borderRadius: '18px', padding: '18px', maxWidth: '460px', width: '100%', textAlign: 'center' }}>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
-            <img src={selectedOmrImage} alt="OMR Sheet" style={{ width: '100%', borderRadius: '10px', maxHeight: '360px', objectFit: 'contain' }} />
+          <div style={{ background: '#fff', borderRadius: '18px', padding: '18px', maxWidth: '560px', width: '100%', textAlign: 'center', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setOmrZoomScale(s => Math.max(0.5, s - 0.25))} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}><ZoomOut size={16} color="#475569" /></button>
+                <button onClick={() => setOmrZoomScale(1)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#475569', fontWeight: 'bold' }}>Reset</button>
+                <button onClick={() => setOmrZoomScale(s => Math.min(3, s + 0.25))} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}><ZoomIn size={16} color="#475569" /></button>
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, overflow: 'auto', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '10px' }}>
+              <img 
+                src={selectedOmrImage} 
+                alt="OMR Sheet" 
+                style={{ 
+                  transform: `scale(${omrZoomScale})`, 
+                  transformOrigin: 'top center',
+                  transition: 'transform 0.2s ease-in-out',
+                  maxWidth: '100%', 
+                  objectFit: 'contain' 
+                }} 
+              />
+            </div>
             <button
-              onClick={() => setSelectedOmrImage(null)}
-              style={{ marginTop: '14px', background: '#0284c7', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}
+              onClick={() => { setSelectedOmrImage(null); setOmrZoomScale(1); }}
+              style={{ marginTop: '14px', background: '#0284c7', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', width: '100%' }}
             >
               Close Preview
             </button>
