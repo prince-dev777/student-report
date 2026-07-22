@@ -74,10 +74,10 @@ export default function ParentPortalWeb() {
   const formatBatchName = (batch) => {
     if (!batch) return 'JEE Mains';
     const b = String(batch).trim().toLowerCase();
-    if (b === 'batch-1' || b === 'batch 1' || b === '1') return 'JEE Mains';
-    if (b === 'batch-2' || b === 'batch 2' || b === '2') return 'JEE Advanced';
-    if (b === 'batch-3' || b === 'batch 3' || b === '3') return 'NEET';
-    if (b === 'batch-4' || b === 'batch 4' || b === '4') return 'MHCET';
+    if (b === 'batch-4' || b === 'batch 4' || b === '4') return 'JEE Mains';
+    if (b === 'batch-1' || b === 'batch 1' || b === '1') return 'JEE Advanced';
+    if (b === 'batch-2' || b === 'batch 2' || b === '2') return 'NEET';
+    if (b === 'batch-3' || b === 'batch 3' || b === '3') return 'MHCET';
     return batch.replace(/^batch-?/i, 'Batch ').replace(/\b\w/g, l => l.toUpperCase());
   };
 

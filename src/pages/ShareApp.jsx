@@ -25,8 +25,8 @@ export default function ShareApp() {
     localStorage.getItem('staff_passcode') || '1234'
   );
 
-  const parentAppLink = "https://expo.dev/accounts/myrentalaap/projects/career-xone-parent/builds/b719907b-68c3-4f54-b987-43b203a4fe81";
-  const staffWebLink = "https://student-report-ezgw.onrender.com/#staff";
+  const parentAppLink = "https://studentreport.cxjeeneet.com/#/parent";
+  const staffWebLink = "https://studentreport.cxjeeneet.com/#/staff";
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(parentAppLink);
