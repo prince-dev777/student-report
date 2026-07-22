@@ -158,13 +158,10 @@ app.whenReady().then(async () => {
     autoUpdater.logger = log;
     autoUpdater.logger.transports.file.level = 'info';
 
-    // Set GitHub token for private repo access on client machines
     autoUpdater.setFeedURL({
       provider: 'github',
       owner: 'prince-dev777',
-      repo: 'student-report',
-      private: true,
-      token: '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'
+      repo: 'student-report'
     });
 
     autoUpdater.on('checking-for-update', () => {
