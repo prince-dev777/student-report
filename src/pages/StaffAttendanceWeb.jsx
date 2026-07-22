@@ -72,7 +72,7 @@ export default function StaffAttendanceWeb() {
   const handleLogin = async (e) => {
     e.preventDefault();
     const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const baseUrl = isLocalHost ? 'http://localhost:5001/api' : 'https://student-report-ezgw.onrender.com/api';
+    const baseUrl = isLocalHost ? 'http://localhost:5000/api' : 'https://student-report-ezgw.onrender.com/api';
 
     try {
       const res = await fetch(`${baseUrl}/auth/staff-login`, {
@@ -112,7 +112,7 @@ export default function StaffAttendanceWeb() {
       let attData = [];
       
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const baseUrl = isLocalHost ? 'http://localhost:5001/api' : 'https://student-report-ezgw.onrender.com/api';
+      const baseUrl = isLocalHost ? 'http://localhost:5000/api' : 'https://student-report-ezgw.onrender.com/api';
       
       const token = localStorage.getItem('staff_token') || localStorage.getItem('token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -283,33 +283,43 @@ export default function StaffAttendanceWeb() {
 
     try {
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const baseUrl = isLocalHost ? 'http://localhost:5001/api' : 'https://student-report-ezgw.onrender.com/api';
-      const token = localStorage.getItem('token');
+      const baseUrl = isLocalHost ? 'http://localhost:5000/api' : 'https://student-report-ezgw.onrender.com/api';
+      const token = localStorage.getItem('staff_token') || localStorage.getItem('token');
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
+      let apiSuccess = false;
       try {
-        await fetch(`${baseUrl}/staff/attendance`, {
+        const res = await fetch(`${baseUrl}/staff/attendance`, {
           method: 'POST',
           headers,
           body: JSON.stringify(record)
         });
+        
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP error! status: ${res.status}`);
+        }
+        apiSuccess = true;
       } catch(e) {
-        console.warn('Backend markAttendance API failed, saving to localStorage...');
+        console.error('Backend markAttendance API failed:', e);
+        throw e; // Throw so we don't mistakenly show success if API fails
       }
 
-      // Update local state & localStorage
-      setAttendance(prev => {
-        const filtered = prev.filter(r => !(r.studentId === student.id && (r.date || r.timestamp).substring(0, 10) === selectedDate));
-        const updated = [...filtered, record];
-        try { localStorage.setItem('attendance', JSON.stringify(updated)); } catch(e) {}
-        return updated;
-      });
+      // Update local state & localStorage ONLY if API call succeeded
+      if (apiSuccess) {
+        setAttendance(prev => {
+          const filtered = prev.filter(r => !(r.studentId === student.id && (r.date || r.timestamp).substring(0, 10) === selectedDate));
+          const updated = [...filtered, record];
+          try { localStorage.setItem('attendance', JSON.stringify(updated)); } catch(e) {}
+          return updated;
+        });
 
-      const label = status === 'IN' ? 'Checked In' : status === 'OUT' ? 'Checked Out' : 'Marked Absent';
-      toast.success(`${student.name}: ${label} at ${formattedTime}`);
+        const label = status === 'IN' ? 'Checked In' : status === 'OUT' ? 'Checked Out' : 'Marked Absent';
+        toast.success(`${student.name}: ${label} at ${formattedTime}`);
+      }
     } catch (err) {
-      toast.error('Failed to save attendance');
+      toast.error(err.message || 'Failed to save attendance');
     } finally {
       setSavingId(null);
     }
