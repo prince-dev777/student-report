@@ -65,21 +65,30 @@ export default function StaffAttendanceWeb() {
 
   // Passcode Auth with Backend Token
   const [passcode, setPasscode] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(
     sessionStorage.getItem('staff_authed') === 'true'
   );
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!passcode) return toast.error("Please enter a passcode");
+    setIsLoggingIn(true);
+    
     const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const baseUrl = isLocalHost ? 'http://localhost:5000/api' : 'https://student-report-ezgw.onrender.com/api';
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000); // Wait max 4 seconds before fallback
+
       const res = await fetch(`${baseUrl}/auth/staff-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode })
+        body: JSON.stringify({ passcode }),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
@@ -89,9 +98,12 @@ export default function StaffAttendanceWeb() {
         setIsAuthenticated(true);
         sessionStorage.setItem('staff_authed', 'true');
         toast.success(`Welcome to Staff Portal! (${data.instituteName || 'Career Xone'})`);
+        setIsLoggingIn(false);
         return;
       }
-    } catch(err) {}
+    } catch(err) {
+      console.warn('Backend login timeout/fail, falling back to local auth...');
+    }
 
     // Fallback to local passcode check
     const storedCode = localStorage.getItem('staff_passcode') || '1234';
@@ -102,6 +114,7 @@ export default function StaffAttendanceWeb() {
     } else {
       toast.error('Invalid Staff Access Passcode!');
     }
+    setIsLoggingIn(false);
   };
 
   // Fetch students and attendance on date change with robust fallbacks
@@ -224,15 +237,17 @@ export default function StaffAttendanceWeb() {
 
             <button
               type="submit"
+              disabled={isLoggingIn}
               style={{
                 width: '100%', padding: '12px 20px',
-                background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+                background: isLoggingIn ? '#64748b' : 'linear-gradient(135deg, #2563eb, #3b82f6)',
                 color: '#ffffff', border: 'none', borderRadius: '12px',
-                fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)'
+                fontSize: '0.95rem', fontWeight: 600, cursor: isLoggingIn ? 'not-allowed' : 'pointer',
+                boxShadow: isLoggingIn ? 'none' : '0 4px 14px rgba(37, 99, 235, 0.4)',
+                opacity: isLoggingIn ? 0.7 : 1
               }}
             >
-              Unlock Staff Portal
+              {isLoggingIn ? 'Authenticating...' : 'Unlock Staff Portal'}
             </button>
           </form>
         </motion.div>
