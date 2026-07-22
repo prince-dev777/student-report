@@ -5,7 +5,7 @@ const attendanceSchema = new mongoose.Schema({
   id: { type: String, required: true },
   studentId: { type: String, required: true },
   date: { type: String, required: true }, // YYYY-MM-DD
-  status: { type: String, required: true, enum: ['present', 'absent', 'late', 'Present', 'Absent', 'Late'] },
+  status: { type: String, required: true, enum: ['present', 'absent', 'late', 'Present', 'Absent', 'Late', 'IN', 'OUT', 'ABSENT', 'UNMARKED'] },
   entryTime: { type: String }, // HH:MM
   exitTime: { type: String },  // HH:MM
   smsSent: { type: Boolean, default: false }

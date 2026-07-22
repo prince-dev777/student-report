@@ -677,15 +677,20 @@ app.post('/api/staff/attendance', async (req, res) => {
       return res.status(404).json({ error: 'Student not found in your institute' });
     }
 
-    const record = await Attendance.create({
-      id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      instituteId: req.user.instituteId,
-      studentId,
-      date,
-      timestamp: timestamp || new Date().toISOString(),
-      status,
-      method: method || 'MANUAL_STAFF',
-    });
+    const record = await Attendance.findOneAndUpdate(
+      { studentId, date, instituteId: req.user.instituteId },
+      {
+        $set: {
+          timestamp: timestamp || new Date().toISOString(),
+          status,
+          method: method || 'MANUAL_STAFF',
+        },
+        $setOnInsert: {
+          id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        }
+      },
+      { new: true, upsert: true }
+    );
 
     res.status(201).json(record);
   } catch (err) {
