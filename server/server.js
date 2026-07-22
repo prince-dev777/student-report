@@ -1562,6 +1562,101 @@ app.post('/api/reset', async (req, res) => {
   }
 });
 
+// ============================================
+// 👨‍👩‍👧 PARENT PORTAL PUBLIC API ROUTES
+// ============================================
+app.post('/api/parent/login', async (req, res) => {
+  try {
+    const { rollNo, phone } = req.body;
+    if (!rollNo) {
+      return res.status(400).json({ error: 'Roll Number is required' });
+    }
+
+    const cleanRoll = String(rollNo).trim();
+    const cleanPhone = phone ? String(phone).trim() : '';
+
+    // Search student by rollNo or id (case-insensitive regex)
+    const student = await Student.findOne({
+      $or: [
+        { rollNo: { $regex: new RegExp(`^${cleanRoll}$`, 'i') } },
+        { id: cleanRoll }
+      ]
+    });
+
+    if (!student) {
+      return res.status(404).json({ error: 'No student found with this Roll Number. Please verify and try again.' });
+    }
+
+    // Optional phone validation if provided
+    if (cleanPhone && student.parentPhone) {
+      const dbPhone = String(student.parentPhone).replace(/\D/g, '');
+      const inputPhone = cleanPhone.replace(/\D/g, '');
+      if (inputPhone && !dbPhone.includes(inputPhone) && !inputPhone.includes(dbPhone)) {
+        return res.status(401).json({ error: 'Parent phone number does not match institute records.' });
+      }
+    }
+
+    // Fetch Attendance records for this student
+    const attendanceRecords = await Attendance.find({ studentId: student.id })
+      .sort({ date: -1 })
+      .limit(30);
+
+    // Fetch Test Results for this student
+    const rawTestResults = await TestResult.find({ studentId: student.id })
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    // Enrich test results with Test details
+    const testIds = rawTestResults.map(r => r.testId);
+    const tests = await Test.find({ id: { $in: testIds } });
+    const testMap = {};
+    tests.forEach(t => { testMap[t.id] = t; });
+
+    const enrichedResults = rawTestResults.map(r => {
+      const t = testMap[r.testId] || {};
+      return {
+        id: r.id,
+        testName: t.name || 'OMR Exam',
+        testDate: t.testDate || (r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN') : 'Recent'),
+        marks: r.marks,
+        totalMarks: r.totalMarks,
+        percentage: r.percentage,
+        rank: r.rank,
+        totalStudents: r.totalStudents,
+        omrSheetImage: r.omrSheetImage
+      };
+    });
+
+    // Calculate attendance percentage
+    const totalAtt = attendanceRecords.length;
+    const presentAtt = attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length;
+    const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
+
+    res.json({
+      success: true,
+      student: {
+        id: student.id,
+        name: student.name,
+        rollNo: student.rollNo,
+        batch: student.batch,
+        class: student.class,
+        parentName: student.parentName,
+        parentPhone: student.parentPhone,
+        photo: student.photo,
+        attendanceRate: attPercentage,
+        presentCount: presentAtt,
+        totalAttendanceCount: totalAtt
+      },
+      attendance: attendanceRecords,
+      testResults: enrichedResults
+    });
+
+  } catch (err) {
+    console.error('Parent Login Error:', err);
+    res.status(500).json({ error: 'Server error during parent login' });
+  }
+});
+
 // Serve Frontend Static Files & SPA Routing for Staff Attendance Web Portal
 const distPath = path.join(__dirname, '../dist');
 if (fs.existsSync(distPath)) {
