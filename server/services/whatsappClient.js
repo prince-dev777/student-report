@@ -148,34 +148,34 @@ export function initializeWhatsAppClient() {
       ]
     };
 
-    // In a packaged app, the bundled Chromium might not be available.
-    // Electron's own binary cannot be used as a drop-in Chrome replacement for Puppeteer.
-    // Find system Chrome/Edge:
-    if (process.env.ELECTRON_EXEC_PATH || __dirname.includes('app.asar')) {
-      const browserPaths = [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
-      ];
-      
-      for (const bPath of browserPaths) {
-        if (fs.existsSync(bPath)) {
-          puppeteerOptions.executablePath = bPath;
-          console.log(`[WhatsAppClient] Found browser at: ${bPath}`);
-          break;
-        }
+    // Always search for system Chrome or Edge for fast, stable Puppeteer launch
+    const browserPaths = [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+    ];
+    
+    for (const bPath of browserPaths) {
+      if (fs.existsSync(bPath)) {
+        puppeteerOptions.executablePath = bPath;
+        console.log(`[WhatsAppClient] Found system browser at: ${bPath}`);
+        break;
       }
-      
-      if (!puppeteerOptions.executablePath) {
-        console.warn('[WhatsAppClient] WARNING: Could not find system Chrome or Edge! WhatsApp initialization may fail.');
-      }
+    }
+    
+    if (!puppeteerOptions.executablePath) {
+      console.warn('[WhatsAppClient] WARNING: Could not find system Chrome or Edge! Falling back to bundled Puppeteer.');
     }
 
     client = new Client({
       authStrategy: new LocalAuth({
-        dataPath: path.join(dataPath, '.wwebjs_auth')
+        dataPath: path.join(dataPath, 'data', '.wwebjs_auth')
       }),
+      webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1014111620-alpha.html',
+      },
       puppeteer: puppeteerOptions
     });
 

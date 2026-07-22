@@ -286,6 +286,7 @@ app.post('/api/auth/staff-login', async (req, res) => {
       username: user.username,
       instituteName: institute.name,
       instituteId: institute._id,
+      logo: institute.logo || null,
       staffPasscode: validPasscode
     });
   } catch (err) {

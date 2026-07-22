@@ -17,6 +17,52 @@ export default function StaffAttendanceWeb() {
   const [batchFilter, setBatchFilter] = useState('ALL');
   const [savingId, setSavingId] = useState(null);
 
+  // PWA Home Screen Install State
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(true);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    const checkStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    setIsStandalone(!!checkStandalone);
+
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          toast.success('🎉 Staff App installed successfully!');
+          setShowInstallBanner(false);
+        }
+      } catch(e) {}
+      setDeferredPrompt(null);
+    } else {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        toast('📱 Mobile Install: Browser Menu (⋮ or Share) ➔ "Add to Home Screen"', {
+          icon: '📱',
+          duration: 8000
+        });
+      } else {
+        toast('💻 Laptop Install: Look at Address Bar ➔ Click (⊕) Install App icon OR Chrome Menu (⋮) ➔ Save & Share ➔ Install App', {
+          icon: '💻',
+          duration: 9000
+        });
+      }
+    }
+  };
+
   // Passcode Auth with Backend Token
   const [passcode, setPasscode] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -37,9 +83,9 @@ export default function StaffAttendanceWeb() {
 
       if (res.ok) {
         const data = await res.json();
-        if (data.token) {
-          localStorage.setItem('staff_token', data.token);
-        }
+        if (data.token) localStorage.setItem('staff_token', data.token);
+        if (data.logo) localStorage.setItem('institute_logo', data.logo);
+        if (data.instituteName) localStorage.setItem('institute_name', data.instituteName);
         setIsAuthenticated(true);
         sessionStorage.setItem('staff_authed', 'true');
         toast.success(`Welcome to Staff Portal! (${data.instituteName || 'Career Xone'})`);
@@ -296,8 +342,22 @@ export default function StaffAttendanceWeb() {
   const unmarkedCount = totalStudents - (presentCount + absentCount + lateCount);
   const attendancePercentage = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
 
-  // Filtered student list
-  const batches = Array.from(new Set(students.map(s => s.batch || 'Default'))).filter(Boolean);
+const BATCH_MAP = {
+  'batch-4': 'JEE Mains',
+  'batch-1': 'JEE Advanced',
+  'batch-2': 'NEET',
+  'batch-3': 'MHCET',
+};
+
+const getBatchName = (batch) => {
+  if (!batch) return 'Default';
+  return BATCH_MAP[batch] || batch;
+};
+
+  // Filtered student list & Batch Resolution
+  const defaultBatchNames = ['JEE Mains', 'JEE Advanced', 'NEET', 'MHCET'];
+  const studentBatchNames = students.map(s => getBatchName(s.batch));
+  const availableBatches = Array.from(new Set([...defaultBatchNames, ...studentBatchNames])).filter(Boolean);
 
   const filteredStudents = students.filter(student => {
     const nameMatch = (student.name || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -305,8 +365,11 @@ export default function StaffAttendanceWeb() {
     const phoneMatch = (student.parentPhone || '').includes(searchQuery);
     const matchesSearch = nameMatch || rollMatch || phoneMatch;
 
-    const studentBatch = student.batch || 'Default';
-    const matchesBatch = batchFilter === 'ALL' || studentBatch === batchFilter;
+    const studentBatchName = getBatchName(student.batch);
+    const matchesBatch = 
+      batchFilter === 'ALL' || 
+      studentBatchName === batchFilter || 
+      student.batch === batchFilter;
 
     const currentStatus = getStudentStatus(student.id).status;
     const matchesStatus = 
@@ -319,16 +382,65 @@ export default function StaffAttendanceWeb() {
     return matchesSearch && matchesBatch && matchesStatus;
   });
 
+  const instituteLogo = localStorage.getItem('institute_logo') || localStorage.getItem('logo');
+  const instituteName = localStorage.getItem('institute_name') || 'Career Xone';
+
   return (
     <div style={styles.container}>
+      {/* PWA Home Screen Install Banner */}
+      {!isStandalone && showInstallBanner && (
+        <div style={{
+          background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+          color: '#f8fafc', padding: '10px 14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '12px', fontSize: '0.82rem', borderBottom: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.2rem' }}>💻📱</span>
+            <div>
+              <strong style={{ display: 'block', lineHeight: '1.2' }}>Install Staff App (Laptop & Mobile)</strong>
+              <span style={{ color: '#94a3b8', fontSize: '0.73rem' }}>
+                Create Desktop / Home Screen Shortcut App Icon for 1-tap launch!
+              </span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button
+              onClick={handleInstallApp}
+              style={{
+                background: '#2563eb', color: '#fff', border: 'none',
+                padding: '6px 12px', borderRadius: '8px', fontWeight: 600,
+                fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap'
+              }}
+            >
+              Add to Home Screen
+            </button>
+            <button
+              onClick={() => setShowInstallBanner(false)}
+              style={{ background: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '4px' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Header */}
       <header style={styles.header}>
         <div style={styles.headerLeft}>
-          <div style={styles.logoBadge}>
-            <UserCheck size={20} color="#2563eb" />
-          </div>
+          {instituteLogo ? (
+            <img 
+              src={instituteLogo} 
+              alt="Institute Logo" 
+              style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover', border: '1px solid #cbd5e1' }}
+            />
+          ) : (
+            <div style={styles.logoBadge}>
+              <UserCheck size={20} color="#2563eb" />
+            </div>
+          )}
           <div>
-            <h1 style={styles.headerTitle}>Career Xone — Staff Portal</h1>
+            <h1 style={styles.headerTitle}>{instituteName} — Staff Portal</h1>
             <p style={styles.headerSubtitle}>Manual Attendance Management</p>
           </div>
         </div>
@@ -352,48 +464,156 @@ export default function StaffAttendanceWeb() {
 
       {/* Main Content */}
       <main style={styles.main}>
-        {/* Stats Grid */}
-        <div style={styles.statsGrid}>
-          <div style={{ ...styles.statCard, borderLeft: '4px solid #2563eb' }}>
-            <div style={styles.statIconWrapper('#2563eb')}>
-              <Users size={20} color="#2563eb" />
-            </div>
-            <div>
-              <span style={styles.statLabel}>Total Students</span>
-              <h3 style={styles.statValue}>{totalStudents}</h3>
-            </div>
-          </div>
+      {/* Responsive CSS for Laptop (4-Col Full) vs Mobile (2x2 Compact) */}
+      <style>{`
+        .staff-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        .staff-stat-card {
+          background: #ffffff;
+          padding: 16px;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .staff-stat-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .staff-stat-label {
+          font-size: 0.78rem;
+          color: #64748b;
+          font-weight: 500;
+          display: block;
+        }
+        .staff-stat-value {
+          font-size: 1.4rem;
+          font-weight: 800;
+          margin: 0;
+          color: #0f172a;
+          line-height: 1.2;
+        }
 
-          <div style={{ ...styles.statCard, borderLeft: '4px solid #059669' }}>
-            <div style={styles.statIconWrapper('#059669')}>
-              <CheckCircle2 size={20} color="#059669" />
-            </div>
-            <div>
-              <span style={styles.statLabel}>Present Today</span>
-              <h3 style={styles.statValue}>{presentCount} <small style={styles.statSub}>({attendancePercentage}%)</small></h3>
-            </div>
-          </div>
+        @media (max-width: 768px) {
+          .staff-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+          }
+          .staff-stat-card {
+            padding: 8px 10px;
+            gap: 8px;
+            border-radius: 10px;
+          }
+          .staff-stat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+          }
+          .staff-stat-label {
+            font-size: 0.72rem !important;
+          }
+          .staff-stat-value {
+            font-size: 1.1rem !important;
+          }
+        }
+      `}</style>
 
-          <div style={{ ...styles.statCard, borderLeft: '4px solid #dc2626' }}>
-            <div style={styles.statIconWrapper('#dc2626')}>
-              <XCircle size={20} color="#dc2626" />
-            </div>
-            <div>
-              <span style={styles.statLabel}>Absent</span>
-              <h3 style={styles.statValue}>{absentCount}</h3>
-            </div>
+      {/* Interactive Responsive Stats Grid */}
+      <div className="staff-stats-grid">
+        {/* Total Card */}
+        <div 
+          onClick={() => setStatusFilter('ALL')}
+          title="Click to view All Students"
+          className="staff-stat-card"
+          style={{ 
+            borderLeft: '4px solid #2563eb',
+            boxShadow: statusFilter === 'ALL' ? '0 0 0 2px #2563eb' : '0 2px 8px rgba(0,0,0,0.03)',
+            background: statusFilter === 'ALL' ? 'rgba(37,99,235,0.06)' : '#ffffff'
+          }}
+        >
+          <div className="staff-stat-icon" style={{ background: 'rgba(37,99,235,0.08)' }}>
+            <Users size={20} color="#2563eb" />
           </div>
-
-          <div style={{ ...styles.statCard, borderLeft: '4px solid #d97706' }}>
-            <div style={styles.statIconWrapper('#d97706')}>
-              <Clock size={20} color="#d97706" />
-            </div>
-            <div>
-              <span style={styles.statLabel}>Unmarked</span>
-              <h3 style={styles.statValue}>{unmarkedCount}</h3>
-            </div>
+          <div>
+            <span className="staff-stat-label">Total Students</span>
+            <h3 className="staff-stat-value">{totalStudents}</h3>
           </div>
         </div>
+
+        {/* Present Card */}
+        <div 
+          onClick={() => setStatusFilter('PRESENT')}
+          title="Click to view Present Students"
+          className="staff-stat-card"
+          style={{ 
+            borderLeft: '4px solid #059669',
+            boxShadow: statusFilter === 'PRESENT' ? '0 0 0 2px #059669' : '0 2px 8px rgba(0,0,0,0.03)',
+            background: statusFilter === 'PRESENT' ? 'rgba(5,150,105,0.06)' : '#ffffff'
+          }}
+        >
+          <div className="staff-stat-icon" style={{ background: 'rgba(5,150,105,0.08)' }}>
+            <CheckCircle2 size={20} color="#059669" />
+          </div>
+          <div>
+            <span className="staff-stat-label">Present Today</span>
+            <h3 className="staff-stat-value">{presentCount} <small style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600 }}>({attendancePercentage}%)</small></h3>
+          </div>
+        </div>
+
+        {/* Absent Card */}
+        <div 
+          onClick={() => setStatusFilter('ABSENT')}
+          title="Click to view Absent Students"
+          className="staff-stat-card"
+          style={{ 
+            borderLeft: '4px solid #dc2626',
+            boxShadow: statusFilter === 'ABSENT' ? '0 0 0 2px #dc2626' : '0 2px 8px rgba(0,0,0,0.03)',
+            background: statusFilter === 'ABSENT' ? 'rgba(220,38,38,0.06)' : '#ffffff'
+          }}
+        >
+          <div className="staff-stat-icon" style={{ background: 'rgba(220,38,38,0.08)' }}>
+            <XCircle size={20} color="#dc2626" />
+          </div>
+          <div>
+            <span className="staff-stat-label">Absent</span>
+            <h3 className="staff-stat-value">{absentCount}</h3>
+          </div>
+        </div>
+
+        {/* Unmarked Card */}
+        <div 
+          onClick={() => setStatusFilter('UNMARKED')}
+          title="Click to view Unmarked Students"
+          className="staff-stat-card"
+          style={{ 
+            borderLeft: '4px solid #d97706',
+            boxShadow: statusFilter === 'UNMARKED' ? '0 0 0 2px #d97706' : '0 2px 8px rgba(0,0,0,0.03)',
+            background: statusFilter === 'UNMARKED' ? 'rgba(217,119,6,0.06)' : '#ffffff'
+          }}
+        >
+          <div className="staff-stat-icon" style={{ background: 'rgba(217,119,6,0.08)' }}>
+            <Clock size={20} color="#d97706" />
+          </div>
+          <div>
+            <span className="staff-stat-label">Unmarked</span>
+            <h3 className="staff-stat-value">{unmarkedCount}</h3>
+          </div>
+        </div>
+      </div>
 
         {/* Controls & Search Bar */}
         <div style={styles.controlsBar}>
@@ -416,7 +636,7 @@ export default function StaffAttendanceWeb() {
               style={styles.selectInput}
             >
               <option value="ALL">All Batches</option>
-              {batches.map(b => (
+              {availableBatches.map(b => (
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
@@ -488,7 +708,7 @@ export default function StaffAttendanceWeb() {
                       <div style={styles.studentMeta}>
                         <span>Roll: {student.rollNo || 'N/A'}</span>
                         <span>•</span>
-                        <span>{student.batch || 'Default'}</span>
+                        <span style={{ fontWeight: 600, color: '#2563eb' }}>{getBatchName(student.batch)}</span>
                       </div>
                     </div>
 
@@ -638,48 +858,39 @@ const styles = {
   main: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '24px 16px'
+    padding: '12px 12px 32px'
   },
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '16px',
-    marginBottom: '24px'
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '6px',
+    marginBottom: '10px'
   },
   statCard: {
     background: '#ffffff',
-    padding: '16px',
-    borderRadius: '12px',
+    padding: '7px 10px',
+    borderRadius: '8px',
     border: '1px solid #e2e8f0',
     display: 'flex',
     alignItems: 'center',
-    gap: '14px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+    justifyContent: 'space-between',
+    gap: '4px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
   },
-  statIconWrapper: (color) => ({
-    width: '42px',
-    height: '42px',
-    borderRadius: '10px',
-    background: `${color}12`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  }),
   statLabel: {
-    fontSize: '0.78rem',
+    fontSize: '0.72rem',
     color: '#64748b',
-    fontWeight: 500,
-    display: 'block'
+    fontWeight: 600
   },
   statValue: {
-    fontSize: '1.4rem',
+    fontSize: '1rem',
     fontWeight: 800,
     margin: 0,
     color: '#0f172a',
-    lineHeight: 1.2
+    lineHeight: 1
   },
   statSub: {
-    fontSize: '0.8rem',
+    fontSize: '0.7rem',
     color: '#059669',
     fontWeight: 600
   },

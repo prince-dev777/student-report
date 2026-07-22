@@ -1,0 +1,17 @@
+{
+  "short_name": "Staff App",
+  "name": "Career Xone - Staff Attendance Portal",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512 192x192",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/#staff",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait"
+}
