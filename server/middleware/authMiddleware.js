@@ -26,3 +26,5 @@ export const protect = (req, res, next) => {
     res.status(401).json({ error: 'Not authorized, no token provided' });
   }
 };
+
+export const authenticateToken = protect;

@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
-  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2 
+  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
 import { subjects } from '../data/sampleData';
 import { formatDate, calcTestAverage, getMarksCategory, getRankBadgeClass } from '../utils/helpers';
@@ -19,11 +20,13 @@ export default function Tests() {
   const [activeTab, setActiveTab] = useState('all-tests');
   const [selectedTestResults, setSelectedTestResults] = useState(null);
   const [showResultsModal, setShowResultsModal] = useState(false);
+  const [omrScanErrors, setOmrScanErrors] = useState([]);
 
   // For Create Test form (Answer Key input removed as it is now moved to Enter Marks page)
   const [testForm, setTestForm] = useState({
     name: '',
     batch: '',
+    targetClass: '',
     date: new Date().toISOString().split('T')[0],
     totalMarks: 720,
     marksPerQuestion: 4,
@@ -65,7 +68,7 @@ export default function Tests() {
   const handleCreateTest = (e) => {
     e.preventDefault();
     if (!testForm.name.trim()) return toast.error('Test Name is required');
-    if (!testForm.batch) return toast.error('Please select a batch');
+    if (!testForm.batch) return toast.error('Please select a course');
     if (!testForm.totalMarks || testForm.totalMarks <= 0) return toast.error('Total Marks must be greater than 0');
 
     if (selectedSubjects.length === 0) return toast.error('Please select at least one subject');
@@ -74,6 +77,7 @@ export default function Tests() {
       name: testForm.name,
       subject: selectedSubjects.join(', '),
       batch: testForm.batch,
+      targetClass: testForm.targetClass,
       date: testForm.date,
       totalMarks: Number(testForm.totalMarks),
       marksPerQuestion: Number(testForm.marksPerQuestion) || 1,
@@ -86,6 +90,7 @@ export default function Tests() {
     setTestForm({
       name: '',
       batch: '',
+      targetClass: '',
       date: new Date().toISOString().split('T')[0],
       totalMarks: 100,
       marksPerQuestion: 4,
@@ -122,8 +127,8 @@ export default function Tests() {
       setDetectQuestions(180);
     }
 
-    // Get all active students in the selected test's batch
-    const batchStudents = students.filter(s => s.batch === test.batch && s.status === 'active');
+    // Get all active students in the selected test's course & class
+    const batchStudents = students.filter(s => s.batch === test.batch && (!test.targetClass || s.class === test.targetClass) && s.status === 'active');
     
     // Check if there are existing results for this test to pre-fill
     const existing = testResults.filter(r => r.testId === testId);
@@ -156,15 +161,17 @@ export default function Tests() {
   };
 
   // Submit test results
-  const handleMarksSubmit = async (e) => {
-    e.preventDefault();
+  const handleMarksSubmit = async (e, forceAction) => {
+    if (e) e.preventDefault();
+    const action = forceAction || (e?.nativeEvent?.submitter?.value) || 'Publish';
+    const submitStatus = action === 'Save' ? 'Saved' : 'Published';
     if (!entryTestId) return toast.error('Select a test first');
 
     const test = selectedEntryTest;
     if (!test) return;
 
     // Check if any mark exceeds totalMarks or is negative
-    const batchStudents = students.filter(s => s.batch === test.batch && s.status === 'active');
+    const batchStudents = students.filter(s => s.batch === test.batch && (!test.targetClass || s.class === test.targetClass) && s.status === 'active');
     const resultsPayload = [];
 
     for (const student of batchStudents) {
@@ -187,7 +194,7 @@ export default function Tests() {
       return toast.error('No student marks have been entered.');
     }
 
-    await submitTestResults(entryTestId, resultsPayload);
+    await submitTestResults(entryTestId, resultsPayload, submitStatus);
     setEntryTestId('');
     setMarksData({});
     setOmrStats({});
@@ -197,6 +204,7 @@ export default function Tests() {
 
   // Handle OMR Images Upload
   const handleOMRUpload = async (e) => {
+    setOmrScanErrors([]);
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
@@ -231,13 +239,36 @@ export default function Tests() {
       const newOmrStats = { ...omrStats };
       const newScannedAnswers = { ...scannedAnswersData };
       let matchedCount = 0;
+      const currentErrors = res.errors || [];
+      const seenRolls = new Set();
 
       res.results.forEach(r => {
+        let isDuplicate = false;
+        if (r.rollNo) {
+          if (seenRolls.has(String(r.rollNo))) {
+            isDuplicate = true;
+          }
+          seenRolls.add(String(r.rollNo));
+        }
+
         // Map rollNo to studentId using the students list
         const matchedStudent = students.find(s => String(s.rollNo) === String(r.rollNo));
-        if (!matchedStudent) {
-          console.warn(`OMR Scan: Student with Roll No ${r.rollNo} not found in database.`);
-          return;
+        
+        if (!matchedStudent || isDuplicate) {
+          currentErrors.push({
+            rollNumber: r.rollNo,
+            error: isDuplicate ? `Duplicate Roll No: ${r.rollNo}` : (r.rollNo ? `Roll No ${r.rollNo} not found` : 'Roll No missing'),
+            omrSheetImage: r.omrSheetImage
+          });
+          
+          if (!matchedStudent) {
+            console.warn(`OMR Scan: Student with Roll No ${r.rollNo} not found in database.`);
+            return;
+          }
+          if (isDuplicate) {
+            console.warn(`OMR Scan: Duplicate Roll No ${r.rollNo}.`);
+            return;
+          }
         }
         
         const sId = matchedStudent.id;
@@ -294,17 +325,18 @@ export default function Tests() {
           correct: correct,
           wrong: wrong
         };
+        
         matchedCount++;
       });
 
       setMarksData(newMarksData);
-      setOmrStats(newOmrStats);
       setScannedAnswersData(newScannedAnswers);
-      toast.success(`Successfully scanned and matched ${matchedCount} students!`);
-      
-      if (res.errors && res.errors.length > 0) {
-        toast.error(`${res.errors.length} images could not be scanned. See details.`);
-        console.error('OMR Errors:', res.errors);
+      setOmrStats(newOmrStats);
+      setOmrScanErrors(currentErrors);
+
+      toast.success(`Successfully scanned and matched ${matchedCount} OMR sheets.`);
+      if (currentErrors.length > 0) {
+        toast.error(`${currentErrors.length} sheets had issues (Duplicate or Missing Roll No). Please check the error log.`);
       }
     } catch (err) {
       console.error(err);
@@ -334,7 +366,7 @@ export default function Tests() {
       const subjectOrder = []; // to keep track of the order of subjects in the file
       
       parsedLines.forEach(cols => {
-        if (cols.length === 0 || cols[0] === '') return;
+        if (cols.length || cols[0] === '') return;
         
         const firstColUpper = cols[0].toUpperCase();
         
@@ -563,10 +595,39 @@ export default function Tests() {
     setShowResultsModal(true);
   };
 
-  const getBatchName = (batchId) => {
+  const handleDownloadExcel = () => {
+    if (!selectedTestResults || !selectedTestResults.results) return;
+    
+    const test = selectedTestResults.test;
+    const worksheetData = selectedTestResults.results.map(res => ({
+      'Rank': res.rank !== undefined ? res.rank : 'N/A',
+      'Roll No': res.rollNo,
+      'Student Name': res.studentName,
+      'Marks': `${res.marks} / ${res.totalMarks}`,
+      'Percentage': res.percentage !== undefined ? `${res.percentage}%` : 'N/A'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    
+    // Auto-size columns
+    const colWidths = [
+      { wch: 8 }, { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 12 }
+    ];
+    worksheet['!cols'] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Leaderboard");
+    
+    const fileName = `${test.name}_${test.subject}_Leaderboard.xlsx`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  const getCourseName = (batchId) => {
     const batch = batches.find((b) => b.id === batchId);
     return batch ? batch.name : 'Unknown';
   };
+
+  const uniqueClasses = Array.from(new Set(students.map(s => s.class))).filter(Boolean);
 
   // Helper to count how many students took a test
   const getAppearedCount = (testId) => {
@@ -648,7 +709,8 @@ export default function Tests() {
                     </div>
                     <h3 className="mb-8">{test.name}</h3>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }} className="mb-16">
-                      <div><strong>Batch:</strong> {getBatchName(test.batch)}</div>
+                      <div><strong>Course:</strong> {getCourseName(test.batch)}</div>
+                      {test.targetClass && <div><strong>Class:</strong> {test.targetClass}</div>}
                       <div><strong>Total Marks:</strong> {test.totalMarks}</div>
                       {(test.negativeMarking > 0 || test.marksPerQuestion > 1) && (
                         <div>
@@ -773,16 +835,29 @@ export default function Tests() {
                     </div>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Target Batch *</label>
+                    <label className="form-label">Target Course *</label>
                     <select
-                      className="form-select"
+                      className="form-select w-full"
                       value={testForm.batch}
                       onChange={e => setTestForm(prev => ({ ...prev, batch: e.target.value }))}
-                      style={{ marginTop: '8px' }}
                     >
-                      <option value="">Select Batch</option>
+                      <option value="">Select Course</option>
                       {batches.map(b => (
                         <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Target Class (Optional)</label>
+                    <select
+                      className="form-select w-full"
+                      value={testForm.targetClass}
+                      onChange={e => setTestForm(prev => ({ ...prev, targetClass: e.target.value }))}
+                    >
+                      <option value="">All Classes</option>
+                      {uniqueClasses.map(c => (
+                        <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
                   </div>
@@ -905,7 +980,7 @@ export default function Tests() {
                   <option value="">-- Select Test to Enter Marks --</option>
                   {tests.map(t => (
                     <option key={t.id} value={t.id}>
-                      {t.name} ({getBatchName(t.batch)}) - {t.subject}
+                      {t.name} ({getCourseName(t.batch)}{t.targetClass ? ` - ${t.targetClass}` : ''}) - {t.subject}
                     </option>
                   ))}
                 </select>
@@ -1010,12 +1085,59 @@ export default function Tests() {
                           style={{ display: 'none' }} 
                         />
                       </label>
-                      <button type="submit" className="btn btn-success" disabled={omrUploading}>
+                      <button 
+                        type="button" 
+                        name="action" 
+                        value="Save" 
+                        className="btn btn-outline-primary" 
+                        disabled={omrUploading}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        onClick={(e) => handleMarksSubmit(e, 'Save')}
+                      >
+                        <Save size={16} />
+                        Save Marks
+                      </button>
+                      <button 
+                        type="button" 
+                        name="action" 
+                        value="Publish" 
+                        className="btn btn-success" 
+                        disabled={omrUploading}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        onClick={(e) => handleMarksSubmit(e, 'Publish')}
+                      >
                         <UserCheck size={16} />
                         Publish & Send SMS
                       </button>
                     </div>
                   </div>
+
+                  {omrScanErrors && omrScanErrors.length > 0 && (
+                    <div className="alert alert-warning mb-4 p-4 border border-warning rounded" style={{ backgroundColor: '#fff3cd', color: '#856404', borderColor: '#ffeeba' }}>
+                      <h4 className="font-semibold mb-2 flex items-center gap-2">
+                        <X size={18} className="text-red-500" />
+                        OMR Scan Issues ({omrScanErrors.length})
+                      </h4>
+                      <p className="text-sm mb-3">The following OMR sheets could not be matched automatically or have duplicate roll numbers. Please check them manually.</p>
+                      <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-2">
+                        {omrScanErrors.map((err, idx) => (
+                          <div key={idx} className="flex justify-between items-center bg-white p-2 rounded shadow-sm border" style={{ borderColor: '#ffeeba' }}>
+                            <div>
+                              <span className="font-semibold text-red-600">Roll No: {err.rollNumber || 'Unknown'}</span>
+                              <span className="ml-3 text-sm text-gray-700">{err.error}</span>
+                              {err.details && <p className="text-xs text-gray-500 mt-1">{err.details}</p>}
+                            </div>
+                            {err.omrSheetImage && (
+                              <a href={err.omrSheetImage} target="_blank" rel="noreferrer" className="btn btn-outline-primary btn-sm ml-2">
+                                View Image
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button type="button" onClick={() => setOmrScanErrors([])} className="btn btn-sm btn-secondary mt-3">Dismiss</button>
+                    </div>
+                  )}
 
                   <div className="table-container mb-16">
                     <table className="data-table">
@@ -1029,7 +1151,7 @@ export default function Tests() {
                       </thead>
                       <tbody>
                         {students
-                          .filter(s => s.batch === selectedEntryTest?.batch && s.status === 'active')
+                          .filter(s => s.batch === selectedEntryTest?.batch && (!selectedEntryTest?.targetClass || s.class === selectedEntryTest?.targetClass) && s.status === 'active')
                           .map((student) => (
                             <tr key={student.id}>
                               <td>{student.rollNo}</td>
@@ -1151,7 +1273,11 @@ export default function Tests() {
                 </table>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button className="btn btn-outline-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={handleDownloadExcel}>
+                <Download size={16} />
+                Download Excel
+              </button>
               <button className="btn btn-primary" onClick={() => setShowResultsModal(false)}>
                 Close
               </button>

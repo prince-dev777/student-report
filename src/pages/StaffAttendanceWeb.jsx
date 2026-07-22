@@ -14,7 +14,8 @@ export default function StaffAttendanceWeb() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [batchFilter, setBatchFilter] = useState('ALL');
+  const [courseFilter, setCourseFilter] = useState('ALL');
+  const [classFilter, setClassFilter] = useState('ALL');
   const [savingId, setSavingId] = useState(null);
 
   // PWA Home Screen Install State
@@ -385,37 +386,41 @@ const BATCH_MAP = {
   'batch-3': 'MHCET',
 };
 
-const getBatchName = (batch) => {
+const getCourseName = (batch) => {
   if (!batch) return 'Default';
   return BATCH_MAP[batch] || batch;
 };
 
-  // Filtered student list & Batch Resolution
-  const defaultBatchNames = ['JEE Mains', 'JEE Advanced', 'NEET', 'MHCET'];
-  const studentBatchNames = students.map(s => getBatchName(s.batch));
-  const availableBatches = Array.from(new Set([...defaultBatchNames, ...studentBatchNames])).filter(Boolean);
+  // Filtered student list & Course/Class Resolution
+  const defaultCourseNames = ['JEE Mains', 'JEE Advanced', 'NEET', 'MHCET'];
+  const studentCourseNames = students.map(s => getCourseName(s.batch));
+  const availableCourses = Array.from(new Set([...defaultCourseNames, ...studentCourseNames])).filter(Boolean);
+  const availableClasses = Array.from(new Set(students.map(s => s.class))).filter(Boolean);
 
   const filteredStudents = students.filter(student => {
-    const nameMatch = (student.name || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const rollMatch = (student.rollNo || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const phoneMatch = (student.parentPhone || '').includes(searchQuery);
+    const nameMatch = String(student.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const rollMatch = String(student.rollNo || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const phoneMatch = String(student.parentPhone || '').includes(searchQuery);
     const matchesSearch = nameMatch || rollMatch || phoneMatch;
 
-    const studentBatchName = getBatchName(student.batch);
-    const matchesBatch = 
-      batchFilter === 'ALL' || 
-      studentBatchName === batchFilter || 
-      student.batch === batchFilter;
+    const studentCourseName = getCourseName(student.batch);
+    const matchesCourse = 
+      courseFilter === 'ALL' || 
+      studentCourseName === courseFilter || 
+      student.batch === courseFilter;
+      
+    const matchesClass = classFilter === 'ALL' || student.class === classFilter;
 
     const currentStatus = getStudentStatus(student.id).status;
     const matchesStatus = 
       statusFilter === 'ALL' ||
       (statusFilter === 'PRESENT' && (currentStatus === 'PRESENT' || currentStatus === 'IN')) ||
+      (statusFilter === 'OUT' && currentStatus === 'OUT') ||
       (statusFilter === 'ABSENT' && currentStatus === 'ABSENT') ||
       (statusFilter === 'LATE' && currentStatus === 'LATE') ||
       (statusFilter === 'UNMARKED' && currentStatus === 'UNMARKED');
 
-    return matchesSearch && matchesBatch && matchesStatus;
+    return matchesSearch && matchesCourse && matchesClass && matchesStatus;
   });
 
   const instituteLogo = localStorage.getItem('institute_logo') || localStorage.getItem('logo');
@@ -685,15 +690,39 @@ const getBatchName = (batch) => {
           </div>
 
           <div style={styles.filtersWrapper}>
-            {/* Batch Filter */}
+            {/* Course Filter */}
             <select
-              value={batchFilter}
-              onChange={(e) => setBatchFilter(e.target.value)}
-              style={styles.selectInput}
+              value={courseFilter}
+              onChange={(e) => setCourseFilter(e.target.value)}
+              style={{
+                padding: '10px 16px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                outline: 'none',
+                minWidth: '150px'
+              }}
             >
-              <option value="ALL">All Batches</option>
-              {availableBatches.map(b => (
+              <option value="ALL">All Courses</option>
+              {availableCourses.map(b => (
                 <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+
+            {/* Class Filter */}
+            <select
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              style={{
+                padding: '10px 16px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                outline: 'none',
+                minWidth: '150px'
+              }}
+            >
+              <option value="ALL">All Classes</option>
+              {availableClasses.map(c => (
+                <option key={c} value={c}>{c}</option>
               ))}
             </select>
 
@@ -704,7 +733,8 @@ const getBatchName = (batch) => {
               style={styles.selectInput}
             >
               <option value="ALL">All Statuses</option>
-              <option value="PRESENT">Present</option>
+              <option value="PRESENT">Checked In / Present</option>
+              <option value="OUT">Checked Out</option>
               <option value="ABSENT">Absent</option>
               <option value="LATE">Late</option>
               <option value="UNMARKED">Unmarked</option>
@@ -764,7 +794,8 @@ const getBatchName = (batch) => {
                       <div style={styles.studentMeta}>
                         <span>Roll: {student.rollNo || 'N/A'}</span>
                         <span>•</span>
-                        <span style={{ fontWeight: 600, color: '#2563eb' }}>{getBatchName(student.batch)}</span>
+                        <span style={{ fontWeight: 600, color: '#2563eb' }}>{getCourseName(student.batch)}</span>
+                        {student.class && <span style={{ color: '#64748b', fontSize: '14px', marginLeft: '8px' }}>| Class: {student.class}</span>}
                       </div>
                     </div>
 

@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    open: true,
+    strictPort: true,
+    open: false,
     watch: {
       ignored: ['**/server/**', '**/.wwebjs_cache/**', '**/.wwebjs_auth/**']
     }

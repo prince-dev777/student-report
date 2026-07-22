@@ -8,6 +8,7 @@ const testSchema = new mongoose.Schema({
   date: { type: String, required: true },
   totalMarks: { type: Number, required: true },
   batch: { type: String, required: true },
+  targetClass: { type: String },
   // Answer key: can be flat array ["A","B",...] or subject-wise { "Physics": ["A","B",...], "Chemistry": [...] }
   answerKey: { type: mongoose.Schema.Types.Mixed, default: [] },
   // Negative marking support (e.g., NEET: marksPerQuestion=4, negativeMarking=1)

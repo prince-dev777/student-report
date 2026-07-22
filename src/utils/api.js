@@ -68,7 +68,9 @@ export const api = {
 
   // Students
   getStudents: () => apiRequest('/students'),
+  getStudent: (id) => apiRequest(`/students/${id}`),
   createStudent: (student) => apiRequest('/students', { method: 'POST', body: JSON.stringify(student) }),
+  addStudentsBulk: (studentsData) => apiRequest('/students/bulk', { method: 'POST', body: JSON.stringify(studentsData) }),
   updateStudent: (id, updates) => apiRequest(`/students/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
   deleteStudent: (id) => apiRequest(`/students/${id}`, { method: 'DELETE' }),
 

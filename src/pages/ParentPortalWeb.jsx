@@ -434,7 +434,7 @@ export default function ParentPortalWeb() {
                 <span>•</span>
                 <span>Roll: <strong style={{ color: '#0f172a' }}>{studentData?.rollNo}</strong></span>
                 <span>•</span>
-                <span>Batch: <strong style={{ color: '#0284c7', fontWeight: 800 }}>{formatBatchName(studentData?.batch)}</strong></span>
+                <span>Course: <strong style={{ color: '#0284c7', fontWeight: 800 }}>{formatBatchName(studentData?.batch)}</strong></span>
               </div>
             </div>
           </div>

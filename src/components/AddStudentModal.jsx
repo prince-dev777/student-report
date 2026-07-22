@@ -179,7 +179,7 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Batch</label>
+                    <label className="form-label">Course</label>
                     <select
                       name="batch"
                       value={form.batch}

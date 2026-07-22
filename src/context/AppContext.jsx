@@ -372,7 +372,7 @@ export function AppProvider({ children }) {
     toast.success('Test deleted locally!');
   }, [backendOnline]);
 
-  const submitTestResults = useCallback(async (testId, results) => {
+  const submitTestResults = useCallback(async (testId, results, status = 'Published') => {
     const test = tests.find((t) => t.id === testId);
     if (!test) return;
 
@@ -393,8 +393,8 @@ export function AppProvider({ children }) {
         percentage: Math.round((r.marks / test.totalMarks) * 1000) / 10,
         rank: r.rank,
         totalStudents,
-        smsSent: true,
-        status: 'Published',
+        smsSent: status === 'Published',
+        status: status,
         studentAnswers: payloadItem ? payloadItem.studentAnswers : []
       };
     });

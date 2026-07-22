@@ -20,7 +20,7 @@ import SMSLog from './models/SMSLog.js';
 import User from './models/User.js';
 import Institute from './models/Institute.js';
 import Notification from './models/Notification.js';
-import { protect } from './middleware/authMiddleware.js';
+import { protect, authenticateToken } from './middleware/authMiddleware.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { sendWhatsAppAlert } from './services/whatsappService.js';
@@ -692,6 +692,29 @@ app.post('/api/staff/attendance', async (req, res) => {
       { new: true, upsert: true }
     );
 
+    try {
+      let actionText = status === 'IN' ? 'Checked In' : status === 'OUT' ? 'Checked Out' : 'been marked Absent';
+      const timeString = new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const message = `Dear Parent, ${student.name} has ${actionText} at ${timeString}.`;
+
+      // Create a Notification for the parent portal
+      await Notification.create({
+        instituteId: req.user.instituteId,
+        studentId: student.id,
+        title: 'Attendance Update',
+        message: message,
+        type: 'attendance',
+        isRead: false
+      });
+
+      // Send WhatsApp Alert
+      if (student.parentPhone) {
+        await sendWhatsAppAlert(student.parentPhone, message);
+      }
+    } catch (notifyErr) {
+      console.error("Failed to send attendance notification:", notifyErr);
+    }
+
     res.status(201).json(record);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -787,6 +810,79 @@ app.get('/api/students', async (req, res) => {
   try {
     const students = await Student.find({ instituteId: req.user.instituteId }).sort({ createdAt: -1 });
     res.json(students);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/students/bulk', authenticateToken, async (req, res) => {
+  try {
+    const { studentsData } = req.body;
+    if (!Array.isArray(studentsData)) {
+      return res.status(400).json({ error: 'Expected an array of students' });
+    }
+
+    let added = 0;
+    let updated = 0;
+
+    for (const data of studentsData) {
+      if (!data.rollNo || !data.name) continue;
+
+      const rollNo = String(data.rollNo).trim();
+      
+      // Determine Parent credentials
+      let plainPassword = data.parentPassword || rollNo;
+      const salt = await bcrypt.genSalt(10);
+      const parentPasswordHash = await bcrypt.hash(plainPassword, salt);
+      
+      let parentUserId = data.parentUserId || rollNo;
+
+      // Check if student exists
+      const existingStudent = await Student.findOne({ rollNo, instituteId: req.user.instituteId });
+
+      if (existingStudent) {
+        // Update (Merge)
+        existingStudent.name = data.name || existingStudent.name;
+        existingStudent.batch = data.batch || existingStudent.batch;
+        existingStudent.class = data.class || existingStudent.class;
+        existingStudent.parentName = data.parentName || existingStudent.parentName;
+        existingStudent.parentPhone = data.parentPhone || existingStudent.parentPhone;
+        existingStudent.schoolName = data.schoolName || existingStudent.schoolName;
+        existingStudent.address = data.address || existingStudent.address;
+        
+        // Update credentials only if provided in excel
+        if (data.parentUserId) existingStudent.parentUserId = parentUserId;
+        if (data.parentPassword) {
+          existingStudent.parentPasswordPlain = plainPassword;
+          existingStudent.parentPasswordHash = parentPasswordHash;
+        }
+
+        await existingStudent.save();
+        updated++;
+      } else {
+        // Create new
+        // Check if parentUserId is unique
+        let finalParentUserId = parentUserId;
+        let exists = await Student.findOne({ parentUserId: String(finalParentUserId) });
+        if (exists) {
+          const random4 = Math.floor(1000 + Math.random() * 9000); // 4 digits
+          finalParentUserId = `${rollNo}-${random4}`;
+        }
+
+        const student = new Student({
+          ...data,
+          instituteId: req.user.instituteId,
+          id: generateServerId('STU'),
+          parentUserId: finalParentUserId,
+          parentPasswordHash,
+          parentPasswordPlain: plainPassword
+        });
+        await student.save();
+        added++;
+      }
+    }
+
+    res.status(201).json({ success: true, added, updated });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1121,7 +1217,7 @@ app.post('/api/attendance', async (req, res) => {
 });
 
 // ---- 📝 Tests API ----
-app.get('/api/tests', async (req, res) => {
+app.get('/api/tests', authenticateToken, async (req, res) => {
   try {
     const tests = await Test.find({ instituteId: req.user.instituteId }).sort({ date: -1 });
     res.json(tests);
@@ -1130,7 +1226,7 @@ app.get('/api/tests', async (req, res) => {
   }
 });
 
-app.post('/api/tests', async (req, res) => {
+app.post('/api/tests', authenticateToken, async (req, res) => {
   try {
     const test = new Test({ ...req.body, instituteId: req.user.instituteId });
     await test.save();
@@ -1140,7 +1236,7 @@ app.post('/api/tests', async (req, res) => {
   }
 });
 
-app.put('/api/tests/:id', async (req, res) => {
+app.put('/api/tests/:id', authenticateToken, async (req, res) => {
   try {
     const test = await Test.findOneAndUpdate(
       buildTestLookup(req.params.id, req.user.instituteId),
@@ -1154,7 +1250,7 @@ app.put('/api/tests/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/tests/:id', async (req, res) => {
+app.delete('/api/tests/:id', authenticateToken, async (req, res) => {
   try {
     const test = await Test.findOneAndDelete(buildTestLookup(req.params.id, req.user.instituteId));
     if (!test) return res.status(404).json({ error: 'Test not found' });
@@ -1167,7 +1263,7 @@ app.delete('/api/tests/:id', async (req, res) => {
 });
 
 // Re-grade all results for a test using its current answer key + marking scheme
-app.post('/api/tests/:id/regrade', async (req, res) => {
+app.post('/api/tests/:id/regrade', authenticateToken, async (req, res) => {
   try {
     const test = await Test.findOne(buildTestLookup(req.params.id, req.user.instituteId));
     if (!test) return res.status(404).json({ error: 'Test not found' });

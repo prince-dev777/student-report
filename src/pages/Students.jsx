@@ -1,31 +1,34 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X, FileSpreadsheet } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { calcAttendancePercent } from '../utils/helpers';
 import { getAvatarClass, getInitials } from '../data/sampleData';
 import AddStudentModal from '../components/AddStudentModal';
 import StudentProfileModal from '../components/StudentProfileModal';
+import BulkUploadModal from '../components/BulkUploadModal';
 
 export default function Students() {
   const { students, batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent } = useApp();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBatch, setSelectedBatch] = useState('all');
+  const [selectedCourse, setSelectedCourse] = useState('all');
+  const [selectedClass, setSelectedClass] = useState('all');
+
+  const uniqueClasses = Array.from(new Set(students.map(s => s.class))).filter(Boolean);
   const [modalOpen, setModalOpen] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
   const [createdStudentCreds, setCreatedStudentCreds] = useState(null);
 
   // Filters
-  const filteredStudents = students.filter((student) => {
-    const matchesSearch = 
-      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.rollNo.includes(searchQuery);
-    
-    const matchesBatch = selectedBatch === 'all' || student.batch === selectedBatch;
-    
-    return matchesSearch && matchesBatch;
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          student.rollNo.includes(searchQuery);
+    const matchesCourse = selectedCourse === 'all' || student.batch === selectedCourse;
+    const matchesClass = selectedClass === 'all' || student.class === selectedClass;
+    return matchesSearch && matchesCourse && matchesClass;
   });
 
   // Stats
@@ -36,6 +39,15 @@ export default function Students() {
   const handleAddClick = () => {
     setEditingStudent(null);
     setModalOpen(true);
+  };
+
+  const handleBulkAddClick = () => {
+    setBulkModalOpen(true);
+  };
+
+  const handleBulkSuccess = () => {
+    setBulkModalOpen(false);
+    window.location.reload();
   };
 
   const handleEditClick = (student) => {
@@ -60,16 +72,16 @@ export default function Students() {
     setEditingStudent(null);
   };
 
-  const handleDelete = (id, name) => {
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      deleteStudent(id);
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this student?')) {
+      await deleteStudent(id);
     }
   };
 
-  // Get batch name
-  const getBatchName = (batchId) => {
-    const batch = batches.find((b) => b.id === batchId);
-    return batch ? batch.name : 'Unknown';
+  // Get course name
+  const getCourseName = (batchId) => {
+    const course = batches.find((b) => b.id === batchId);
+    return course ? course.name : 'Unknown';
   };
 
   return (
@@ -82,13 +94,19 @@ export default function Students() {
       {/* Header */}
       <div className="page-header flex justify-between items-center flex-wrap gap-16">
         <div>
-          <h1>Students Directory</h1>
-          <p>Enrolled students details, batches, parents info, and attendance statistics.</p>
+          <h1 className="page-title">Students Directory</h1>
+          <p>Enrolled students details, courses, classes, parents info, and attendance statistics.</p>
         </div>
-        <button className="btn btn-primary" onClick={handleAddClick}>
-          <UserPlus size={18} />
-          Add Student
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button className="btn btn-secondary" onClick={handleBulkAddClick} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileSpreadsheet size={18} />
+            Add with Excel
+          </button>
+          <button className="btn btn-primary" onClick={handleAddClick}>
+            <UserPlus size={18} />
+            Add Student
+          </button>
+        </div>
       </div>
 
       {/* Stats row */}
@@ -140,17 +158,27 @@ export default function Students() {
 
           <div className="flex items-center gap-8">
             <SlidersHorizontal size={16} className="text-secondary" />
-            <select
+            <select 
               className="form-select"
-              value={selectedBatch}
-              onChange={(e) => setSelectedBatch(e.target.value)}
-              style={{ minWidth: '200px', padding: '8px 36px 8px 14px' }}
+              value={selectedCourse}
+              onChange={(e) => setSelectedCourse(e.target.value)}
+              style={{ minWidth: '150px' }}
             >
-              <option value="all">All Batches</option>
+              <option value="all">All Courses</option>
               {batches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            
+            <select 
+              className="form-select"
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              style={{ minWidth: '150px' }}
+            >
+              <option value="all">All Classes</option>
+              {uniqueClasses.map((c, i) => (
+                <option key={i} value={c}>{c}</option>
               ))}
             </select>
           </div>
@@ -165,7 +193,8 @@ export default function Students() {
               <tr>
                 <th>Roll No</th>
                 <th>Student</th>
-                <th>Batch</th>
+                <th>Course</th>
+                <th>Class</th>
                 <th>Parent Name</th>
                 <th>Parent Phone</th>
                 <th>Attendance</th>
@@ -210,7 +239,8 @@ export default function Students() {
                         </div>
                       </div>
                     </td>
-                    <td>{getBatchName(student.batch)}</td>
+                    <td>{getCourseName(student.batch)}</td>
+                    <td>{student.class || '-'}</td>
                     <td>{student.parentName}</td>
                     <td>{student.parentPhone}</td>
                     <td>
@@ -319,6 +349,12 @@ export default function Students() {
           </div>
         </div>
       )}
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal 
+        isOpen={bulkModalOpen} 
+        onClose={() => setBulkModalOpen(false)} 
+        onSuccess={handleBulkSuccess} 
+      />
     </motion.div>
   );
 }
