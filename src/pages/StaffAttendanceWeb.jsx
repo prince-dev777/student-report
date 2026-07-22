@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, CheckCircle2, XCircle, Clock, Search, Filter, 
-  Calendar, RefreshCw, LogOut, CheckCheck, UserCheck, ShieldAlert 
+  Calendar, RefreshCw, LogOut, LogIn, CheckCheck, UserCheck, ShieldAlert 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../utils/api';
@@ -249,19 +249,29 @@ export default function StaffAttendanceWeb() {
 
   // Get student's status for the selected date
   const getStudentStatus = (studentId) => {
-    const rec = dayRecords.find(r => r.studentId === studentId);
-    if (!rec) return { status: 'UNMARKED', time: '' };
+    const studentRecords = dayRecords.filter(r => r.studentId === studentId);
+    if (studentRecords.length === 0) return { status: 'UNMARKED', time: '' };
+
+    const lastRec = studentRecords[studentRecords.length - 1];
+    let st = (lastRec.status || 'UNMARKED').toUpperCase();
+
+    if (st === 'PRESENT' || st === 'CHECKED_IN') st = 'IN';
+    if (st === 'CHECKED_OUT') st = 'OUT';
+
+    const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
     return { 
-      status: (rec.status || 'PRESENT').toUpperCase(),
-      time: rec.timestamp ? new Date(rec.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+      status: st,
+      time: formatTime(lastRec.timestamp)
     };
   };
 
-  // Mark student attendance
+  // Mark student attendance (IN = Check In, OUT = Check Out, ABSENT = Absent)
   const handleMarkStatus = async (student, status) => {
     setSavingId(student.id);
     const now = new Date();
     const timeStr = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
+    const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const record = {
       studentId: student.id,
@@ -296,7 +306,8 @@ export default function StaffAttendanceWeb() {
         return updated;
       });
 
-      toast.success(`${student.name}: Marked ${status}`);
+      const label = status === 'IN' ? 'Checked In' : status === 'OUT' ? 'Checked Out' : 'Marked Absent';
+      toast.success(`${student.name}: ${label} at ${formattedTime}`);
     } catch (err) {
       toast.error('Failed to save attendance');
     } finally {
@@ -304,9 +315,9 @@ export default function StaffAttendanceWeb() {
     }
   };
 
-  // Mark all unmarked students as PRESENT
+  // Mark all unmarked students as Checked-In
   const handleMarkAllPresent = async () => {
-    const confirmMark = window.confirm(`Are you sure you want to mark all unmarked students as PRESENT for ${selectedDate}?`);
+    const confirmMark = window.confirm(`Are you sure you want to Check In all unmarked students for ${selectedDate}?`);
     if (!confirmMark) return;
 
     const unmarked = students.filter(s => getStudentStatus(s.id).status === 'UNMARKED');
@@ -315,32 +326,32 @@ export default function StaffAttendanceWeb() {
       return;
     }
 
-    toast.loading(`Marking ${unmarked.length} students as Present...`, { id: 'bulk' });
+    toast.loading(`Checking in ${unmarked.length} students...`, { id: 'bulk' });
     let count = 0;
     for (const student of unmarked) {
       try {
-        await handleMarkStatus(student, 'PRESENT');
+        await handleMarkStatus(student, 'IN');
         count++;
       } catch (e) {}
     }
-    toast.success(`Successfully marked ${count} students as Present!`, { id: 'bulk' });
+    toast.success(`Successfully Checked In ${count} students!`, { id: 'bulk' });
   };
 
   // Stats calculation
   const totalStudents = students.length;
-  let presentCount = 0;
+  let checkedInCount = 0;
+  let checkedOutCount = 0;
   let absentCount = 0;
-  let lateCount = 0;
 
   students.forEach(s => {
     const st = getStudentStatus(s.id).status;
-    if (st === 'PRESENT' || st === 'IN') presentCount++;
+    if (st === 'IN' || st === 'PRESENT') checkedInCount++;
+    else if (st === 'OUT') checkedOutCount++;
     else if (st === 'ABSENT') absentCount++;
-    else if (st === 'LATE') lateCount++;
   });
 
-  const unmarkedCount = totalStudents - (presentCount + absentCount + lateCount);
-  const attendancePercentage = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
+  const unmarkedCount = totalStudents - (checkedInCount + checkedOutCount + absentCount);
+  const attendancePercentage = totalStudents > 0 ? Math.round((checkedInCount / totalStudents) * 100) : 0;
 
 const BATCH_MAP = {
   'batch-4': 'JEE Mains',
@@ -714,27 +725,43 @@ const getBatchName = (batch) => {
 
                     {/* Status Badge */}
                     <div style={styles.statusBadge(status)}>
-                      {status === 'PRESENT' || status === 'IN' ? '✅ PRESENT' :
-                       status === 'ABSENT' ? '❌ ABSENT' :
-                       status === 'LATE' ? '⏱️ LATE' : '⏳ UNMARKED'}
+                      {status === 'IN' || status === 'PRESENT' ? '🟢 CHECKED IN' :
+                       status === 'OUT' ? '🔵 CHECKED OUT' :
+                       status === 'ABSENT' ? '🔴 ABSENT' : '⏳ UNMARKED'}
                       {time && <span style={{ fontSize: '0.7rem', opacity: 0.85, display: 'block' }}>{time}</span>}
                     </div>
                   </div>
 
-                  {/* Actions */}
+                  {/* Actions: Check In, Check Out, Absent */}
                   <div style={styles.cardActions}>
                     <button
-                      onClick={() => handleMarkStatus(student, 'PRESENT')}
+                      onClick={() => handleMarkStatus(student, 'IN')}
                       disabled={isSaving}
                       style={{
                         ...styles.actionBtn,
-                        background: status === 'PRESENT' || status === 'IN' ? '#059669' : '#f0fdf4',
-                        color: status === 'PRESENT' || status === 'IN' ? '#ffffff' : '#059669',
-                        border: '1px solid #bbf7d0'
+                        background: status === 'IN' || status === 'PRESENT' ? 'linear-gradient(135deg, #059669, #047857)' : '#f0fdf4',
+                        color: status === 'IN' || status === 'PRESENT' ? '#ffffff' : '#059669',
+                        border: '1px solid #bbf7d0',
+                        fontWeight: 700
                       }}
                     >
-                      <CheckCircle2 size={15} />
-                      Present
+                      <LogIn size={15} />
+                      Check In
+                    </button>
+
+                    <button
+                      onClick={() => handleMarkStatus(student, 'OUT')}
+                      disabled={isSaving}
+                      style={{
+                        ...styles.actionBtn,
+                        background: status === 'OUT' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : '#f0f9ff',
+                        color: status === 'OUT' ? '#ffffff' : '#0284c7',
+                        border: '1px solid #bae6fd',
+                        fontWeight: 700
+                      }}
+                    >
+                      <LogOut size={15} />
+                      Check Out
                     </button>
 
                     <button
@@ -744,25 +771,12 @@ const getBatchName = (batch) => {
                         ...styles.actionBtn,
                         background: status === 'ABSENT' ? '#dc2626' : '#fef2f2',
                         color: status === 'ABSENT' ? '#ffffff' : '#dc2626',
-                        border: '1px solid #fecaca'
+                        border: '1px solid #fecaca',
+                        fontWeight: 700
                       }}
                     >
                       <XCircle size={15} />
                       Absent
-                    </button>
-
-                    <button
-                      onClick={() => handleMarkStatus(student, 'LATE')}
-                      disabled={isSaving}
-                      style={{
-                        ...styles.actionBtn,
-                        background: status === 'LATE' ? '#d97706' : '#fffbeb',
-                        color: status === 'LATE' ? '#ffffff' : '#d97706',
-                        border: '1px solid #fde68a'
-                      }}
-                    >
-                      <Clock size={15} />
-                      Late
                     </button>
                   </div>
                 </motion.div>
@@ -1011,18 +1025,19 @@ const styles = {
     let bg = '#f1f5f9';
     let color = '#475569';
     if (status === 'PRESENT' || status === 'IN') { bg = '#dcfce7'; color = '#15803d'; }
+    else if (status === 'OUT') { bg = '#e0f2fe'; color = '#0369a1'; }
     else if (status === 'ABSENT') { bg = '#fee2e2'; color = '#b91c1c'; }
     else if (status === 'LATE') { bg = '#fef3c7'; color = '#b45309'; }
 
     return {
-      padding: '4px 10px',
-      borderRadius: '20px',
-      fontSize: '0.72rem',
-      fontWeight: 700,
       background: bg,
       color: color,
+      fontSize: '0.72rem',
+      fontWeight: 800,
+      padding: '4px 10px',
+      borderRadius: '8px',
       textAlign: 'center',
-      lineHeight: 1.2
+      flexShrink: 0
     };
   },
   cardActions: {
