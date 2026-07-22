@@ -8,6 +8,8 @@ import { spawn, spawnSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { v2 as cloudinary } from 'cloudinary';
+import cron from 'node-cron';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +31,12 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 const JWT_SECRET = process.env.JWT_SECRET || '8f5b8a6d4e2c9a1f3c7e6b5d4a9f8e2d1c3b5a4f7e6d8c9b0a1f2e3d4c5b6a7f';
+
+cloudinary.config({ 
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET 
+});
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -1373,6 +1381,22 @@ app.post('/api/test-results/bulk', async (req, res) => {
         return res.status(404).json({ error: `Test not found for id ${r.testId}` });
       }
 
+      // Check if uploading a base64 OMR image
+      if (r.omrSheetImage && r.omrSheetImage.startsWith('data:image')) {
+        if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+          try {
+            const uploadRes = await cloudinary.uploader.upload(r.omrSheetImage, {
+              folder: 'student_report_omr',
+              format: 'jpg'
+            });
+            r.omrSheetImage = uploadRes.secure_url;
+            r.omrSheetPublicId = uploadRes.public_id;
+          } catch (err) {
+            console.error('Cloudinary upload error:', err.message);
+          }
+        }
+      }
+
       // Check if updating existing result
       const filter = { testId: test.id, studentId: r.studentId, instituteId: req.user.instituteId };
       const updateData = {
@@ -1381,7 +1405,9 @@ app.post('/api/test-results/bulk', async (req, res) => {
         testId: test.id,
         totalMarks: r.totalMarks ?? test.totalMarks,
         percentage: r.percentage ?? Math.round((Number(r.marks) / test.totalMarks) * 1000) / 10,
-        instituteId: req.user.instituteId
+        instituteId: req.user.instituteId,
+        omrSheetImage: r.omrSheetImage,
+        omrSheetPublicId: r.omrSheetPublicId
       };
 
       const record = await TestResult.findOneAndUpdate(filter, updateData, { upsert: true, new: true });
@@ -1796,6 +1822,42 @@ app.get('*', (req, res) => {
   </div>
 </body>
 </html>`);
+});
+
+// --- Cron Job for OMR Image Deletion (30 Days) ---
+cron.schedule('0 0 * * *', async () => {
+  console.log('Running daily cron job for OMR auto-deletion...');
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    // Find records older than 30 days that have a Cloudinary public ID
+    const recordsToDelete = await TestResult.find({
+      createdAt: { $lt: thirtyDaysAgo },
+      omrSheetPublicId: { $ne: null }
+    });
+
+    if (recordsToDelete.length > 0) {
+      console.log(`Found ${recordsToDelete.length} OMR images to delete from Cloudinary.`);
+      if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+        for (const record of recordsToDelete) {
+          try {
+            await cloudinary.uploader.destroy(record.omrSheetPublicId);
+            record.omrSheetImage = null;
+            record.omrSheetPublicId = null;
+            await record.save();
+          } catch (err) {
+            console.error(`Failed to delete Cloudinary image ${record.omrSheetPublicId}:`, err.message);
+          }
+        }
+        console.log('Daily cron job for OMR auto-deletion completed.');
+      } else {
+         console.warn('Cloudinary keys missing. Skipping cron delete.');
+      }
+    }
+  } catch (err) {
+    console.error('Cron job error:', err.message);
+  }
 });
 
 // Start listening

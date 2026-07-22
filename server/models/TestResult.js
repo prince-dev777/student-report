@@ -13,7 +13,8 @@ const testResultSchema = new mongoose.Schema({
   smsSent: { type: Boolean, default: false },
   status: { type: String, enum: ['Draft', 'Published'], default: 'Draft' },
   studentAnswers: { type: [String], default: [] },
-  omrSheetImage: { type: String, default: null }
+  omrSheetImage: { type: String, default: null },
+  omrSheetPublicId: { type: String, default: null }
 }, { timestamps: true });
 
 // Ensure unique result per student per test
