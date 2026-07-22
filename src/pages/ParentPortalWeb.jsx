@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, Phone, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, Image as ImageIcon } from 'lucide-react';
+import { User, Lock, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, Image as ImageIcon } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function ParentPortalWeb() {
-  const [rollNumber, setRollNumber] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [userId, setUserId] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [studentData, setStudentData] = useState(null);
@@ -32,11 +32,11 @@ export default function ParentPortalWeb() {
     }
   };
 
-  // Real MongoDB Parent Login Handler
+  // Real MongoDB Parent Login Handler (User ID & Password)
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!rollNumber.trim()) {
-      toast.error('Please enter Student Roll Number');
+    if (!userId.trim()) {
+      toast.error('Please enter User ID / Roll Number');
       return;
     }
 
@@ -46,37 +46,38 @@ export default function ParentPortalWeb() {
       const res = await fetch('http://localhost:5000/api/parent/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rollNo: rollNumber.trim(), phone: phoneNumber.trim() })
+        body: JSON.stringify({ user_id: userId.trim(), password: password.trim() })
       });
 
       const data = await res.json();
 
-      if (res.ok && data.success) {
-        setStudentData(data.student);
+      if (res.ok && (data.success || data.token)) {
+        setStudentData(data.student || data.student_data);
         setAttendanceRecords(data.attendance || []);
         setTestResults(data.testResults || []);
         setIsLoggedIn(true);
-        toast.success(`Welcome Parent of ${data.student.name}!`);
+        toast.success(`Welcome Parent of ${(data.student || data.student_data)?.name || 'Student'}!`);
         return;
       } else {
-        toast.error(data.error || 'Student not found in institute records');
+        toast.error(data.error || 'Invalid User ID or Password');
       }
     } catch(err) {
-      console.warn('Backend API error, trying local storage check');
+      console.warn('Backend API offline, checking local storage');
       
       // Fallback local check
       const localStudents = JSON.parse(localStorage.getItem('students') || '[]');
       const foundLocal = localStudents.find(s => 
-        String(s.rollNumber || s.roll_no || s.id).toLowerCase() === rollNumber.trim().toLowerCase()
+        String(s.parentUserId || s.rollNumber || s.roll_no || s.id).toLowerCase() === userId.trim().toLowerCase()
       );
 
       if (foundLocal) {
         setStudentData({
           id: foundLocal.id,
           name: foundLocal.name,
-          rollNo: foundLocal.rollNumber || foundLocal.roll_no || rollNumber.trim(),
+          rollNo: foundLocal.rollNumber || foundLocal.roll_no || userId.trim(),
+          parentUserId: foundLocal.parentUserId || foundLocal.rollNumber || userId.trim(),
           batch: foundLocal.batch || 'JEE Mains 2026',
-          parentPhone: foundLocal.parentPhone || phoneNumber || '9876543210',
+          parentPhone: foundLocal.parentPhone || '9876543210',
           attendanceRate: 92,
           presentCount: 23,
           totalAttendanceCount: 25
@@ -94,7 +95,7 @@ export default function ParentPortalWeb() {
         setIsLoggedIn(true);
         toast.success(`Welcome Parent of ${foundLocal.name}!`);
       } else {
-        toast.error('❌ Student Roll Number not found. Please enter valid Roll Number!');
+        toast.error('❌ Invalid User ID or Password. Please verify credentials.');
       }
     } finally {
       setLoading(false);
@@ -104,7 +105,7 @@ export default function ParentPortalWeb() {
   const instituteName = localStorage.getItem('institute_name') || 'Career Xone';
   const instituteLogo = localStorage.getItem('institute_logo') || localStorage.getItem('logo') || '/logo.png';
 
-  // LOGIN SCREEN (Light Blue & Sky White Theme)
+  // LOGIN SCREEN (User ID & Password Login)
   if (!isLoggedIn) {
     return (
       <div style={{
@@ -145,21 +146,21 @@ export default function ParentPortalWeb() {
             padding: '4px 14px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 700,
             marginBottom: '24px', border: '1px solid #bae6fd'
           }}>
-            👨‍👩‍👧 Parent Student Progress Portal
+            👨‍👩‍👧 Parent App Portal
           </span>
 
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '18px', textAlign: 'left' }}>
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-                Student Roll Number / Reg No. <span style={{ color: '#ef4444' }}>*</span>
+                User ID / Roll Number <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <div style={{ position: 'relative' }}>
                 <User size={18} color="#0284c7" style={{ position: 'absolute', left: '14px', top: '14px' }} />
                 <input
                   type="text"
-                  placeholder="Enter Roll No (e.g. 0001 or 102)"
-                  value={rollNumber}
-                  onChange={(e) => setRollNumber(e.target.value)}
+                  placeholder="Enter User ID (e.g. 0001 or 0001-4829)"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
                   style={{
                     width: '100%', padding: '12px 14px 12px 42px', background: '#f8fafc',
                     border: '1.5px solid #cbd5e1', borderRadius: '12px', color: '#0f172a', fontSize: '0.92rem',
@@ -172,15 +173,15 @@ export default function ParentPortalWeb() {
 
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-                Parent Mobile Number (Optional Security Check)
+                Password / Roll Number <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <div style={{ position: 'relative' }}>
-                <Phone size={18} color="#0284c7" style={{ position: 'absolute', left: '14px', top: '14px' }} />
+                <Lock size={18} color="#0284c7" style={{ position: 'absolute', left: '14px', top: '14px' }} />
                 <input
-                  type="tel"
-                  placeholder="Enter 10-digit registered mobile"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  type="password"
+                  placeholder="Enter Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   style={{
                     width: '100%', padding: '12px 14px 12px 42px', background: '#f8fafc',
                     border: '1.5px solid #cbd5e1', borderRadius: '12px', color: '#0f172a', fontSize: '0.92rem',
@@ -201,7 +202,7 @@ export default function ParentPortalWeb() {
                 boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)', transition: 'all 0.2s ease'
               }}
             >
-              {loading ? 'Authenticating...' : <>View Student Performance <ArrowRight size={18} /></>}
+              {loading ? 'Authenticating...' : <>Login to Parent App <ArrowRight size={18} /></>}
             </button>
           </form>
         </div>
@@ -236,7 +237,7 @@ export default function ParentPortalWeb() {
           <img src={instituteLogo} alt="Logo" style={{ width: '38px', height: '38px', borderRadius: '10px', objectFit: 'contain' }} />
           <div>
             <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0369a1' }}>{instituteName}</h4>
-            <span style={{ fontSize: '0.73rem', color: '#0284c7', fontWeight: 700 }}>Parent Progress Portal</span>
+            <span style={{ fontSize: '0.73rem', color: '#0284c7', fontWeight: 700 }}>Parent App Portal</span>
           </div>
         </div>
 
@@ -275,22 +276,18 @@ export default function ParentPortalWeb() {
               fontSize: '1.4rem', fontWeight: 800, color: '#ffffff',
               boxShadow: '0 6px 16px rgba(2, 132, 199, 0.3)'
             }}>
-              {studentData.name ? studentData.name.charAt(0) : 'S'}
+              {studentData?.name ? studentData.name.charAt(0) : 'S'}
             </div>
             <div>
               <h2 style={{ margin: '0 0 4px 0', fontSize: '1.35rem', fontWeight: 900, color: '#0f172a' }}>
-                {studentData.name}
+                {studentData?.name}
               </h2>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '0.8rem', color: '#64748b' }}>
-                <span>Roll No: <strong style={{ color: '#0f172a' }}>{studentData.rollNo}</strong></span>
+                <span>User ID: <strong style={{ color: '#0284c7' }}>{studentData?.parentUserId || studentData?.rollNo}</strong></span>
                 <span>•</span>
-                <span>Batch: <strong style={{ color: '#0284c7' }}>{studentData.batch || 'Regular'}</strong></span>
-                {studentData.parentPhone && (
-                  <>
-                    <span>•</span>
-                    <span>Parent: <strong style={{ color: '#334155' }}>{studentData.parentPhone}</strong></span>
-                  </>
-                )}
+                <span>Roll: <strong style={{ color: '#0f172a' }}>{studentData?.rollNo}</strong></span>
+                <span>•</span>
+                <span>Batch: <strong style={{ color: '#334155' }}>{studentData?.batch || 'Regular'}</strong></span>
               </div>
             </div>
           </div>
@@ -300,14 +297,14 @@ export default function ParentPortalWeb() {
             <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '12px 16px', borderRadius: '14px' }}>
               <span style={{ fontSize: '0.74rem', color: '#0369a1', fontWeight: 600, display: 'block' }}>Attendance Rate</span>
               <strong style={{ fontSize: '1.35rem', color: '#0284c7', fontWeight: 900 }}>
-                {studentData.attendanceRate !== undefined ? studentData.attendanceRate : 90}%
+                {studentData?.attendanceRate !== undefined ? studentData.attendanceRate : 90}%
               </strong>
             </div>
 
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '12px 16px', borderRadius: '14px' }}>
               <span style={{ fontSize: '0.74rem', color: '#15803d', fontWeight: 600, display: 'block' }}>Present Days</span>
               <strong style={{ fontSize: '1.35rem', color: '#16a34a', fontWeight: 900 }}>
-                {studentData.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length} Days
+                {studentData?.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length} Days
               </strong>
             </div>
           </div>
