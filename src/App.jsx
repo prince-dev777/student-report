@@ -12,13 +12,14 @@ import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import SMSCenter from './pages/SMSCenter';
 import ShareApp from './pages/ShareApp';
-import WebLandingPage from './pages/WebLandingPage';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Tests from './pages/Tests';
 
 import StaffAttendanceWeb from './pages/StaffAttendanceWeb';
+import SaaSShowcaseLandingPage from './pages/SaaSShowcaseLandingPage';
+import ParentPortalWeb from './pages/ParentPortalWeb';
 
 function AppLayout() {
   return (
@@ -46,7 +47,16 @@ const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 
 export default function App() {
   if (!isElectron) {
-    return <StaffAttendanceWeb />;
+    return (
+      <HashRouter>
+        <Routes>
+          <Route path="/staff" element={<StaffAttendanceWeb />} />
+          <Route path="/parent" element={<ParentPortalWeb />} />
+          <Route path="/*" element={<SaaSShowcaseLandingPage />} />
+        </Routes>
+        <Toaster position="top-right" />
+      </HashRouter>
+    );
   }
 
   return (
