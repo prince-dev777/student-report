@@ -565,23 +565,43 @@ const getBatchName = (batch) => {
           </div>
         </div>
 
-        {/* Present Card */}
+        {/* Checked In Card */}
         <div 
-          onClick={() => setStatusFilter('PRESENT')}
-          title="Click to view Present Students"
+          onClick={() => setStatusFilter('IN')}
+          title="Click to view Checked In Students"
           className="staff-stat-card"
           style={{ 
             borderLeft: '4px solid #059669',
-            boxShadow: statusFilter === 'PRESENT' ? '0 0 0 2px #059669' : '0 2px 8px rgba(0,0,0,0.03)',
-            background: statusFilter === 'PRESENT' ? 'rgba(5,150,105,0.06)' : '#ffffff'
+            boxShadow: (statusFilter === 'IN' || statusFilter === 'PRESENT') ? '0 0 0 2px #059669' : '0 2px 8px rgba(0,0,0,0.03)',
+            background: (statusFilter === 'IN' || statusFilter === 'PRESENT') ? 'rgba(5,150,105,0.06)' : '#ffffff'
           }}
         >
           <div className="staff-stat-icon" style={{ background: 'rgba(5,150,105,0.08)' }}>
-            <CheckCircle2 size={20} color="#059669" />
+            <LogIn size={20} color="#059669" />
           </div>
           <div>
-            <span className="staff-stat-label">Present Today</span>
-            <h3 className="staff-stat-value">{presentCount} <small style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600 }}>({attendancePercentage}%)</small></h3>
+            <span className="staff-stat-label">Checked In</span>
+            <h3 className="staff-stat-value">{checkedInCount} <small style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600 }}>({attendancePercentage}%)</small></h3>
+          </div>
+        </div>
+
+        {/* Checked Out Card */}
+        <div 
+          onClick={() => setStatusFilter('OUT')}
+          title="Click to view Checked Out Students"
+          className="staff-stat-card"
+          style={{ 
+            borderLeft: '4px solid #0284c7',
+            boxShadow: statusFilter === 'OUT' ? '0 0 0 2px #0284c7' : '0 2px 8px rgba(0,0,0,0.03)',
+            background: statusFilter === 'OUT' ? 'rgba(2,132,199,0.06)' : '#ffffff'
+          }}
+        >
+          <div className="staff-stat-icon" style={{ background: 'rgba(2,132,199,0.08)' }}>
+            <LogOut size={20} color="#0284c7" />
+          </div>
+          <div>
+            <span className="staff-stat-label">Checked Out</span>
+            <h3 className="staff-stat-value">{checkedOutCount}</h3>
           </div>
         </div>
 
