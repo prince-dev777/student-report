@@ -108,7 +108,6 @@ export default function ParentPortalWeb() {
 
     setLoading(true);
     try {
-      // Direct Real API Auth against backend MongoDB
       const res = await fetch('http://localhost:5000/api/parent/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -130,7 +129,6 @@ export default function ParentPortalWeb() {
     } catch(err) {
       console.warn('Backend API offline, checking local storage');
       
-      // Fallback local check
       const localStudents = JSON.parse(localStorage.getItem('students') || '[]');
       const foundLocal = localStudents.find(s => 
         String(s.parentUserId || s.rollNumber || s.roll_no || s.id).toLowerCase() === userId.trim().toLowerCase()
@@ -181,7 +179,7 @@ export default function ParentPortalWeb() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px',
+        padding: '16px',
         fontFamily: "'Outfit', 'Inter', sans-serif"
       }}>
         <Toaster />
@@ -189,48 +187,48 @@ export default function ParentPortalWeb() {
           background: '#ffffff',
           border: '1px solid #bae6fd',
           borderRadius: '24px',
-          padding: '36px 28px',
+          padding: '32px 24px',
           width: '100%',
-          maxWidth: '420px',
-          boxShadow: '0 20px 40px rgba(2, 132, 199, 0.08), 0 4px 12px rgba(0,0,0,0.03)',
+          maxWidth: '400px',
+          boxShadow: '0 20px 40px rgba(2, 132, 199, 0.08)',
           textAlign: 'center'
         }}>
           <div style={{
-            width: '68px', height: '68px', margin: '0 auto 14px', borderRadius: '18px',
+            width: '60px', height: '60px', margin: '0 auto 12px', borderRadius: '16px',
             background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: '2px solid #7dd3fc', boxShadow: '0 6px 16px rgba(56, 189, 248, 0.2)'
           }}>
-            <img src={instituteLogo} alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'contain' }} />
+            <img src={instituteLogo} alt="Logo" style={{ width: '42px', height: '42px', borderRadius: '10px', objectFit: 'contain' }} />
           </div>
 
-          <h2 style={{ margin: '0 0 4px 0', fontSize: '1.5rem', fontWeight: 800, color: '#0369a1', letterSpacing: '-0.5px' }}>
+          <h2 style={{ margin: '0 0 2px 0', fontSize: '1.4rem', fontWeight: 800, color: '#0369a1', letterSpacing: '-0.5px' }}>
             {instituteName}
           </h2>
           <span style={{
             display: 'inline-block', background: '#e0f2fe', color: '#0284c7',
             padding: '4px 14px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 700,
-            marginBottom: '24px', border: '1px solid #bae6fd'
+            marginBottom: '20px', border: '1px solid #bae6fd'
           }}>
             👨‍👩‍👧 Parent App Portal
           </span>
 
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '18px', textAlign: 'left' }}>
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
             <div>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
                 User ID / Roll Number <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <div style={{ position: 'relative' }}>
-                <User size={18} color="#0284c7" style={{ position: 'absolute', left: '14px', top: '14px' }} />
+                <User size={18} color="#0284c7" style={{ position: 'absolute', left: '12px', top: '13px' }} />
                 <input
                   type="text"
-                  placeholder="Enter User ID (e.g. 0001 or 0001-4829)"
+                  placeholder="Enter User ID (e.g. 0001)"
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
                   style={{
-                    width: '100%', padding: '12px 14px 12px 42px', background: '#f8fafc',
-                    border: '1.5px solid #cbd5e1', borderRadius: '12px', color: '#0f172a', fontSize: '0.92rem',
-                    fontWeight: 600, outline: 'none', transition: 'all 0.2s ease'
+                    width: '100%', padding: '11px 12px 11px 40px', background: '#f8fafc',
+                    border: '1.5px solid #cbd5e1', borderRadius: '12px', color: '#0f172a', fontSize: '0.9rem',
+                    fontWeight: 600, outline: 'none'
                   }}
                   required
                 />
@@ -238,20 +236,20 @@ export default function ParentPortalWeb() {
             </div>
 
             <div>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
                 Password / Roll Number <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <div style={{ position: 'relative' }}>
-                <Lock size={18} color="#0284c7" style={{ position: 'absolute', left: '14px', top: '14px' }} />
+                <Lock size={18} color="#0284c7" style={{ position: 'absolute', left: '12px', top: '13px' }} />
                 <input
                   type="password"
                   placeholder="Enter Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
-                    width: '100%', padding: '12px 14px 12px 42px', background: '#f8fafc',
-                    border: '1.5px solid #cbd5e1', borderRadius: '12px', color: '#0f172a', fontSize: '0.92rem',
-                    fontWeight: 600, outline: 'none', transition: 'all 0.2s ease'
+                    width: '100%', padding: '11px 12px 11px 40px', background: '#f8fafc',
+                    border: '1.5px solid #cbd5e1', borderRadius: '12px', color: '#0f172a', fontSize: '0.9rem',
+                    fontWeight: 600, outline: 'none'
                   }}
                 />
               </div>
@@ -261,11 +259,11 @@ export default function ParentPortalWeb() {
               type="submit"
               disabled={loading}
               style={{
-                marginTop: '8px', background: 'linear-gradient(135deg, #0284c7, #0369a1)',
-                color: '#ffffff', border: 'none', padding: '14px', borderRadius: '12px',
-                fontWeight: 800, fontSize: '0.98rem', cursor: 'pointer', display: 'flex',
+                marginTop: '6px', background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                color: '#ffffff', border: 'none', padding: '13px', borderRadius: '12px',
+                fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', gap: '8px',
-                boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)', transition: 'all 0.2s ease'
+                boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
               }}
             >
               {loading ? 'Authenticating...' : <>Login to Parent App <ArrowRight size={18} /></>}
@@ -273,7 +271,7 @@ export default function ParentPortalWeb() {
           </form>
         </div>
 
-        {/* Force Install App Modal Prompt (Hides when installed) */}
+        {/* Force Install App Modal Prompt */}
         {showForceInstallModal && !isAppInstalled && (
           <div style={{
             position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
@@ -282,24 +280,24 @@ export default function ParentPortalWeb() {
           }}>
             <div style={{
               background: '#ffffff', border: '2px solid #38bdf8', borderRadius: '24px',
-              padding: '28px', maxWidth: '400px', width: '100%', textAlign: 'center',
+              padding: '24px', maxWidth: '380px', width: '100%', textAlign: 'center',
               boxShadow: '0 25px 50px -12px rgba(2, 132, 199, 0.35)', position: 'relative'
             }}>
               <button
                 onClick={() => setShowForceInstallModal(false)}
-                style={{ position: 'absolute', right: '14px', top: '14px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ position: 'absolute', right: '12px', top: '12px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <X size={16} color="#64748b" />
               </button>
 
-              <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <Smartphone size={32} color="#0284c7" />
+              <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                <Smartphone size={28} color="#0284c7" />
               </div>
 
-              <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: 900, color: '#0369a1' }}>
+              <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', fontWeight: 900, color: '#0369a1' }}>
                 Install Parent App
               </h3>
-              <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
+              <p style={{ margin: '0 0 18px 0', fontSize: '0.82rem', color: '#475569', lineHeight: 1.5 }}>
                 For a smooth, 1-tap app experience & instant notifications, please install the Parent App on your Phone Home Screen!
               </p>
 
@@ -307,7 +305,7 @@ export default function ParentPortalWeb() {
                 onClick={handleInstallApp}
                 style={{
                   width: '100%', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
-                  border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem',
+                  border: 'none', padding: '13px', borderRadius: '12px', fontWeight: 800, fontSize: '0.92rem',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
                 }}
@@ -321,81 +319,103 @@ export default function ParentPortalWeb() {
     );
   }
 
-  // LOGGED IN DASHBOARD (Clean Light Sky-Blue Aesthetics)
+  // LOGGED IN DASHBOARD (Mobile-Optimized Sky-Blue Aesthetics)
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(180deg, #f0f7ff 0%, #e0f2fe 30%, #f8fafc 100%)',
       color: '#0f172a',
       fontFamily: "'Outfit', 'Inter', sans-serif",
-      paddingBottom: '40px'
+      paddingBottom: '30px'
     }}>
       <Toaster />
 
+      {/* Global CSS for Mobile Polishing */}
+      <style>{`
+        @media (max-width: 600px) {
+          .parent-header { padding: 10px 14px !important; }
+          .parent-logo-title { gap: 8px !important; }
+          .parent-logo-img { width: 30px !important; height: 30px !important; }
+          .parent-inst-name { font-size: 0.88rem !important; }
+          .parent-inst-sub { font-size: 0.65rem !important; }
+          .parent-header-btn { padding: 5px 8px !important; font-size: 0.7rem !important; }
+          .student-card { padding: 16px !important; border-radius: 16px !important; }
+          .student-avatar { width: 44px !important; height: 44px !important; font-size: 1.15rem !important; border-radius: 12px !important; }
+          .student-name { font-size: 1.15rem !important; }
+          .student-meta-pills { font-size: 0.73rem !important; gap: 4px 8px !important; }
+          .metrics-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-top: 14px !important; }
+          .metric-card { padding: 8px 10px !important; border-radius: 10px !important; }
+          .metric-num { font-size: 1.15rem !important; }
+          .tab-btn-bar { gap: 8px !important; margin-bottom: 14px !important; }
+          .tab-btn { padding: 9px 6px !important; font-size: 0.78rem !important; border-radius: 10px !important; }
+        }
+      `}</style>
+
       {/* Header */}
-      <header style={{
+      <header className="parent-header" style={{
         background: '#ffffff',
         borderBottom: '1px solid #e2e8f0',
-        padding: '14px 5%',
+        padding: '12px 5%',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-        sticky: 'top',
+        position: 'sticky',
+        top: 0,
         zIndex: 50
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img src={instituteLogo} alt="Logo" style={{ width: '38px', height: '38px', borderRadius: '10px', objectFit: 'contain' }} />
+        <div className="parent-logo-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img className="parent-logo-img" src={instituteLogo} alt="Logo" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} />
           <div>
-            <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0369a1' }}>{instituteName}</h4>
-            <span style={{ fontSize: '0.73rem', color: '#0284c7', fontWeight: 700 }}>Parent App Portal</span>
+            <h4 className="parent-inst-name" style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#0369a1', lineHeight: 1.1 }}>{instituteName}</h4>
+            <span className="parent-inst-sub" style={{ fontSize: '0.7rem', color: '#0284c7', fontWeight: 700 }}>Parent App Portal</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           {!isAppInstalled && (
-            <button onClick={handleInstallApp} style={{
+            <button className="parent-header-btn" onClick={handleInstallApp} style={{
               background: 'rgba(2, 132, 199, 0.1)', border: '1px solid #bae6fd',
-              color: '#0284c7', padding: '7px 14px', borderRadius: '10px', fontSize: '0.78rem',
-              fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+              color: '#0284c7', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem',
+              fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
             }}>
               📲 Add App Icon
             </button>
           )}
-          <button onClick={() => setIsLoggedIn(false)} style={{
+          <button className="parent-header-btn" onClick={() => setIsLoggedIn(false)} style={{
             background: '#fff1f2', border: '1px solid #fecdd3',
-            color: '#e11d48', padding: '7px 14px', borderRadius: '10px', fontSize: '0.78rem',
-            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+            color: '#e11d48', padding: '6px 10px', borderRadius: '8px', fontSize: '0.75rem',
+            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
           }}>
-            <LogOut size={14} /> Logout
+            <LogOut size={13} /> Logout
           </button>
         </div>
       </header>
 
       {/* Main Container */}
-      <div style={{ maxWidth: '900px', margin: '24px auto 0', padding: '0 4%' }}>
+      <div style={{ maxWidth: '600px', margin: '16px auto 0', padding: '0 12px' }}>
         
         {/* Student Profile Card */}
-        <div style={{
+        <div className="student-card" style={{
           background: '#ffffff', border: '1px solid #bae6fd',
-          borderRadius: '20px', padding: '22px', marginBottom: '20px',
-          boxShadow: '0 8px 30px rgba(2, 132, 199, 0.06)'
+          borderRadius: '20px', padding: '20px', marginBottom: '16px',
+          boxShadow: '0 6px 20px rgba(2, 132, 199, 0.05)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{
-              width: '56px', height: '56px', borderRadius: '16px',
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div className="student-avatar" style={{
+              width: '50px', height: '50px', borderRadius: '14px',
               background: 'linear-gradient(135deg, #0284c7, #0369a1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1.4rem', fontWeight: 800, color: '#ffffff',
-              boxShadow: '0 6px 16px rgba(2, 132, 199, 0.3)'
+              fontSize: '1.3rem', fontWeight: 800, color: '#ffffff',
+              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)', flexShrink: 0
             }}>
               {studentData?.name ? studentData.name.charAt(0) : 'S'}
             </div>
-            <div>
-              <h2 style={{ margin: '0 0 4px 0', fontSize: '1.35rem', fontWeight: 900, color: '#0f172a' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h2 className="student-name" style={{ margin: '0 0 4px 0', fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {studentData?.name}
               </h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '0.8rem', color: '#64748b' }}>
+              <div className="student-meta-pills" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px', fontSize: '0.78rem', color: '#64748b', alignItems: 'center' }}>
                 <span>User ID: <strong style={{ color: '#0284c7' }}>{studentData?.parentUserId || studentData?.rollNo}</strong></span>
                 <span>•</span>
                 <span>Roll: <strong style={{ color: '#0f172a' }}>{studentData?.rollNo}</strong></span>
@@ -405,18 +425,18 @@ export default function ParentPortalWeb() {
             </div>
           </div>
 
-          {/* Quick Performance Metrics */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '20px' }}>
-            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '12px 16px', borderRadius: '14px' }}>
-              <span style={{ fontSize: '0.74rem', color: '#0369a1', fontWeight: 600, display: 'block' }}>Attendance Rate</span>
-              <strong style={{ fontSize: '1.35rem', color: '#0284c7', fontWeight: 900 }}>
+          {/* Quick Performance Metrics Grid */}
+          <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '16px' }}>
+            <div className="metric-card" style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '10px 12px', borderRadius: '12px' }}>
+              <span style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 600, display: 'block' }}>Attendance Rate</span>
+              <strong className="metric-num" style={{ fontSize: '1.25rem', color: '#0284c7', fontWeight: 900 }}>
                 {studentData?.attendanceRate !== undefined ? studentData.attendanceRate : 90}%
               </strong>
             </div>
 
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '12px 16px', borderRadius: '14px' }}>
-              <span style={{ fontSize: '0.74rem', color: '#15803d', fontWeight: 600, display: 'block' }}>Present Days</span>
-              <strong style={{ fontSize: '1.35rem', color: '#16a34a', fontWeight: 900 }}>
+            <div className="metric-card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '10px 12px', borderRadius: '12px' }}>
+              <span style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 600, display: 'block' }}>Present Days</span>
+              <strong className="metric-num" style={{ fontSize: '1.25rem', color: '#16a34a', fontWeight: 900 }}>
                 {studentData?.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length} Days
               </strong>
             </div>
@@ -424,77 +444,78 @@ export default function ParentPortalWeb() {
         </div>
 
         {/* Tab Switcher */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+        <div className="tab-btn-bar" style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
           <button
+            className="tab-btn"
             onClick={() => setActiveTab('attendance')}
             style={{
-              flex: 1, padding: '12px 18px', borderRadius: '12px', border: '1px solid',
+              flex: 1, padding: '10px 12px', borderRadius: '12px', border: '1px solid',
               borderColor: activeTab === 'attendance' ? '#0284c7' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer',
+              fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer',
               background: activeTab === 'attendance' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : '#ffffff',
               color: activeTab === 'attendance' ? '#ffffff' : '#64748b',
-              boxShadow: activeTab === 'attendance' ? '0 4px 14px rgba(2, 132, 199, 0.3)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+              boxShadow: activeTab === 'attendance' ? '0 4px 12px rgba(2, 132, 199, 0.25)' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
             }}
           >
-            <Calendar size={18} /> Daily Attendance Track
+            <Calendar size={16} /> Daily Attendance Track
           </button>
           <button
+            className="tab-btn"
             onClick={() => setActiveTab('tests')}
             style={{
-              flex: 1, padding: '12px 18px', borderRadius: '12px', border: '1px solid',
+              flex: 1, padding: '10px 12px', borderRadius: '12px', border: '1px solid',
               borderColor: activeTab === 'tests' ? '#059669' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer',
+              fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer',
               background: activeTab === 'tests' ? 'linear-gradient(135deg, #059669, #047857)' : '#ffffff',
               color: activeTab === 'tests' ? '#ffffff' : '#64748b',
-              boxShadow: activeTab === 'tests' ? '0 4px 14px rgba(5, 150, 105, 0.3)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+              boxShadow: activeTab === 'tests' ? '0 4px 12px rgba(5, 150, 105, 0.25)' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
             }}
           >
-            <Award size={18} /> OMR Exam Reports ({testResults.length})
+            <Award size={16} /> OMR Reports ({testResults.length})
           </button>
         </div>
 
         {/* Tab 1: Attendance Log List */}
         {activeTab === 'attendance' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {attendanceRecords.length === 0 ? (
-              <div style={{ background: '#ffffff', padding: '30px', borderRadius: '16px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                <Calendar size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
-                <p style={{ margin: 0, fontWeight: 600 }}>No attendance records recorded yet.</p>
+              <div style={{ background: '#ffffff', padding: '24px', borderRadius: '16px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                <Calendar size={28} color="#94a3b8" style={{ marginBottom: '6px' }} />
+                <p style={{ margin: 0, fontWeight: 600, fontSize: '0.85rem' }}>No attendance records recorded yet.</p>
               </div>
             ) : (
               attendanceRecords.map((item, idx) => {
                 const st = String(item.status || '').toLowerCase();
                 const isPresent = st === 'present';
                 const isAbsent = st === 'absent';
-                const isLate = st === 'late';
 
                 return (
                   <div key={idx} style={{
                     background: '#ffffff', border: '1px solid #e2e8f0',
-                    borderRadius: '14px', padding: '14px 18px', display: 'flex',
+                    borderRadius: '12px', padding: '11px 14px', display: 'flex',
                     alignItems: 'center', justifyContent: 'space-between',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{
-                        width: '36px', height: '36px', borderRadius: '10px',
+                        width: '32px', height: '32px', borderRadius: '8px',
                         background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                       }}>
-                        {isPresent ? <CheckCircle2 size={20} color="#16a34a" /> : isAbsent ? <XCircle size={20} color="#dc2626" /> : <Clock size={20} color="#d97706" />}
+                        {isPresent ? <CheckCircle2 size={18} color="#16a34a" /> : isAbsent ? <XCircle size={18} color="#dc2626" /> : <Clock size={18} color="#d97706" />}
                       </div>
                       <div>
-                        <strong style={{ display: 'block', fontSize: '0.92rem', color: '#0f172a' }}>{item.date}</strong>
-                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                          Entry Punch: {item.entryTime || (isPresent ? '09:00 AM' : '-')}
+                        <strong style={{ display: 'block', fontSize: '0.86rem', color: '#0f172a' }}>{item.date}</strong>
+                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          Punch: {item.entryTime || (isPresent ? '09:00 AM' : '-')}
                         </span>
                       </div>
                     </div>
 
                     <span style={{
-                      padding: '5px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800,
+                      padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800,
                       background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
                       color: isPresent ? '#15803d' : isAbsent ? '#b91c1c' : '#b45309',
                       border: `1px solid ${isPresent ? '#bbf7d0' : isAbsent ? '#fecaca' : '#fde68a'}`
@@ -510,50 +531,50 @@ export default function ParentPortalWeb() {
 
         {/* Tab 2: Test Results */}
         {activeTab === 'tests' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {testResults.length === 0 ? (
-              <div style={{ background: '#ffffff', padding: '30px', borderRadius: '16px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                <Award size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
-                <p style={{ margin: 0, fontWeight: 600 }}>No published OMR test results found yet.</p>
+              <div style={{ background: '#ffffff', padding: '24px', borderRadius: '16px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                <Award size={28} color="#94a3b8" style={{ marginBottom: '6px' }} />
+                <p style={{ margin: 0, fontWeight: 600, fontSize: '0.85rem' }}>No published OMR test results found yet.</p>
               </div>
             ) : (
               testResults.map((t, idx) => (
                 <div key={idx} style={{
                   background: '#ffffff', border: '1px solid #e2e8f0',
-                  borderRadius: '16px', padding: '18px', boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
+                  borderRadius: '14px', padding: '14px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                     <div>
-                      <h4 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                      <h4 style={{ margin: '0 0 2px 0', fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
                         {t.testName}
                       </h4>
-                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Date: {t.testDate}</span>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Date: {t.testDate}</span>
                     </div>
                     <span style={{
                       background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0',
-                      padding: '4px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 900
+                      padding: '3px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900
                     }}>
                       {t.percentage}%
                     </span>
                   </div>
 
                   <div style={{
-                    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px',
-                    background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #f1f5f9'
+                    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px',
+                    background: '#f8fafc', padding: '10px', borderRadius: '10px', border: '1px solid #f1f5f9'
                   }}>
                     <div>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>Score</span>
-                      <strong style={{ fontSize: '1rem', color: '#0f172a' }}>{t.marks} / {t.totalMarks}</strong>
+                      <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'block' }}>Score</span>
+                      <strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>{t.marks} / {t.totalMarks}</strong>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>Class Rank</span>
-                      <strong style={{ fontSize: '1rem', color: '#0284c7' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'block' }}>Rank</span>
+                      <strong style={{ fontSize: '0.92rem', color: '#0284c7' }}>
                         {t.rank ? `${t.rank} / ${t.totalStudents || 40}` : '-'}
                       </strong>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>Status</span>
-                      <strong style={{ fontSize: '0.9rem', color: '#16a34a' }}>Passed</strong>
+                      <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'block' }}>Status</span>
+                      <strong style={{ fontSize: '0.85rem', color: '#16a34a' }}>Passed</strong>
                     </div>
                   </div>
 
@@ -561,13 +582,13 @@ export default function ParentPortalWeb() {
                     <button
                       onClick={() => setSelectedOmrImage(t.omrSheetImage)}
                       style={{
-                        marginTop: '12px', width: '100%', background: '#f0f9ff',
-                        border: '1px solid #bae6fd', color: '#0284c7', padding: '8px',
-                        borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700,
+                        marginTop: '10px', width: '100%', background: '#f0f9ff',
+                        border: '1px solid #bae6fd', color: '#0284c7', padding: '7px',
+                        borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700,
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                       }}
                     >
-                      <ImageIcon size={16} /> View Scanned OMR Sheet
+                      <ImageIcon size={14} /> View Scanned OMR Sheet
                     </button>
                   )}
                 </div>
@@ -583,28 +604,28 @@ export default function ParentPortalWeb() {
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
           backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex',
-          alignItems: 'center', justifyContent: 'center', padding: '20px'
+          alignItems: 'center', justifyContent: 'center', padding: '16px'
         }}>
           <div style={{
-            background: '#ffffff', border: '2px solid #38bdf8', borderRadius: '24px',
-            padding: '28px', maxWidth: '400px', width: '100%', textAlign: 'center',
+            background: '#ffffff', border: '2px solid #38bdf8', borderRadius: '22px',
+            padding: '24px 20px', maxWidth: '360px', width: '100%', textAlign: 'center',
             boxShadow: '0 25px 50px -12px rgba(2, 132, 199, 0.35)', position: 'relative'
           }}>
             <button
               onClick={() => setShowForceInstallModal(false)}
-              style={{ position: 'absolute', right: '14px', top: '14px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ position: 'absolute', right: '12px', top: '12px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <X size={16} color="#64748b" />
+              <X size={15} color="#64748b" />
             </button>
 
-            <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <Smartphone size={32} color="#0284c7" />
+            <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <Smartphone size={26} color="#0284c7" />
             </div>
 
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: 900, color: '#0369a1' }}>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', fontWeight: 900, color: '#0369a1' }}>
               Install Parent App
             </h3>
-            <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
+            <p style={{ margin: '0 0 16px 0', fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
               For a smooth, 1-tap app experience & instant notifications, please install the Parent App on your Phone Home Screen!
             </p>
 
@@ -612,12 +633,12 @@ export default function ParentPortalWeb() {
               onClick={handleInstallApp}
               style={{
                 width: '100%', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
-                border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem',
+                border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.9rem',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
+                boxShadow: '0 6px 18px rgba(2, 132, 199, 0.35)'
               }}
             >
-              <Download size={18} /> Add App to Home Screen Now
+              <Download size={16} /> Add App to Home Screen Now
             </button>
           </div>
         </div>
@@ -628,14 +649,14 @@ export default function ParentPortalWeb() {
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)',
           backdropFilter: 'blur(6px)', zIndex: 100, display: 'flex',
-          alignItems: 'center', justifyContent: 'center', padding: '20px'
+          alignItems: 'center', justifyContent: 'center', padding: '16px'
         }}>
-          <div style={{ background: '#fff', borderRadius: '18px', padding: '20px', maxWidth: '500px', width: '100%', textAlign: 'center' }}>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: '1.1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
-            <img src={selectedOmrImage} alt="OMR Sheet" style={{ width: '100%', borderRadius: '12px', maxHeight: '400px', objectFit: 'contain' }} />
+          <div style={{ background: '#fff', borderRadius: '18px', padding: '18px', maxWidth: '460px', width: '100%', textAlign: 'center' }}>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
+            <img src={selectedOmrImage} alt="OMR Sheet" style={{ width: '100%', borderRadius: '10px', maxHeight: '360px', objectFit: 'contain' }} />
             <button
               onClick={() => setSelectedOmrImage(null)}
-              style={{ marginTop: '16px', background: '#0284c7', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}
+              style={{ marginTop: '14px', background: '#0284c7', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}
             >
               Close Preview
             </button>
