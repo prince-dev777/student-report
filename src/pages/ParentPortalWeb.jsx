@@ -15,26 +15,48 @@ export default function ParentPortalWeb() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showForceInstallModal, setShowForceInstallModal] = useState(false);
 
+  // Check if App is already installed or running as standalone PWA
+  const [isAppInstalled, setIsAppInstalled] = useState(() => {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true ||
+           localStorage.getItem('pwa_installed') === 'true';
+  });
+
   // Catch PWA beforeinstallprompt event
   useEffect(() => {
     const handleBeforeInstall = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
+    const handleAppInstalled = () => {
+      localStorage.setItem('pwa_installed', 'true');
+      setIsAppInstalled(true);
+      setShowForceInstallModal(false);
+      toast.success('🎉 Parent App added to Home Screen!');
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
-  // Recurring 10-12 second PWA Install Prompt for Web Visitors
+  // Recurring 12-second PWA Install Prompt (ONLY IF NOT INSTALLED)
   useEffect(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isAppInstalled) {
+      setShowForceInstallModal(false);
+      return;
+    }
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || localStorage.getItem('pwa_installed') === 'true';
     if (!isStandalone) {
-      // Trigger initial prompt after 3s
       const initialTimer = setTimeout(() => {
         setShowForceInstallModal(true);
       }, 3000);
 
-      // Recurring trigger every 12 seconds
       const interval = setInterval(() => {
         setShowForceInstallModal(true);
       }, 12000);
@@ -43,8 +65,10 @@ export default function ParentPortalWeb() {
         clearTimeout(initialTimer);
         clearInterval(interval);
       };
+    } else {
+      setIsAppInstalled(true);
     }
-  }, []);
+  }, [isAppInstalled]);
 
   // Helper to map batch-1, batch-2, batch-3, batch-4 to real readable batch names
   const formatBatchName = (batch) => {
@@ -61,7 +85,15 @@ export default function ParentPortalWeb() {
     setShowForceInstallModal(false);
     if (deferredPrompt) {
       deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          localStorage.setItem('pwa_installed', 'true');
+          setIsAppInstalled(true);
+          toast.success('🎉 Parent App added to Home Screen!');
+        }
+      });
     } else {
+      localStorage.setItem('pwa_installed', 'true');
       toast('📱 Tap Browser Menu (⋮ or Share) ➔ "Add to Home Screen"', { icon: '📱', duration: 7000 });
     }
   };
@@ -241,8 +273,8 @@ export default function ParentPortalWeb() {
           </form>
         </div>
 
-        {/* Force Install App Modal Prompt */}
-        {showForceInstallModal && (
+        {/* Force Install App Modal Prompt (Hides when installed) */}
+        {showForceInstallModal && !isAppInstalled && (
           <div style={{
             position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
             backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex',
@@ -268,7 +300,7 @@ export default function ParentPortalWeb() {
                 Install Parent App
               </h3>
               <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
-                For a smooth, 1-tap app experience & instant attendance notifications, please install the Parent App on your Phone Home Screen!
+                For a smooth, 1-tap app experience & instant notifications, please install the Parent App on your Phone Home Screen!
               </p>
 
               <button
@@ -321,13 +353,15 @@ export default function ParentPortalWeb() {
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={handleInstallApp} style={{
-            background: 'rgba(2, 132, 199, 0.1)', border: '1px solid #bae6fd',
-            color: '#0284c7', padding: '7px 14px', borderRadius: '10px', fontSize: '0.78rem',
-            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-          }}>
-            📲 Add App Icon
-          </button>
+          {!isAppInstalled && (
+            <button onClick={handleInstallApp} style={{
+              background: 'rgba(2, 132, 199, 0.1)', border: '1px solid #bae6fd',
+              color: '#0284c7', padding: '7px 14px', borderRadius: '10px', fontSize: '0.78rem',
+              fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+            }}>
+              📲 Add App Icon
+            </button>
+          )}
           <button onClick={() => setIsLoggedIn(false)} style={{
             background: '#fff1f2', border: '1px solid #fecdd3',
             color: '#e11d48', padding: '7px 14px', borderRadius: '10px', fontSize: '0.78rem',
@@ -544,8 +578,8 @@ export default function ParentPortalWeb() {
 
       </div>
 
-      {/* Force Install App Modal Prompt */}
-      {showForceInstallModal && (
+      {/* Force Install App Modal Prompt (Hides when installed) */}
+      {showForceInstallModal && !isAppInstalled && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
           backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex',
