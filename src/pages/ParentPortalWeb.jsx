@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, Image as ImageIcon } from 'lucide-react';
+import { User, Lock, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, Image as ImageIcon, Smartphone, ExternalLink, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function ParentPortalWeb() {
@@ -13,6 +13,7 @@ export default function ParentPortalWeb() {
   const [activeTab, setActiveTab] = useState('attendance'); // 'attendance' | 'tests'
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showForceInstallModal, setShowForceInstallModal] = useState(false);
 
   // Catch PWA beforeinstallprompt event
   useEffect(() => {
@@ -24,11 +25,44 @@ export default function ParentPortalWeb() {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
   }, []);
 
+  // Recurring 10-12 second PWA Install Prompt for Web Visitors
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (!isStandalone) {
+      // Trigger initial prompt after 3s
+      const initialTimer = setTimeout(() => {
+        setShowForceInstallModal(true);
+      }, 3000);
+
+      // Recurring trigger every 12 seconds
+      const interval = setInterval(() => {
+        setShowForceInstallModal(true);
+      }, 12000);
+
+      return () => {
+        clearTimeout(initialTimer);
+        clearInterval(interval);
+      };
+    }
+  }, []);
+
+  // Helper to map batch-1, batch-2, batch-3, batch-4 to real readable batch names
+  const formatBatchName = (batch) => {
+    if (!batch) return 'JEE Mains';
+    const b = String(batch).trim().toLowerCase();
+    if (b === 'batch-1' || b === 'batch 1' || b === '1') return 'JEE Mains';
+    if (b === 'batch-2' || b === 'batch 2' || b === '2') return 'JEE Advanced';
+    if (b === 'batch-3' || b === 'batch 3' || b === '3') return 'NEET';
+    if (b === 'batch-4' || b === 'batch 4' || b === '4') return 'MHCET';
+    return batch.replace(/^batch-?/i, 'Batch ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   const handleInstallApp = () => {
+    setShowForceInstallModal(false);
     if (deferredPrompt) {
       deferredPrompt.prompt();
     } else {
-      toast('📱 Tap Browser Menu (⋮ or Share) ➔ "Add to Home Screen"', { icon: '📱', duration: 6000 });
+      toast('📱 Tap Browser Menu (⋮ or Share) ➔ "Add to Home Screen"', { icon: '📱', duration: 7000 });
     }
   };
 
@@ -76,7 +110,7 @@ export default function ParentPortalWeb() {
           name: foundLocal.name,
           rollNo: foundLocal.rollNumber || foundLocal.roll_no || userId.trim(),
           parentUserId: foundLocal.parentUserId || foundLocal.rollNumber || userId.trim(),
-          batch: foundLocal.batch || 'JEE Mains 2026',
+          batch: foundLocal.batch || 'JEE Mains',
           parentPhone: foundLocal.parentPhone || '9876543210',
           attendanceRate: 92,
           presentCount: 23,
@@ -206,6 +240,51 @@ export default function ParentPortalWeb() {
             </button>
           </form>
         </div>
+
+        {/* Force Install App Modal Prompt */}
+        {showForceInstallModal && (
+          <div style={{
+            position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', padding: '20px'
+          }}>
+            <div style={{
+              background: '#ffffff', border: '2px solid #38bdf8', borderRadius: '24px',
+              padding: '28px', maxWidth: '400px', width: '100%', textAlign: 'center',
+              boxShadow: '0 25px 50px -12px rgba(2, 132, 199, 0.35)', position: 'relative'
+            }}>
+              <button
+                onClick={() => setShowForceInstallModal(false)}
+                style={{ position: 'absolute', right: '14px', top: '14px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={16} color="#64748b" />
+              </button>
+
+              <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <Smartphone size={32} color="#0284c7" />
+              </div>
+
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: 900, color: '#0369a1' }}>
+                Install Parent App
+              </h3>
+              <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
+                For a smooth, 1-tap app experience & instant attendance notifications, please install the Parent App on your Phone Home Screen!
+              </p>
+
+              <button
+                onClick={handleInstallApp}
+                style={{
+                  width: '100%', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
+                  border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
+                }}
+              >
+                <Download size={18} /> Add App to Home Screen Now
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -287,7 +366,7 @@ export default function ParentPortalWeb() {
                 <span>•</span>
                 <span>Roll: <strong style={{ color: '#0f172a' }}>{studentData?.rollNo}</strong></span>
                 <span>•</span>
-                <span>Batch: <strong style={{ color: '#334155' }}>{studentData?.batch || 'Regular'}</strong></span>
+                <span>Batch: <strong style={{ color: '#0284c7', fontWeight: 800 }}>{formatBatchName(studentData?.batch)}</strong></span>
               </div>
             </div>
           </div>
@@ -464,6 +543,51 @@ export default function ParentPortalWeb() {
         )}
 
       </div>
+
+      {/* Force Install App Modal Prompt */}
+      {showForceInstallModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff', border: '2px solid #38bdf8', borderRadius: '24px',
+            padding: '28px', maxWidth: '400px', width: '100%', textAlign: 'center',
+            boxShadow: '0 25px 50px -12px rgba(2, 132, 199, 0.35)', position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowForceInstallModal(false)}
+              style={{ position: 'absolute', right: '14px', top: '14px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <X size={16} color="#64748b" />
+            </button>
+
+            <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <Smartphone size={32} color="#0284c7" />
+            </div>
+
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: 900, color: '#0369a1' }}>
+              Install Parent App
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
+              For a smooth, 1-tap app experience & instant notifications, please install the Parent App on your Phone Home Screen!
+            </p>
+
+            <button
+              onClick={handleInstallApp}
+              style={{
+                width: '100%', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
+                border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
+              }}
+            >
+              <Download size={18} /> Add App to Home Screen Now
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* OMR Sheet Viewer Modal */}
       {selectedOmrImage && (
