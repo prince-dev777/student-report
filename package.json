@@ -62,7 +62,8 @@
     "publish": {
       "provider": "github",
       "owner": "prince-dev777",
-      "repo": "student-report"
+      "repo": "student-report",
+      "releaseType": "release"
     }
   },
   "devDependencies": {
