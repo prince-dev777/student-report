@@ -60,6 +60,7 @@ export default function Tests() {
   const [detectQuestions, setDetectQuestions] = useState(180);
   const [submittingAction, setSubmittingAction] = useState(null);
   const [omrImagesData, setOmrImagesData] = useState({}); // studentId: image dataURI
+  const [selectedOmrImage, setSelectedOmrImage] = useState(null);
 
   // Memoize selected test for marks entry
   const selectedEntryTest = React.useMemo(() => {
@@ -1278,15 +1279,13 @@ export default function Tests() {
                           </td>
                           <td>
                             {res.omrSheetImage ? (
-                              <a 
-                                href={res.omrSheetImage.startsWith('data:') ? res.omrSheetImage : `${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`}
-                                target="_blank" 
-                                rel="noreferrer" 
+                              <button 
+                                onClick={() => setSelectedOmrImage(res.omrSheetImage.startsWith('data:') ? res.omrSheetImage : `${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`)}
                                 className="btn btn-ghost btn-xs text-accent"
                                 style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
                               >
                                 View OMR
-                              </a>
+                              </button>
                             ) : (
                               <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>N/A</span>
                             )}
@@ -1307,6 +1306,28 @@ export default function Tests() {
                 Close
               </button>
             </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OMR Sheet Viewer Modal */}
+      {selectedOmrImage && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)',
+          backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', padding: '16px'
+        }}>
+          <div style={{ background: 'var(--bg-primary)', borderRadius: '18px', padding: '18px', maxWidth: '460px', width: '100%', textAlign: 'center', border: '1px solid var(--border-color)' }}>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
+            <img src={selectedOmrImage} alt="OMR Sheet" style={{ width: '100%', borderRadius: '10px', maxHeight: '500px', objectFit: 'contain' }} />
+            <button
+              onClick={() => setSelectedOmrImage(null)}
+              className="btn btn-primary"
+              style={{ marginTop: '14px', width: '100%' }}
+            >
+              Close Preview
+            </button>
           </div>
         </div>
       )}
