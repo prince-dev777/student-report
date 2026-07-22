@@ -418,31 +418,34 @@ export function AppProvider({ children }) {
       });
     }
 
-    // Send SMS for each result
-    for (const result of newResults) {
-      const student = students.find((s) => s.id === result.studentId);
-      if (student) {
-        const instName = user?.instituteName || 'Career Xone Pro';
-        const smsLog = await sendTestResultSMS(
-          student, test.name, result.marks, result.totalMarks,
-          result.percentage, result.rank, totalStudents,
-          instName
-        );
-        
-        if (backendOnline) {
-          try {
-            const savedLog = await api.createSMSLog(smsLog);
-            setSMSHistory((h) => [savedLog, ...h]);
-          } catch (e) {
-            console.error('Failed to log SMS on server', e);
+    // Send SMS for each result ONLY if Published
+    if (status === 'Published') {
+      for (const result of newResults) {
+        const student = students.find((s) => s.id === result.studentId);
+        if (student) {
+          const instName = user?.instituteName || 'Career Xone Pro';
+          const smsLog = await sendTestResultSMS(
+            student, test.name, result.marks, result.totalMarks,
+            result.percentage, result.rank, totalStudents,
+            instName
+          );
+          
+          if (backendOnline) {
+            try {
+              const savedLog = await api.createSMSLog(smsLog);
+              setSMSHistory((h) => [savedLog, ...h]);
+            } catch (e) {
+              console.error('Failed to log SMS on server', e);
+            }
+          } else {
+            setSMSHistory((h) => [smsLog, ...h]);
           }
-        } else {
-          setSMSHistory((h) => [smsLog, ...h]);
         }
       }
+      toast.success(`Results published & ${newResults.length} SMS sent! 🎉`);
+    } else {
+      toast.success('Marks saved successfully! No SMS was sent.');
     }
-
-    toast.success(`Results submitted & ${newResults.length} SMS sent! 🎉`);
   }, [tests, students, backendOnline, user]);
 
   // ---- SMS ----
