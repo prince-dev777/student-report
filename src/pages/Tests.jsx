@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
-  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download
+  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
@@ -58,6 +58,7 @@ export default function Tests() {
   const [omrUploading, setOmrUploading] = useState(false);
   const [omrTemplate, setOmrTemplate] = useState('neet_180');
   const [detectQuestions, setDetectQuestions] = useState(180);
+  const [submittingAction, setSubmittingAction] = useState(null);
 
   // Memoize selected test for marks entry
   const selectedEntryTest = React.useMemo(() => {
@@ -65,7 +66,7 @@ export default function Tests() {
   }, [tests, entryTestId]);
 
   // Handle test creation
-  const handleCreateTest = (e) => {
+  const handleCreateTest = async (e) => {
     e.preventDefault();
     if (!testForm.name.trim()) return toast.error('Test Name is required');
     if (!testForm.batch) return toast.error('Please select a course');
@@ -73,19 +74,21 @@ export default function Tests() {
 
     if (selectedSubjects.length === 0) return toast.error('Please select at least one subject');
 
-    addTest({
-      name: testForm.name,
-      subject: selectedSubjects.join(', '),
-      batch: testForm.batch,
-      targetClass: testForm.targetClass,
-      date: testForm.date,
-      totalMarks: Number(testForm.totalMarks),
-      marksPerQuestion: Number(testForm.marksPerQuestion) || 1,
-      negativeMarking: Number(testForm.negativeMarking) || 0,
-      templateId: testForm.templateId || 'neet_180',
-      questionsToDetect: Number(testForm.questionsToDetect) || 180,
-      answerKey: [] // Created without answer key initially
-    });
+    setSubmittingAction('CreateTest');
+    try {
+      await addTest({
+        name: testForm.name,
+        subject: selectedSubjects.join(', '),
+        batch: testForm.batch,
+        targetClass: testForm.targetClass,
+        date: testForm.date,
+        totalMarks: Number(testForm.totalMarks),
+        marksPerQuestion: Number(testForm.marksPerQuestion) || 1,
+        negativeMarking: Number(testForm.negativeMarking) || 0,
+        templateId: testForm.templateId || 'neet_180',
+        questionsToDetect: Number(testForm.questionsToDetect) || 180,
+        answerKey: [] // Created without answer key initially
+      });
 
     setTestForm({
       name: '',
@@ -100,7 +103,10 @@ export default function Tests() {
     });
     setSelectedSubjects(subjects.length > 0 ? [subjects[0]] : []);
 
-    setActiveTab('all-tests');
+      setActiveTab('all-tests');
+    } finally {
+      setSubmittingAction(null);
+    }
   };
 
   // Handle test selection for marks entry
@@ -174,8 +180,10 @@ export default function Tests() {
     const batchStudents = students.filter(s => s.batch === test.batch && (!test.targetClass || s.class === test.targetClass) && s.status === 'active');
     const resultsPayload = [];
 
-    for (const student of batchStudents) {
-      const mark = marksData[student.id];
+    setSubmittingAction(action);
+    try {
+      for (const student of batchStudents) {
+        const mark = marksData[student.id];
       // Skip empty fields to allow partial submissions (as requested)
       if (mark === '' || mark === undefined) {
         continue;
@@ -190,16 +198,19 @@ export default function Tests() {
       });
     }
 
-    if (resultsPayload.length === 0) {
-      return toast.error('No student marks have been entered.');
-    }
+      if (resultsPayload.length === 0) {
+        return toast.error('No student marks have been entered.');
+      }
 
-    await submitTestResults(entryTestId, resultsPayload, submitStatus);
-    setEntryTestId('');
-    setMarksData({});
-    setOmrStats({});
-    setScannedAnswersData({});
-    setActiveTab('all-tests');
+      await submitTestResults(entryTestId, resultsPayload, submitStatus);
+      setEntryTestId('');
+      setMarksData({});
+      setOmrStats({});
+      setScannedAnswersData({});
+      setActiveTab('all-tests');
+    } finally {
+      setSubmittingAction(null);
+    }
   };
 
   // Handle OMR Images Upload
@@ -952,9 +963,9 @@ export default function Tests() {
                 </div>
 
                 <div className="flex justify-end gap-8 mt-16 pt-16" style={{ borderTop: '1px solid var(--border-color-light)' }}>
-                  <button type="submit" className="btn btn-primary">
-                    <BookOpen size={16} />
-                    Schedule Test
+                  <button type="submit" className="btn btn-primary" disabled={submittingAction === 'CreateTest'}>
+                    {submittingAction === 'CreateTest' ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} />}
+                    {submittingAction === 'CreateTest' ? 'Scheduling...' : 'Schedule Test'}
                   </button>
                 </div>
               </form>
@@ -1090,24 +1101,24 @@ export default function Tests() {
                         name="action" 
                         value="Save" 
                         className="btn btn-outline-primary" 
-                        disabled={omrUploading}
+                        disabled={omrUploading || submittingAction}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                         onClick={(e) => handleMarksSubmit(e, 'Save')}
                       >
-                        <Save size={16} />
-                        Save Marks
+                        {submittingAction === 'Save' ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                        {submittingAction === 'Save' ? 'Saving...' : 'Save Marks'}
                       </button>
                       <button 
                         type="button" 
                         name="action" 
                         value="Publish" 
                         className="btn btn-success" 
-                        disabled={omrUploading}
+                        disabled={omrUploading || submittingAction}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                         onClick={(e) => handleMarksSubmit(e, 'Publish')}
                       >
-                        <UserCheck size={16} />
-                        Publish & Send SMS
+                        {submittingAction === 'Publish' ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
+                        {submittingAction === 'Publish' ? 'Publishing...' : 'Publish & Send SMS'}
                       </button>
                     </div>
                   </div>

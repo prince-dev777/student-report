@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Camera } from 'lucide-react';
+import { X, Upload, Loader2, Camera } from 'lucide-react';
 import { batches } from '../data/sampleData';
 
 export default function AddStudentModal({ isEdit, studentData, onClose, onSave }) {
@@ -19,6 +19,7 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
   });
 
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isEdit && studentData) {
@@ -70,10 +71,15 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    onSave(form);
+    setIsSubmitting(true);
+    try {
+      await onSave(form);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOverlayClick = (e) => {
@@ -292,8 +298,9 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
               <button className="btn btn-ghost" type="button" onClick={onClose}>
                 Cancel
               </button>
-              <button className="btn btn-primary" type="submit" form="student-form">
-                {isEdit ? 'Update Student' : 'Add Student'}
+              <button className="btn btn-primary" type="submit" form="student-form" disabled={isSubmitting} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+                {isSubmitting ? 'Saving...' : (isEdit ? 'Update Student' : 'Add Student')}
               </button>
             </div>
           </motion.div>
