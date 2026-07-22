@@ -395,7 +395,8 @@ export function AppProvider({ children }) {
         totalStudents,
         smsSent: status === 'Published',
         status: status,
-        studentAnswers: payloadItem ? payloadItem.studentAnswers : []
+        studentAnswers: payloadItem ? payloadItem.studentAnswers : [],
+        omrSheetImage: payloadItem ? payloadItem.omrSheetImage : null
       };
     });
 
