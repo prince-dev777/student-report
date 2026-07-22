@@ -1306,7 +1306,6 @@ export default function Tests() {
                 Close
               </button>
             </div>
-            </div>
           </div>
         </div>
       )}
