@@ -170,6 +170,15 @@ app.whenReady().then(async () => {
 
     autoUpdater.on('update-available', (info) => {
       log.info('[AutoUpdater] Update available:', info.version);
+      if (mainWindow) {
+        dialog.showMessageBox(mainWindow, {
+          type: 'info',
+          title: 'New Update Found',
+          message: `Career Xone Pro v${info.version} Available!`,
+          detail: 'Downloading new update in the background...',
+          buttons: ['OK']
+        }).catch(() => {});
+      }
     });
 
     autoUpdater.on('update-not-available', (info) => {
