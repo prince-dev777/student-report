@@ -94,6 +94,45 @@ function createTray() {
       } 
     },
     { type: 'separator' },
+    {
+      label: 'Check for Updates',
+      click: () => {
+        if (app.isPackaged) {
+          autoUpdater.checkForUpdates().then((result) => {
+            if (!result || !result.updateInfo || result.updateInfo.version === app.getVersion()) {
+              dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                title: 'No Updates',
+                message: 'You are already on the latest version!',
+                detail: `Current Version: v${app.getVersion()}`,
+                buttons: ['OK']
+              }).catch(() => {});
+            }
+          }).catch((err) => {
+            dialog.showMessageBox(mainWindow, {
+              type: 'error',
+              title: 'Update Check Failed',
+              message: 'Could not check for updates.',
+              detail: `Error: ${err.message}`,
+              buttons: ['OK']
+            }).catch(() => {});
+          });
+        } else {
+          dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'Development Mode',
+            message: 'Auto-update is disabled in development mode.',
+            buttons: ['OK']
+          }).catch(() => {});
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: `Version: v${app.getVersion()}`,
+      enabled: false
+    },
+    { type: 'separator' },
     { 
       label: 'Quit', 
       click: () => {
