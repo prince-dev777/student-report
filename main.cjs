@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, Tray, Menu } = require('electron');
+const { app, BrowserWindow, dialog, Tray, Menu, ipcMain } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const { spawn, exec } = require('child_process');
@@ -52,6 +52,13 @@ function createWindow() {
     autoHideMenuBar: true,
     title: "Career Xone Pro",
     icon: path.join(__dirname, app.isPackaged ? 'dist' : 'public', 'logo.jpg'),
+  });
+
+  // Send app version to renderer
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.executeJavaScript(
+      `window.__APP_VERSION__ = '${app.getVersion()}'`
+    );
   });
 
   // Check if we are in development mode
@@ -221,12 +228,15 @@ app.whenReady().then(async () => {
       try { fs.appendFileSync(logFile, `[${new Date().toISOString()}] Updater Error: ${err.message}\n`); } catch(e) {}
     });
 
-    // Check for updates after a short delay to let app fully load
-    setTimeout(() => {
+    // Check for updates after a short delay, then every 30 minutes
+    const checkForUpdates = () => {
       autoUpdater.checkForUpdates().catch((err) => {
         log.error('[AutoUpdater] Check failed:', err.message);
       });
-    }, 5000);
+    };
+
+    setTimeout(checkForUpdates, 5000);
+    setInterval(checkForUpdates, 30 * 60 * 1000); // Every 30 minutes
   }
 
   app.on('activate', function () {

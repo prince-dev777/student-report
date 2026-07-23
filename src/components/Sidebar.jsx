@@ -32,6 +32,20 @@ export default function Sidebar() {
   const { user } = useAuth();
   const location = useLocation();
   const [lastSeenSmsCount, setLastSeenSmsCount] = useState(smsHistory.length);
+  const [appVersion, setAppVersion] = useState('');
+
+  useEffect(() => {
+    // Check for version from Electron main process
+    const checkVersion = () => {
+      if (window.__APP_VERSION__) {
+        setAppVersion(window.__APP_VERSION__);
+      }
+    };
+    checkVersion();
+    // Re-check after a short delay in case Electron sets it after load
+    const timer = setTimeout(checkVersion, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (location.pathname === '/sms') {
@@ -129,6 +143,21 @@ export default function Sidebar() {
             </NavLink>
           ))}
         </nav>
+
+        {/* Version Info */}
+        {appVersion && (
+          <div style={{
+            padding: '12px 20px',
+            marginTop: 'auto',
+            borderTop: '1px solid var(--border-color)',
+            fontSize: '0.7rem',
+            color: 'var(--text-muted)',
+            opacity: 0.6,
+            letterSpacing: '0.5px'
+          }}>
+            Version: {appVersion}
+          </div>
+        )}
       </motion.aside>
     </>
   );
