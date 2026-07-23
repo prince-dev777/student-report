@@ -1328,16 +1328,15 @@ export default function Tests() {
               </div>
             </div>
             
-            <div style={{ flex: 1, overflow: 'auto', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '10px' }}>
+            <div style={{ flex: 1, overflow: 'auto', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px' }}>
               <img 
                 src={selectedOmrImage} 
                 alt="OMR Sheet" 
                 style={{ 
-                  transform: `scale(${omrZoomScale})`, 
-                  transformOrigin: 'top center',
-                  transition: 'transform 0.2s ease-in-out',
-                  maxWidth: '100%', 
-                  objectFit: 'contain' 
+                  width: `${100 * omrZoomScale}%`, 
+                  transition: 'width 0.2s ease-in-out',
+                  display: 'block',
+                  margin: '0 auto'
                 }} 
               />
             </div>
