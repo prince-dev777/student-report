@@ -198,9 +198,6 @@ async function startServer() {
       autoUpdater.downloadUpdate();
     }
   });
-      autoUpdater.quitAndInstall();
-    }
-  });
 }
 
 app.whenReady().then(async () => {
@@ -296,10 +293,6 @@ app.on('window-all-closed', function () {
 });
 
 app.on('before-quit', () => {
-  if (mainApiServerProcess) {
-    try { mainApiServerProcess.kill(); } catch (e) {}
-  }
-  
   if (serverProcess) {
     // Send clean shutdown signal first, then force kill after timeout
     try {
