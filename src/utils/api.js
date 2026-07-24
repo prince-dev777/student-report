@@ -7,7 +7,7 @@
 const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 const isDev = window.location.port === '5173';
 // Use local API server to ensure frontend and backend are in sync during development
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
 // Helper to check if backend is online
 export async function checkBackendStatus() {
