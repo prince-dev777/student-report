@@ -226,7 +226,6 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
     warped = cv2.warpPerspective(image, M, (width, height))
     warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
     thresh = cv2.threshold(warped_gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
-    cv2.imwrite(r"C:\Users\sawar\MyProjects\student-report\server\uploads\warped_debug.png", thresh)
     
     h_w, w_w = thresh.shape[:2]
     options = ['A', 'B', 'C', 'D']
@@ -237,6 +236,7 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
         
     # Scan Roll Number
     roll_digits = []
+    digit_options = [str(d) for d in range(10)]
     for cx in roll_cols_x:
         pixel_counts = []
         for ry in roll_rows_y:
@@ -246,8 +246,14 @@ def process_omr_image(image_path, answer_keys, template_config=None, original_na
             box = thresh[y1:y2, x1:x2]
             pixel_counts.append(cv2.countNonZero(box))
             
-        max_idx = np.argmax(pixel_counts)
-        if pixel_counts[max_idx] > 100:
+        # Use relative threshold: the filled bubble must stand out significantly
+        min_val = min(pixel_counts)
+        adjusted = [v - min_val for v in pixel_counts]
+        max_adj = max(adjusted)
+        max_idx = np.argmax(adjusted)
+        
+        # A filled roll digit must stand out by at least 40 pixels from the lightest
+        if max_adj >= 40:
             roll_digits.append(str(max_idx))
             
     roll_number = "".join(roll_digits)

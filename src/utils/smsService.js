@@ -39,8 +39,8 @@ export async function sendSMS(phoneNumber, message) {
 }
 
 // Create SMS log entry
-export function createSMSLog(type, student, parentPhone, message, status = 'sent') {
-  return {
+export function createSMSLog(type, student, parentPhone, message, status = 'sent', attachment = null) {
+  const log = {
     id: generateId('SMS'),
     type,
     studentId: student.id,
@@ -49,6 +49,10 @@ export function createSMSLog(type, student, parentPhone, message, status = 'sent
     timestamp: `${getTodayStr()}T${getCurrentTime()}:00`,
     status,
   };
+  if (attachment) {
+    log.attachment = attachment;
+  }
+  return log;
 }
 
 // Send attendance SMS and return log
@@ -57,12 +61,13 @@ export async function sendAttendanceSMS(student, type, time, instituteName = 'In
     ? smsTemplates.attendanceEntry(student.parentName, student.name, time, instituteName)
     : smsTemplates.attendanceExit(student.parentName, student.name, time, instituteName);
 
-  const result = await sendSMS(student.parentPhone, template);
+  const targetPhones = student.parentPhone2 ? `${student.parentPhone}, ${student.parentPhone2}` : student.parentPhone;
+  const result = await sendSMS(targetPhones, template);
 
   return createSMSLog(
     `attendance-${type}`,
     student,
-    student.parentPhone,
+    targetPhones,
     template,
     result.status
   );
@@ -76,32 +81,36 @@ export async function sendTestResultSMS(student, testName, marks, totalMarks, pe
     instituteName
   );
 
-  const result = await sendSMS(student.parentPhone, template);
+  const targetPhones = student.parentPhone2 ? `${student.parentPhone}, ${student.parentPhone2}` : student.parentPhone;
+  const result = await sendSMS(targetPhones, template);
 
   return createSMSLog(
     'test-result',
     student,
-    student.parentPhone,
+    targetPhones,
     template,
     result.status
   );
 }
 
 // Send custom SMS
-export async function sendCustomSMS(student, message, instituteName = 'Institute') {
+export async function sendCustomSMS(student, message, instituteName = 'Institute', attachment = null) {
   const parsedMessage = message
     .replace(/\{\{rollNo\}\}/gi, student.rollNo || '')
     .replace(/\{\{password\}\}/gi, student.parentPasswordPlain || student.password || '123456');
 
   const template = smsTemplates.general(student.parentName, parsedMessage, instituteName);
-  const result = await sendSMS(student.parentPhone, template);
+  
+  const targetPhones = student.parentPhone2 ? `${student.parentPhone}, ${student.parentPhone2}` : student.parentPhone;
+  const result = await sendSMS(targetPhones, template);
 
   return createSMSLog(
     'custom',
     student,
-    student.parentPhone,
+    targetPhones,
     template,
-    result.status
+    result.status,
+    attachment
   );
 }
 
@@ -111,9 +120,10 @@ export async function sendBulkSMS(students, messageGenerator) {
 
   for (const student of students) {
     const message = messageGenerator(student);
-    const result = await sendSMS(student.parentPhone, message);
+    const targetPhones = student.parentPhone2 ? `${student.parentPhone}, ${student.parentPhone2}` : student.parentPhone;
+    const result = await sendSMS(targetPhones, message);
     results.push(
-      createSMSLog('bulk', student, student.parentPhone, message, result.status)
+      createSMSLog('bulk', student, targetPhones, message, result.status)
     );
   }
 

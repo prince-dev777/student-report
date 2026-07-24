@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UploadCloud, Download, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -22,6 +23,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
         class: '12th',
         parentName: 'Mukesh Sharma',
         parentPhone: '8538949912',
+        parentPhone2: '', // Optional secondary number
         parentUserId: 'prince_parent',
         parentPassword: 'password123',
         schoolName: 'Delhi Public School',
@@ -38,11 +40,20 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
       { wch: 10 }, // class
       { wch: 25 }, // parentName
       { wch: 15 }, // parentPhone
+      { wch: 15 }, // parentPhone2
       { wch: 20 }, // parentUserId
       { wch: 20 }, // parentPassword
       { wch: 30 }, // schoolName
       { wch: 40 }  // address
     ];
+
+    // Make header bold
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const address = XLSX.utils.encode_col(C) + '1';
+      if (!ws[address]) continue;
+      ws[address].s = { font: { bold: true } };
+    }
 
     XLSX.utils.book_append_sheet(wb, ws, 'Student_Bulk_Upload_Template');
     XLSX.writeFile(wb, 'Student_Bulk_Upload_Template.xlsx');
@@ -74,6 +85,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
         const rollNo = String(row.rollNo || '').trim();
         const name = String(row.name || '').trim();
         const parentPhone = String(row.parentPhone || '').trim();
+        const parentPhone2 = String(row.parentPhone2 || '').trim();
 
         // Check mandatory fields
         if (!rollNo || !name || !parentPhone) {
@@ -111,6 +123,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
           class: String(row.class || '').trim(),
           parentName: String(row.parentName || '').trim(),
           parentPhone,
+          parentPhone2,
           parentUserId: String(row.parentUserId || '').trim(),
           parentPassword: String(row.parentPassword || '').trim(),
           schoolName: String(row.schoolName || '').trim(),
@@ -138,15 +151,17 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-          <motion.div 
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-          >
+        <motion.div 
+          className="modal-content"
+          onClick={e => e.stopPropagation()}
+          style={{ maxWidth: '500px' }}
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+        >
             <div className="modal-header">
               <h3>Bulk Add Students</h3>
               <button className="modal-close" onClick={onClose}><X size={18} /></button>
@@ -201,8 +216,8 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
               </div>
             </div>
           </motion.div>
-        </div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

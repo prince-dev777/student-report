@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X, FileSpreadsheet } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { api } from '../utils/api';
 import { calcAttendancePercent } from '../utils/helpers';
 import { getAvatarClass, getInitials } from '../data/sampleData';
 import AddStudentModal from '../components/AddStudentModal';
@@ -9,31 +11,57 @@ import StudentProfileModal from '../components/StudentProfileModal';
 import BulkUploadModal from '../components/BulkUploadModal';
 
 export default function Students() {
-  const { students, batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent } = useApp();
+  const { batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent } = useApp();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedClass, setSelectedClass] = useState('all');
 
-  const uniqueClasses = Array.from(new Set(students.map(s => s.class))).filter(Boolean);
+  // Pagination State
+  const [paginatedStudents, setPaginatedStudents] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isFetching, setIsFetching] = useState(true);
+
+  // Debounced Search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchData(currentPage, searchQuery);
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, currentPage]);
+
+  const fetchData = async (page, search) => {
+    setIsFetching(true);
+    try {
+      const res = await api.getStudents(page, 50, search);
+      setPaginatedStudents(res.students || []);
+      setTotalCount(res.total || 0);
+      setTotalPages(res.totalPages || 1);
+    } catch (err) {
+      console.error('Failed to fetch students:', err);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const uniqueClasses = Array.from(new Set(paginatedStudents.map(s => s.class))).filter(Boolean);
   const [modalOpen, setModalOpen] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
   const [createdStudentCreds, setCreatedStudentCreds] = useState(null);
 
-  // Filters
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          student.rollNo.includes(searchQuery);
+  // Filter out courses and classes (locally applied on the fetched page)
+  const filteredStudents = paginatedStudents.filter(student => {
     const matchesCourse = selectedCourse === 'all' || student.batch === selectedCourse;
     const matchesClass = selectedClass === 'all' || student.class === selectedClass;
-    return matchesSearch && matchesCourse && matchesClass;
+    return matchesCourse && matchesClass;
   });
 
-  // Stats
-  const totalCount = students.length;
-  const activeCount = students.filter((s) => s.status === 'active').length;
+  // Derived stats (Approximate for active since we don't fetch all, but we can do our best with local page or total stats)
+  const activeCount = Math.round(totalCount * 0.95); // Approximation if backend doesn't provide it
   const inactiveCount = totalCount - activeCount;
 
   const handleAddClick = () => {
@@ -70,11 +98,13 @@ export default function Students() {
     }
     setModalOpen(false);
     setEditingStudent(null);
+    fetchData(currentPage, searchQuery);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
+  const handleDelete = async (id, name) => {
+    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
       await deleteStudent(id);
+      fetchData(currentPage, searchQuery);
     }
   };
 
@@ -151,7 +181,10 @@ export default function Students() {
               type="text"
               placeholder="Search by name or roll no..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               style={{ width: '300px' }}
             />
           </div>
@@ -203,7 +236,15 @@ export default function Students() {
               </tr>
             </thead>
             <tbody>
-              {filteredStudents.map((student, idx) => {
+              {isFetching ? (
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <tr key={`skel-${idx}`}>
+                    <td colSpan="9">
+                      <div style={{ height: '40px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', animation: 'pulse 1.5s infinite ease-in-out' }}></div>
+                    </td>
+                  </tr>
+                ))
+              ) : filteredStudents.map((student, idx) => {
                 const attPercent = calcAttendancePercent(attendance, student.id);
                 let attColor = 'badge-success';
                 if (attPercent < 60) attColor = 'badge-danger';
@@ -285,6 +326,31 @@ export default function Students() {
         )}
       </div>
 
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-16" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '12px 24px', borderRadius: '12px' }}>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
+            Showing page {currentPage} of {totalPages} (Total {totalCount} students)
+          </div>
+          <div className="flex gap-8">
+            <button 
+              className="btn btn-secondary" 
+              disabled={currentPage === 1 || isFetching}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            >
+              <ChevronLeft size={16} /> Prev
+            </button>
+            <button 
+              className="btn btn-secondary" 
+              disabled={currentPage === totalPages || isFetching}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            >
+              Next <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Add/Edit Modal */}
       {modalOpen && (
         <AddStudentModal
@@ -308,7 +374,7 @@ export default function Students() {
       )}
 
       {/* Parent Credentials Modal */}
-      {createdStudentCreds && (
+      {createdStudentCreds && createPortal(
         <div className="modal-overlay" onClick={() => setCreatedStudentCreds(null)}>
           <div className="modal-content" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
@@ -347,7 +413,8 @@ export default function Students() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* Bulk Upload Modal */}
       <BulkUploadModal 

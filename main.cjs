@@ -182,9 +182,22 @@ async function startServer() {
   serverProcess.stderr?.on('data', (data) => {
     try { fs.appendFileSync(logFile, `Local OMR Error: ${data}\n`); } catch(e) {}
   });
+
+  // Send app info on start
+  setTimeout(() => {
+    if (serverProcess) {
+      try { serverProcess.send({ type: 'APP_INFO', version: app.getVersion() }); } catch(e) {}
+    }
+  }, 2000);
+
   serverProcess.on('message', (msg) => {
     if (msg && msg.type === 'QUIT_AND_INSTALL') {
       app.isQuiting = true;
+      autoUpdater.quitAndInstall();
+    } else if (msg && msg.type === 'START_DOWNLOAD') {
+      autoUpdater.downloadUpdate();
+    }
+  });
       autoUpdater.quitAndInstall();
     }
   });
@@ -204,6 +217,8 @@ app.whenReady().then(async () => {
     autoUpdater.logger = log;
     autoUpdater.logger.transports.file.level = 'info';
 
+    autoUpdater.autoDownload = false;
+
     autoUpdater.setFeedURL({
       provider: 'github',
       owner: 'prince-dev777',
@@ -216,14 +231,12 @@ app.whenReady().then(async () => {
 
     autoUpdater.on('update-available', (info) => {
       log.info('[AutoUpdater] Update available:', info.version);
-      if (mainWindow) {
-        dialog.showMessageBox(mainWindow, {
-          type: 'info',
-          title: 'New Update Found',
-          message: `Career Xone Pro v${info.version} Available!`,
-          detail: 'Downloading new update in the background...',
-          buttons: ['OK']
-        }).catch(() => {});
+      if (serverProcess) {
+        try { serverProcess.send({ 
+          type: 'UPDATE_AVAILABLE', 
+          version: info.version, 
+          releaseDate: info.releaseDate 
+        }); } catch(e) {}
       }
     });
 
@@ -233,6 +246,9 @@ app.whenReady().then(async () => {
 
     autoUpdater.on('download-progress', (progress) => {
       log.info(`[AutoUpdater] Download: ${Math.round(progress.percent)}%`);
+      if (serverProcess) {
+        try { serverProcess.send({ type: 'UPDATE_PROGRESS', percent: progress.percent }); } catch(e) {}
+      }
     });
 
     autoUpdater.on('update-downloaded', (info) => {
@@ -244,20 +260,8 @@ app.whenReady().then(async () => {
         try { serverProcess.send({ type: 'UPDATE_DOWNLOADED', version: ver }); } catch(e) {}
       }
 
-      // Show dialog to user
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Update Available',
-        message: `Career Xone Pro v${ver} download ho gaya hai!`,
-        detail: 'Naya update install karne ke liye app restart karna hoga. Abhi restart karein?',
-        buttons: ['Restart Now', 'Baad Me'],
-        defaultId: 0,
-        cancelId: 1
-      }).then((result) => {
-        if (result.response === 0) {
-          autoUpdater.quitAndInstall(false, true);
-        }
-      });
+      // UI will now handle the restart button
+
     });
 
     autoUpdater.on('error', (err) => {
@@ -275,7 +279,7 @@ app.whenReady().then(async () => {
     };
 
     setTimeout(checkForUpdates, 5000);
-    setInterval(checkForUpdates, 30 * 60 * 1000); // Every 30 minutes
+    setInterval(checkForUpdates, 15 * 60 * 1000); // Check every 15 minutes
   }
 
   app.on('activate', function () {

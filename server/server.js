@@ -816,8 +816,31 @@ app.get('/api/parent/notifications', async (req, res) => {
 // ---- 👨‍🎓 Students API ----
 app.get('/api/students', async (req, res) => {
   try {
-    const students = await Student.find({ instituteId: req.user.instituteId }).sort({ createdAt: -1 });
-    res.json(students);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10000;
+    const search = req.query.search || '';
+    
+    const query = { instituteId: req.user.instituteId };
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { rollNo: { $regex: search, $options: 'i' } },
+        { parentPhone: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const total = await Student.countDocuments(query);
+    const students = await Student.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.json({
+      students,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1467,7 +1490,13 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
     const pythonScriptPath = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_v2.py');
 
     // Use template ID and questions count from request (if changing on the fly) or from test document
-    const templateId = req.body.templateId || test.templateId;
+    let templateId = req.body.templateId || test.templateId;
+    
+    // Most users print the MCQ+Num layout but select MCQ Only in the UI for 75q tests.
+    // Force the numerical layout scanning algorithm to prevent coordinate mismatch (phantom bubbles).
+    if (templateId === 'jee_75') {
+      templateId = 'jee_75_with_numerical';
+    }
     const questionsToDetect = Number(req.body.questionsToDetect) || test.questionsToDetect || 0;
 
     // Save to temp JSON file to avoid OS argument length limits
@@ -1540,6 +1569,7 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
     }
 
     const tempArgsPath = path.join(uploadDir, `omr_args_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.json`);
+
     const jsonPayload = {
       image_paths: imagePaths,
       original_names: req.files.map(file => file.originalname),

@@ -13,25 +13,30 @@ export default function Topbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState({ updateAvailable: false, version: '' });
+  const [updateState, setUpdateState] = useState({ status: 'idle', version: '', releaseDate: '', currentVersion: '', progress: 0 });
   const notifRef = useRef(null);
 
   // Check for app updates
   useEffect(() => {
     async function checkUpdate() {
       const res = await api.getUpdateStatus();
-      if (res && res.updateAvailable) {
-        setUpdateInfo(res);
+      if (res) {
+        setUpdateState(res);
       }
     }
     checkUpdate();
-    const interval = setInterval(checkUpdate, 15000);
+    const interval = setInterval(checkUpdate, 1000); // Check every 1 second as requested
     return () => clearInterval(interval);
   }, []);
 
-  const handleRestartAndUpdate = async () => {
-    toast.loading('Restarting application to apply update...', { duration: 4000 });
-    await api.restartAndUpdate();
+  const handleUpdateAction = async () => {
+    if (updateState.status === 'available') {
+      toast.success('Downloading update in background...');
+      await api.startUpdateDownload();
+    } else if (updateState.status === 'downloaded') {
+      toast.loading('Restarting application to apply update...', { duration: 4000 });
+      await api.restartAndUpdate();
+    }
   };
 
   // Close dropdown when clicking outside
@@ -109,33 +114,35 @@ export default function Topbar() {
 
         {/* Right side */}
         <div className="topbar-right">
-          {updateInfo.updateAvailable && (
-            <motion.button
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              onClick={handleRestartAndUpdate}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '20px',
-                padding: '6px 14px',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                boxShadow: '0 0 14px rgba(124, 58, 237, 0.5)',
-                marginRight: '8px'
-              }}
-              title="Click to restart application and install the latest update"
-            >
-              <Sparkles size={14} />
-              <span>Update Ready {updateInfo.version ? `(v${updateInfo.version})` : ''} — Restart Now</span>
-            </motion.button>
+          {(updateState.status === 'available' || updateState.status === 'downloading' || updateState.status === 'downloaded') && (
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <motion.button
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileHover={updateState.status !== 'downloading' ? { scale: 1.02 } : {}}
+                whileTap={updateState.status !== 'downloading' ? { scale: 0.98 } : {}}
+                onClick={handleUpdateAction}
+                disabled={updateState.status === 'downloading'}
+                style={{
+                  background: '#007acc', // VS Code Blue
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '4px', // Slight rounding like VS Code
+                  padding: '4px 14px',
+                  fontSize: '13px',
+                  fontWeight: '400',
+                  cursor: updateState.status === 'downloading' ? 'default' : 'pointer',
+                  marginRight: '8px',
+                  opacity: updateState.status === 'downloading' ? 0.8 : 1,
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}
+                title={`Current Version: ${updateState.currentVersion || 'v1.0.10'}\nLatest Version: ${updateState.version}\nRelease Date: ${updateState.releaseDate ? new Date(updateState.releaseDate).toLocaleDateString() : 'Just now'}`}
+              >
+                {updateState.status === 'available' && 'Update'}
+                {updateState.status === 'downloading' && `Downloading ${Math.round(updateState.progress)}%`}
+                {updateState.status === 'downloaded' && 'Restart'}
+              </motion.button>
+            </div>
           )}
 
           <div ref={notifRef} style={{ position: 'relative' }}>

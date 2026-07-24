@@ -9,6 +9,7 @@ const studentSchema = new mongoose.Schema({
   class: { type: String },
   parentName: { type: String },
   parentPhone: { type: String, required: true },
+  parentPhone2: { type: String },
   address: { type: String },
   joinDate: { type: String },
   schoolName: { type: String },

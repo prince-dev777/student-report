@@ -6,7 +6,8 @@
 
 const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 const isDev = window.location.port === '5173';
-const API_BASE = 'https://student-report-ezgw.onrender.com/api';
+// Use local API server to ensure frontend and backend are in sync during development
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Helper to check if backend is online
 export async function checkBackendStatus() {
@@ -67,7 +68,11 @@ export const api = {
   getParentData: () => apiRequest('/parent/data'),
 
   // Students
-  getStudents: () => apiRequest('/students'),
+  getStudents: (page = 1, limit = 50, search = '') => {
+    const params = new URLSearchParams({ page, limit });
+    if (search) params.append('search', search);
+    return apiRequest(`/students?${params.toString()}`);
+  },
   getStudent: (id) => apiRequest(`/students/${id}`),
   createStudent: (student) => apiRequest('/students', { method: 'POST', body: JSON.stringify(student) }),
   addStudentsBulk: (studentsData) => apiRequest('/students/bulk', { method: 'POST', body: JSON.stringify({ studentsData }) }),
@@ -127,7 +132,13 @@ export const api = {
       const response = await fetch('http://localhost:5001/api/system/update-status');
       if (response.ok) return await response.json();
     } catch (e) {}
-    return { updateAvailable: false, version: '' };
+    return { status: 'idle', version: '', releaseDate: '', currentVersion: '', progress: 0 };
+  },
+  startUpdateDownload: async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/system/start-download', { method: 'POST' });
+      if (response.ok) return await response.json();
+    } catch (e) {}
   },
   restartAndUpdate: async () => {
     try {

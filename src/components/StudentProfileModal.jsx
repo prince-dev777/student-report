@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, User, Phone, MapPin, Calendar, CheckCircle2, 
@@ -75,16 +76,16 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
     if (e.target === e.currentTarget) onClose();
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <div className="modal-overlay" onClick={handleOverlayClick}>
-        <div className="modal-content modal-xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.98 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-          >
+        <motion.div
+          className="modal-content modal-xl"
+          initial={{ opacity: 0, y: 30, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 30, scale: 0.98 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+        >
             {/* Header */}
             <div className="modal-header">
               <div className="flex items-center gap-16">
@@ -181,6 +182,11 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
                           <div>
                             <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Parent Mobile</span>
                             <strong>+91 {student.parentPhone}</strong>
+                            {student.parentPhone2 && (
+                              <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                +91 {student.parentPhone2} (Alt)
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-12 text-secondary">
@@ -474,8 +480,8 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
               </button>
             </div>
           </motion.div>
-        </div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

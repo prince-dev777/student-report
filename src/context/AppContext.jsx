@@ -60,7 +60,8 @@ export function AppProvider({ children }) {
         try {
           console.log('🔌 Backend is online. Fetching data from MongoDB...');
           console.log('🔍 [DEBUG] Calling api.getStudents()...');
-          const serverStudents = await api.getStudents();
+          const studentsRes = await api.getStudents(1, 10000);
+          const serverStudents = studentsRes.students || [];
           console.log('🔍 [DEBUG] api.getStudents() returned:', serverStudents.length, 'students');
           
           // If database is completely empty
@@ -450,12 +451,12 @@ export function AppProvider({ children }) {
   }, [tests, students, backendOnline, user]);
 
   // ---- SMS ----
-  const sendManualSMS = useCallback(async (studentId, message) => {
+  const sendManualSMS = useCallback(async (studentId, message, attachment = null) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
 
     const instName = user?.instituteName || 'Career Xone Pro';
-    const smsLog = await sendCustomSMS(student, message, instName);
+    const smsLog = await sendCustomSMS(student, message, instName, attachment);
     
     if (backendOnline) {
       try {
@@ -471,11 +472,11 @@ export function AppProvider({ children }) {
     toast.success(`SMS sent to ${student.parentName}!`);
   }, [students, backendOnline, user]);
 
-  const sendBulkManualSMS = useCallback(async (studentIds, message) => {
+  const sendBulkManualSMS = useCallback(async (studentIds, message, attachment = null) => {
     const targetStudents = students.filter((s) => studentIds.includes(s.id));
     const instName = user?.instituteName || 'Career Xone Pro';
     for (const student of targetStudents) {
-      const smsLog = await sendCustomSMS(student, message, instName);
+      const smsLog = await sendCustomSMS(student, message, instName, attachment);
       if (backendOnline) {
         try {
           const savedLog = await api.createSMSLog(smsLog);

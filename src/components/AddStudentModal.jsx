@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Loader2, Camera } from 'lucide-react';
 import { batches } from '../data/sampleData';
@@ -11,6 +12,7 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
     class: '',
     parentName: '',
     parentPhone: '',
+    parentPhone2: '',
     address: '',
     photo: null,
     parentUserId: '',
@@ -30,6 +32,7 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
         class: studentData.class || '',
         parentName: studentData.parentName || '',
         parentPhone: studentData.parentPhone || '',
+        parentPhone2: studentData.parentPhone2 || '',
         address: studentData.address || '',
         photo: studentData.photo || null,
         parentUserId: studentData.parentUserId || '',
@@ -86,16 +89,16 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
     if (e.target === e.currentTarget) onClose();
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <div className="modal-overlay" onClick={handleOverlayClick}>
-        <div className="modal-content">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-          >
+        <motion.div
+          className="modal-content"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+        >
             {/* Header */}
             <div className="modal-header">
               <h3>{isEdit ? 'Edit Student' : 'Add New Student'}</h3>
@@ -108,25 +111,28 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
             <div className="modal-body">
               <form onSubmit={handleSubmit} id="student-form">
                 {/* Photo Upload Section */}
-                <div className="flex flex-col items-center mb-16">
-                  <div style={{ position: 'relative', width: '90px', height: '90px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
+                  <div style={{ position: 'relative', width: '110px', height: '110px' }}>
                     {form.photo ? (
                       <img 
                         src={form.photo} 
                         alt="Preview" 
-                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-blue-light)' }} 
+                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--bg-card)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} 
                       />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justify: 'center', color: '#64748b', border: '1px dashed var(--border-color)' }}>
-                        <Camera size={28} />
-                      </div>
+                      <label htmlFor="photo-upload" style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justify: 'center', color: 'var(--text-tertiary)', border: '2px dashed var(--border-color-light)', transition: 'all 0.3s ease', cursor: 'pointer' }}>
+                        <Camera size={32} style={{ marginBottom: '4px', color: 'var(--accent-blue-light)' }} />
+                        <span style={{ fontSize: '0.65rem', fontWeight: '500' }}>Upload Photo</span>
+                      </label>
                     )}
                     <label 
                       htmlFor="photo-upload" 
-                      style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--accent-blue)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justify: 'center', color: 'white', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}
+                      style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'var(--accent-blue)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justify: 'center', color: 'white', cursor: 'pointer', boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)', transition: 'transform 0.2s ease', border: '2px solid var(--bg-card)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                       title="Upload Photo"
                     >
-                      <Camera size={14} />
+                      <Camera size={16} />
                       <input 
                         type="file" 
                         id="photo-upload" 
@@ -140,8 +146,9 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
                     <button 
                       type="button" 
                       onClick={handleRemovePhoto} 
-                      className="mt-8"
-                      style={{ background: 'transparent', color: 'var(--accent-red)', fontSize: '0.78rem', fontWeight: '500' }}
+                      style={{ background: 'rgba(220, 38, 38, 0.1)', color: 'var(--accent-red)', fontSize: '0.75rem', fontWeight: '600', padding: '4px 12px', borderRadius: '12px', marginTop: '12px', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.15)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
                     >
                       Remove Photo
                     </button>
@@ -244,6 +251,23 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
 
                 <div className="form-row">
                   <div className="form-group">
+                    <label className="form-label">Parent Phone 2 (Optional)</label>
+                    <input
+                      type="tel"
+                      name="parentPhone2"
+                      value={form.parentPhone2}
+                      onChange={handleChange}
+                      className="form-input"
+                      placeholder="Enter second phone number"
+                    />
+                  </div>
+                  <div className="form-group">
+                    {/* Empty for spacing */}
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
                     <label className="form-label">Parent User ID (Optional)</label>
                     <input
                       type="text"
@@ -304,8 +328,8 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
               </button>
             </div>
           </motion.div>
-        </div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

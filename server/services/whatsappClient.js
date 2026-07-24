@@ -260,7 +260,7 @@ export function resetRetryCount() {
   initRetryCount = 0;
 }
 
-export async function sendWhatsAppMessageWeb(to, message) {
+export async function sendWhatsAppMessageWeb(to, message, attachment = null) {
   if (!client || clientStatus !== 'ready') {
     throw new Error(`WhatsApp client is not ready (Status: ${clientStatus})`);
   }
@@ -279,6 +279,20 @@ export async function sendWhatsAppMessageWeb(to, message) {
   }
 
   console.log(`[WhatsAppClient] Sending message to ${cleanNumber}: "${message.slice(0, 40)}..."`);
-  const response = await client.sendMessage(cleanNumber, message);
-  return response;
+  
+  if (attachment && attachment.data) {
+    try {
+      const { MessageMedia } = pkg;
+      const media = new MessageMedia(attachment.mimetype, attachment.data, attachment.filename);
+      const response = await client.sendMessage(cleanNumber, message, { media });
+      return response;
+    } catch (e) {
+      console.error(`[WhatsAppClient] Failed to send media: ${e.message}. Falling back to text.`);
+      const response = await client.sendMessage(cleanNumber, message);
+      return response;
+    }
+  } else {
+    const response = await client.sendMessage(cleanNumber, message);
+    return response;
+  }
 }

@@ -19,7 +19,9 @@ import {
   QrCode,
   Wifi,
   WifiOff,
-  Trash2
+  Trash2,
+  Paperclip,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getRelativeTime } from '../utils/helpers';
@@ -126,7 +128,29 @@ export default function SMSCenter() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState('all');
   const [message, setMessage] = useState('');
+  const [attachment, setAttachment] = useState(null);
   const [sending, setSending] = useState(false);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size should be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result.split(',')[1];
+      setAttachment({
+        filename: file.name,
+        mimetype: file.type,
+        data: base64String,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Filter / search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -214,11 +238,12 @@ export default function SMSCenter() {
         const activeIds = students
           .filter((s) => s.status === 'active')
           .map((s) => s.id);
-        await sendBulkManualSMS(activeIds, message);
+        await sendBulkManualSMS(activeIds, message, attachment);
       } else {
-        await sendManualSMS(selectedStudent, message);
+        await sendManualSMS(selectedStudent, message, attachment);
       }
       setMessage('');
+      setAttachment(null);
       setSelectedStudent('all');
       setShowModal(false);
     } catch (err) {
@@ -621,6 +646,40 @@ export default function SMSCenter() {
                   />
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
                     {message.length} characters
+                  </span>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '16px' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Paperclip size={16} /> Attach Image/File (Optional)
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <label 
+                      className="btn btn-outline" 
+                      style={{ cursor: 'pointer', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <ImageIcon size={16} /> Select File
+                      <input 
+                        type="file" 
+                        accept="image/*,application/pdf"
+                        onChange={handleFileChange} 
+                        style={{ display: 'none' }} 
+                      />
+                    </label>
+                    {attachment && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-tertiary)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.85rem' }}>
+                        <span className="truncate" style={{ maxWidth: '150px' }}>{attachment.filename}</span>
+                        <button 
+                          onClick={() => setAttachment(null)}
+                          style={{ background: 'none', border: 'none', color: 'var(--accent-red)', cursor: 'pointer', padding: 0, display: 'flex' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                    Max size: 5MB. Supported: Images, PDF.
                   </span>
                 </div>
               </div>

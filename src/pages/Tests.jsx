@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
@@ -20,6 +21,7 @@ export default function Tests() {
   const [activeTab, setActiveTab] = useState('all-tests');
   const [selectedTestResults, setSelectedTestResults] = useState(null);
   const [showResultsModal, setShowResultsModal] = useState(false);
+  const [selectedStudentResult, setSelectedStudentResult] = useState(null);
   const [omrScanErrors, setOmrScanErrors] = useState([]);
 
   // For Create Test form (Answer Key input removed as it is now moved to Enter Marks page)
@@ -275,8 +277,17 @@ export default function Tests() {
         }
 
         // Map rollNo to studentId using the students list
-        const matchedStudent = students.find(s => String(s.rollNo) === String(r.rollNo));
-        
+        // Convert both to Number to handle leading zeros (e.g. '0340' vs '340')
+        const matchedStudent = students.find(s => {
+          if (s.rollNo == null || r.rollNo == null) return false;
+          // If they contain letters, compare as string, otherwise as numbers
+          const sRollStr = String(s.rollNo).trim();
+          const rRollStr = String(r.rollNo).trim();
+          if (!isNaN(sRollStr) && !isNaN(rRollStr)) {
+            return Number(sRollStr) === Number(rRollStr);
+          }
+          return sRollStr.toLowerCase() === rRollStr.toLowerCase();
+        });
         if (!matchedStudent || isDuplicate) {
           currentErrors.push({
             rollNumber: r.rollNo,
@@ -622,27 +633,115 @@ export default function Tests() {
     setShowResultsModal(true);
   };
 
+  const calculateSubjectStats = (studentResult, test) => {
+    const { studentAnswers } = studentResult;
+    const answerKey = test.answerKey || [];
+    const subjectsArray = test.subject ? test.subject.split(',').map(s => s.trim()) : ['General'];
+    const marksPerQ = test.marksPerQuestion || 1;
+    const negMarks = test.negativeMarking || 0;
+    
+    const totalQuestions = answerKey.length > 0 ? answerKey.length : (studentAnswers ? studentAnswers.length : 0);
+    if (totalQuestions === 0) return [];
+
+    const qPerSubject = Math.floor(totalQuestions / subjectsArray.length);
+    
+    const stats = subjectsArray.map((subj, index) => {
+      const startIdx = index * qPerSubject;
+      const endIdx = (index === subjectsArray.length - 1) ? totalQuestions : (index + 1) * qPerSubject;
+      
+      let correct = 0;
+      let wrong = 0;
+      let skipped = 0;
+      
+      for (let i = startIdx; i < endIdx; i++) {
+        const studentAns = studentAnswers ? studentAnswers[i] : null;
+        const correctAns = answerKey[i];
+        
+        const sAnsStr = studentAns ? String(studentAns).trim().toUpperCase() : 'NULL';
+        const cAnsStr = correctAns ? String(correctAns).trim().toUpperCase() : 'NULL';
+        
+        if (!sAnsStr || sAnsStr === 'NULL' || sAnsStr === 'UNDEFINED' || sAnsStr === '') {
+          skipped++;
+        } else if (cAnsStr && cAnsStr !== 'NULL' && cAnsStr !== 'UNDEFINED' && cAnsStr !== '') {
+          let matched = false;
+          if (sAnsStr === cAnsStr) {
+            matched = true;
+          } else {
+            const parsedAns = parseFloat(sAnsStr);
+            const parsedCor = parseFloat(cAnsStr);
+            if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
+              matched = true;
+            }
+          }
+          
+          if (matched) correct++;
+          else wrong++;
+        } else {
+          skipped++; 
+        }
+      }
+      
+      const marks = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
+      
+      return {
+        subject: subj,
+        correct,
+        wrong,
+        skipped,
+        marks
+      };
+    });
+    
+    return stats;
+  };
+
   const handleDownloadExcel = () => {
     if (!selectedTestResults || !selectedTestResults.results) return;
     
     const test = selectedTestResults.test;
-    const worksheetData = selectedTestResults.results.map(res => ({
-      'Rank': res.rank !== undefined ? res.rank : 'N/A',
-      'Roll No': res.rollNo,
-      'Student Name': res.studentName,
-      'Marks': `${res.marks} / ${res.totalMarks}`,
-      'Percentage': res.percentage !== undefined ? `${res.percentage}%` : 'N/A'
-    }));
+    const worksheetData = selectedTestResults.results.map(res => {
+      const baseData = {
+        'Rank': res.rank !== undefined ? res.rank : 'N/A',
+        'Roll No': res.rollNo,
+        'Student Name': res.studentName
+      };
+
+      const subjectStats = calculateSubjectStats(res, test);
+      subjectStats.forEach(stat => {
+        baseData[`${stat.subject} Marks`] = stat.marks;
+      });
+
+      baseData['Total Marks'] = `${res.marks} / ${res.totalMarks}`;
+      baseData['Percentage'] = res.percentage !== undefined ? `${res.percentage}%` : 'N/A';
+
+      return baseData;
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
     
     // Auto-size columns
     const colWidths = [
-      { wch: 8 }, { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 12 }
+      { wch: 8 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 12 }
     ];
+    
+    if (worksheetData.length > 0) {
+      const extraCols = Object.keys(worksheetData[0]).length - 5;
+      for (let i = 0; i < extraCols; i++) {
+        colWidths.push({ wch: 15 });
+      }
+    }
     worksheet['!cols'] = colWidths;
 
     const workbook = XLSX.utils.book_new();
+
+    // Make header bold
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const address = XLSX.utils.encode_col(C) + '1';
+      if (!worksheet[address]) continue;
+      worksheet[address].s = { font: { bold: true } };
+    }
+
     XLSX.utils.book_append_sheet(workbook, worksheet, "Leaderboard");
     
     const fileName = `${test.name}_${test.subject}_Leaderboard.xlsx`.replace(/[^a-zA-Z0-9_.-]/g, '_');
@@ -1231,13 +1330,15 @@ export default function Tests() {
       </AnimatePresence>
 
       {/* Results details / leaderboard Modal */}
-      {showResultsModal && selectedTestResults && (
+      {showResultsModal && selectedTestResults && createPortal(
         <div className="modal-overlay" onClick={() => setShowResultsModal(false)}>
-          <div className="modal-content modal-lg" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="modal-content modal-lg" style={{ maxHeight: '75vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header" style={{ flexShrink: 0, padding: '16px 24px' }}>
               <div>
-                <h3>Leaderboard - {selectedTestResults.test.name}</h3>
-                <p className="card-subtitle" style={{ margin: 0 }}>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Leaderboard - {selectedTestResults.test.name}
+                </h3>
+                <p className="card-subtitle" style={{ margin: '4px 0 0 0', fontSize: '0.82rem' }}>
                   Subject: <strong>{selectedTestResults.test.subject}</strong> | Date: <strong>{formatDate(selectedTestResults.test.date)}</strong>
                 </p>
               </div>
@@ -1245,8 +1346,8 @@ export default function Tests() {
                 <X size={18} />
               </button>
             </div>
-            <div className="modal-body">
-              <div className="table-container">
+            <div className="modal-body" style={{ flex: '1 1 auto', overflowY: 'auto', minHeight: 0, padding: '16px 24px' }}>
+              <div className="table-container" style={{ maxHeight: 'calc(75vh - 140px)', overflowY: 'auto' }}>
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -1279,17 +1380,25 @@ export default function Tests() {
                             </span>
                           </td>
                           <td>
-                            {res.omrSheetImage ? (
+                            <div className="flex gap-4">
                               <button 
-                                onClick={() => setSelectedOmrImage(res.omrSheetImage.startsWith('data:') ? res.omrSheetImage : `${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`)}
-                                className="btn btn-ghost btn-xs text-accent"
+                                onClick={() => setSelectedStudentResult(res)}
+                                className="btn btn-ghost btn-xs text-primary"
                                 style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
                               >
-                                View OMR
+                                View Results
                               </button>
-                            ) : (
-                              <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>N/A</span>
-                            )}
+                              {res.omrSheetImage && (
+                                <button 
+                                  onClick={() => setSelectedOmrImage(res.omrSheetImage.startsWith('data:') ? res.omrSheetImage : `${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`)}
+                                  className="btn btn-ghost btn-xs text-accent"
+                                  style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
+                                >
+                                  View OMR
+                                </button>
+                              )}
+                              {!res.omrSheetImage && <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', padding: '2px 6px' }}>No OMR</span>}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1298,7 +1407,7 @@ export default function Tests() {
                 </table>
               </div>
             </div>
-            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="modal-footer" style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px' }}>
               <button className="btn btn-outline-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={handleDownloadExcel}>
                 <Download size={16} />
                 Download Excel
@@ -1309,10 +1418,10 @@ export default function Tests() {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* OMR Sheet Viewer Modal */}
-      {selectedOmrImage && (
+      {selectedOmrImage && createPortal(
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)',
           backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex',
@@ -1350,6 +1459,90 @@ export default function Tests() {
             </button>
           </div>
         </div>
+      , document.body)}
+
+      {/* Student Result Details Modal */}
+      {selectedStudentResult && selectedTestResults && createPortal(
+        <div className="modal-overlay" onClick={() => setSelectedStudentResult(null)} style={{ zIndex: 9999 }}>
+          <div className="modal-content" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>Result Details - {selectedStudentResult.studentName}</h3>
+                <p className="card-subtitle" style={{ margin: 0 }}>
+                  Roll No: <strong>{selectedStudentResult.rollNo}</strong> | Test: <strong>{selectedTestResults.test.name}</strong>
+                </p>
+              </div>
+              <button className="modal-close" onClick={() => setSelectedStudentResult(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="flex justify-between items-center mb-16 p-16" style={{ background: 'var(--bg-secondary)', borderRadius: '12px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Marks</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{selectedStudentResult.marks} <span style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>/ {selectedTestResults.test.totalMarks}</span></div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Percentage</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-green)' }}>{selectedStudentResult.percentage}%</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Rank</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-orange)' }}>#{selectedStudentResult.rank}</div>
+                </div>
+              </div>
+
+              <h4 className="mb-8">Subject-wise Performance</h4>
+              <div className="table-container mb-16">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Subject</th>
+                      <th style={{ textAlign: 'center' }}>Correct</th>
+                      <th style={{ textAlign: 'center' }}>Incorrect</th>
+                      <th style={{ textAlign: 'center' }}>Skipped</th>
+                      <th style={{ textAlign: 'right' }}>Marks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {calculateSubjectStats(selectedStudentResult, selectedTestResults.test).map((stat, idx) => (
+                      <tr key={idx}>
+                        <td><strong>{stat.subject}</strong></td>
+                        <td style={{ textAlign: 'center', color: 'var(--accent-green)', fontWeight: 600 }}>{stat.correct}</td>
+                        <td style={{ textAlign: 'center', color: '#ef4444', fontWeight: 600 }}>{stat.wrong}</td>
+                        <td style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>{stat.skipped}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 800 }}>{stat.marks}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot style={{ borderTop: '2px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
+                    <tr>
+                      <td><strong>Total</strong></td>
+                      <td style={{ textAlign: 'center', color: 'var(--accent-green)', fontWeight: 800 }}>
+                        {calculateSubjectStats(selectedStudentResult, selectedTestResults.test).reduce((sum, stat) => sum + stat.correct, 0)}
+                      </td>
+                      <td style={{ textAlign: 'center', color: '#ef4444', fontWeight: 800 }}>
+                        {calculateSubjectStats(selectedStudentResult, selectedTestResults.test).reduce((sum, stat) => sum + stat.wrong, 0)}
+                      </td>
+                      <td style={{ textAlign: 'center', color: 'var(--text-tertiary)', fontWeight: 800 }}>
+                        {calculateSubjectStats(selectedStudentResult, selectedTestResults.test).reduce((sum, stat) => sum + stat.skipped, 0)}
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 800 }}>
+                        {calculateSubjectStats(selectedStudentResult, selectedTestResults.test).reduce((sum, stat) => sum + stat.marks, 0)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn btn-primary" onClick={() => setSelectedStudentResult(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </motion.div>
   );

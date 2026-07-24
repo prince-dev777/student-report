@@ -1,7 +1,7 @@
 {
   "name": "student-report",
   "private": true,
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Career Xone OMR Desktop Application",
   "author": "Career Xone",
   "type": "module",

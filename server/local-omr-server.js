@@ -82,7 +82,16 @@ const uploadDir = path.join(dataPath, 'uploads', 'omr');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
-const upload = multer({ dest: uploadDir });
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 function safeUnlink(filePath) {
   try {
@@ -133,7 +142,7 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
     const imagePaths = req.files.map(file => file.path);
     const pythonScriptPath = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_v2.py');
 
-    const templateId = req.body.templateId;
+    let templateId = req.body.templateId;
     const questionsToDetect = Number(req.body.questionsToDetect) || 0;
     
     // Parse test details sent from frontend
@@ -145,6 +154,10 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
       answer_keys = { "General": answer_keys };
     }
     let template_config = testData.template_config;
+    
+    // Do NOT override templateId — the frontend already sends the correct value
+    // (either 'jee_75' for MCQ-only or 'jee_75_with_numerical' for MCQ+Numerical).
+    // The Python engine's determine_template() handles fallback detection correctly.
 
     const tempArgsPath = path.join(uploadDir, `omr_args_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.json`);
     const jsonPayload = {
@@ -386,7 +399,12 @@ async function pollPendingWhatsAppMessages() {
       
       for (const log of pendingLogs) {
         try {
-          await sendWhatsAppMessageWeb(log.parentPhone, log.message);
+          const phones = log.parentPhone.split(',').map(p => p.trim()).filter(Boolean);
+          for (const phone of phones) {
+            await sendWhatsAppMessageWeb(phone, log.message, log.attachment);
+            // Small delay between sending to two numbers of the same student
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
           
           await fetch(`${cloudUrl}/api/whatsapp/status?token=${token}`, {
             method: 'POST',
@@ -444,17 +462,47 @@ app.get('/api/whatsapp/local-status', (req, res) => {
 // ============================================
 // System Update API Routes
 // ============================================
-let updateInfo = { updateAvailable: false, version: '' };
+let updateState = { 
+  status: 'idle', // 'idle' | 'available' | 'downloading' | 'downloaded'
+  version: '', 
+  releaseDate: '',
+  currentVersion: '',
+  progress: 0 
+};
 
 process.on('message', (msg) => {
-  if (msg && msg.type === 'UPDATE_DOWNLOADED') {
-    updateInfo = { updateAvailable: true, version: msg.version || 'new' };
+  if (msg && msg.type === 'APP_INFO') {
+    updateState.currentVersion = msg.version;
+  }
+  else if (msg && msg.type === 'UPDATE_AVAILABLE') {
+    updateState = { 
+      ...updateState, 
+      status: 'available', 
+      version: msg.version, 
+      releaseDate: msg.releaseDate || '' 
+    };
+    console.log('[Local OMR] Update available:', msg.version);
+  }
+  else if (msg && msg.type === 'UPDATE_PROGRESS') {
+    updateState.status = 'downloading';
+    updateState.progress = msg.percent;
+  }
+  else if (msg && msg.type === 'UPDATE_DOWNLOADED') {
+    updateState.status = 'downloaded';
+    updateState.version = msg.version || 'new';
     console.log('[Local OMR] Update downloaded from main process:', msg.version);
   }
 });
 
 app.get('/api/system/update-status', (req, res) => {
-  res.json(updateInfo);
+  res.json(updateState);
+});
+
+app.post('/api/system/start-download', (req, res) => {
+  if (process.send) {
+    try { process.send({ type: 'START_DOWNLOAD' }); } catch(e) {}
+  }
+  res.json({ success: true, message: 'Download started' });
 });
 
 app.post('/api/system/restart-and-update', (req, res) => {
