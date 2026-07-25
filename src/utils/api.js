@@ -7,7 +7,12 @@
 const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 const isDev = window.location.port === '5173';
 // Use local API server to ensure frontend and backend are in sync during development
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+let API_BASE;
+if (import.meta.env.PROD && isElectron) {
+  API_BASE = '/api';
+} else {
+  API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+}
 
 // Helper to check if backend is online
 export async function checkBackendStatus() {
@@ -98,7 +103,7 @@ export const api = {
     
     if (isElectron) {
       // Edge Computing: Send heavy images to LOCAL server instead of cloud
-      const response = await fetch('http://localhost:5001/api/local-omr-process', {
+      const response = await fetch('/api/test-results/omr-process', {
         method: 'POST',
         body: formData,
       });
@@ -129,20 +134,20 @@ export const api = {
   // System Updates
   getUpdateStatus: async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/system/update-status');
+      const response = await fetch('/api/system/update-status');
       if (response.ok) return await response.json();
     } catch (e) {}
     return { status: 'idle', version: '', releaseDate: '', currentVersion: '', progress: 0 };
   },
   startUpdateDownload: async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/system/start-download', { method: 'POST' });
+      const response = await fetch('/api/system/start-download', { method: 'POST' });
       if (response.ok) return await response.json();
     } catch (e) {}
   },
   restartAndUpdate: async () => {
     try {
-      await fetch('http://localhost:5001/api/system/restart-and-update', { method: 'POST' });
+      await fetch('/api/system/restart-and-update', { method: 'POST' });
     } catch (e) {}
   },
 };

@@ -1890,6 +1890,63 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
+// ============================================
+// System Update API Routes
+// ============================================
+let updateState = { 
+  status: 'idle', // 'idle' | 'available' | 'downloading' | 'downloaded'
+  version: '', 
+  releaseDate: '',
+  currentVersion: '',
+  progress: 0 
+};
+
+process.on('message', (msg) => {
+  if (msg === 'shutdown') {
+    console.log('[Server] Received shutdown signal from Electron.');
+    process.exit(0);
+  }
+  else if (msg && msg.type === 'APP_INFO') {
+    updateState.currentVersion = msg.version;
+  }
+  else if (msg && msg.type === 'UPDATE_AVAILABLE') {
+    updateState = { 
+      ...updateState, 
+      status: 'available', 
+      version: msg.version, 
+      releaseDate: msg.releaseDate || '' 
+    };
+    console.log('[Server] Update available:', msg.version);
+  }
+  else if (msg && msg.type === 'UPDATE_PROGRESS') {
+    updateState.status = 'downloading';
+    updateState.progress = msg.percent;
+  }
+  else if (msg && msg.type === 'UPDATE_DOWNLOADED') {
+    updateState.status = 'downloaded';
+    updateState.version = msg.version || 'new';
+    console.log('[Server] Update downloaded from main process:', msg.version);
+  }
+});
+
+app.get('/api/system/update-status', (req, res) => {
+  res.json(updateState);
+});
+
+app.post('/api/system/start-download', (req, res) => {
+  if (process.send) {
+    try { process.send({ type: 'START_DOWNLOAD' }); } catch(e) {}
+  }
+  res.json({ success: true, message: 'Download started' });
+});
+
+app.post('/api/system/restart-and-update', (req, res) => {
+  if (process.send) {
+    try { process.send({ type: 'QUIT_AND_INSTALL' }); } catch(e) {}
+  }
+  res.json({ success: true, message: 'Restarting application...' });
+});
+
 // Start listening
 app.listen(PORT, () => {
   console.log(`🚀 Server listening at http://localhost:${PORT}`);

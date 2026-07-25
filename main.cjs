@@ -13,7 +13,7 @@ app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 app.commandLine.appendSwitch('disable-gpu-disk-cache');
 app.commandLine.appendSwitch('disable-disk-cache');
 
-// Helper: kill any process using port 5001 (cleanup leftover from previous run)
+// Helper: kill any process using port 5000 (cleanup leftover from previous run)
 function killPort(port) {
   return new Promise((resolve) => {
     exec(`netstat -ano | findstr :${port} | findstr LISTENING`, (err, stdout) => {
@@ -68,7 +68,7 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
   } else {
     // Load from local Express server to avoid file:// cross-origin issues
-    mainWindow.loadURL('http://localhost:5001');
+    mainWindow.loadURL('http://localhost:5000');
   }
   // Prevent window from closing, hide it instead
   mainWindow.on('close', (event) => {
@@ -151,11 +151,11 @@ function createTray() {
 }
 
 async function startServer() {
-  // Kill any leftover process on port 5001 from a previous session
-  await killPort(5001);
+  // Kill any leftover process on port 5000 from a previous session
+  await killPort(5000);
 
-  // Path to local OMR server
-  const localOmrPath = path.join(__dirname, 'server', 'local-omr-server.js');
+  // Path to local main server
+  const localOmrPath = path.join(__dirname, 'server', 'server.js');
   
   const logFile = path.join(app.getPath('userData'), 'electron_debug.log');
   try {
@@ -174,13 +174,13 @@ async function startServer() {
     ELECTRON_EXEC_PATH: process.execPath // Pass the Electron binary path for Puppeteer
   };
 
-  // 2. Start Local OMR Server (Port 5001)
+  // 2. Start Local Server (Port 5000)
   serverProcess = fork(localOmrPath, [], { env: env, silent: true });
   serverProcess.stdout?.on('data', (data) => {
-    try { fs.appendFileSync(logFile, `Local OMR: ${data}\n`); } catch(e) {}
+    try { fs.appendFileSync(logFile, `Local Server: ${data}\n`); } catch(e) {}
   });
   serverProcess.stderr?.on('data', (data) => {
-    try { fs.appendFileSync(logFile, `Local OMR Error: ${data}\n`); } catch(e) {}
+    try { fs.appendFileSync(logFile, `Local Server Error: ${data}\n`); } catch(e) {}
   });
 
   // Send app info on start
