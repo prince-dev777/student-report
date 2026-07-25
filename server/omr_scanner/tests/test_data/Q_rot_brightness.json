@@ -1,0 +1,8 @@
+{
+    "filename": "Q_rot_brightness.jpg",
+    "transformations": [
+        "rotation_2deg",
+        "low_brightness"
+    ],
+    "source": "T1.jpg"
+}

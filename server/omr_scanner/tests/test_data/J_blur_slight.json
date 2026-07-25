@@ -1,0 +1,7 @@
+{
+    "filename": "J_blur_slight.jpg",
+    "transformations": [
+        "slight_blur"
+    ],
+    "source": "T1.jpg"
+}

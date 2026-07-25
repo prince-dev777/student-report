@@ -1,0 +1,7 @@
+{
+    "filename": "D_perspective.jpg",
+    "transformations": [
+        "perspective_distortion"
+    ],
+    "source": "T1.jpg"
+}

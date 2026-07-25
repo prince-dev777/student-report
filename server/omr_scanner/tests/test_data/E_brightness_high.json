@@ -1,0 +1,7 @@
+{
+    "filename": "E_brightness_high.jpg",
+    "transformations": [
+        "high_brightness"
+    ],
+    "source": "T1.jpg"
+}

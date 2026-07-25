@@ -1,0 +1,8 @@
+{
+    "filename": "R_persp_noise.jpg",
+    "transformations": [
+        "perspective",
+        "noise"
+    ],
+    "source": "T1.jpg"
+}

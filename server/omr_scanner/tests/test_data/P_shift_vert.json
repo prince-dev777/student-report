@@ -1,0 +1,7 @@
+{
+    "filename": "P_shift_vert.jpg",
+    "transformations": [
+        "vertical_shift"
+    ],
+    "source": "T1.jpg"
+}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
@@ -50,7 +51,48 @@ export default function Tests() {
     });
   }, [testForm.questionsToDetect, testForm.marksPerQuestion]);
 
-  const [selectedSubjects, setSelectedSubjects] = useState(subjects.length > 0 ? [subjects[0]] : []);
+  const [subjectMapping, setSubjectMapping] = useState([]);
+
+  // Auto-populate subjectMapping based on template
+  React.useEffect(() => {
+    const t = testForm.templateId;
+    if (t === 'jee_75_mcq' || t === 'jee_75' || t === 'jee_75_with_numerical') {
+      setSubjectMapping([
+        { subject: 'Physics', fromQ: 1, toQ: 25 },
+        { subject: 'Chemistry', fromQ: 26, toQ: 50 },
+        { subject: 'Mathematics', fromQ: 51, toQ: 75 }
+      ]);
+    } else if (t === 'neet_180') {
+      setSubjectMapping([
+        { subject: 'Physics', fromQ: 1, toQ: 45 },
+        { subject: 'Chemistry', fromQ: 46, toQ: 90 },
+        { subject: 'Biology', fromQ: 91, toQ: 180 }
+      ]);
+    } else if (t === 'neet_90') {
+      setSubjectMapping([
+        { subject: 'Physics', fromQ: 1, toQ: 23 },
+        { subject: 'Chemistry', fromQ: 24, toQ: 45 },
+        { subject: 'Biology', fromQ: 46, toQ: 90 }
+      ]);
+    } else if (t === 'mhcet_200') {
+      setSubjectMapping([
+        { subject: 'Physics', fromQ: 1, toQ: 50 },
+        { subject: 'Chemistry', fromQ: 51, toQ: 100 },
+        { subject: 'Mathematics', fromQ: 101, toQ: 150 },
+        { subject: 'Biology', fromQ: 151, toQ: 200 }
+      ]);
+    } else if (t === 'mhcet_200_bio') {
+      setSubjectMapping([
+        { subject: 'Chemistry', fromQ: 1, toQ: 100 },
+        { subject: 'Biology', fromQ: 101, toQ: 200 }
+      ]);
+    } else {
+      setSubjectMapping([
+        { subject: 'Physics', fromQ: 1, toQ: 50 }
+      ]);
+    }
+  }, [testForm.templateId]);
+
 
   // For Marks Entry
   const [entryTestId, setEntryTestId] = useState('');
@@ -64,6 +106,24 @@ export default function Tests() {
   const [omrImagesData, setOmrImagesData] = useState({}); // studentId: image dataURI
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
   const [omrZoomScale, setOmrZoomScale] = useState(1);
+  const [showManualAnswerKeyModal, setShowManualAnswerKeyModal] = useState(false);
+  const [manualAnswersGrid, setManualAnswersGrid] = useState([]);
+  const [searchStudentQuery, setSearchStudentQuery] = useState('');
+  const [singleOmrUploadingId, setSingleOmrUploadingId] = useState(null);
+
+  // Auto-update manual answer grid when detect questions change
+  React.useEffect(() => {
+    if (detectQuestions > 0) {
+      setManualAnswersGrid(prev => {
+        if (prev.length === detectQuestions) return prev;
+        const newGrid = new Array(detectQuestions).fill('');
+        for (let i = 0; i < Math.min(prev.length, detectQuestions); i++) {
+          newGrid[i] = prev[i];
+        }
+        return newGrid;
+      });
+    }
+  }, [detectQuestions]);
 
   // Memoize selected test for marks entry
   const selectedEntryTest = React.useMemo(() => {
@@ -77,13 +137,22 @@ export default function Tests() {
     if (!testForm.batch) return toast.error('Please select a course');
     if (!testForm.totalMarks || testForm.totalMarks <= 0) return toast.error('Total Marks must be greater than 0');
 
-    if (selectedSubjects.length === 0) return toast.error('Please select at least one subject');
+    if (subjectMapping.length === 0) return toast.error('Please add at least one subject mapping');
+    const hasEmptySubject = subjectMapping.some(m => !m.subject || !m.fromQ || !m.toQ);
+    if (hasEmptySubject) return toast.error('Please fill all subject mapping fields');
+
+    // Warn if ranges don't seem to match questionsToDetect, but don't block
+    const maxQ = Math.max(...subjectMapping.map(m => Number(m.toQ)));
+    if (maxQ !== Number(testForm.questionsToDetect)) {
+      toast.warn(`Highest mapped question is ${maxQ}, but detect count is ${testForm.questionsToDetect}.`);
+    }
 
     setSubmittingAction('CreateTest');
     try {
       await addTest({
         name: testForm.name,
-        subject: selectedSubjects.join(', '),
+        subject: subjectMapping.map(s => s.subject).join(', '),
+        subjectMapping: subjectMapping,
         batch: testForm.batch,
         targetClass: testForm.targetClass,
         date: testForm.date,
@@ -106,7 +175,7 @@ export default function Tests() {
       templateId: 'neet_180',
       questionsToDetect: 180,
     });
-    setSelectedSubjects(subjects.length > 0 ? [subjects[0]] : []);
+    // Subject mapping is auto-handled by useEffect when templateId resets
 
       setActiveTab('all-tests');
     } finally {
@@ -385,15 +454,117 @@ export default function Tests() {
     }
   };
 
+  // Handle Single Student OMR Upload (override)
+  const handleSingleStudentOMRUpload = async (e, studentId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const test = selectedEntryTest;
+    if (!test) return toast.error('Please select a test first');
+
+    if (!file.type.startsWith('image/')) return toast.error('Please select a valid image file (.jpg, .png)');
+
+    setSingleOmrUploadingId(studentId);
+    const formData = new FormData();
+    formData.append('testId', entryTestId);
+    formData.append('templateId', omrTemplate);
+    formData.append('questionsToDetect', detectQuestions);
+    
+    const testData = {
+      marksPerQuestion: test.marksPerQuestion || 1,
+      negativeMarking: test.negativeMarking || 0,
+      answer_keys: test.answerKey || {}
+    };
+    formData.append('testData', JSON.stringify(testData));
+    formData.append('images', file);
+
+    try {
+      const res = await api.uploadOMRImages(formData);
+      if (!res.results || res.results.length === 0) {
+        throw new Error('No OMR results returned from server.');
+      }
+      
+      const r = res.results[0];
+      const sId = studentId; // FORCE ASSIGN
+
+      const newMarksData = { ...marksData };
+      const newOmrStats = { ...omrStats };
+      const newScannedAnswers = { ...scannedAnswersData };
+      const newOmrImagesData = { ...omrImagesData };
+
+      newMarksData[sId] = r.marks || 0;
+      if (r.omrSheetImage) {
+        newOmrImagesData[sId] = r.omrSheetImage;
+      }
+      
+      let rawAnswers = [];
+      if (r.studentAnswers) {
+        rawAnswers = r.studentAnswers;
+      } else if (r.subjects) {
+        const subjectNames = Object.keys(r.subjects).sort();
+        for (const subj of subjectNames) {
+          rawAnswers = rawAnswers.concat(r.subjects[subj]);
+        }
+      }
+
+      if (detectQuestions > 0 && rawAnswers.length > detectQuestions) {
+        rawAnswers = rawAnswers.slice(0, detectQuestions);
+      }
+
+      const answerKey = test.answerKey || [];
+      const marksPerQ = test.marksPerQuestion || 1;
+      const negMarks = test.negativeMarking || 0;
+      let correct = 0;
+      let wrong = 0;
+
+      const flatAnswers = rawAnswers.map((ans, idx) => {
+         const isObj = typeof ans === 'object' && ans !== null;
+         const status = isObj ? ans.status : (ans ? 'valid' : 'blank');
+         const selected = isObj ? ans.selectedOption : ans;
+         
+         if (status === 'invalid') {
+            wrong++;
+         } else if (status === 'valid' && selected && selected !== 'NULL') {
+            if (idx < answerKey.length) {
+               const corStr = String(answerKey[idx]).trim().toUpperCase();
+               const selStr = String(selected).trim().toUpperCase();
+               
+               let matched = false;
+               if (selStr === corStr) matched = true;
+               else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) matched = true;
+               
+               if (matched) correct++;
+               else wrong++;
+            }
+         }
+         return selected;
+      });
+
+      newScannedAnswers[sId] = flatAnswers;
+      newMarksData[sId] = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
+      newOmrStats[sId] = { correct, wrong };
+
+      setMarksData(newMarksData);
+      setScannedAnswersData(newScannedAnswers);
+      setOmrStats(newOmrStats);
+      setOmrImagesData(newOmrImagesData);
+      
+      toast.success(`OMR uploaded and forcefully mapped to student!`);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to scan OMR image for this student');
+    } finally {
+      setSingleOmrUploadingId(null);
+      e.target.value = null; // reset input
+    }
+  };
+
   // Handle Answer Key File Upload (CSV/TXT)
   const handleAnswerKeyFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const text = evt.target.result;
-      
+    const processText = (text) => {
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
       const parsedLines = lines.map(line => line.split(',').map(c => c.trim()));
       
@@ -466,15 +637,36 @@ export default function Tests() {
       }));
       toast.success(`Successfully loaded ${tokens.length} answers from file!`);
     };
-    reader.onerror = () => {
-      toast.error('Failed to read the answer key file.');
-    };
-    reader.readAsText(file);
+
+    if (file.name.endsWith('.xlsx')) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const csvText = XLSX.utils.sheet_to_csv(worksheet);
+        processText(csvText);
+      };
+      reader.onerror = () => toast.error('Failed to read the answer key file.');
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (evt) => processText(evt.target.result);
+      reader.onerror = () => toast.error('Failed to read the answer key file.');
+      reader.readAsText(file);
+    }
     e.target.value = null; // reset input
   };
 
   // Handle Answer Key Upload & Update on the Enter Marks page (for re-grading)
   const handleAnswerKeyUpdateUpload = async (e) => {
+    // Close dropdown if it's inside one
+    if (e && e.target) {
+      const details = e.target.closest('details');
+      if (details) details.removeAttribute('open');
+    }
+
     const file = e.target.files[0];
     if (!file) return;
     if (!entryTestId) return toast.error('Please select a test first');
@@ -482,10 +674,7 @@ export default function Tests() {
     const test = selectedEntryTest;
     if (!test) return;
 
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      const text = evt.target.result;
-      
+    const processText = async (text) => {
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
       const parsedLines = lines.map(line => line.split(',').map(c => c.trim()));
       
@@ -609,11 +798,150 @@ export default function Tests() {
         toast.success(`✅ Re-graded ${regradedCount} students!`);
       }
     };
-    reader.onerror = () => {
-      toast.error('Failed to read the answer key file.');
-    };
-    reader.readAsText(file);
+
+    if (file.name.endsWith('.xlsx')) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const csvText = XLSX.utils.sheet_to_csv(worksheet);
+        processText(csvText);
+      };
+      reader.onerror = () => toast.error('Failed to read the answer key file.');
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (evt) => processText(evt.target.result);
+      reader.onerror = () => toast.error('Failed to read the answer key file.');
+      reader.readAsText(file);
+    }
     e.target.value = null; // reset input
+  };
+
+  const handleOpenManualEntry = (e) => {
+    if (e && e.target) {
+      const details = e.target.closest('details');
+      if (details) details.removeAttribute('open');
+    }
+
+    const totalQ = selectedEntryTest?.questionsToDetect || detectQuestions || 100;
+    if (manualAnswersGrid.length !== totalQ) {
+      setManualAnswersGrid(new Array(totalQ).fill(''));
+    }
+    setShowManualAnswerKeyModal(true);
+  };
+
+  const handleManualGridPaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) return;
+      
+      const tokens = text.split(/[\s,;\t\r\n]+/)
+        .map(t => t.trim().toUpperCase())
+        .filter(t => t.length > 0 && t !== '-' && t !== ':');
+        
+      if (tokens.length === 0) return;
+      
+      let cleanTokens = [];
+      const mappingRegex = /(\d+)\s*[-:]\s*([A-Za-z0-9.]+)/g;
+      let match;
+      const mappedAnswers = {};
+      let hasMapping = false;
+      let maxQ = 0;
+      
+      while ((match = mappingRegex.exec(text)) !== null) {
+        hasMapping = true;
+        const qNum = parseInt(match[1], 10);
+        const ans = match[2].toUpperCase();
+        mappedAnswers[qNum] = ans;
+        if (qNum > maxQ) maxQ = qNum;
+      }
+      
+      if (hasMapping) {
+        for (let i = 1; i <= Math.max(maxQ, manualAnswersGrid.length); i++) {
+          cleanTokens.push(mappedAnswers[i] || '');
+        }
+      } else {
+        cleanTokens = tokens;
+        if (cleanTokens[0] === 'QUESTION' || cleanTokens[0] === 'ANSWER') {
+          cleanTokens.shift();
+        }
+      }
+
+      setManualAnswersGrid(prev => {
+        const newGrid = [...prev];
+        for (let i = 0; i < Math.min(cleanTokens.length, newGrid.length); i++) {
+          if (cleanTokens[i]) newGrid[i] = cleanTokens[i];
+        }
+        return newGrid;
+      });
+      toast.success('Pasted from clipboard!');
+    } catch (err) {
+      toast.error('Failed to read clipboard.');
+    }
+  };
+
+  const handleManualAnswerKeySubmit = async () => {
+    if (!entryTestId) return toast.error('Please select a test first');
+    
+    // Trim and clean grid values
+    const tokens = manualAnswersGrid.map(val => (val || '').trim().toUpperCase());
+    
+    // Check if empty
+    if (tokens.every(t => t === '')) {
+      toast.error('Answer key is completely empty.');
+      return;
+    }
+
+    const updatedTest = await updateTestAnswerKey(entryTestId, tokens);
+    if (!updatedTest) return;
+
+    const newMarksData = { ...marksData };
+    const newOmrStats = { ...omrStats };
+    let regradedCount = 0;
+
+    Object.keys(scannedAnswersData).forEach(studentId => {
+      const studentAnswers = scannedAnswersData[studentId];
+      if (studentAnswers && studentAnswers.length > 0) {
+        const marksPerQ = selectedEntryTest?.marksPerQuestion || 1;
+        const negMarks = selectedEntryTest?.negativeMarking || 0;
+        let correct = 0;
+        let wrong = 0;
+        studentAnswers.forEach((ans, idx) => {
+          const ansStr = String(ans).trim().toUpperCase();
+          if (idx < tokens.length && ansStr && ansStr !== 'NULL' && tokens[idx]) {
+            const corStr = String(tokens[idx]).trim().toUpperCase();
+            let matched = false;
+            if (ansStr === corStr) {
+              matched = true;
+            } else {
+              const parsedAns = parseFloat(ansStr);
+              const parsedCor = parseFloat(corStr);
+              if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
+                matched = true;
+              }
+            }
+            if (matched) correct++;
+            else wrong++;
+          }
+        });
+        const score = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
+        newMarksData[studentId] = score;
+        newOmrStats[studentId] = { correct, wrong };
+        regradedCount++;
+      }
+    });
+
+    setMarksData(newMarksData);
+    setOmrStats(newOmrStats);
+    if (regradedCount > 0) {
+      toast.success(`✅ Re-graded ${regradedCount} students!`);
+    } else {
+      toast.success('Manual Answer Key saved successfully!');
+    }
+    setShowManualAnswerKeyModal(false);
   };
 
   // View Test Results Details
@@ -643,11 +971,23 @@ export default function Tests() {
     const totalQuestions = answerKey.length > 0 ? answerKey.length : (studentAnswers ? studentAnswers.length : 0);
     if (totalQuestions === 0) return [];
 
-    const qPerSubject = Math.floor(totalQuestions / subjectsArray.length);
+    let subjectConfig = [];
+    if (test.subjectMapping && test.subjectMapping.length > 0) {
+      subjectConfig = test.subjectMapping;
+    } else {
+      // Fallback old logic
+      const qPerSubject = Math.floor(totalQuestions / subjectsArray.length);
+      subjectConfig = subjectsArray.map((subj, index) => ({
+        subject: subj,
+        fromQ: index * qPerSubject + 1,
+        toQ: (index === subjectsArray.length - 1) ? totalQuestions : (index + 1) * qPerSubject
+      }));
+    }
     
-    const stats = subjectsArray.map((subj, index) => {
-      const startIdx = index * qPerSubject;
-      const endIdx = (index === subjectsArray.length - 1) ? totalQuestions : (index + 1) * qPerSubject;
+    const stats = subjectConfig.map((mapping) => {
+      const startIdx = Math.max(0, mapping.fromQ - 1);
+      const endIdx = Math.min(totalQuestions, mapping.toQ);
+      const subj = mapping.subject;
       
       let correct = 0;
       let wrong = 0;
@@ -931,33 +1271,98 @@ export default function Tests() {
                 </div>
 
                 <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Subjects *</label>
-                    <div className="flex flex-wrap gap-8 mt-8">
-                      {subjects.map(s => {
-                        const isSelected = selectedSubjects.includes(s);
-                        return (
-                          <button
-                            key={s}
-                            type="button"
-                            className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => {
-                              setSelectedSubjects(prev => {
-                                if (prev.includes(s)) {
-                                  if (prev.length === 1) return prev; // Keep at least one selected
-                                  return prev.filter(x => x !== s);
-                                } else {
-                                  return [...prev, s];
-                                }
-                              });
-                            }}
-                            style={{ padding: '6px 12px', borderRadius: '20px' }}
-                          >
-                            {isSelected && <Check size={12} style={{ marginRight: '4px' }} />}
-                            {s}
-                          </button>
-                        );
-                      })}
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="form-label flex justify-between items-center">
+                      <span>Subject-Question Mapping *</span>
+                      <button 
+                        type="button" 
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => setSubjectMapping(prev => [...prev, { subject: 'Physics', fromQ: prev.length ? prev[prev.length-1].toQ + 1 : 1, toQ: '' }])}
+                      >
+                        <Plus size={14} style={{ marginRight: '4px' }} /> Add Row
+                      </button>
+                    </label>
+                    <div className="table-container mt-8" style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                      <table className="data-table" style={{ fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr>
+                            <th>Subject</th>
+                            <th>From Q</th>
+                            <th>To Q</th>
+                            <th style={{ width: '40px' }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {subjectMapping.map((mapping, idx) => (
+                            <tr key={idx}>
+                              <td style={{ padding: '4px 8px' }}>
+                                <select 
+                                  className="form-select w-full" 
+                                  style={{ padding: '4px 8px', fontSize: '0.85rem', height: '30px' }}
+                                  value={mapping.subject}
+                                  onChange={(e) => {
+                                    const newMap = [...subjectMapping];
+                                    newMap[idx].subject = e.target.value;
+                                    setSubjectMapping(newMap);
+                                  }}
+                                >
+                                  <option value="Physics">Physics</option>
+                                  <option value="Chemistry">Chemistry</option>
+                                  <option value="Mathematics">Mathematics</option>
+                                  <option value="Biology">Biology</option>
+                                </select>
+                              </td>
+                              <td style={{ padding: '4px 8px' }}>
+                                <input 
+                                  type="number" 
+                                  className="form-input w-full" 
+                                  style={{ padding: '4px 8px', fontSize: '0.85rem', height: '30px' }}
+                                  value={mapping.fromQ}
+                                  onChange={(e) => {
+                                    const newMap = [...subjectMapping];
+                                    newMap[idx].fromQ = Number(e.target.value);
+                                    setSubjectMapping(newMap);
+                                  }}
+                                  min="1"
+                                />
+                              </td>
+                              <td style={{ padding: '4px 8px' }}>
+                                <input 
+                                  type="number" 
+                                  className="form-input w-full" 
+                                  style={{ padding: '4px 8px', fontSize: '0.85rem', height: '30px' }}
+                                  value={mapping.toQ}
+                                  onChange={(e) => {
+                                    const newMap = [...subjectMapping];
+                                    newMap[idx].toQ = Number(e.target.value);
+                                    setSubjectMapping(newMap);
+                                  }}
+                                  min="1"
+                                />
+                              </td>
+                              <td style={{ padding: '4px 8px' }}>
+                                <button 
+                                  type="button" 
+                                  className="btn btn-sm"
+                                  style={{ color: '#ef4444', background: 'transparent', padding: '4px' }}
+                                  onClick={() => {
+                                    setSubjectMapping(prev => prev.filter((_, i) => i !== idx));
+                                  }}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {subjectMapping.length === 0 && (
+                            <tr>
+                              <td colSpan="4" className="text-center text-secondary py-16">
+                                No subjects mapped. Please add a row.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                   <div className="form-group">
@@ -1186,16 +1591,36 @@ export default function Tests() {
                           />
                         )}
                       </div>
-                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', gap: '6px' }} title="Upload Answer Key CSV to update evaluation">
-                        <FileSpreadsheet size={14} />
-                        Upload Answer Key CSV
-                        <input 
-                          type="file" 
-                          accept=".csv"
-                          onChange={handleAnswerKeyUpdateUpload} 
-                          style={{ display: 'none' }} 
-                        />
-                      </label>
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <details className="dropdown">
+                          <summary className="btn btn-secondary btn-sm m-1" style={{ display: 'inline-flex', gap: '6px', cursor: 'pointer', userSelect: 'none' }}>
+                            <BookOpen size={14} /> Upload Answer Key
+                          </summary>
+                          <ul className="menu dropdown-content shadow" style={{ position: 'absolute', backgroundColor: 'white', border: '1px solid #e2e8f0', zIndex: 10, listStyle: 'none', padding: '8px', margin: 0, borderRadius: '8px', minWidth: '160px', top: '100%', left: 0 }}>
+                            <li style={{ marginBottom: '8px' }}>
+                              <label style={{ cursor: 'pointer', display: 'flex', gap: '6px', alignItems: 'center', fontSize: '0.9rem', color: 'var(--text-primary)' }} className="hover:text-primary">
+                                <FileSpreadsheet size={14} /> Excel / CSV
+                                <input 
+                                  type="file" 
+                                  accept=".csv, .xlsx"
+                                  onChange={handleAnswerKeyUpdateUpload} 
+                                  style={{ display: 'none' }} 
+                                />
+                              </label>
+                            </li>
+                            <li>
+                              <button 
+                                type="button" 
+                                onClick={(e) => handleOpenManualEntry(e)}
+                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', gap: '6px', alignItems: 'center', fontSize: '0.9rem', width: '100%', textAlign: 'left', color: 'var(--text-primary)' }}
+                                className="hover:text-primary"
+                              >
+                                <Plus size={14} /> Manual Entry
+                              </button>
+                            </li>
+                          </ul>
+                        </details>
+                      </div>
                       <label className={`btn btn-secondary btn-sm ${omrUploading ? 'opacity-50 pointer-events-none' : ''}`} style={{ cursor: 'pointer', display: 'inline-flex', gap: '6px' }} title="Upload folder of OMR images">
                         {omrUploading ? (
                           <div className="btn-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', marginRight: '4px' }}></div>
@@ -1254,9 +1679,13 @@ export default function Tests() {
                               {err.details && <p className="text-xs text-gray-500 mt-1">{err.details}</p>}
                             </div>
                             {err.omrSheetImage && (
-                              <a href={err.omrSheetImage} target="_blank" rel="noreferrer" className="btn btn-outline-primary btn-sm ml-2">
+                              <button 
+                                type="button"
+                                onClick={() => setSelectedOmrImage(err.omrSheetImage.startsWith('data:') ? err.omrSheetImage : `${window.location.protocol}//${window.location.hostname}:5000${err.omrSheetImage}`)}
+                                className="btn btn-outline-primary btn-sm ml-2"
+                              >
                                 View Image
-                              </a>
+                              </button>
                             )}
                           </div>
                         ))}
@@ -1264,6 +1693,17 @@ export default function Tests() {
                       <button type="button" onClick={() => setOmrScanErrors([])} className="btn btn-sm btn-secondary mt-3">Dismiss</button>
                     </div>
                   )}
+
+                  <div className="flex justify-between items-center mb-12" style={{ padding: '0 4px' }}>
+                    <input 
+                      type="text" 
+                      className="form-input form-input-sm" 
+                      placeholder="Search by Name or Roll No..." 
+                      style={{ width: '300px' }}
+                      value={searchStudentQuery}
+                      onChange={e => setSearchStudentQuery(e.target.value)}
+                    />
+                  </div>
 
                   <div className="table-container mb-16">
                     <table className="data-table">
@@ -1278,6 +1718,24 @@ export default function Tests() {
                       <tbody>
                         {students
                           .filter(s => s.batch === selectedEntryTest?.batch && (!selectedEntryTest?.targetClass || s.class === selectedEntryTest?.targetClass) && s.status === 'active')
+                          .filter(s => {
+                            if (!searchStudentQuery) return true;
+                            const query = searchStudentQuery.toLowerCase();
+                            const nameMatch = s.name && s.name.toLowerCase().includes(query);
+                            const rollMatch = s.rollNo && String(s.rollNo).toLowerCase().includes(query);
+                            return nameMatch || rollMatch;
+                          })
+                          .sort((a, b) => {
+                            const hasMarksA = marksData[a.id] !== '' && marksData[a.id] !== undefined;
+                            const hasMarksB = marksData[b.id] !== '' && marksData[b.id] !== undefined;
+                            
+                            if (hasMarksA && !hasMarksB) return -1;
+                            if (!hasMarksA && hasMarksB) return 1;
+                            
+                            const rollA = a.rollNo ? String(a.rollNo) : '';
+                            const rollB = b.rollNo ? String(b.rollNo) : '';
+                            return rollA.localeCompare(rollB, undefined, { numeric: true });
+                          })
                           .map((student) => (
                             <tr key={student.id}>
                               <td>{student.rollNo}</td>
@@ -1298,24 +1756,52 @@ export default function Tests() {
                                 />
                               </td>
                               <td>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                  / {selectedEntryTest?.totalMarks}
-                                </span>
-                                {marksData[student.id] !== '' && marksData[student.id] !== undefined && (
-                                  <div style={{ marginTop: '4px' }}>
-                                    <span style={{ fontSize: '0.8rem', fontWeight: '600' }} className={
-                                      ((marksData[student.id] / selectedEntryTest?.totalMarks) >= 0.85) ? 'text-success' :
-                                      ((marksData[student.id] / selectedEntryTest?.totalMarks) >= 0.60) ? 'text-warning' : 'text-danger'
-                                    }>
-                                      ({Math.round((marksData[student.id] / selectedEntryTest?.totalMarks) * 100)}%)
+                                <div className="flex justify-between items-start gap-4">
+                                  <div>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                      / {selectedEntryTest?.totalMarks}
                                     </span>
-                                    {omrStats[student.id] && (
-                                      <span style={{ fontSize: '0.75rem', marginLeft: '8px', color: 'var(--text-tertiary)' }}>
-                                        <span className="text-success">{omrStats[student.id].correct} ✓</span> | <span className="text-danger">{omrStats[student.id].wrong} ✗</span>
-                                      </span>
+                                    {marksData[student.id] !== '' && marksData[student.id] !== undefined && (
+                                      <div style={{ marginTop: '4px' }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: '600' }} className={
+                                          ((marksData[student.id] / selectedEntryTest?.totalMarks) >= 0.85) ? 'text-success' :
+                                          ((marksData[student.id] / selectedEntryTest?.totalMarks) >= 0.60) ? 'text-warning' : 'text-danger'
+                                        }>
+                                          ({Math.round((marksData[student.id] / selectedEntryTest?.totalMarks) * 100)}%)
+                                        </span>
+                                        {omrStats[student.id] && (
+                                          <span style={{ fontSize: '0.75rem', marginLeft: '8px', color: 'var(--text-tertiary)' }}>
+                                            <span className="text-success">{omrStats[student.id].correct} ✓</span> | <span className="text-danger">{omrStats[student.id].wrong} ✗</span>
+                                          </span>
+                                        )}
+                                      </div>
                                     )}
                                   </div>
-                                )}
+                                  <div className="flex flex-col gap-2 items-end">
+                                    {omrImagesData[student.id] && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedOmrImage(omrImagesData[student.id].startsWith('data:') ? omrImagesData[student.id] : `${window.location.protocol}//${window.location.hostname}:5000${omrImagesData[student.id]}`)}
+                                        className="btn btn-ghost btn-xs text-accent flex-shrink-0"
+                                        style={{ padding: '4px 8px', fontSize: '0.75rem', marginTop: '-2px' }}
+                                      >
+                                        View OMR
+                                      </button>
+                                    )}
+                                    <label 
+                                      className={`btn btn-outline-secondary btn-xs flex-shrink-0 ${singleOmrUploadingId === student.id ? 'opacity-50 pointer-events-none' : ''}`} 
+                                      style={{ padding: '4px 8px', fontSize: '0.75rem', marginTop: '-2px', cursor: 'pointer', display: 'inline-block' }}
+                                    >
+                                      {singleOmrUploadingId === student.id ? 'Uploading...' : 'Upload OMR'}
+                                      <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        onChange={(e) => handleSingleStudentOMRUpload(e, student.id)} 
+                                        style={{ display: 'none' }} 
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -1427,37 +1913,46 @@ export default function Tests() {
           backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex',
           alignItems: 'center', justifyContent: 'center', padding: '16px'
         }}>
-          <div style={{ background: 'var(--bg-primary)', borderRadius: '18px', padding: '18px', maxWidth: '560px', width: '100%', textAlign: 'center', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button className="btn btn-sm btn-ghost" onClick={() => setOmrZoomScale(s => Math.max(0.5, s - 0.25))}><ZoomOut size={16} /></button>
-                <button className="btn btn-sm btn-ghost" onClick={() => setOmrZoomScale(1)}>Reset</button>
-                <button className="btn btn-sm btn-ghost" onClick={() => setOmrZoomScale(s => Math.min(3, s + 0.25))}><ZoomIn size={16} /></button>
-              </div>
-            </div>
-            
-            <div style={{ flex: 1, overflow: 'auto', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px' }}>
-              <img 
-                src={selectedOmrImage} 
-                alt="OMR Sheet" 
-                style={{ 
-                  width: `${100 * omrZoomScale}%`, 
-                  transition: 'width 0.2s ease-in-out',
-                  display: 'block',
-                  margin: '0 auto'
-                }} 
-              />
-            </div>
+          <TransformWrapper
+            initialScale={1}
+            minScale={0.5}
+            maxScale={4}
+            centerOnInit
+            wheel={{ step: 0.1 }}
+            pinch={{ step: 5 }}
+          >
+            {({ zoomIn, zoomOut, resetTransform, state }) => (
+              <div style={{ background: 'var(--bg-primary)', borderRadius: '18px', padding: '18px', maxWidth: '560px', width: '100%', textAlign: 'center', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button className="btn btn-sm btn-ghost" onClick={() => zoomOut()}><ZoomOut size={16} /></button>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 600, minWidth: '40px' }}>{Math.round(state.scale * 100)}%</span>
+                    <button className="btn btn-sm btn-ghost" onClick={() => zoomIn()}><ZoomIn size={16} /></button>
+                    <button className="btn btn-sm btn-ghost" style={{ marginLeft: '4px' }} onClick={() => resetTransform()}>Reset</button>
+                  </div>
+                </div>
+                
+                <div style={{ flex: 1, overflow: 'hidden', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'grab' }}>
+                  <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
+                    <img 
+                      src={selectedOmrImage} 
+                      alt="OMR Sheet" 
+                      style={{ width: '100%', display: 'block', pointerEvents: 'none' }}
+                    />
+                  </TransformComponent>
+                </div>
 
-            <button
-              onClick={() => { setSelectedOmrImage(null); setOmrZoomScale(1); }}
-              className="btn btn-primary"
-              style={{ marginTop: '14px', width: '100%' }}
-            >
-              Close Preview
-            </button>
-          </div>
+                <button
+                  onClick={() => { setSelectedOmrImage(null); }}
+                  className="btn btn-primary"
+                  style={{ marginTop: '14px', width: '100%' }}
+                >
+                  Close Preview
+                </button>
+              </div>
+            )}
+          </TransformWrapper>
         </div>
       , document.body)}
 
@@ -1539,6 +2034,73 @@ export default function Tests() {
               <button className="btn btn-primary" onClick={() => setSelectedStudentResult(null)}>
                 Close
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Manual Answer Key Modal */}
+      {showManualAnswerKeyModal && createPortal(
+        <div className="modal-overlay" onClick={() => setShowManualAnswerKeyModal(false)} style={{ zIndex: 9999 }}>
+          <div className="modal-content" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Manual Answer Key Entry</h3>
+              <button className="modal-close" onClick={() => setShowManualAnswerKeyModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-gray-600 m-0">
+                  Type your answers below and press <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Tab</kbd> or <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Enter</kbd> to move to the next box. Quick Paste supports lists like <code>1-A, 2-B</code> or <code>A, B, C</code>.
+                </p>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary btn-sm" 
+                  onClick={handleManualGridPaste}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <ClipboardList size={14} /> Quick Paste
+                </button>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px', maxHeight: '50vh', overflowY: 'auto', padding: '4px' }}>
+                {manualAnswersGrid.map((ans, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-tertiary)', width: '24px' }}>{idx + 1}.</span>
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ width: '100%', padding: '4px', textAlign: 'center', fontWeight: 'bold', border: 'none', background: 'transparent' }}
+                      value={ans}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        setManualAnswersGrid(prev => {
+                          const newGrid = [...prev];
+                          newGrid[idx] = val;
+                          return newGrid;
+                        });
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const inputs = Array.from(e.target.closest('.modal-body').querySelectorAll('input'));
+                          const index = inputs.indexOf(e.target);
+                          if (index > -1 && index < inputs.length - 1) {
+                            inputs[index + 1].focus();
+                          }
+                        }
+                      }}
+                      maxLength={4}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button className="btn btn-secondary" onClick={() => setShowManualAnswerKeyModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleManualAnswerKeySubmit}>Save Answer Key</button>
             </div>
           </div>
         </div>,

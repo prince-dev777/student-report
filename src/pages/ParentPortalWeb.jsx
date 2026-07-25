@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 export default function ParentPortalWeb() {
   const [userId, setUserId] = useState('');
@@ -667,35 +668,49 @@ export default function ParentPortalWeb() {
           backdropFilter: 'blur(6px)', zIndex: 100, display: 'flex',
           alignItems: 'center', justifyContent: 'center', padding: '16px'
         }}>
-          <div style={{ background: '#fff', borderRadius: '18px', padding: '18px', maxWidth: '560px', width: '100%', textAlign: 'center', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => setOmrZoomScale(s => Math.max(0.5, s - 0.25))} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}><ZoomOut size={16} color="#475569" /></button>
-                <button onClick={() => setOmrZoomScale(1)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#475569', fontWeight: 'bold' }}>Reset</button>
-                <button onClick={() => setOmrZoomScale(s => Math.min(3, s + 0.25))} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}><ZoomIn size={16} color="#475569" /></button>
+          <TransformWrapper
+            initialScale={1}
+            minScale={0.5}
+            maxScale={4}
+            centerOnInit
+            wheel={{ step: 0.1 }}
+            pinch={{ step: 5 }}
+          >
+            {({ zoomIn, zoomOut, resetTransform, state }) => (
+              <div style={{ background: '#fff', borderRadius: '18px', padding: '18px', maxWidth: '560px', width: '100%', textAlign: 'center', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button onClick={() => zoomOut()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}><ZoomOut size={16} color="#475569" /></button>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 600, minWidth: '40px', color: '#475569' }}>{Math.round(state.scale * 100)}%</span>
+                    <button onClick={() => zoomIn()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}><ZoomIn size={16} color="#475569" /></button>
+                    <button onClick={() => resetTransform()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#475569', fontWeight: 'bold', marginLeft: '4px' }}>Reset</button>
+                  </div>
+                </div>
+                
+                <div style={{ flex: 1, overflow: 'hidden', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'grab' }}>
+                  <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
+                    <img 
+                      src={selectedOmrImage} 
+                      alt="OMR Sheet" 
+                      style={{ width: '100%', display: 'block', pointerEvents: 'none' }}
+                    />
+                  </TransformComponent>
+                </div>
+
+                <button
+                  onClick={() => { setSelectedOmrImage(null); }}
+                  style={{
+                    marginTop: '14px', width: '100%', background: '#0f172a', color: '#fff',
+                    border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.9rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close Preview
+                </button>
               </div>
-            </div>
-            
-            <div style={{ flex: 1, overflow: 'auto', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px' }}>
-              <img 
-                src={selectedOmrImage} 
-                alt="OMR Sheet" 
-                style={{ 
-                  width: `${100 * omrZoomScale}%`, 
-                  transition: 'width 0.2s ease-in-out',
-                  display: 'block',
-                  margin: '0 auto'
-                }} 
-              />
-            </div>
-            <button
-              onClick={() => { setSelectedOmrImage(null); setOmrZoomScale(1); }}
-              style={{ marginTop: '14px', background: '#0284c7', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', width: '100%' }}
-            >
-              Close Preview
-            </button>
-          </div>
+            )}
+          </TransformWrapper>
         </div>
       )}
     </div>

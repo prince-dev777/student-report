@@ -1,0 +1,7 @@
+{
+    "filename": "C_rot_plus_3.jpg",
+    "transformations": [
+        "rotation_3deg"
+    ],
+    "source": "T1.jpg"
+}

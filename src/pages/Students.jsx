@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, animate } from 'framer-motion';
 import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api } from '../utils/api';
@@ -9,6 +9,23 @@ import { getAvatarClass, getInitials } from '../data/sampleData';
 import AddStudentModal from '../components/AddStudentModal';
 import StudentProfileModal from '../components/StudentProfileModal';
 import BulkUploadModal from '../components/BulkUploadModal';
+
+const AnimatedCounter = ({ to }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const controls = animate(0, to, {
+      duration: 1.2,
+      ease: "easeOut",
+      onUpdate(value) {
+        setCount(Math.round(value));
+      }
+    });
+    return () => controls.stop();
+  }, [to]);
+
+  return <>{count}</>;
+};
 
 export default function Students() {
   const { batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent } = useApp();
@@ -53,12 +70,18 @@ export default function Students() {
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
   const [createdStudentCreds, setCreatedStudentCreds] = useState(null);
 
-  // Filter out courses and classes (locally applied on the fetched page)
-  const filteredStudents = paginatedStudents.filter(student => {
-    const matchesCourse = selectedCourse === 'all' || student.batch === selectedCourse;
-    const matchesClass = selectedClass === 'all' || student.class === selectedClass;
-    return matchesCourse && matchesClass;
-  });
+  // Filter out courses and classes and sort by Roll No ascending
+  const filteredStudents = paginatedStudents
+    .filter(student => {
+      const matchesCourse = selectedCourse === 'all' || student.batch === selectedCourse;
+      const matchesClass = selectedClass === 'all' || student.class === selectedClass;
+      return matchesCourse && matchesClass;
+    })
+    .sort((a, b) => {
+      const rollA = a.rollNo ? String(a.rollNo) : '';
+      const rollB = b.rollNo ? String(b.rollNo) : '';
+      return rollA.localeCompare(rollB, undefined, { numeric: true });
+    });
 
   // Derived stats (Approximate for active since we don't fetch all, but we can do our best with local page or total stats)
   const activeCount = Math.round(totalCount * 0.95); // Approximation if backend doesn't provide it
@@ -147,7 +170,7 @@ export default function Students() {
               <Users size={20} />
             </div>
           </div>
-          <div className="stat-card-value">{totalCount}</div>
+          <div className="stat-card-value"><AnimatedCounter to={totalCount} /></div>
           <div className="stat-card-label">Total Enrolled</div>
         </div>
 
@@ -157,7 +180,7 @@ export default function Students() {
               <CheckCircle size={20} />
             </div>
           </div>
-          <div className="stat-card-value">{activeCount}</div>
+          <div className="stat-card-value"><AnimatedCounter to={activeCount} /></div>
           <div className="stat-card-label">Active Students</div>
         </div>
 
@@ -167,7 +190,7 @@ export default function Students() {
               <AlertTriangle size={20} />
             </div>
           </div>
-          <div className="stat-card-value">{inactiveCount}</div>
+          <div className="stat-card-value"><AnimatedCounter to={inactiveCount} /></div>
           <div className="stat-card-label">Inactive Students</div>
         </div>
       </div>
@@ -235,8 +258,8 @@ export default function Students() {
                 <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {isFetching ? (
+            <tbody style={{ opacity: isFetching ? 0.4 : 1, transition: 'opacity 0.3s ease', pointerEvents: isFetching ? 'none' : 'auto' }}>
+              {(isFetching && filteredStudents.length === 0) ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={`skel-${idx}`}>
                     <td colSpan="9">
@@ -251,8 +274,11 @@ export default function Students() {
                 else if (attPercent < 80) attColor = 'badge-late';
 
                 return (
-                  <tr 
+                  <motion.tr 
                     key={student.id} 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: Math.min(idx * 0.05, 0.5) }}
                     style={{ cursor: 'pointer' }}
                     onClick={() => setSelectedStudentForProfile(student)}
                     title="Click to view student profile history"
@@ -310,7 +336,7 @@ export default function Students() {
                         </button>
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
             </tbody>

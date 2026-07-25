@@ -1,0 +1,7 @@
+{
+    "filename": "H_uneven_lighting.jpg",
+    "transformations": [
+        "uneven_lighting"
+    ],
+    "source": "T1.jpg"
+}
