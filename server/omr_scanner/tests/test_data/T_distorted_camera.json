@@ -1,0 +1,9 @@
+{
+    "filename": "T_distorted_camera.jpg",
+    "transformations": [
+        "perspective",
+        "blur",
+        "noise"
+    ],
+    "source": "T1.jpg"
+}

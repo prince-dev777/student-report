@@ -410,7 +410,7 @@ export function AppProvider({ children }) {
           return [...filteredPrev, ...savedResults];
         });
       } catch (err) {
-        toast.error('Failed to upload test scores');
+        toast.error(`Failed to upload test scores: ${err.message}`);
         return;
       }
     } else {

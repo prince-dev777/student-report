@@ -1,0 +1,8 @@
+{
+    "filename": "S_blur_brightness.jpg",
+    "transformations": [
+        "moderate_blur",
+        "low_brightness"
+    ],
+    "source": "T1.jpg"
+}

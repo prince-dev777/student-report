@@ -1,0 +1,7 @@
+{
+    "filename": "L_jpeg.jpg",
+    "transformations": [
+        "jpeg_compression"
+    ],
+    "source": "T1.jpg"
+}

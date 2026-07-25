@@ -1,0 +1,7 @@
+{
+    "filename": "O_shift_horiz.jpg",
+    "transformations": [
+        "horizontal_shift"
+    ],
+    "source": "T1.jpg"
+}

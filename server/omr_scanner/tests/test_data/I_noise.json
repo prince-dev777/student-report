@@ -1,0 +1,7 @@
+{
+    "filename": "I_noise.jpg",
+    "transformations": [
+        "gaussian_noise"
+    ],
+    "source": "T1.jpg"
+}

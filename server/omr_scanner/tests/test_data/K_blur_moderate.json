@@ -1,0 +1,7 @@
+{
+    "filename": "K_blur_moderate.jpg",
+    "transformations": [
+        "moderate_blur"
+    ],
+    "source": "T1.jpg"
+}

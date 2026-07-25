@@ -1,0 +1,7 @@
+{
+    "filename": "N_upscaled.jpg",
+    "transformations": [
+        "upscaled"
+    ],
+    "source": "T1.jpg"
+}

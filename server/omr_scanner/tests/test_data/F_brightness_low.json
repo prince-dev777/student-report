@@ -1,0 +1,7 @@
+{
+    "filename": "F_brightness_low.jpg",
+    "transformations": [
+        "low_brightness"
+    ],
+    "source": "T1.jpg"
+}

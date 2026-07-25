@@ -1,0 +1,274 @@
+{
+    "success": true,
+    "document": {
+        "filename": "T1.jpg"
+    },
+    "student": {
+        "name": null,
+        "roll_number": "451?"
+    },
+    "answers": {
+        "1": {
+            "answer": "A",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "2": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "3": {
+            "answer": "A",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "4": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "5": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "6": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "7": {
+            "answer": "A",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "8": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "9": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "10": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "11": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "12": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "13": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "14": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "15": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "16": {
+            "answer": "A",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "17": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "18": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "19": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "20": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "21": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "22": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "23": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "24": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "25": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "26": {
+            "answer": "A",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "27": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "28": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "29": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "30": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "31": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "32": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "33": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "34": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "35": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "36": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "37": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "38": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "39": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "40": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "41": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "42": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "43": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "44": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "45": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "46": {
+            "answer": "B",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "47": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "48": {
+            "answer": "A",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "49": {
+            "answer": "C",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        },
+        "50": {
+            "answer": "D",
+            "status": "ANSWERED",
+            "confidence": 1.0
+        }
+    },
+    "summary": {
+        "total_questions": 50,
+        "answered": 49,
+        "blank": 1,
+        "multiple": 0,
+        "uncertain": 0
+    },
+    "quality": {
+        "image_quality": 1.0,
+        "page_detection_confidence": 1.0,
+        "overall_confidence": 0.99
+    }
+}

@@ -11,6 +11,7 @@ const testSchema = new mongoose.Schema({
   targetClass: { type: String },
   // Answer key: can be flat array ["A","B",...] or subject-wise { "Physics": ["A","B",...], "Chemistry": [...] }
   answerKey: { type: mongoose.Schema.Types.Mixed, default: [] },
+  subjectMapping: { type: mongoose.Schema.Types.Mixed, default: [] },
   // Negative marking support (e.g., NEET: marksPerQuestion=4, negativeMarking=1)
   marksPerQuestion: { type: Number, default: 1 },
   negativeMarking: { type: Number, default: 0 },
