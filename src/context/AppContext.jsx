@@ -48,21 +48,13 @@ export function AppProvider({ children }) {
   // Sync / Load data on startup
   useEffect(() => {
     async function initData() {
-      console.log('🔍 [DEBUG] initData started');
-      console.log('🔍 [DEBUG] API_BASE from api.js will be used');
-      console.log('🔍 [DEBUG] Token in localStorage:', localStorage.getItem('token') ? 'EXISTS (length=' + localStorage.getItem('token').length + ')' : 'MISSING');
-      
       const isOnline = await checkBackendStatus();
       setBackendOnline(isOnline);
-      console.log('🔍 [DEBUG] checkBackendStatus result:', isOnline);
 
       if (isOnline) {
         try {
-          console.log('🔌 Backend is online. Fetching data from MongoDB...');
-          console.log('🔍 [DEBUG] Calling api.getStudents()...');
           const studentsRes = await api.getStudents(1, 10000);
           const serverStudents = studentsRes.students || [];
-          console.log('🔍 [DEBUG] api.getStudents() returned:', serverStudents.length, 'students');
           
           // If database is completely empty
           if (serverStudents.length === 0) {

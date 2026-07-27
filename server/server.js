@@ -717,7 +717,14 @@ app.post('/api/staff/attendance', async (req, res) => {
 
       // Send WhatsApp Alert
       if (student.parentPhone) {
-        await sendWhatsAppAlert(student.parentPhone, message);
+        await sendWhatsAppAlert({
+          instituteId: req.user.instituteId,
+          studentId: student.id,
+          parentPhone: student.parentPhone,
+          studentName: student.name,
+          type: status === 'IN' ? 'IN' : status === 'OUT' ? 'OUT' : 'ABSENT',
+          detail: new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
       }
     } catch (notifyErr) {
       console.error("Failed to send attendance notification:", notifyErr);
@@ -1821,7 +1828,13 @@ app.post('/api/reset', async (req, res) => {
 
 
 // Serve Frontend Static Files & SPA Routing for Staff Attendance Web Portal
-const distPath = path.join(__dirname, '../dist');
+// In Electron production: dist is bundled inside app.asar alongside server/
+// On Render/cloud: dist is at ../dist relative to server/
+let distPath = path.join(__dirname, '../dist');
+if (!fs.existsSync(distPath)) {
+  // Fallback: try resolve from app.asar root (Electron production)
+  distPath = path.join(__dirname, '..', 'dist');
+}
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 }
@@ -1952,8 +1965,10 @@ app.listen(PORT, () => {
   console.log(`🚀 Server listening at http://localhost:${PORT}`);
 
   // Self-ping service to prevent Render free-tier spin down (every 10 minutes)
+  // Only activate when running as a cloud server (not inside Electron desktop)
+  const isElectronChild = !!process.env.ELECTRON_RUN_AS_NODE;
   const SELF_PING_URL = process.env.SELF_PING_URL || 'https://student-report-ezgw.onrender.com';
-  if (SELF_PING_URL) {
+  if (SELF_PING_URL && !isElectronChild) {
     setInterval(() => {
       https.get(SELF_PING_URL, (res) => {
         console.log(`[Self-Ping] Pinged ${SELF_PING_URL} - Status: ${res.statusCode}`);

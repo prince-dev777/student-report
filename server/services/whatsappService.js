@@ -8,12 +8,28 @@ import SMSLog from '../models/SMSLog.js';
  * @param {string} studentId - Custom student ID (e.g. STU...)
  * @param {string} parentPhone - Parent phone number
  * @param {string} studentName - Name of the student
- * @param {string} type - 'IN' | 'OUT' | 'ABSENT'
- * @param {string} detail - time (for IN/OUT) or date (for ABSENT)
+ * @param {string} type - 'IN' | 'OUT' | 'ABSENT' | 'TEST_RESULT' | 'WELCOME'
+ * @param {string|object} detail - time (for IN/OUT), date (for ABSENT), or object with marks info (for TEST_RESULT)
  */
 export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, type, detail }) {
   const provider = (process.env.WHATSAPP_PROVIDER || 'mock').toLowerCase();
   let status = 'sent';
+
+  // Build message text based on type
+  let messageText;
+  if (type === 'IN') {
+    messageText = `Dear Parent, ${studentName} has checked IN at ${detail}.`;
+  } else if (type === 'OUT') {
+    messageText = `Dear Parent, ${studentName} has checked OUT at ${detail}.`;
+  } else if (type === 'ABSENT') {
+    messageText = `Dear Parent, ${studentName} was marked ABSENT on ${detail}.`;
+  } else if (type === 'TEST_RESULT' && typeof detail === 'object') {
+    messageText = `Dear Parent, ${studentName} scored ${detail.marks}/${detail.totalMarks} in ${detail.subject || 'Exam'}. Rank: ${detail.rank || '-'}/${detail.totalStudents || '-'}.`;
+  } else if (type === 'WELCOME') {
+    messageText = `Welcome! ${studentName} has been registered successfully.`;
+  } else {
+    messageText = `Notification for ${studentName}: ${detail || 'No details provided.'}`;
+  }
 
   const phoneNumbers = parentPhone.split(',').map(p => p.trim()).filter(Boolean);
 

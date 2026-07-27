@@ -103,8 +103,14 @@ export const api = {
     
     if (isElectron) {
       // Edge Computing: Send heavy images to LOCAL server instead of cloud
+      const token = localStorage.getItem('token');
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const response = await fetch('/api/test-results/omr-process', {
         method: 'POST',
+        headers,
         body: formData,
       });
       if (!response.ok) {
