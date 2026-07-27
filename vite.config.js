@@ -8,6 +8,12 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     open: false,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      }
+    },
     watch: {
       ignored: ['**/server/**', '**/.wwebjs_cache/**', '**/.wwebjs_auth/**']
     }

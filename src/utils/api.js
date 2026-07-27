@@ -6,8 +6,8 @@
 
 const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 const isDev = window.location.port === '5173';
-// Use local API server to ensure frontend and backend are in sync
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+// Use Cloud API server as the primary source of truth for the database
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://student-report-ezgw.onrender.com/api';
 
 // Helper to check if backend is online
 export async function checkBackendStatus() {
