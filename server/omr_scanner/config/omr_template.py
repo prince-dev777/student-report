@@ -282,8 +282,8 @@ T6_TEMPLATE = TemplateConfig(
     roll_no_config={
         "cols": 5,
         "rows": 10,
-        "x_coords": [60, 86, 112, 137, 163],
-        "y_coords": [int(120.0 + r * 20.2) for r in range(10)]
+        "x_coords": [60, 86, 112, 138, 164],
+        "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
     },
     roll_fill_threshold=55.0,
     sections=[
@@ -441,8 +441,8 @@ T5_TEMPLATE = TemplateConfig(
     roll_no_config={
         "cols": 5,
         "rows": 10,
-        "x_coords": [63, 89, 115, 141, 167],
-        "y_coords": [int(122.0 + r * 20.2) for r in range(10)]
+        "x_coords": [60, 86, 112, 138, 164],
+        "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
     },
     roll_fill_threshold=55.0,
     sections=[

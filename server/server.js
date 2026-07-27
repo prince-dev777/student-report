@@ -1508,8 +1508,8 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
     
     // Most users print the MCQ+Num layout but select MCQ Only in the UI for 75q tests.
     // Force the numerical layout scanning algorithm to prevent coordinate mismatch (phantom bubbles).
-    if (templateId === 'jee_75') {
-      templateId = 'jee_75_with_numerical';
+    if (templateId === 'jee_75' || templateId === 'jee_75_mcq') {
+      templateId = 'T2';
     }
     const questionsToDetect = Number(req.body.questionsToDetect) || test.questionsToDetect || 0;
 

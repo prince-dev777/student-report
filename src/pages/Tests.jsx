@@ -4,7 +4,7 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
-  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2, ZoomIn, ZoomOut
+  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2, ZoomIn, ZoomOut, AlertTriangle, Eye
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
@@ -31,11 +31,11 @@ export default function Tests() {
     batch: '',
     targetClass: '',
     date: new Date().toISOString().split('T')[0],
-    totalMarks: 720,
+    totalMarks: 300,
     marksPerQuestion: 4,
     negativeMarking: 1,
-    templateId: 'neet_180',
-    questionsToDetect: 180,
+    templateId: 'T1',
+    questionsToDetect: 75,
   });
 
   // Auto-calculate Total Marks when questions or marks-per-question change
@@ -56,39 +56,38 @@ export default function Tests() {
   // Auto-populate subjectMapping based on template
   React.useEffect(() => {
     const t = testForm.templateId;
-    if (t === 'jee_75_mcq' || t === 'jee_75' || t === 'jee_75_with_numerical') {
+    if (t === 'T1' || t === 'T2') {
       setSubjectMapping([
         { subject: 'Physics', fromQ: 1, toQ: 25 },
         { subject: 'Chemistry', fromQ: 26, toQ: 50 },
         { subject: 'Mathematics', fromQ: 51, toQ: 75 }
       ]);
-    } else if (t === 'neet_180') {
+    } else if (t === 'T3') {
       setSubjectMapping([
         { subject: 'Physics', fromQ: 1, toQ: 45 },
         { subject: 'Chemistry', fromQ: 46, toQ: 90 },
         { subject: 'Biology', fromQ: 91, toQ: 180 }
       ]);
-    } else if (t === 'neet_90') {
+    } else if (t === 'T4') {
       setSubjectMapping([
-        { subject: 'Physics', fromQ: 1, toQ: 23 },
-        { subject: 'Chemistry', fromQ: 24, toQ: 45 },
-        { subject: 'Biology', fromQ: 46, toQ: 90 }
+        { subject: 'Biology', fromQ: 1, toQ: 90 }
       ]);
-    } else if (t === 'mhcet_200') {
+    } else if (t === 'T5') {
       setSubjectMapping([
         { subject: 'Physics', fromQ: 1, toQ: 50 },
         { subject: 'Chemistry', fromQ: 51, toQ: 100 },
-        { subject: 'Mathematics', fromQ: 101, toQ: 150 },
-        { subject: 'Biology', fromQ: 151, toQ: 200 }
+        { subject: 'Mathematics', fromQ: 101, toQ: 150 }
       ]);
-    } else if (t === 'mhcet_200_bio') {
+    } else if (t === 'T6') {
       setSubjectMapping([
-        { subject: 'Chemistry', fromQ: 1, toQ: 100 },
+        { subject: 'Physics', fromQ: 1, toQ: 50 },
+        { subject: 'Chemistry', fromQ: 51, toQ: 100 },
         { subject: 'Biology', fromQ: 101, toQ: 200 }
       ]);
     } else {
+      // T7 and fallback
       setSubjectMapping([
-        { subject: 'Physics', fromQ: 1, toQ: 50 }
+        { subject: 'General', fromQ: 1, toQ: 50 }
       ]);
     }
   }, [testForm.templateId]);
@@ -100,7 +99,7 @@ export default function Tests() {
   const [omrStats, setOmrStats] = useState({}); // studentId: { correct, wrong }
   const [scannedAnswersData, setScannedAnswersData] = useState({}); // studentId: [selectedOption1, selectedOption2, ...]
   const [omrUploading, setOmrUploading] = useState(false);
-  const [omrTemplate, setOmrTemplate] = useState('neet_180');
+  const [omrTemplate, setOmrTemplate] = useState('T1');
   const [detectQuestions, setDetectQuestions] = useState(180);
   const [submittingAction, setSubmittingAction] = useState(null);
   const [omrImagesData, setOmrImagesData] = useState({}); // studentId: image dataURI
@@ -159,8 +158,8 @@ export default function Tests() {
         totalMarks: Number(testForm.totalMarks),
         marksPerQuestion: Number(testForm.marksPerQuestion) || 1,
         negativeMarking: Number(testForm.negativeMarking) || 0,
-        templateId: testForm.templateId || 'neet_180',
-        questionsToDetect: Number(testForm.questionsToDetect) || 180,
+        templateId: testForm.templateId || 'T1',
+        questionsToDetect: Number(testForm.questionsToDetect) || 75,
         answerKey: [] // Created without answer key initially
       });
 
@@ -169,11 +168,11 @@ export default function Tests() {
       batch: '',
       targetClass: '',
       date: new Date().toISOString().split('T')[0],
-      totalMarks: 100,
+      totalMarks: 300,
       marksPerQuestion: 4,
       negativeMarking: 1,
-      templateId: 'neet_180',
-      questionsToDetect: 180,
+      templateId: 'T1',
+      questionsToDetect: 75,
     });
     // Subject mapping is auto-handled by useEffect when templateId resets
 
@@ -200,7 +199,7 @@ export default function Tests() {
     if (test.templateId) {
       setOmrTemplate(test.templateId);
     } else {
-      setOmrTemplate('neet_180');
+      setOmrTemplate('T1');
     }
     if (test.questionsToDetect) {
       setDetectQuestions(test.questionsToDetect);
@@ -973,7 +972,19 @@ export default function Tests() {
 
     let subjectConfig = [];
     if (test.subjectMapping && test.subjectMapping.length > 0) {
-      subjectConfig = test.subjectMapping;
+      const maxMappedQ = Math.max(...test.subjectMapping.map(m => m.toQ));
+      // If the actual totalQuestions is much less than the mapping (e.g. they uploaded a 50Q OMR for a 90Q test)
+      // and it's not a case where they just didn't provide answer key, let's gracefully fallback
+      if (totalQuestions > 0 && totalQuestions < maxMappedQ && totalQuestions !== 50 && totalQuestions !== 90 && totalQuestions !== 75 && totalQuestions !== 200 && totalQuestions !== 180) {
+         // It might just be an incomplete answer key, so we'll still use the config, but it might look weird.
+         subjectConfig = test.subjectMapping;
+      } else if (totalQuestions > 0 && (totalQuestions === 50 || totalQuestions === 90 || totalQuestions === 75 || totalQuestions === 200 || totalQuestions === 180) && maxMappedQ !== totalQuestions) {
+         // It's a clear mismatch (e.g., 50 bubbles scanned, but mapping expects 90).
+         // Fallback to avoid splitting 50 questions into Phys(1-23), Chem(24-45), Bio(46-90).
+         subjectConfig = [{ subject: 'General (Auto-mapped)', fromQ: 1, toQ: totalQuestions }];
+      } else {
+         subjectConfig = test.subjectMapping;
+      }
     } else {
       // Fallback old logic
       const qPerSubject = Math.floor(totalQuestions / subjectsArray.length);
@@ -1449,11 +1460,12 @@ export default function Tests() {
                       value={testForm.templateId}
                       onChange={e => {
                         const tempId = e.target.value;
-                        let defaultDetect = 180;
-                        if (tempId === 'neet_90') defaultDetect = 90;
-                        else if (tempId === 'jee_75' || tempId === 'jee_75_with_numerical') defaultDetect = 75;
-                        else if (tempId === 'omr_50') defaultDetect = 50;
-                        else if (tempId === 'mhcet_200') defaultDetect = 200;
+                        let defaultDetect = 75;
+                        if (tempId === 'T1' || tempId === 'T2') defaultDetect = 75;
+                        else if (tempId === 'T3') defaultDetect = 180;
+                        else if (tempId === 'T4') defaultDetect = 90;
+                        else if (tempId === 'T5' || tempId === 'T6') defaultDetect = 200;
+                        else if (tempId === 'T7') defaultDetect = 50;
                         
                         setTestForm(prev => ({ 
                           ...prev, 
@@ -1462,12 +1474,13 @@ export default function Tests() {
                         }));
                       }}
                     >
-                      <option value="neet_180">NEET 180 (MCQs)</option>
-                      <option value="neet_90">NEET 90 (MCQs)</option>
-                      <option value="jee_75">JEE 75 (MCQs)</option>
-                      <option value="jee_75_with_numerical">JEE 75 (MCQ + Num)</option>
-                      <option value="mhcet_200">MHCET 200</option>
-                      <option value="omr_50">50-Question OMR</option>
+                      <option value="T1">T1 — JEE Main 75 (MCQ)</option>
+                      <option value="T2">T2 — JEE Main 75 Mixed (MCQ + Numerical)</option>
+                      <option value="T3">T3 — NEET 180 Questions (Physics/Chem/Bio)</option>
+                      <option value="T4">T4 — NEET 90 Questions (Biology only)</option>
+                      <option value="T5">T5 — MHCET 200 Maths</option>
+                      <option value="T6">T6 — MHCET 200 Biology</option>
+                      <option value="T7">T7 — OMR 50 Questions</option>
                     </select>
                   </div>
                   <div className="form-group">
@@ -1542,28 +1555,29 @@ export default function Tests() {
                           onChange={e => {
                             const tempId = e.target.value;
                             setOmrTemplate(tempId);
-                            let defaultDetect = 180;
-                            if (tempId === 'neet_90') defaultDetect = 90;
-                            else if (tempId === 'jee_75' || tempId === 'jee_75_with_numerical') defaultDetect = 75;
-                            else if (tempId === 'omr_50') defaultDetect = 50;
-                            else if (tempId === 'mhcet_200' || tempId === 'mhcet_200_bio') defaultDetect = 200;
+                            let defaultDetect = 75;
+                            if (tempId === 'T1' || tempId === 'T2') defaultDetect = 75;
+                            else if (tempId === 'T3') defaultDetect = 180;
+                            else if (tempId === 'T4') defaultDetect = 90;
+                            else if (tempId === 'T5' || tempId === 'T6') defaultDetect = 200;
+                            else if (tempId === 'T7') defaultDetect = 50;
                             setDetectQuestions(defaultDetect);
                           }}
                           style={{ width: '180px', padding: '4px 8px', fontSize: '0.85rem' }}
                         >
-                          <option value="neet_180">NEET 180 (MCQs)</option>
-                          <option value="neet_90">NEET 90 (Biology)</option>
-                          <option value="jee_75">JEE 75 (MCQ Only)</option>
-                          <option value="jee_75_with_numerical">JEE 75 (MCQ + Num)</option>
-                          <option value="omr_50">50-Question OMR (Universal)</option>
-                          <option value="mhcet_200">MHCET 200 (PCB/PCM)</option>
-                          <option value="mhcet_200_bio">MHCET 200 (Biology Only)</option>
+                          <option value="T1">T1 — JEE Main 75 (MCQ)</option>
+                          <option value="T2">T2 — JEE Main 75 Mixed (MCQ + Numerical)</option>
+                          <option value="T3">T3 — NEET 180 Questions (Physics/Chem/Bio)</option>
+                          <option value="T4">T4 — NEET 90 Questions (Biology only)</option>
+                          <option value="T5">T5 — MHCET 200 Maths</option>
+                          <option value="T6">T6 — MHCET 200 Biology</option>
+                          <option value="T7">T7 — OMR 50 Questions</option>
                         </select>
                       </div>
 
                       <div className="flex items-center gap-4">
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Detect:</span>
-                        {omrTemplate === 'omr_50' ? (
+                        {omrTemplate === 'T7' ? (
                           <select
                             className="form-select form-select-sm"
                             value={detectQuestions}
@@ -1582,10 +1596,10 @@ export default function Tests() {
                             onChange={e => setDetectQuestions(Number(e.target.value))}
                             min="1"
                             max={
-                              omrTemplate === 'mhcet_200' ? 200 :
-                              omrTemplate === 'neet_180' ? 180 :
-                              omrTemplate === 'neet_90' ? 90 :
-                              (omrTemplate === 'jee_75' || omrTemplate === 'jee_75_with_numerical') ? 75 : 50
+                              omrTemplate === 'T5' || omrTemplate === 'T6' ? 200 :
+                              omrTemplate === 'T3' ? 180 :
+                              omrTemplate === 'T4' ? 90 :
+                              (omrTemplate === 'T1' || omrTemplate === 'T2') ? 75 : 50
                             }
                             style={{ width: '80px', padding: '4px 8px', fontSize: '0.85rem', display: 'inline-block' }}
                           />
@@ -1664,33 +1678,55 @@ export default function Tests() {
                   </div>
 
                   {omrScanErrors && omrScanErrors.length > 0 && (
-                    <div className="alert alert-warning mb-4 p-4 border border-warning rounded" style={{ backgroundColor: '#fff3cd', color: '#856404', borderColor: '#ffeeba' }}>
-                      <h4 className="font-semibold mb-2 flex items-center gap-2">
-                        <X size={18} className="text-red-500" />
-                        OMR Scan Issues ({omrScanErrors.length})
-                      </h4>
-                      <p className="text-sm mb-3">The following OMR sheets could not be matched automatically or have duplicate roll numbers. Please check them manually.</p>
-                      <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-2">
+                    <div className="mb-6 border border-red-200 rounded-lg overflow-hidden shadow-sm">
+                      <div className="bg-red-50 p-4 border-b border-red-100 flex justify-between items-start">
+                        <div className="flex items-start gap-3">
+                          <div className="bg-red-100 text-red-600 p-2 rounded-full mt-0.5">
+                            <AlertTriangle size={20} />
+                          </div>
+                          <div>
+                            <h4 className="text-red-800 font-semibold text-base">
+                              OMR Scan Issues ({omrScanErrors.length})
+                            </h4>
+                            <p className="text-sm text-red-600 mt-1">
+                              The following OMR sheets could not be matched automatically or have duplicate roll numbers. Please check them manually.
+                            </p>
+                          </div>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => setOmrScanErrors([])} 
+                          className="text-red-400 hover:text-red-600 hover:bg-red-100 p-1.5 rounded-md transition-colors"
+                          title="Dismiss All"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                      <div className="bg-white max-h-80 overflow-y-auto p-4 flex flex-col gap-3">
                         {omrScanErrors.map((err, idx) => (
-                          <div key={idx} className="flex justify-between items-center bg-white p-2 rounded shadow-sm border" style={{ borderColor: '#ffeeba' }}>
-                            <div>
-                              <span className="font-semibold text-red-600">Roll No: {err.rollNumber || 'Unknown'}</span>
-                              <span className="ml-3 text-sm text-gray-700">{err.error}</span>
-                              {err.details && <p className="text-xs text-gray-500 mt-1">{err.details}</p>}
+                          <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded-md border border-gray-100 hover:border-red-100 transition-colors">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-gray-800 bg-white px-2 py-0.5 rounded text-sm border border-gray-200 shadow-sm">
+                                  Roll No: {err.rollNumber || 'Unknown'}
+                                </span>
+                                <span className="text-sm font-medium text-red-600">{err.error}</span>
+                              </div>
+                              {err.details && <p className="text-xs text-gray-500">{err.details}</p>}
                             </div>
                             {err.omrSheetImage && (
                               <button 
                                 type="button"
-                                onClick={() => setSelectedOmrImage(err.omrSheetImage.startsWith('data:') ? err.omrSheetImage : `${window.location.protocol}//${window.location.hostname}:5000${err.omrSheetImage}`)}
-                                className="btn btn-outline-primary btn-sm ml-2"
+                                onClick={() => setSelectedOmrImage(err.omrSheetImage.startsWith('data:') ? err.omrSheetImage : (window.location.protocol === 'file:' ? `http://localhost:5000${err.omrSheetImage}` : `${window.location.protocol}//${window.location.hostname}:5000${err.omrSheetImage}`))}
+                                className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors"
                               >
-                                View Image
+                                <Eye size={16} />
+                                View OMR
                               </button>
                             )}
                           </div>
                         ))}
                       </div>
-                      <button type="button" onClick={() => setOmrScanErrors([])} className="btn btn-sm btn-secondary mt-3">Dismiss</button>
                     </div>
                   )}
 
@@ -1781,7 +1817,7 @@ export default function Tests() {
                                     {omrImagesData[student.id] && (
                                       <button
                                         type="button"
-                                        onClick={() => setSelectedOmrImage(omrImagesData[student.id].startsWith('data:') ? omrImagesData[student.id] : `${window.location.protocol}//${window.location.hostname}:5000${omrImagesData[student.id]}`)}
+                                        onClick={() => setSelectedOmrImage(omrImagesData[student.id].startsWith('data:') ? omrImagesData[student.id] : (window.location.protocol === 'file:' ? `http://localhost:5000${omrImagesData[student.id]}` : `${window.location.protocol}//${window.location.hostname}:5000${omrImagesData[student.id]}`))}
                                         className="btn btn-ghost btn-xs text-accent flex-shrink-0"
                                         style={{ padding: '4px 8px', fontSize: '0.75rem', marginTop: '-2px' }}
                                       >
@@ -1876,7 +1912,7 @@ export default function Tests() {
                               </button>
                               {res.omrSheetImage && (
                                 <button 
-                                  onClick={() => setSelectedOmrImage(res.omrSheetImage.startsWith('data:') ? res.omrSheetImage : `${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`)}
+                                  onClick={() => setSelectedOmrImage(res.omrSheetImage.startsWith('data:') ? res.omrSheetImage : (window.location.protocol === 'file:' ? `http://localhost:5000${res.omrSheetImage}` : `${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`))}
                                   className="btn btn-ghost btn-xs text-accent"
                                   style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
                                 >
@@ -1967,9 +2003,23 @@ export default function Tests() {
                   Roll No: <strong>{selectedStudentResult.rollNo}</strong> | Test: <strong>{selectedTestResults.test.name}</strong>
                 </p>
               </div>
-              <button className="modal-close" onClick={() => setSelectedStudentResult(null)}>
-                <X size={18} />
-              </button>
+              <div className="flex gap-4">
+                {selectedStudentResult.omrSheetImage && (
+                  <button 
+                    className="btn btn-outline-primary btn-sm flex items-center gap-2"
+                    onClick={() => setSelectedOmrImage(
+                      selectedStudentResult.omrSheetImage.startsWith('data:') 
+                        ? selectedStudentResult.omrSheetImage 
+                        : (window.location.protocol === 'file:' ? `http://localhost:5000${selectedStudentResult.omrSheetImage}` : `${window.location.protocol}//${window.location.hostname}:5000${selectedStudentResult.omrSheetImage}`)
+                    )}
+                  >
+                    <Eye size={16} /> View OMR
+                  </button>
+                )}
+                <button className="modal-close" onClick={() => setSelectedStudentResult(null)}>
+                  <X size={18} />
+                </button>
+              </div>
             </div>
             <div className="modal-body">
               <div className="flex justify-between items-center mb-16 p-16" style={{ background: 'var(--bg-secondary)', borderRadius: '12px' }}>

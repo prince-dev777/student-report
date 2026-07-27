@@ -19,7 +19,14 @@ TEMPLATE_MAP = {
     "mhcet_200": "T5",
     "mhcet_200_bio": "T6",
     "omr_50": "T7",
-    "neet_bio_90": "T90"
+    "neet_bio_90": "T90",
+    "T1": "T75",
+    "T2": "T2",
+    "T3": "T3",
+    "T4": "T4",
+    "T5": "T5",
+    "T6": "T6",
+    "T7": "T7"
 }
 
 def main():
@@ -43,7 +50,7 @@ def main():
     negative_marking = float(args.get('negative_marking', -1.0))
     template_id_raw = args.get('template_id', '')
 
-    template_id = TEMPLATE_MAP.get(template_id_raw, "T75")
+    template_id = TEMPLATE_MAP.get(template_id_raw, "T1")
     
     final_results = []
 

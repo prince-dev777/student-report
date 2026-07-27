@@ -107,36 +107,37 @@ export function AppProvider({ children }) {
     initData();
   }, []);
 
-  // Save local fallbacks if backend offline
+  // Save local fallbacks so Demo Mode always has the latest data
   useEffect(() => {
-    if (!backendOnline && !loading) {
+    if (!loading && students.length > 0) {
       saveLocalData('students', students);
     }
-  }, [students, backendOnline, loading]);
+  }, [students, loading]);
 
   useEffect(() => {
-    if (!backendOnline && !loading) {
+    if (!loading && attendance.length > 0) {
       saveLocalData('attendance', attendance);
     }
-  }, [attendance, backendOnline, loading]);
+  }, [attendance, loading]);
 
   useEffect(() => {
-    if (!backendOnline && !loading) {
+    if (!loading && tests.length > 0) {
       saveLocalData('tests', tests);
     }
-  }, [tests, backendOnline, loading]);
+  }, [tests, loading]);
 
   useEffect(() => {
-    if (!backendOnline && !loading) {
+    if (!loading && testResults.length > 0) {
       saveLocalData('testResults', testResults);
     }
-  }, [testResults, backendOnline, loading]);
+  }, [testResults, loading]);
 
   useEffect(() => {
-    if (!backendOnline && !loading) {
+    if (!loading && smsHistory.length > 0) {
       saveLocalData('smsHistory', smsHistory);
     }
-  }, [smsHistory, backendOnline, loading]);
+  }, [smsHistory, loading]);
+
 
   // ---- Student CRUD ----
   const addStudent = useCallback(async (studentData) => {
