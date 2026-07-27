@@ -26,7 +26,14 @@ import { protect, authenticateToken } from './middleware/authMiddleware.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { sendWhatsAppAlert } from './services/whatsappService.js';
-
+import os from 'os';
+import { 
+  initializeWhatsAppClient, 
+  getWhatsAppClientState, 
+  disconnectWhatsAppClient, 
+  sendWhatsAppMessageWeb,
+  resetRetryCount
+} from './services/whatsappClient.js';
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
@@ -1902,6 +1909,102 @@ cron.schedule('0 0 * * *', async () => {
     console.error('Cron job error:', err.message);
   }
 });
+
+// ============================================
+// WhatsApp Local API Routes (Desktop Only)
+// ============================================
+
+app.post('/api/whatsapp/local-initialize', (req, res) => {
+  resetRetryCount();
+  initializeWhatsAppClient();
+  res.json({ success: true, message: 'Initialization started' });
+});
+
+app.post('/api/whatsapp/local-disconnect', async (req, res) => {
+  const success = await disconnectWhatsAppClient();
+  res.json({ success, message: success ? 'Disconnected' : 'Not connected' });
+});
+
+app.get('/api/whatsapp/local-status', (req, res) => {
+  res.json(getWhatsAppClientState());
+});
+
+// ---- 🖥️ System Info API ----
+app.get('/api/system/local-ip', (req, res) => {
+  const nets = os.networkInterfaces();
+  let localIp = '127.0.0.1';
+  
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
+      if (net.family === 'IPv4' && !net.internal) {
+        // Return the first one found (usually the active Wi-Fi or Ethernet adapter)
+        localIp = net.address;
+        break;
+      }
+    }
+    if (localIp !== '127.0.0.1') break;
+  }
+  
+  res.json({ ip: localIp, port: 5000 });
+});
+
+// ---- 📡 Background Polling Loop for Pending WhatsApp Messages ----
+let isPolling = false;
+async function pollPendingWhatsAppMessages() {
+  if (isPolling) return;
+  if (process.env.WHATSAPP_PROVIDER !== 'whatsapp-web') return;
+
+  const state = getWhatsAppClientState();
+  if (state.status !== 'ready') return;
+
+  isPolling = true;
+  try {
+    const cloudUrl = 'https://student-report-ezgw.onrender.com';
+    const token = process.env.WHATSAPP_TOKEN;
+    if (!token) {
+      isPolling = false;
+      return;
+    }
+    const response = await fetch(`${cloudUrl}/api/whatsapp/pending?token=${token}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const pendingLogs = await response.json();
+    if (pendingLogs && pendingLogs.length > 0) {
+      for (const log of pendingLogs) {
+        try {
+          const phones = log.parentPhone.split(',').map(p => p.trim()).filter(Boolean);
+          for (const phone of phones) {
+            await sendWhatsAppMessageWeb(phone, log.message, log.attachment);
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+          await fetch(`${cloudUrl}/api/whatsapp/status?token=${token}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ logId: log.id, status: 'delivered' })
+          });
+        } catch (sendErr) {
+          await fetch(`${cloudUrl}/api/whatsapp/status?token=${token}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ logId: log.id, status: 'failed' })
+          });
+        }
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+  } catch (err) {
+    // Silent fail
+  } finally {
+    isPolling = false;
+  }
+}
+
+// Auto-initialize local WhatsApp client if configured as provider & running locally
+const isElectronChildServerLocal = !!process.env.ELECTRON_RUN_AS_NODE;
+if (isElectronChildServerLocal && process.env.WHATSAPP_PROVIDER === 'whatsapp-web') {
+  initializeWhatsAppClient();
+  setInterval(pollPendingWhatsAppMessages, 5000);
+}
 
 // ============================================
 // System Update API Routes

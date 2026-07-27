@@ -46,7 +46,7 @@ export default function Attendance() {
   const [localIp, setLocalIp] = useState('127.0.0.1');
   
   useEffect(() => {
-    fetch('http://localhost:5001/api/system/local-ip')
+    fetch('/api/system/local-ip')
       .then(res => res.json())
       .then(data => setLocalIp(data.ip))
       .catch(err => console.error('Failed to get local IP:', err));

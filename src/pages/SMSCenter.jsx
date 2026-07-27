@@ -57,7 +57,7 @@ export default function SMSCenter() {
   useEffect(() => {
     const fetchWhatsAppStatus = async () => {
       try {
-        const res = await fetch('http://localhost:5001/api/whatsapp/local-status');
+        const res = await fetch('http://localhost:5000/api/whatsapp/local-status');
         if (!res.ok) throw new Error();
         const data = await res.json();
         setWhatsappStatus(data.status);
@@ -89,11 +89,11 @@ export default function SMSCenter() {
     setLoadingAction(true);
     try {
       setWhatsappStatus('connecting');
-      await fetch('http://localhost:5001/api/whatsapp/local-initialize', { method: 'POST' });
+      await fetch('http://localhost:5000/api/whatsapp/local-initialize', { method: 'POST' });
       toast.success('Initializing WhatsApp Client...');
       setTimeout(async () => {
         try {
-          const res = await fetch('http://localhost:5001/api/whatsapp/local-status');
+          const res = await fetch('http://localhost:5000/api/whatsapp/local-status');
           const data = await res.json();
           setWhatsappStatus(data.status);
           setQrCode(data.qrCode);
@@ -112,7 +112,7 @@ export default function SMSCenter() {
     if (!window.confirm('Are you sure you want to disconnect and log out from WhatsApp?')) return;
     setLoadingAction(true);
     try {
-      await fetch('http://localhost:5001/api/whatsapp/local-disconnect', { method: 'POST' });
+      await fetch('http://localhost:5000/api/whatsapp/local-disconnect', { method: 'POST' });
       toast.success('WhatsApp disconnected.');
       setWhatsappStatus('disconnected');
       setQrCode(null);
