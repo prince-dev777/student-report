@@ -1658,49 +1658,32 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
         for (let idx = 0; idx < results.length; idx++) {
           const r = results[idx];
           const imgPath = imagePaths[idx];
+          const webPath = '/uploads/omr/' + path.basename(imgPath);
 
           if (r.error) {
-            errors.push({ error: r.error, details: r.details || '', rollNumber: r.rollNumber || 'Unknown' });
+            errors.push({ error: r.error, details: r.details || '', rollNumber: r.rollNumber || 'Unknown', omrSheetImage: webPath });
             // safeUnlink(imgPath); // Delete failed image file
             continue;
           }
 
-          // Find student by rollNumber, handling potential leading zeros from OMR scan
-          const rollRaw = String(r.rollNumber);
-          const rollIntStr = String(parseInt(rollRaw, 10));
-          const student = await Student.findOne({ 
-            $or: [ { rollNo: rollRaw }, { rollNo: rollIntStr } ],
-            instituteId: req.user.instituteId 
-          });
-          if (student) {
-            let studentAnswers = [];
-            if (r.subjects) {
-              const subjectNames = Object.keys(r.subjects).sort();
-              for (const subj of subjectNames) {
-                studentAnswers = studentAnswers.concat(r.subjects[subj]);
-              }
-            } else {
-              studentAnswers = r.studentAnswers || [];
+          let studentAnswers = [];
+          if (r.subjects) {
+            const subjectNames = Object.keys(r.subjects).sort();
+            for (const subj of subjectNames) {
+              studentAnswers = studentAnswers.concat(r.subjects[subj]);
             }
-
-            // Keep this image and construct relative static URL
-            const webPath = '/uploads/omr/' + path.basename(imgPath);
-
-            parsedData.push({
-              studentId: student.id,
-              mongoStudentId: student._id,
-              studentName: student.name,
-              rollNo: r.rollNumber,
-              marks: r.totalMarks !== undefined ? r.totalMarks : (r.marks || 0),
-              correctCount: r.correctCount,
-              wrongCount: r.wrongCount,
-              studentAnswers: studentAnswers,
-              omrSheetImage: webPath
-            });
           } else {
-            errors.push({ error: 'Student not found in database', rollNumber: r.rollNumber });
-            // safeUnlink(imgPath); // Delete image since no student matches
+            studentAnswers = r.studentAnswers || [];
           }
+
+          parsedData.push({
+            rollNo: r.rollNumber,
+            marks: r.totalMarks !== undefined ? r.totalMarks : (r.marks || 0),
+            correctCount: r.correctCount,
+            wrongCount: r.wrongCount,
+            studentAnswers: studentAnswers,
+            omrSheetImage: webPath
+          });
         }
 
         res.status(200).json({ message: 'Images Processed Successfully.', results: parsedData, errors });
