@@ -30,6 +30,18 @@ export async function checkBackendStatus() {
   }
 }
 
+export function getMediaUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('data:')) return path;
+  if (path.startsWith('http')) return path;
+  
+  // replace backslashes with forward slashes for URLs
+  const normalizedPath = path.replace(/\\/g, '/');
+  
+  const base = API_BASE.replace('/api', '');
+  return `${base}${normalizedPath.startsWith('/') ? '' : '/'}${normalizedPath}`;
+}
+
 // Generic fetch handler
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;

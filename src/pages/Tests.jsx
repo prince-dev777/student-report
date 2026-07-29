@@ -173,7 +173,7 @@ export default function Tests() {
         }
       });
     } else {
-      const totalQ = selectedEntryTest?.questionsToDetect || detectQuestions || 100;
+      const totalQ = detectQuestions || selectedEntryTest?.questionsToDetect || 100;
       for (let i = 1; i <= totalQ; i++) {
         qNums.push(i);
       }
@@ -472,7 +472,7 @@ export default function Tests() {
         });
 
         newScannedAnswers[sId] = flatAnswers;
-        newMarksData[sId] = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
+        newMarksData[sId] = (correct * marksPerQ) - (wrong * negMarks);
 
         newOmrStats[sId] = {
           correct: correct,
@@ -587,7 +587,7 @@ export default function Tests() {
       });
 
       newScannedAnswers[sId] = flatAnswers;
-      newMarksData[sId] = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
+      newMarksData[sId] = (correct * marksPerQ) - (wrong * negMarks);
       newOmrStats[sId] = { correct, wrong };
 
       setMarksData(newMarksData);
@@ -828,7 +828,7 @@ export default function Tests() {
               }
             }
           });
-          const score = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
+          const score = (correct * marksPerQ) - (wrong * negMarks);
           newMarksData[studentId] = score;
           newOmrStats[studentId] = {
             correct,
@@ -1016,7 +1016,7 @@ export default function Tests() {
             else wrong++;
           }
         });
-        const score = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
+        const score = (correct * marksPerQ) - (wrong * negMarks);
         newMarksData[studentId] = score;
         newOmrStats[studentId] = { correct, wrong };
         regradedCount++;
@@ -1122,7 +1122,7 @@ export default function Tests() {
         }
       }
       
-      const marks = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
+      const marks = (correct * marksPerQ) - (wrong * negMarks);
       
       return {
         subject: subj,
@@ -1152,8 +1152,9 @@ export default function Tests() {
         baseData[`${stat.subject} Marks`] = stat.marks;
       });
 
-      baseData['Total Marks'] = `${res.marks} / ${res.totalMarks}`;
-      baseData['Percentage'] = res.percentage !== undefined ? `${res.percentage}%` : 'N/A';
+      baseData['Total Marks'] = res.marks;
+      baseData['Max Marks'] = res.totalMarks;
+      baseData['Percentage'] = res.percentage !== undefined ? res.percentage : 'N/A';
 
       return baseData;
     });
@@ -1723,45 +1724,35 @@ export default function Tests() {
                         )}
                       </div>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <details className="dropdown">
-                          <summary className="btn btn-secondary btn-sm m-1" style={{ display: 'inline-flex', gap: '6px', cursor: 'pointer', userSelect: 'none' }}>
-                            <BookOpen size={14} /> Upload Answer Key
-                          </summary>
-                          <ul className="menu dropdown-content shadow" style={{ position: 'absolute', backgroundColor: 'white', border: '1px solid #e2e8f0', zIndex: 10, listStyle: 'none', padding: '8px', margin: 0, borderRadius: '8px', minWidth: '160px', top: '100%', left: 0 }}>
-                            <li style={{ marginBottom: '8px' }}>
-                              <label style={{ cursor: 'pointer', display: 'flex', gap: '6px', alignItems: 'center', fontSize: '0.9rem', color: 'var(--text-primary)' }} className="hover:text-primary">
-                                <FileSpreadsheet size={14} /> Excel / CSV
-                                <input 
-                                  type="file" 
-                                  accept=".csv, .xlsx"
-                                  onChange={handleAnswerKeyUpdateUpload} 
-                                  style={{ display: 'none' }} 
-                                />
-                              </label>
-                            </li>
-                            <li style={{ marginBottom: '8px' }}>
-                              <button 
-                                type="button" 
-                                onClick={(e) => handleOpenManualEntry(e)}
-                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', gap: '6px', alignItems: 'center', fontSize: '0.9rem', width: '100%', textAlign: 'left', color: 'var(--text-primary)' }}
-                                className="hover:text-primary"
-                              >
-                                <Plus size={14} /> Manual Entry
-                              </button>
-                            </li>
-                            <li>
-                              <button 
-                                type="button" 
-                                onClick={handleDownloadSampleExcel}
-                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', gap: '6px', alignItems: 'center', fontSize: '0.9rem', width: '100%', textAlign: 'left', color: 'var(--text-primary)' }}
-                                className="hover:text-primary"
-                              >
-                                <Download size={14} /> Download Sample Excel
-                              </button>
-                            </li>
-                          </ul>
-                        </details>
+                        <button 
+                          type="button" 
+                          className="btn btn-secondary btn-sm m-1"
+                          onClick={(e) => handleOpenManualEntry(e)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <BookOpen size={14} /> Enter Answer Key
+                        </button>
                       </div>
+                      {selectedEntryTest && selectedEntryTest.answerKey && selectedEntryTest.answerKey.length > 0 && (
+                        <button 
+                          type="button" 
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => {
+                            const newGrid = new Array(questionNumbers.length).fill('');
+                            questionNumbers.forEach((qNum, idx) => {
+                              if (qNum && qNum <= selectedEntryTest.answerKey.length) {
+                                newGrid[idx] = selectedEntryTest.answerKey[qNum - 1] || '';
+                              }
+                            });
+                            setManualAnswersGrid(newGrid);
+                            setShowManualAnswerKeyModal(true);
+                          }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginLeft: '6px', marginRight: '6px' }}
+                          title="Review Uploaded Answer Key"
+                        >
+                          <Eye size={14} /> Show Answer Key
+                        </button>
+                      )}
                       <label className={`btn btn-secondary btn-sm ${omrUploading ? 'opacity-50 pointer-events-none' : ''}`} style={{ cursor: 'pointer', display: 'inline-flex', gap: '6px' }} title="Upload folder of OMR images">
                         {omrUploading ? (
                           <div className="btn-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', marginRight: '4px' }}></div>
@@ -2240,18 +2231,23 @@ export default function Tests() {
               </button>
             </div>
             <div className="modal-body">
-              <div className="flex justify-between items-center mb-4">
-                <p className="text-sm text-gray-600 m-0">
-                  Type your answers below and press <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Tab</kbd> or <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Enter</kbd> to move to the next box. Quick Paste supports lists like <code>1-A, 2-B</code> or <code>A, B, C</code>.
-                </p>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary btn-sm" 
-                  onClick={handleManualGridPaste}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <ClipboardList size={14} /> Quick Paste
-                </button>
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-sm text-gray-600 m-0">
+                    Type your answers below and press <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Tab</kbd> or <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Enter</kbd> to move to the next box.
+                  </p>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary btn-sm" 
+                    onClick={handleManualGridPaste}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <ClipboardList size={14} /> Quick Paste
+                  </button>
+                </div>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '10px', fontSize: '0.85rem', color: '#475569' }}>
+                  <strong>💡 How to use Quick Paste:</strong> Open Notepad, write your answers separated by commas (e.g., <code>A, B, C, D...</code>), press <code>Ctrl + A</code> to select all, copy them, and click the <strong>Quick Paste</strong> button above to fill all boxes instantly!
+                </div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px', maxHeight: '50vh', overflowY: 'auto', padding: '4px' }}>
@@ -2272,12 +2268,47 @@ export default function Tests() {
                         });
                       }}
                       onKeyDown={(e) => {
+                        const inputs = Array.from(e.target.closest('.modal-body').querySelectorAll('input'));
+                        const index = inputs.indexOf(e.target);
+                        
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          const inputs = Array.from(e.target.closest('.modal-body').querySelectorAll('input'));
-                          const index = inputs.indexOf(e.target);
                           if (index > -1 && index < inputs.length - 1) {
                             inputs[index + 1].focus();
+                          }
+                        } else if (e.key === 'Backspace') {
+                          if (e.target.value === '' && index > 0) {
+                            e.preventDefault();
+                            inputs[index - 1].focus();
+                          }
+                        } else if (e.key === 'ArrowRight') {
+                          if (e.target.selectionStart === e.target.value.length && index < inputs.length - 1) {
+                            e.preventDefault();
+                            inputs[index + 1].focus();
+                          }
+                        } else if (e.key === 'ArrowLeft') {
+                          if (e.target.selectionEnd === 0 && index > 0) {
+                            e.preventDefault();
+                            inputs[index - 1].focus();
+                          }
+                        } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          let cols = 0;
+                          if (inputs.length > 0) {
+                            const firstTop = inputs[0].offsetTop;
+                            for (let i = 1; i < inputs.length; i++) {
+                              if (inputs[i].offsetTop > firstTop) {
+                                cols = i;
+                                break;
+                              }
+                            }
+                            if (cols === 0) cols = inputs.length;
+                          }
+                          
+                          if (e.key === 'ArrowUp' && index >= cols) {
+                            inputs[index - cols].focus();
+                          } else if (e.key === 'ArrowDown' && index + cols < inputs.length) {
+                            inputs[index + cols].focus();
                           }
                         }
                       }}

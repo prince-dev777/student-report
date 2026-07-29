@@ -7,10 +7,16 @@ export default function ParentPortalWeb() {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [studentData, setStudentData] = useState(null);
-  const [attendanceRecords, setAttendanceRecords] = useState([]);
-  const [testResults, setTestResults] = useState([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!sessionStorage.getItem('parentSession'));
+  const [studentData, setStudentData] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('parentSession'))?.studentData || null; } catch { return null; }
+  });
+  const [attendanceRecords, setAttendanceRecords] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('parentSession'))?.attendanceRecords || []; } catch { return []; }
+  });
+  const [testResults, setTestResults] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('parentSession'))?.testResults || []; } catch { return []; }
+  });
   const [activeTab, setActiveTab] = useState('attendance'); // 'attendance' | 'tests'
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
@@ -133,6 +139,11 @@ export default function ParentPortalWeb() {
           setAttendanceRecords(data.attendance || []);
           setTestResults(data.testResults || []);
           setIsLoggedIn(true);
+          sessionStorage.setItem('parentSession', JSON.stringify({
+            studentData: data.student || data.student_data,
+            attendanceRecords: data.attendance || [],
+            testResults: data.testResults || []
+          }));
           toast.success(`Welcome Parent of ${(data.student || data.student_data)?.name || 'Student'}!`);
           loginSuccess = true;
           break;
@@ -153,7 +164,7 @@ export default function ParentPortalWeb() {
       );
 
       if (foundLocal) {
-        setStudentData({
+        const mockStudentData = {
           id: foundLocal.id,
           name: foundLocal.name,
           rollNo: foundLocal.rollNumber || foundLocal.roll_no || userId.trim(),
@@ -163,18 +174,27 @@ export default function ParentPortalWeb() {
           attendanceRate: 92,
           presentCount: 23,
           totalAttendanceCount: 25
-        });
-        setAttendanceRecords([
+        };
+        const mockAttendance = [
           { date: '2026-07-22', status: 'present', entryTime: '09:02 AM' },
           { date: '2026-07-21', status: 'present', entryTime: '08:58 AM' },
           { date: '2026-07-20', status: 'absent', entryTime: '-' },
           { date: '2026-07-19', status: 'present', entryTime: '09:05 AM' }
-        ]);
-        setTestResults([
+        ];
+        const mockTestResults = [
           { testName: 'Full Syllabus Test #3', testDate: '18 Jul 2026', marks: 245, totalMarks: 300, percentage: 81.6, rank: 4, totalStudents: 45 },
           { testName: 'Physics & Chemistry Minor', testDate: '10 Jul 2026', marks: 160, totalMarks: 200, percentage: 80.0, rank: 6, totalStudents: 45 }
-        ]);
+        ];
+        
+        setStudentData(mockStudentData);
+        setAttendanceRecords(mockAttendance);
+        setTestResults(mockTestResults);
         setIsLoggedIn(true);
+        sessionStorage.setItem('parentSession', JSON.stringify({
+          studentData: mockStudentData,
+          attendanceRecords: mockAttendance,
+          testResults: mockTestResults
+        }));
         toast.success(`Welcome Parent of ${foundLocal.name}!`);
       } else {
         toast.error(lastErrorMessage || '❌ Invalid User ID or Password. Please verify credentials.');
@@ -399,7 +419,10 @@ export default function ParentPortalWeb() {
               📲 Add App Icon
             </button>
           )}
-          <button className="parent-header-btn" onClick={() => setIsLoggedIn(false)} style={{
+          <button className="parent-header-btn" onClick={() => {
+            setIsLoggedIn(false);
+            sessionStorage.removeItem('parentSession');
+          }} style={{
             background: '#fff1f2', border: '1px solid #fecdd3',
             color: '#e11d48', padding: '6px 10px', borderRadius: '8px', fontSize: '0.75rem',
             fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
