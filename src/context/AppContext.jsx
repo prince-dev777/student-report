@@ -42,6 +42,7 @@ export function AppProvider({ children }) {
   const [backendOnline, setBackendOnline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const { user } = useAuth();
 
@@ -529,6 +530,8 @@ export function AppProvider({ children }) {
     loading,
     sidebarOpen,
     setSidebarOpen,
+    sidebarCollapsed,
+    setSidebarCollapsed,
     addStudent,
     updateStudent,
     deleteStudent,

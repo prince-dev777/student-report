@@ -17,6 +17,7 @@ import {
   Timer,
   MessageSquare,
   Scan,
+  Download,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import {
@@ -232,6 +233,43 @@ export default function Attendance() {
     initial: { opacity: 0, y: 16 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: -16 },
+  };
+
+  const exportTodayAttendance = () => {
+    if (todayTableData.length === 0) return;
+    const headers = ['Roll No,Student,Status,Entry Time,Exit Time,Duration'];
+    const rows = todayTableData.map(r => {
+      const entry = r.entryTime ? formatTime(r.entryTime) : 'N/A';
+      const exit = r.exitTime ? formatTime(r.exitTime) : 'N/A';
+      const duration = calcDuration(r.entryTime, r.exitTime);
+      return `${r.student.rollNo},"${r.student.name}",${r.status},"${entry}","${exit}","${duration}"`;
+    });
+    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `attendance_today_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportHistoryAttendance = () => {
+    if (!calStudent) return;
+    const student = activeStudents.find(s => s.id === calStudent);
+    const headers = ['Date,Status'];
+    const rows = calendarDays.map(cell => {
+      if (!cell.day) return null;
+      return `${cell.dateStr},${cell.status}`;
+    }).filter(Boolean);
+    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `attendance_history_${student?.name || 'student'}_${monthNames[calMonth]}_${calYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -553,10 +591,15 @@ export default function Attendance() {
                     {dateStr} • {stats.present + stats.late} of {activeStudents.length} present
                   </div>
                 </div>
-                <div className="flex gap-8">
-                  <span className="badge badge-present">Present: {stats.present}</span>
-                  <span className="badge badge-late">Late: {stats.late}</span>
-                  <span className="badge badge-absent">Absent: {stats.absent}</span>
+                <div className="flex gap-12 items-center">
+                  <button onClick={exportTodayAttendance} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 12px', fontSize: '0.85rem' }}>
+                    <Download size={14} /> Download Excel
+                  </button>
+                  <div className="flex gap-8">
+                    <span className="badge badge-present">Present: {stats.present}</span>
+                    <span className="badge badge-late">Late: {stats.late}</span>
+                    <span className="badge badge-absent">Absent: {stats.absent}</span>
+                  </div>
                 </div>
               </div>
 
@@ -664,7 +707,7 @@ export default function Attendance() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <div className="card-header">
+              <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div className="card-title flex items-center gap-8">
                     <Calendar size={18} />
@@ -672,6 +715,9 @@ export default function Attendance() {
                   </div>
                   <div className="card-subtitle">Calendar heat-map view</div>
                 </div>
+                <button onClick={exportHistoryAttendance} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 12px', fontSize: '0.85rem' }}>
+                  <Download size={14} /> Download Excel
+                </button>
               </div>
 
               {/* Student + Month Controls */}
@@ -695,9 +741,28 @@ export default function Attendance() {
                   <button className="btn btn-ghost btn-icon" onClick={() => navMonth('prev')}>
                     <ChevronLeft size={18} />
                   </button>
-                  <span style={{ fontWeight: 700, fontSize: '1rem', minWidth: 160, textAlign: 'center' }}>
-                    {monthNames[calMonth]} {calYear}
-                  </span>
+                  <div className="flex items-center gap-4">
+                    <select
+                      className="form-select"
+                      value={calMonth}
+                      onChange={(e) => setCalMonth(Number(e.target.value))}
+                      style={{ padding: '6px 12px', fontSize: '0.9rem', minWidth: '110px' }}
+                    >
+                      {monthNames.map((m, idx) => (
+                        <option key={idx} value={idx}>{m}</option>
+                      ))}
+                    </select>
+                    <select
+                      className="form-select"
+                      value={calYear}
+                      onChange={(e) => setCalYear(Number(e.target.value))}
+                      style={{ padding: '6px 12px', fontSize: '0.9rem', minWidth: '90px' }}
+                    >
+                      {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
                   <button className="btn btn-ghost btn-icon" onClick={() => navMonth('next')}>
                     <ChevronRight size={18} />
                   </button>

@@ -21,7 +21,8 @@ import {
   WifiOff,
   Trash2,
   Paperclip,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Info
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getRelativeTime } from '../utils/helpers';
@@ -332,6 +333,12 @@ export default function SMSCenter() {
                 </>
               ) : 'Link your WhatsApp account to enable automated messaging.'}
             </p>
+            {whatsappStatus !== 'ready' && (
+              <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: 'var(--accent-orange)', display: 'flex', alignItems: 'flex-start', gap: '4px' }}>
+                <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                <span>If WhatsApp is stuck on 'Initializing...' or the QR code doesn't generate, please right-click the taskbar, open Task Manager, and end all 'Chrome' processes to fix the bug.</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -455,9 +462,14 @@ export default function SMSCenter() {
           </select>
         </div>
 
-        <span style={{ color: 'var(--text-tertiary)', fontSize: '0.82rem', marginLeft: 'auto' }}>
-          Showing {paginatedHistory.length} of {filteredHistory.length} messages
-        </span>
+        <div className="flex items-center gap-12" style={{ marginLeft: 'auto' }}>
+          <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'rgba(37, 99, 235, 0.05)', padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Info size={14} /> If message is 'pending', refresh to see 'delivered'
+          </span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
+            Showing {paginatedHistory.length} of {filteredHistory.length} messages
+          </span>
+        </div>
       </motion.div>
 
       {/* SMS History Table */}

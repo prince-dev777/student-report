@@ -38,20 +38,51 @@ export default function Tests() {
     questionsToDetect: 75,
   });
 
-  // Auto-calculate Total Marks when questions or marks-per-question change
+  const [subjectMapping, setSubjectMapping] = useState([]);
+
+  // Close details dropdowns when clicking outside
   React.useEffect(() => {
+    const handleOutsideClick = (e) => {
+      const dropdowns = document.querySelectorAll('details.dropdown[open]');
+      dropdowns.forEach(dropdown => {
+        if (!dropdown.contains(e.target)) {
+          dropdown.removeAttribute('open');
+        }
+      });
+    };
+    
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, []);
+
+  // Auto-calculate Total Marks and Questions to Detect when subject mapping or marks-per-question change
+  React.useEffect(() => {
+    let selectedQuestionsCount = 0;
+    if (subjectMapping && subjectMapping.length > 0) {
+      subjectMapping.forEach(m => {
+        if (m.fromQ && m.toQ) {
+          selectedQuestionsCount += (Number(m.toQ) - Number(m.fromQ) + 1);
+        }
+      });
+    } else {
+      selectedQuestionsCount = Number(testForm.questionsToDetect) || 0;
+    }
+
     setTestForm(prev => {
-      const qCount = Number(prev.questionsToDetect) || 0;
       const mPerQ = Number(prev.marksPerQuestion) || 0;
-      const expectedTotal = qCount * mPerQ;
-      if (prev.totalMarks !== expectedTotal) {
-        return { ...prev, totalMarks: expectedTotal };
+      const expectedTotal = selectedQuestionsCount * mPerQ;
+      const nextQuestionsToDetect = selectedQuestionsCount;
+      
+      if (prev.totalMarks !== expectedTotal || prev.questionsToDetect !== nextQuestionsToDetect) {
+        return { 
+          ...prev, 
+          totalMarks: expectedTotal,
+          questionsToDetect: nextQuestionsToDetect
+        };
       }
       return prev;
     });
-  }, [testForm.questionsToDetect, testForm.marksPerQuestion]);
-
-  const [subjectMapping, setSubjectMapping] = useState([]);
+  }, [subjectMapping, testForm.marksPerQuestion]);
 
   // Auto-populate subjectMapping based on template
   React.useEffect(() => {
@@ -76,7 +107,8 @@ export default function Tests() {
       setSubjectMapping([
         { subject: 'Physics', fromQ: 1, toQ: 50 },
         { subject: 'Chemistry', fromQ: 51, toQ: 100 },
-        { subject: 'Mathematics', fromQ: 101, toQ: 150 }
+        { subject: 'Mathematics', fromQ: 101, toQ: 150 },
+        { subject: 'Biology', fromQ: 151, toQ: 200 }
       ]);
     } else if (t === 'T6') {
       setSubjectMapping([
@@ -129,6 +161,26 @@ export default function Tests() {
     return tests.find(t => t.id === entryTestId) || null;
   }, [tests, entryTestId]);
 
+  // Dynamically compute the physical question numbers mapped for the entry test
+  const questionNumbers = React.useMemo(() => {
+    const qNums = [];
+    if (selectedEntryTest && selectedEntryTest.subjectMapping && selectedEntryTest.subjectMapping.length > 0) {
+      selectedEntryTest.subjectMapping.forEach(m => {
+        if (m.fromQ && m.toQ) {
+          for (let i = Number(m.fromQ); i <= Number(m.toQ); i++) {
+            qNums.push(i);
+          }
+        }
+      });
+    } else {
+      const totalQ = selectedEntryTest?.questionsToDetect || detectQuestions || 100;
+      for (let i = 1; i <= totalQ; i++) {
+        qNums.push(i);
+      }
+    }
+    return qNums;
+  }, [selectedEntryTest, detectQuestions]);
+
   // Handle test creation
   const handleCreateTest = async (e) => {
     e.preventDefault();
@@ -140,11 +192,7 @@ export default function Tests() {
     const hasEmptySubject = subjectMapping.some(m => !m.subject || !m.fromQ || !m.toQ);
     if (hasEmptySubject) return toast.error('Please fill all subject mapping fields');
 
-    // Warn if ranges don't seem to match questionsToDetect, but don't block
-    const maxQ = Math.max(...subjectMapping.map(m => Number(m.toQ)));
-    if (maxQ !== Number(testForm.questionsToDetect)) {
-      toast.warn(`Highest mapped question is ${maxQ}, but detect count is ${testForm.questionsToDetect}.`);
-    }
+
 
     setSubmittingAction('CreateTest');
     try {
@@ -506,9 +554,8 @@ export default function Tests() {
         }
       }
 
-      if (detectQuestions > 0 && rawAnswers.length > detectQuestions) {
-        rawAnswers = rawAnswers.slice(0, detectQuestions);
-      }
+      // Do not slice rawAnswers by detectQuestions here, because answerKey acts as a natural bound
+      // and slicing breaks non-contiguous mappings (e.g. Q1-25 and Q51-75).
 
       const answerKey = test.answerKey || [];
       const marksPerQ = test.marksPerQuestion || 1;
@@ -524,7 +571,7 @@ export default function Tests() {
          if (status === 'invalid') {
             wrong++;
          } else if (status === 'valid' && selected && selected !== 'NULL') {
-            if (idx < answerKey.length) {
+            if (idx < answerKey.length && answerKey[idx]) {
                const corStr = String(answerKey[idx]).trim().toUpperCase();
                const selStr = String(selected).trim().toUpperCase();
                
@@ -819,15 +866,51 @@ export default function Tests() {
     e.target.value = null; // reset input
   };
 
+  const handleDownloadSampleExcel = (e) => {
+    if (e && e.target) {
+      const details = e.target.closest('details');
+      if (details) details.removeAttribute('open');
+    }
+    
+    const wb = XLSX.utils.book_new();
+    const wsData = [
+      ["PHYSICS"],
+      ["1", "A"],
+      ["2", "B"],
+      ["3", "C"],
+      ["4", "D"],
+      ["5", "A"],
+      [""],
+      ["CHEMISTRY"],
+      ["26", "B"],
+      ["27", "C"],
+      ["28", "D"],
+      ["29", "A"],
+      ["30", "B"],
+      [""],
+      ["MATHEMATICS"],
+      ["51", "C"],
+      ["52", "D"],
+      ["53", "A"],
+      ["54", "B"],
+      ["55", "C"]
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [{ wch: 15 }, { wch: 10 }];
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Sample Answer Key");
+    XLSX.writeFile(wb, "Sample_Answer_Key.xlsx");
+  };
+
   const handleOpenManualEntry = (e) => {
     if (e && e.target) {
       const details = e.target.closest('details');
       if (details) details.removeAttribute('open');
     }
 
-    const totalQ = selectedEntryTest?.questionsToDetect || detectQuestions || 100;
-    if (manualAnswersGrid.length !== totalQ) {
-      setManualAnswersGrid(new Array(totalQ).fill(''));
+    if (manualAnswersGrid.length !== questionNumbers.length) {
+      setManualAnswersGrid(new Array(questionNumbers.length).fill(''));
     }
     setShowManualAnswerKeyModal(true);
   };
@@ -885,14 +968,21 @@ export default function Tests() {
   const handleManualAnswerKeySubmit = async () => {
     if (!entryTestId) return toast.error('Please select a test first');
     
-    // Trim and clean grid values
-    const tokens = manualAnswersGrid.map(val => (val || '').trim().toUpperCase());
-    
     // Check if empty
-    if (tokens.every(t => t === '')) {
+    if (manualAnswersGrid.every(t => !t || t.trim() === '')) {
       toast.error('Answer key is completely empty.');
       return;
     }
+
+    // Convert flat grid back to sparse array aligning with physical question numbers
+    const maxQ = questionNumbers.length > 0 ? Math.max(...questionNumbers) : manualAnswersGrid.length;
+    const tokens = new Array(maxQ).fill('');
+    manualAnswersGrid.forEach((ans, idx) => {
+      const qNum = questionNumbers[idx];
+      if (qNum && qNum >= 1 && qNum <= maxQ) {
+        tokens[qNum - 1] = (ans || '').trim().toUpperCase();
+      }
+    });
 
     const updatedTest = await updateTestAnswerKey(entryTestId, tokens);
     if (!updatedTest) return;
@@ -1283,7 +1373,53 @@ export default function Tests() {
 
                 <div className="form-row">
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="form-label flex justify-between items-center">
+                    <label className="form-label">Default OMR Layout</label>
+                    <select
+                      className="form-select"
+                      value={testForm.templateId}
+                      onChange={e => {
+                        const tempId = e.target.value;
+                        let defaultDetect = 75;
+                        let defaultMarksPerQ = 4;
+                        let defaultNegMarks = 1;
+
+                        if (tempId === 'T1' || tempId === 'T2') {
+                          defaultDetect = 75; defaultMarksPerQ = 4; defaultNegMarks = 1;
+                        } else if (tempId === 'T3') {
+                          defaultDetect = 180; defaultMarksPerQ = 4; defaultNegMarks = 1;
+                        } else if (tempId === 'T4') {
+                          defaultDetect = 90; defaultMarksPerQ = 4; defaultNegMarks = 1;
+                        } else if (tempId === 'T5') {
+                          defaultDetect = 200; defaultMarksPerQ = 1; defaultNegMarks = 0; // Configured for MHCET
+                        } else if (tempId === 'T6') {
+                          defaultDetect = 200; defaultMarksPerQ = 1; defaultNegMarks = 0;
+                        } else if (tempId === 'T7') {
+                          defaultDetect = 50; defaultMarksPerQ = 4; defaultNegMarks = 1;
+                        }
+                        
+                        setTestForm(prev => ({ 
+                          ...prev, 
+                          templateId: tempId,
+                          questionsToDetect: defaultDetect,
+                          marksPerQuestion: defaultMarksPerQ,
+                          negativeMarking: defaultNegMarks
+                        }));
+                      }}
+                    >
+                      <option value="T1">T1 — JEE Main 75 (MCQ)</option>
+                      <option value="T2">T2 — JEE Main 75 Mixed (MCQ + Numerical)</option>
+                      <option value="T3">T3 — NEET 180 Questions (Physics/Chem/Bio)</option>
+                      <option value="T4">T4 — NEET 90 Questions (Biology only)</option>
+                      <option value="T5">T5 — MHCET 200 Maths</option>
+                      <option value="T6">T6 — MHCET 200 Biology</option>
+                      <option value="T7">T7 — OMR 50 Questions</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <div className="form-label flex justify-between items-center">
                       <span>Subject-Question Mapping *</span>
                       <button 
                         type="button" 
@@ -1292,7 +1428,7 @@ export default function Tests() {
                       >
                         <Plus size={14} style={{ marginRight: '4px' }} /> Add Row
                       </button>
-                    </label>
+                    </div>
                     <div className="table-container mt-8" style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
                       <table className="data-table" style={{ fontSize: '0.85rem' }}>
                         <thead>
@@ -1376,6 +1512,22 @@ export default function Tests() {
                       </table>
                     </div>
                   </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="form-label text-primary" style={{ fontWeight: '600' }}>Questions to Detect (Auto-calculated)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={testForm.questionsToDetect}
+                      readOnly
+                      style={{ background: 'var(--surface-color)', cursor: 'not-allowed', fontWeight: 'bold' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Target Course *</label>
                     <select
@@ -1406,22 +1558,13 @@ export default function Tests() {
                 </div>
 
                 <div className="form-row">
-                  <div className="form-group">
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="form-label">Date</label>
                     <input
                       type="date"
                       className="form-input"
                       value={testForm.date}
                       onChange={e => setTestForm(prev => ({ ...prev, date: e.target.value }))}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Total Marks *</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={testForm.totalMarks}
-                      onChange={e => setTestForm(prev => ({ ...prev, totalMarks: e.target.value }))}
                     />
                   </div>
                 </div>
@@ -1453,44 +1596,14 @@ export default function Tests() {
                 </div>
 
                 <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Default OMR Layout</label>
-                    <select
-                      className="form-select"
-                      value={testForm.templateId}
-                      onChange={e => {
-                        const tempId = e.target.value;
-                        let defaultDetect = 75;
-                        if (tempId === 'T1' || tempId === 'T2') defaultDetect = 75;
-                        else if (tempId === 'T3') defaultDetect = 180;
-                        else if (tempId === 'T4') defaultDetect = 90;
-                        else if (tempId === 'T5' || tempId === 'T6') defaultDetect = 200;
-                        else if (tempId === 'T7') defaultDetect = 50;
-                        
-                        setTestForm(prev => ({ 
-                          ...prev, 
-                          templateId: tempId,
-                          questionsToDetect: defaultDetect
-                        }));
-                      }}
-                    >
-                      <option value="T1">T1 — JEE Main 75 (MCQ)</option>
-                      <option value="T2">T2 — JEE Main 75 Mixed (MCQ + Numerical)</option>
-                      <option value="T3">T3 — NEET 180 Questions (Physics/Chem/Bio)</option>
-                      <option value="T4">T4 — NEET 90 Questions (Biology only)</option>
-                      <option value="T5">T5 — MHCET 200 Maths</option>
-                      <option value="T6">T6 — MHCET 200 Biology</option>
-                      <option value="T7">T7 — OMR 50 Questions</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Default Questions to Detect</label>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="form-label text-primary" style={{ fontWeight: '600' }}>Total Marks (Auto-calculated)</label>
                     <input
                       type="number"
                       className="form-input"
-                      min="1"
-                      value={testForm.questionsToDetect}
-                      onChange={e => setTestForm(prev => ({ ...prev, questionsToDetect: e.target.value }))}
+                      value={testForm.totalMarks}
+                      readOnly
+                      style={{ background: 'var(--surface-color)', cursor: 'not-allowed', fontWeight: 'bold' }}
                     />
                   </div>
                 </div>
@@ -1622,7 +1735,7 @@ export default function Tests() {
                                 />
                               </label>
                             </li>
-                            <li>
+                            <li style={{ marginBottom: '8px' }}>
                               <button 
                                 type="button" 
                                 onClick={(e) => handleOpenManualEntry(e)}
@@ -1630,6 +1743,16 @@ export default function Tests() {
                                 className="hover:text-primary"
                               >
                                 <Plus size={14} /> Manual Entry
+                              </button>
+                            </li>
+                            <li>
+                              <button 
+                                type="button" 
+                                onClick={handleDownloadSampleExcel}
+                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', gap: '6px', alignItems: 'center', fontSize: '0.9rem', width: '100%', textAlign: 'left', color: 'var(--text-primary)' }}
+                                className="hover:text-primary"
+                              >
+                                <Download size={14} /> Download Sample Excel
                               </button>
                             </li>
                           </ul>
@@ -1876,7 +1999,12 @@ export default function Tests() {
                       <th style={{ width: '80px' }}>Rank</th>
                       <th>Roll No</th>
                       <th>Student</th>
-                      <th style={{ width: '120px' }}>Marks</th>
+                      {selectedTestResults.test.subjectMapping?.length > 0 && 
+                        selectedTestResults.test.subjectMapping.map((m, i) => (
+                          <th key={i}>{m.subject}</th>
+                        ))
+                      }
+                      <th style={{ width: '120px' }}>Total Marks</th>
                       <th>Percentage</th>
                       <th>OMR Sheet</th>
                     </tr>
@@ -1895,6 +2023,13 @@ export default function Tests() {
                           </td>
                           <td>{res.rollNo}</td>
                           <td><strong>{res.studentName}</strong></td>
+                          
+                          {selectedTestResults.test.subjectMapping?.length > 0 && 
+                            calculateSubjectStats(res, selectedTestResults.test).map((stat, i) => (
+                              <td key={i}>{stat.marks}</td>
+                            ))
+                          }
+
                           <td>{res.marks} / {res.totalMarks}</td>
                           <td>
                             <span className={`marks-pill ${marksCategory}`}>
@@ -2118,7 +2253,7 @@ export default function Tests() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px', maxHeight: '50vh', overflowY: 'auto', padding: '4px' }}>
                 {manualAnswersGrid.map((ans, idx) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-tertiary)', width: '24px' }}>{idx + 1}.</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-tertiary)', width: '24px' }}>{questionNumbers[idx] || (idx + 1)}.</span>
                     <input
                       type="text"
                       className="form-input"

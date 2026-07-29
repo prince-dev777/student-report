@@ -6,7 +6,8 @@ const instituteSchema = new mongoose.Schema({
   phone: { type: String },
   logo: { type: String }, // Base64 or URL
   staffPasscode: { type: String, default: '1234' },
-  subscriptionStatus: { type: String, default: 'active', enum: ['active', 'inactive', 'trial'] }
+  subscriptionStatus: { type: String, default: 'active', enum: ['active', 'inactive', 'trial'] },
+  notes: { type: String, default: '' }
 }, { timestamps: true });
 
 export default mongoose.model('Institute', instituteSchema);

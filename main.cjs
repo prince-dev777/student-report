@@ -190,6 +190,9 @@ async function startServer() {
     }
   }, 2000);
 
+  // Prevent uncaught IPC errors when server process exits
+  serverProcess.on('error', () => {});
+
   serverProcess.on('message', (msg) => {
     if (msg && msg.type === 'QUIT_AND_INSTALL') {
       app.isQuiting = true;
@@ -296,7 +299,9 @@ app.on('before-quit', () => {
   if (serverProcess) {
     // Send clean shutdown signal first, then force kill after timeout
     try {
-      serverProcess.send('shutdown');
+      if (serverProcess.connected) {
+        serverProcess.send('shutdown');
+      }
     } catch (e) {
       // IPC channel might be closed already
     }

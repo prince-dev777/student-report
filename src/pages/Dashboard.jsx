@@ -11,7 +11,9 @@ import {
   FileText,
   Send,
   Trophy,
+  Download,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import {
   AreaChart,
   Area,
@@ -227,7 +229,6 @@ export default function Dashboard() {
       label: 'Total Students',
       value: activeStudents.length,
       subValue: '',
-      trend: '+12%',
       theme: 'blue',
       icon: <Users size={20} />,
     },
@@ -235,7 +236,6 @@ export default function Dashboard() {
       label: "Today's Attendance",
       value: `${todayStats.percentage}%`,
       subValue: `(${todayStats.present + todayStats.late}/${todayStats.total} present)`,
-      trend: '+5%',
       theme: 'green',
       icon: <UserCheck size={20} />,
     },
@@ -243,7 +243,6 @@ export default function Dashboard() {
       label: 'Average Score',
       value: `${avgScore}%`,
       subValue: testResults.length > 0 ? `(${avgMarksData.obtained}/${avgMarksData.possible} marks)` : '(No tests)',
-      trend: '+8%',
       theme: 'purple',
       icon: <TrendingUp size={20} />,
     },
@@ -251,15 +250,51 @@ export default function Dashboard() {
       label: 'SMS Sent Today',
       value: smsTodayCount,
       subValue: '',
-      trend: '+24%',
       theme: 'orange',
       icon: <MessageSquare size={20} />,
     },
   ];
 
+  const exportTopPerformers = () => {
+    if (topPerformers.length === 0) {
+      toast.error('No top performers to export');
+      return;
+    }
+    const headers = ['Rank,Name,Average Score'];
+    const rows = topPerformers.map(p => `${p.rank},"${p.name}",${p.avg}%`);
+    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "top_performers.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Exported to Excel (CSV)');
+  };
+
+  const exportAttendanceTrend = () => {
+    if (trendData.length === 0) {
+      toast.error('No trend data to export');
+      return;
+    }
+    const headers = ['Date,Present,Absent,Percentage'];
+    const rows = trendData.map(t => `"${t.fullDate}",${t.present},${t.absent},${t.percentage}%`);
+    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "attendance_trend.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Exported to Excel (CSV)');
+  };
+
+
   // ── Render ────────────────────────────────────
   return (
-    <div className="page-container">
+    <div className="page-container" style={{ paddingTop: '8px' }}>
       {/* Page Header */}
       <motion.div
         className="page-header"
@@ -267,6 +302,7 @@ export default function Dashboard() {
         animate="visible"
         variants={fadeIn}
         custom={0}
+        style={{ marginTop: '-15px' }}
       >
         <h1>Dashboard</h1>
         <p>Welcome back! Here's what's happening at your institute today.</p>
@@ -287,10 +323,6 @@ export default function Dashboard() {
           >
             <div className="stat-card-top">
               <div className={`stat-card-icon ${card.theme}`}>{card.icon}</div>
-              <div className="stat-card-trend up">
-                <ArrowUpRight size={14} />
-                {card.trend}
-              </div>
             </div>
             <div className="stat-card-value">
               {card.value}
@@ -314,11 +346,17 @@ export default function Dashboard() {
       >
         {/* Attendance Trend (Left – bigger) */}
         <motion.div className="card" variants={staggerItem}>
-          <div className="card-header">
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div className="card-title">Attendance Trend</div>
               <div className="card-subtitle">Last 14 days</div>
             </div>
+            <button 
+              onClick={exportAttendanceTrend}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', padding: '6px 12px', background: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}
+            >
+              <Download size={14} /> Download Excel
+            </button>
           </div>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={trendData} margin={{ top: 5, right: 20, bottom: 5, left: -10 }}>
@@ -357,111 +395,16 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </motion.div>
 
-        {/* Attendance Today – Donut (Right) */}
+        {/* Top Performers (Replaced Attendance Today) */}
         <motion.div className="card" variants={staggerItem}>
-          <div className="card-header">
-            <div>
-              <div className="card-title">Attendance Today</div>
-              <div className="card-subtitle">{activeStudents.length} students</div>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={55}
-                outerRadius={85}
-                paddingAngle={3}
-                dataKey="value"
-                labelLine={false}
-                label={renderPieLabel}
-                stroke="none"
-              >
-                {pieData.map((entry, idx) => (
-                  <Cell key={idx} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value, name) => [`${value} students`, name]}
-                contentStyle={{
-                  background: '#0c1029',
-                  border: '1px solid rgba(59,130,246,0.15)',
-                  borderRadius: 12,
-                  fontSize: '0.8rem',
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-16" style={{ marginTop: 4 }}>
-            {pieData.map((entry) => (
-              <div key={entry.name} className="flex items-center gap-8">
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: '50%',
-                    background: entry.color,
-                    display: 'inline-block',
-                  }}
-                />
-                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                  {entry.name} ({entry.value})
-                </span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {/* ─── 3. Bottom Section ─────────────────── */}
-      <motion.div
-        className="grid-dashboard"
-        initial="hidden"
-        animate="visible"
-        variants={staggerContainer}
-      >
-        {/* Recent Activity Feed */}
-        <motion.div className="card" variants={staggerItem}>
-          <div className="card-header">
-            <div className="card-title">Recent Activity</div>
-          </div>
-          <div className="activity-feed">
-            {recentSMS.length === 0 && (
-              <div className="empty-state">
-                <p>No recent activity</p>
-              </div>
-            )}
-            {recentSMS.map((sms) => {
-              const student = students.find((s) => s.id === sms.studentId);
-              return (
-                <motion.div
-                  key={sms.id}
-                  className="activity-item"
-                  variants={staggerItem}
-                >
-                  <div className={`activity-icon ${getSMSColor(sms.type)}`}>
-                    {getSMSIcon(sms.type)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="activity-text">
-                      <strong>{student?.name ?? 'Unknown'}</strong> — {getSMSLabel(sms.type)} sent
-                      to {student?.parentName ?? 'parent'}
-                    </div>
-                    <div className="activity-time">{getRelativeTime(sms.timestamp)}</div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* Top Performers */}
-        <motion.div className="card" variants={staggerItem}>
-          <div className="card-header">
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="card-title">Top Performers 🏆</div>
+            <button 
+              onClick={exportTopPerformers}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', padding: '6px 12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}
+            >
+              <Download size={14} /> Export Excel
+            </button>
           </div>
           <div className="activity-feed">
             {topPerformers.length === 0 && (
@@ -514,6 +457,51 @@ export default function Dashboard() {
             ))}
           </div>
         </motion.div>
+      </motion.div>
+
+      {/* ─── 3. Bottom Section ─────────────────── */}
+      <motion.div
+        className="grid-dashboard"
+        initial="hidden"
+        animate="visible"
+        variants={staggerContainer}
+      >
+        {/* Recent Activity Feed */}
+        <motion.div className="card" variants={staggerItem} style={{ gridColumn: '1 / -1' }}>
+          <div className="card-header">
+            <div className="card-title">Recent Activity</div>
+          </div>
+          <div className="activity-feed">
+            {recentSMS.length === 0 && (
+              <div className="empty-state">
+                <p>No recent activity</p>
+              </div>
+            )}
+            {recentSMS.map((sms) => {
+              const student = students.find((s) => s.id === sms.studentId);
+              return (
+                <motion.div
+                  key={sms.id}
+                  className="activity-item"
+                  variants={staggerItem}
+                >
+                  <div className={`activity-icon ${getSMSColor(sms.type)}`}>
+                    {getSMSIcon(sms.type)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="activity-text">
+                      <strong>{student?.name ?? 'Unknown'}</strong> — {getSMSLabel(sms.type)} sent
+                      to {student?.parentName ?? 'parent'}
+                    </div>
+                    <div className="activity-time">{getRelativeTime(sms.timestamp)}</div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+
       </motion.div>
     </div>
   );

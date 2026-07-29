@@ -10,7 +10,9 @@ import {
   MessageSquare,
   Brain,
   FileJson,
-  Smartphone
+  Smartphone,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -28,7 +30,7 @@ const commMenuItems = [
 ];
 
 export default function Sidebar() {
-  const { sidebarOpen, setSidebarOpen, smsHistory } = useApp();
+  const { sidebarOpen, setSidebarOpen, smsHistory, sidebarCollapsed, setSidebarCollapsed } = useApp();
   const { user } = useAuth();
   const location = useLocation();
   const [lastSeenSmsCount, setLastSeenSmsCount] = useState(smsHistory.length);
@@ -97,16 +99,42 @@ export default function Sidebar() {
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
       >
         {/* Brand */}
-        <div className="sidebar-brand" style={{ gap: '10px' }}>
+        <div className="sidebar-brand" style={{ gap: '10px', position: 'relative' }}>
           <img 
             src={user?.logo || "./logo.jpg"} 
             alt="Logo" 
-            style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover' }} 
+            onClick={() => sidebarCollapsed && setSidebarCollapsed(false)}
+            style={{ 
+              width: '36px', 
+              height: '36px', 
+              borderRadius: '8px', 
+              objectFit: 'cover',
+              cursor: sidebarCollapsed ? 'pointer' : 'default'
+            }} 
+            title={sidebarCollapsed ? "Expand Sidebar" : ""}
           />
           <div className="sidebar-brand-text">
             <h2>{user?.instituteName || 'CAREER XONE PRO'}</h2>
             <span>Student Management</span>
           </div>
+          {!sidebarCollapsed && (
+            <button 
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              style={{ 
+                position: 'absolute', 
+                right: '10px', 
+                top: '20px', 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: window.innerWidth > 768 ? 'block' : 'none'
+              }}
+              title="Collapse Sidebar"
+            >
+              <PanelLeftClose size={20} />
+            </button>
+          )}
         </div>
 
         {/* Navigation */}

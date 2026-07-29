@@ -1,49 +1,60 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Lock, User, ShieldAlert, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ShieldAlert, User, Eye, EyeOff } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-export default function Login() {
+export default function SuperAdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const success = await login(username, password);
-    if (success) {
-      navigate('/');
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/superadmin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem('superadminToken', data.token);
+        toast.success('Super Admin Login Successful!');
+        navigate('/superadmin/dashboard');
+      } else {
+        toast.error(data.error || 'Login failed');
+      }
+    } catch (err) {
+      toast.error('Network error');
     }
+    
     setIsLoading(false);
   };
 
   return (
     <div className="login-container">
-      <div className="login-box">
+      <div className="login-box" style={{ borderTop: '4px solid #ef4444' }}>
         <div className="login-header">
           <div className="logo-icon-login" style={{ background: 'none', width: 'auto', height: 'auto', marginBottom: '16px' }}>
-            <img 
-              src="./logo.jpg" 
-              alt="Logo" 
-              style={{ width: '80px', height: '80px', borderRadius: '16px', objectFit: 'contain' }} 
-            />
+            <ShieldAlert size={64} color="#ef4444" />
           </div>
-          <h2>CAREER XONE</h2>
-          <p>Admin Security Portal</p>
+          <h2>SUPER ADMIN</h2>
+          <p>Global Security & Provisioning</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="input-group">
-            <label>Username</label>
+            <label>Master Username</label>
             <div className="input-with-icon">
               <User size={18} className="input-icon" />
               <input
                 type="text"
-                placeholder="Enter admin username"
+                placeholder="Enter master username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -52,12 +63,12 @@ export default function Login() {
           </div>
 
           <div className="input-group">
-            <label>Password</label>
+            <label>Master Password</label>
             <div className="input-with-icon">
               <ShieldAlert size={18} className="input-icon" />
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter password"
+                placeholder="Enter master password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -84,69 +95,53 @@ export default function Login() {
             </div>
           </div>
 
-          <button type="submit" className="login-btn" disabled={isLoading}>
-            {isLoading ? 'Authenticating...' : 'Secure Login'}
+          <button type="submit" className="login-btn" style={{ background: '#ef4444' }} disabled={isLoading}>
+            {isLoading ? 'Authenticating...' : 'Authorize Access'}
           </button>
-
         </form>
       </div>
-
+      
       <style>{`
         .login-container {
           min-height: 100vh;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #f0f5fc;
-          background-image: 
-            radial-gradient(ellipse at 20% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
-            radial-gradient(ellipse at 80% 100%, rgba(124, 58, 237, 0.05) 0%, transparent 50%);
+          background: #0f172a;
+          padding: 20px;
         }
         .login-box {
-          background: rgba(255, 255, 255, 0.85);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(37, 99, 235, 0.15);
-          padding: 40px;
+          background: #1e293b;
           border-radius: 24px;
+          padding: 40px;
           width: 100%;
           max-width: 420px;
-          box-shadow: 0 8px 32px rgba(37, 99, 235, 0.12);
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
         .login-header {
           text-align: center;
           margin-bottom: 32px;
         }
-        .logo-icon-login {
-          width: 64px;
-          height: 64px;
-          background: linear-gradient(135deg, #2563eb, #6366f1);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 16px;
-          box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2);
-        }
         .login-header h2 {
-          color: #0f172a;
-          font-size: 1.8rem;
-          margin-bottom: 4px;
+          color: #f8fafc;
+          font-size: 1.5rem;
+          margin: 0 0 8px 0;
+          font-weight: 600;
         }
         .login-header p {
-          color: #475569;
-          font-size: 0.9rem;
+          color: #94a3b8;
+          font-size: 0.95rem;
+          margin: 0;
         }
-        .login-form {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
+        .input-group {
+          margin-bottom: 20px;
         }
         .input-group label {
           display: block;
-          color: #475569;
-          font-size: 0.85rem;
+          color: #cbd5e1;
+          font-size: 0.9rem;
           margin-bottom: 8px;
-          font-weight: 600;
+          font-weight: 500;
         }
         .input-with-icon {
           position: relative;
@@ -160,57 +155,38 @@ export default function Login() {
         }
         .input-with-icon input {
           width: 100%;
-          background: #ffffff;
-          border: 1px solid rgba(37, 99, 235, 0.15);
-          padding: 12px 42px 12px 42px;
+          padding: 12px 14px 12px 42px;
+          background: #0f172a;
+          border: 1px solid #334155;
           border-radius: 12px;
-          color: #0f172a;
+          color: #f8fafc;
           font-size: 0.95rem;
-          transition: all 0.25s ease;
-          box-shadow: 0 2px 8px rgba(37, 99, 235, 0.04);
+          transition: all 0.2s;
         }
         .input-with-icon input:focus {
           outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
-        }
-        .input-with-icon input::placeholder {
-          color: #94a3b8;
+          border-color: #ef4444;
+          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
         }
         .login-btn {
-          margin-top: 10px;
-          background: linear-gradient(135deg, #2563eb, #6366f1);
-          color: white;
-          border: none;
+          width: 100%;
           padding: 14px;
+          border: none;
           border-radius: 12px;
+          color: white;
           font-size: 1rem;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.25s ease;
-          box-shadow: 0 2px 10px rgba(37, 99, 235, 0.2);
+          transition: all 0.2s;
+          margin-top: 10px;
         }
         .login-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 20px rgba(37, 99, 235, 0.35);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
         .login-btn:disabled {
           opacity: 0.7;
           cursor: not-allowed;
-        }
-        .auth-link {
-          text-align: center;
-          margin-top: 15px;
-          color: #64748b;
-          font-size: 0.9rem;
-        }
-        .auth-link a {
-          color: #2563eb;
-          text-decoration: none;
-          font-weight: 600;
-        }
-        .auth-link a:hover {
-          text-decoration: underline;
         }
       `}</style>
     </div>

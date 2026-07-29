@@ -1,7 +1,7 @@
 {
   "name": "student-report",
   "private": true,
-  "version": "1.0.30",
+  "version": "1.0.31",
   "description": "Career Xone OMR Desktop Application",
   "author": "Career Xone",
   "type": "module",
@@ -46,6 +46,7 @@
       "server/**/*.py",
       "server/**/*.exe"
     ],
+    "artifactName": "Career-Xone-Pro-Setup-${version}.${ext}",
     "compression": "normal",
     "icon": "public/logo.png",
     "win": {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, animate } from 'framer-motion';
-import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X, FileSpreadsheet, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api } from '../utils/api';
 import { calcAttendancePercent } from '../utils/helpers';
@@ -131,10 +131,31 @@ export default function Students() {
     }
   };
 
-  // Get course name
   const getCourseName = (batchId) => {
     const course = batches.find((b) => b.id === batchId);
     return course ? course.name : 'Unknown';
+  };
+
+  const exportStudents = () => {
+    if (filteredStudents.length === 0) {
+      alert('No students to export');
+      return;
+    }
+    const headers = ['Roll No,Name,Course,Class,Parent Name,Parent Phone,Attendance,Status'];
+    const rows = filteredStudents.map(s => {
+      const att = calcAttendancePercent(s.id, attendance);
+      const courseName = getCourseName(s.batch);
+      const status = s.status || 'Active';
+      return `${s.rollNo || ''},"${s.name}","${courseName}","${s.class || ''}","${s.parentName || ''}","${s.parentPhone || ''}",${att}%,${status}`;
+    });
+    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "students_directory.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -213,6 +234,13 @@ export default function Students() {
           </div>
 
           <div className="flex items-center gap-8">
+            <button 
+              onClick={exportStudents}
+              className="btn btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '38px', padding: '0 12px', border: '1px solid #cbd5e1' }}
+            >
+              <Download size={16} /> Export Excel
+            </button>
             <SlidersHorizontal size={16} className="text-secondary" />
             <select 
               className="form-select"

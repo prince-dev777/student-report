@@ -1618,3 +1618,45 @@ h4 { font-size: 1.1rem; }
   }
 }
 
+/* Sidebar Collapsed State */
+.app-layout.sidebar-collapsed .sidebar {
+  width: var(--sidebar-collapsed);
+}
+
+.app-layout.sidebar-collapsed .sidebar-brand-text {
+  display: none;
+}
+
+.app-layout.sidebar-collapsed .sidebar-section-title {
+  display: none;
+}
+
+.app-layout.sidebar-collapsed .sidebar-link span:not(.sidebar-link-badge) {
+  display: none;
+}
+
+.app-layout.sidebar-collapsed .sidebar-link {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.app-layout.sidebar-collapsed .sidebar-link-icon {
+  margin: 0;
+}
+
+.app-layout.sidebar-collapsed .sidebar-link-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  padding: 2px 4px;
+  min-width: 14px;
+  font-size: 0.55rem;
+}
+
+.app-layout.sidebar-collapsed .main-content {
+  margin-left: var(--sidebar-collapsed);
+}
+
+.app-layout.sidebar-collapsed .topbar {
+  left: var(--sidebar-collapsed);
+}

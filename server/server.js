@@ -27,22 +27,25 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { sendWhatsAppAlert } from './services/whatsappService.js';
 import os from 'os';
-import { 
-  initializeWhatsAppClient, 
-  getWhatsAppClientState, 
-  disconnectWhatsAppClient, 
+import {
+  initializeWhatsAppClient,
+  getWhatsAppClientState,
+  disconnectWhatsAppClient,
   sendWhatsAppMessageWeb,
   resetRetryCount
 } from './services/whatsappClient.js';
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.join(__dirname, '.env.production') });
+if (!process.env.WHATSAPP_PROVIDER) dotenv.config({ path: path.join(__dirname, '.env.backup') });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 const JWT_SECRET = process.env.JWT_SECRET || '8f5b8a6d4e2c9a1f3c7e6b5d4a9f8e2d1c3b5a4f7e6d8c9b0a1f2e3d4c5b6a7f';
 
-cloudinary.config({ 
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-  api_key: process.env.CLOUDINARY_API_KEY, 
-  api_secret: process.env.CLOUDINARY_API_SECRET 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 const app = express();
@@ -169,21 +172,80 @@ mongoose.connect(MONGODB_URI)
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // ---- 🔐 Auth API ----
-app.post('/api/auth/register', async (req, res) => {
+// Registration endpoint removed for security. 
+// Institutes must be created by Super Admin via /api/superadmin/create-institute
+
+// Middleware for Super Admin authentication
+const superAdminProtect = (req, res, next) => {
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    try {
+      token = req.headers.authorization.split(' ')[1];
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded.role !== 'superadmin') {
+        throw new Error('Not authorized as superadmin');
+      }
+      req.superadmin = decoded;
+      next();
+    } catch (err) {
+      res.status(401).json({ error: 'Not authorized, token failed' });
+    }
+  } else {
+    res.status(401).json({ error: 'Not authorized, no token' });
+  }
+};
+
+// ---- 🛡️ Super Admin API ----
+app.post('/api/superadmin/login', (req, res) => {
+  const { username, password } = req.body;
+  const adminUser = process.env.SUPERADMIN_USERNAME;
+  const adminPass = process.env.SUPERADMIN_PASSWORD;
+
+  if (!adminUser || !adminPass) {
+    console.error("CRITICAL: Superadmin credentials are not configured in .env file.");
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
+  if (username === adminUser && password === adminPass) {
+    const token = jwt.sign({ id: 'superadmin', role: 'superadmin' }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ token, username, role: 'superadmin' });
+  } else {
+    res.status(401).json({ error: 'Invalid super admin credentials' });
+  }
+});
+
+app.get('/api/superadmin/institutes', superAdminProtect, async (req, res) => {
+  try {
+    const institutes = await Institute.find().lean();
+    const users = await User.find({ role: 'owner' }).lean();
+
+    // Combine data
+    const result = institutes.map(inst => {
+      const owner = users.find(u => u.instituteId.toString() === inst._id.toString());
+      return {
+        ...inst,
+        adminName: owner ? owner.name : 'N/A',
+        username: owner ? owner.username : 'N/A'
+      };
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/superadmin/create-institute', superAdminProtect, async (req, res) => {
   try {
     const { instituteName, adminName, username, password } = req.body;
 
-    // Check if user exists
     const userExists = await User.findOne({ username });
     if (userExists) {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
-    // Create Institute
     const institute = new Institute({ name: instituteName });
     await institute.save();
 
-    // Create Admin User
     const user = new User({
       instituteId: institute._id,
       name: adminName,
@@ -193,14 +255,43 @@ app.post('/api/auth/register', async (req, res) => {
     });
     await user.save();
 
-    // Generate Token
-    const token = jwt.sign(
-      { id: user._id, username: user.username, instituteId: institute._id, instituteName: institute.name },
-      JWT_SECRET,
-      { expiresIn: '30d' }
-    );
+    res.status(201).json({ message: 'Institute created successfully', institute, user: { username } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+app.delete('/api/superadmin/institutes/:id', superAdminProtect, async (req, res) => {
+  try {
+    const instituteId = req.params.id;
+    await Institute.findByIdAndDelete(instituteId);
+    await User.deleteMany({ instituteId });
+    res.json({ message: 'Institute and owner deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    res.status(201).json({ token, username: user.username, instituteName: institute.name, logo: institute.logo });
+app.put('/api/superadmin/institutes/:id/reset-password', superAdminProtect, async (req, res) => {
+  try {
+    const instituteId = req.params.id;
+    const { newPassword } = req.body;
+    const user = await User.findOne({ instituteId, role: 'owner' });
+    if (!user) return res.status(404).json({ error: 'Owner not found for this institute' });
+    
+    user.password = newPassword;
+    await user.save(); // Will trigger pre-save hook to hash password
+    res.json({ message: 'Password reset successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/superadmin/institutes/:id/notes', superAdminProtect, async (req, res) => {
+  try {
+    const instituteId = req.params.id;
+    const { notes } = req.body;
+    const institute = await Institute.findByIdAndUpdate(instituteId, { notes }, { new: true });
+    res.json({ message: 'Notes updated', institute });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -247,7 +338,19 @@ app.put('/api/settings', protect, async (req, res) => {
 
     // Update Logo if provided
     if (logoBase64 !== undefined) {
-      institute.logo = logoBase64;
+      if (logoBase64) {
+        try {
+          const uploadRes = await cloudinary.uploader.upload(logoBase64, {
+            folder: 'student_report_logos'
+          });
+          institute.logo = uploadRes.secure_url;
+        } catch (uploadError) {
+          console.error("Cloudinary Upload Error:", uploadError);
+          return res.status(500).json({ error: 'Failed to upload logo to Cloudinary' });
+        }
+      } else {
+        institute.logo = '';
+      }
       await institute.save();
     }
 
@@ -343,7 +446,7 @@ app.post('/api/parent/login', async (req, res) => {
     if (student.parentPasswordHash && cleanPassword) {
       try {
         isMatch = await bcrypt.compare(cleanPassword, student.parentPasswordHash);
-      } catch (e) {}
+      } catch (e) { }
     }
     if (!isMatch && student.parentPasswordPlain && cleanPassword === student.parentPasswordPlain) {
       isMatch = true;
@@ -552,7 +655,7 @@ app.post('/iclock/cdata', async (req, res) => {
         successCount++;
       }
     }
-    
+
     console.log(`[ADMS] Successfully processed ${successCount} new attendance logs.`);
     res.send('OK');
   } catch (err) {
@@ -620,7 +723,7 @@ app.post('/api/attendance/biometric', async (req, res) => {
     const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     let record = await Attendance.findOne({ studentId: student.id, date: todayStr, instituteId });
-    
+
     if (record) {
       if (type === 'IN') {
         record.entryTime = punchTime;
@@ -686,7 +789,7 @@ app.get('/api/staff/attendance', async (req, res) => {
 app.post('/api/staff/attendance', async (req, res) => {
   try {
     const { studentId, date, timestamp, status, method } = req.body;
-    
+
     const student = await Student.findOne({ id: studentId, instituteId: req.user.instituteId });
     if (!student) {
       return res.status(404).json({ error: 'Student not found in your institute' });
@@ -833,7 +936,7 @@ app.get('/api/students', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10000;
     const search = req.query.search || '';
-    
+
     const query = { instituteId: req.user.instituteId };
     if (search) {
       query.$or = [
@@ -874,12 +977,12 @@ app.post('/api/students/bulk', authenticateToken, async (req, res) => {
       if (!data.rollNo || !data.name) continue;
 
       const rollNo = String(data.rollNo).trim();
-      
+
       // Determine Parent credentials
       let plainPassword = data.parentPassword || rollNo;
       const salt = await bcrypt.genSalt(10);
       const parentPasswordHash = await bcrypt.hash(plainPassword, salt);
-      
+
       let parentUserId = data.parentUserId || rollNo;
 
       // Check if student exists
@@ -894,7 +997,7 @@ app.post('/api/students/bulk', authenticateToken, async (req, res) => {
         existingStudent.parentPhone = data.parentPhone || existingStudent.parentPhone;
         existingStudent.schoolName = data.schoolName || existingStudent.schoolName;
         existingStudent.address = data.address || existingStudent.address;
-        
+
         // Update credentials only if provided in excel
         if (data.parentUserId) existingStudent.parentUserId = parentUserId;
         if (data.parentPassword) {
@@ -1068,12 +1171,12 @@ app.delete('/api/students/:id', async (req, res) => {
   try {
     const student = await Student.findOneAndDelete({ id: req.params.id, instituteId: req.user.instituteId });
     if (!student) return res.status(404).json({ error: 'Student not found' });
-    
+
     // Cascade delete associated records
     await Attendance.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
     await TestResult.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
     await SMSLog.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
-    
+
     res.json({ message: 'Student and all associated records deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1094,7 +1197,7 @@ async function processBiometricPunch(rollNo, type, time) {
     const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     let record = await Attendance.findOne({ studentId: student.id, date: todayStr, instituteId });
-    
+
     if (record) {
       if (type === 'IN') {
         record.entryTime = punchTime;
@@ -1136,26 +1239,26 @@ async function processBiometricPunch(rollNo, type, time) {
 app.all('/iclock/*', async (req, res) => {
   const targetUrl = `http://13.126.240.100:71${req.originalUrl}`;
   console.log(`[ADMS Relay] Relaying request to Edofox: ${req.method} ${targetUrl}`);
-  
+
   try {
     // 1. If it's a cdata upload (POST) containing attendance logs, parse it!
     if (req.method === 'POST' && req.path.includes('/cdata')) {
       const tableName = req.query.table;
-      
+
       if (tableName === 'ATTLOG' && req.body) {
         const bodyText = typeof req.body === 'string' ? req.body : req.body.toString();
         const lines = bodyText.split('\n');
-        
+
         for (let line of lines) {
           line = line.trim();
           if (!line) continue;
-          
+
           const parts = line.split('\t');
           if (parts.length >= 2) {
             const rollNo = parts[0].trim();
             const datetimeStr = parts[1].trim(); // "YYYY-MM-DD HH:MM:SS"
             const statusVal = parts[2] ? parts[2].trim() : '0';
-            
+
             // Format time
             const timePart = datetimeStr.split(' ')[1] || '';
             let formattedTime = '';
@@ -1170,7 +1273,7 @@ app.all('/iclock/*', async (req, res) => {
                 formattedTime = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
               }
             }
-            
+
             // Process punch
             processBiometricPunch(rollNo, statusVal === '1' ? 'OUT' : 'IN', formattedTime);
           }
@@ -1195,12 +1298,12 @@ app.all('/iclock/*', async (req, res) => {
     const responseBody = await response.text();
 
     res.status(response.status);
-    
+
     // Copy headers safely
     response.headers.forEach((value, key) => {
       res.set(key, value);
     });
-    
+
     res.send(responseBody);
 
   } catch (err) {
@@ -1249,7 +1352,7 @@ app.post('/api/attendance', async (req, res) => {
           type: 'ABSENT',
           detail: date
         }).catch(err => console.error('Failed to send absent WhatsApp alert:', err.message));
-        
+
         record.smsSent = true;
         await record.save();
       }
@@ -1351,7 +1454,27 @@ app.post('/api/tests/:id/regrade', authenticateToken, async (req, res) => {
 
       let correct = 0;
       let wrong = 0;
+
+      let dynamicTotalMarks = test.totalMarks;
+      if (test.subjectMapping && test.subjectMapping.length > 0) {
+        let selectedQuestionsCount = 0;
+        test.subjectMapping.forEach(m => {
+          selectedQuestionsCount += (m.toQ - m.fromQ + 1);
+        });
+        dynamicTotalMarks = selectedQuestionsCount * marksPerQ;
+      }
+
       result.studentAnswers.forEach((ans, idx) => {
+        const qNum = idx + 1;
+
+        // Subject Mapping Filter
+        if (test.subjectMapping && test.subjectMapping.length > 0) {
+          const isSelected = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
+          if (!isSelected) {
+            return; // Skip this unmapped question
+          }
+        }
+
         const ansStr = String(ans).trim().toUpperCase();
         if (idx < flatAnswerKey.length && ansStr && ansStr !== 'NULL' && flatAnswerKey[idx]) {
           const corStr = String(flatAnswerKey[idx]).trim().toUpperCase();
@@ -1375,7 +1498,7 @@ app.post('/api/tests/:id/regrade', authenticateToken, async (req, res) => {
       });
 
       const newMarks = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
-      const newPercentage = Math.round((newMarks / test.totalMarks) * 1000) / 10;
+      const newPercentage = dynamicTotalMarks > 0 ? Math.round((newMarks / dynamicTotalMarks) * 1000) / 10 : 0;
 
       result.marks = newMarks;
       result.percentage = newPercentage;
@@ -1434,14 +1557,24 @@ app.post('/api/test-results/bulk', authenticateToken, async (req, res) => {
         }
       }
 
+      // Dynamic total marks for percentage calculation
+      let dynamicTotalMarks = test.totalMarks;
+      if (test.subjectMapping && test.subjectMapping.length > 0) {
+        let selectedQuestionsCount = 0;
+        test.subjectMapping.forEach(m => {
+          selectedQuestionsCount += (m.toQ - m.fromQ + 1);
+        });
+        dynamicTotalMarks = selectedQuestionsCount * (test.marksPerQuestion || 1);
+      }
+
       // Check if updating existing result
       const filter = { testId: test.id, studentId: r.studentId, instituteId: req.user.instituteId };
       const updateData = {
         ...r,
         id: r.id || generateServerId('RES'),
         testId: test.id,
-        totalMarks: r.totalMarks ?? test.totalMarks,
-        percentage: r.percentage ?? Math.round((Number(r.marks) / test.totalMarks) * 1000) / 10,
+        totalMarks: r.totalMarks ?? dynamicTotalMarks,
+        percentage: r.percentage ?? (dynamicTotalMarks > 0 ? Math.round((Number(r.marks) / dynamicTotalMarks) * 1000) / 10 : 0),
         instituteId: req.user.instituteId,
         omrSheetImage: r.omrSheetImage,
         omrSheetPublicId: r.omrSheetPublicId
@@ -1461,7 +1594,7 @@ app.post('/api/test-results/bulk', authenticateToken, async (req, res) => {
             type: 'TEST_RESULT'
           });
           await notification.save();
-          
+
           if (student.parentPhone) {
             sendWhatsAppAlert({
               instituteId: req.user.instituteId,
@@ -1505,7 +1638,7 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
 
     // Use template ID and questions count from request (if changing on the fly) or from test document
     let templateId = req.body.templateId || test.templateId;
-    
+
     // Most users print the MCQ+Num layout but select MCQ Only in the UI for 75q tests.
     // Force the numerical layout scanning algorithm to prevent coordinate mismatch (phantom bubbles).
     if (templateId === 'jee_75' || templateId === 'jee_75_mcq') {
@@ -1517,9 +1650,6 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
     let answer_keys = {};
     if (Array.isArray(test.answerKey)) {
       let finalKey = test.answerKey;
-      if (questionsToDetect > 0 && finalKey.length > questionsToDetect) {
-        finalKey = finalKey.slice(0, questionsToDetect);
-      }
       answer_keys = { "General": finalKey };
     } else if (test.answerKey) {
       answer_keys = {};
@@ -1598,7 +1728,7 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
 
     let pythonProcess;
     const exePath = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_v2.exe');
-    
+
     if (fs.existsSync(exePath)) {
       // Spawn compiled executable directly
       pythonProcess = spawn(exePath, [tempArgsPath]);
@@ -1650,6 +1780,39 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
           // If error returned from engine, delete all uploaded images
           imagePaths.forEach(safeUnlink);
           return res.status(400).json({ error: results.error });
+        }
+
+        // Apply Subject Mapping Filter to Ignore Unselected Sections
+        if (test.subjectMapping && test.subjectMapping.length > 0) {
+          results.forEach(result => {
+            if (result.error || !result.subjects) return;
+            let newTotalMarks = 0;
+            let newCorrect = 0;
+            let newWrong = 0;
+            let newBlank = 0;
+
+            const generalSubjects = result.subjects["General"] || [];
+            generalSubjects.forEach(q => {
+              const qNum = parseInt(q.questionNo);
+              const isSelected = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
+
+              if (isSelected) {
+                newTotalMarks += (q.marks || 0);
+                if (q.isCorrect) newCorrect++;
+                else if (q.status === 'wrong') newWrong++;
+                else if (q.status === 'blank') newBlank++;
+              } else {
+                q.status = 'ignored';
+                q.marks = 0;
+              }
+            });
+
+            if (newTotalMarks < 0) newTotalMarks = 0;
+            result.totalMarks = newTotalMarks;
+            result.correctCount = newCorrect;
+            result.wrongCount = newWrong;
+            result.blank = newBlank;
+          });
         }
 
         const parsedData = [];
@@ -1836,7 +1999,7 @@ cron.schedule('0 0 * * *', async () => {
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     // Find records older than 30 days that have a Cloudinary public ID
     const recordsToDelete = await TestResult.find({
       createdAt: { $lt: thirtyDaysAgo },
@@ -1858,7 +2021,7 @@ cron.schedule('0 0 * * *', async () => {
         }
         console.log('Daily cron job for OMR auto-deletion completed.');
       } else {
-         console.warn('Cloudinary keys missing. Skipping cron delete.');
+        console.warn('Cloudinary keys missing. Skipping cron delete.');
       }
     }
   } catch (err) {
@@ -1889,7 +2052,7 @@ app.get('/api/whatsapp/local-status', (req, res) => {
 app.get('/api/system/local-ip', (req, res) => {
   const nets = os.networkInterfaces();
   let localIp = '127.0.0.1';
-  
+
   for (const name of Object.keys(nets)) {
     for (const net of nets[name]) {
       // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
@@ -1901,7 +2064,7 @@ app.get('/api/system/local-ip', (req, res) => {
     }
     if (localIp !== '127.0.0.1') break;
   }
-  
+
   res.json({ ip: localIp, port: 5000 });
 });
 
@@ -1916,16 +2079,9 @@ async function pollPendingWhatsAppMessages() {
 
   isPolling = true;
   try {
-    const cloudUrl = 'https://student-report-ezgw.onrender.com';
-    const token = process.env.WHATSAPP_TOKEN;
-    if (!token) {
-      isPolling = false;
-      return;
-    }
-    const response = await fetch(`${cloudUrl}/api/whatsapp/pending?token=${token}`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const pendingLogs = await response.json();
+    const pendingLogs = await SMSLog.find({ status: 'pending' }).sort({ createdAt: 1 });
     if (pendingLogs && pendingLogs.length > 0) {
+      console.log(`[WhatsApp Poller] Found ${pendingLogs.length} pending messages.`);
       for (const log of pendingLogs) {
         try {
           const phones = log.parentPhone.split(',').map(p => p.trim()).filter(Boolean);
@@ -1933,23 +2089,17 @@ async function pollPendingWhatsAppMessages() {
             await sendWhatsAppMessageWeb(phone, log.message, log.attachment);
             await new Promise(resolve => setTimeout(resolve, 500));
           }
-          await fetch(`${cloudUrl}/api/whatsapp/status?token=${token}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ logId: log.id, status: 'delivered' })
-          });
+          await SMSLog.findOneAndUpdate({ _id: log._id }, { status: 'delivered' });
+          console.log(`[WhatsApp Poller] Message sent to ${log.parentPhone} and status updated to delivered.`);
         } catch (sendErr) {
-          await fetch(`${cloudUrl}/api/whatsapp/status?token=${token}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ logId: log.id, status: 'failed' })
-          });
+          console.error(`[WhatsApp Poller] Failed to send message to ${log.parentPhone}:`, sendErr.message);
+          await SMSLog.findOneAndUpdate({ _id: log._id }, { status: 'failed' });
         }
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
   } catch (err) {
-    // Silent fail
+    console.error('[WhatsApp Poller] Polling error:', err.message);
   } finally {
     isPolling = false;
   }
@@ -1965,12 +2115,12 @@ if (isElectronChildServerLocal && process.env.WHATSAPP_PROVIDER === 'whatsapp-we
 // ============================================
 // System Update API Routes
 // ============================================
-let updateState = { 
+let updateState = {
   status: 'idle', // 'idle' | 'available' | 'downloading' | 'downloaded'
-  version: '', 
+  version: '',
   releaseDate: '',
   currentVersion: '',
-  progress: 0 
+  progress: 0
 };
 
 process.on('message', (msg) => {
@@ -1982,11 +2132,11 @@ process.on('message', (msg) => {
     updateState.currentVersion = msg.version;
   }
   else if (msg && msg.type === 'UPDATE_AVAILABLE') {
-    updateState = { 
-      ...updateState, 
-      status: 'available', 
-      version: msg.version, 
-      releaseDate: msg.releaseDate || '' 
+    updateState = {
+      ...updateState,
+      status: 'available',
+      version: msg.version,
+      releaseDate: msg.releaseDate || ''
     };
     console.log('[Server] Update available:', msg.version);
   }
@@ -2007,14 +2157,14 @@ app.get('/api/system/update-status', (req, res) => {
 
 app.post('/api/system/start-download', (req, res) => {
   if (process.send) {
-    try { process.send({ type: 'START_DOWNLOAD' }); } catch(e) {}
+    try { process.send({ type: 'START_DOWNLOAD' }); } catch (e) { }
   }
   res.json({ success: true, message: 'Download started' });
 });
 
 app.post('/api/system/restart-and-update', (req, res) => {
   if (process.send) {
-    try { process.send({ type: 'QUIT_AND_INSTALL' }); } catch(e) {}
+    try { process.send({ type: 'QUIT_AND_INSTALL' }); } catch (e) { }
   }
   res.json({ success: true, message: 'Restarting application...' });
 });
@@ -2024,7 +2174,7 @@ app.get('*', (req, res) => {
   if (fs.existsSync(indexPath)) {
     return res.sendFile(indexPath);
   }
-  
+
   res.send(`<!DOCTYPE html>
 <html>
 <head>

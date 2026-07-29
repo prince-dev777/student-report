@@ -12,18 +12,23 @@ import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import SMSCenter from './pages/SMSCenter';
 import ShareApp from './pages/ShareApp';
+import SuperAdminLogin from './pages/SuperAdminLogin';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Tests from './pages/Tests';
 
 import StaffAttendanceWeb from './pages/StaffAttendanceWeb';
 import SaaSShowcaseLandingPage from './pages/SaaSShowcaseLandingPage';
 import ParentPortalWeb from './pages/ParentPortalWeb';
 
+import { useApp } from './context/AppContext';
+
 function AppLayout() {
+  const { sidebarCollapsed } = useApp();
+  
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <MouseTrail />
       <Sidebar />
       <div className="main-content">
@@ -52,6 +57,8 @@ export default function App() {
         <Routes>
           <Route path="/staff" element={<StaffAttendanceWeb />} />
           <Route path="/parent" element={<ParentPortalWeb />} />
+          <Route path="/superadmin" element={<SuperAdminLogin />} />
+          <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/*" element={<SaaSShowcaseLandingPage />} />
         </Routes>
         <Toaster position="top-right" />
@@ -63,8 +70,9 @@ export default function App() {
     <HashRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/superadmin" element={<SuperAdminLogin />} />
+          <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
           <Route path="/*" element={
             <ProtectedRoute>
               <AppProvider>
