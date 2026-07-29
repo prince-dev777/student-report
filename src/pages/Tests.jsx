@@ -802,7 +802,13 @@ export default function Tests() {
           let correct = 0;
           let wrong = 0;
           studentAnswers.forEach((ans, idx) => {
-            const ansStr = String(ans).trim().toUpperCase();
+            let extractedAns = '';
+            if (typeof ans === 'object' && ans !== null) {
+              extractedAns = ans.selectedOption || '';
+            } else {
+              extractedAns = ans;
+            }
+            const ansStr = String(extractedAns).trim().toUpperCase();
             if (
               idx < tokens.length && 
               ansStr && 
@@ -999,7 +1005,13 @@ export default function Tests() {
         let correct = 0;
         let wrong = 0;
         studentAnswers.forEach((ans, idx) => {
-          const ansStr = String(ans).trim().toUpperCase();
+          let extractedAns = '';
+          if (typeof ans === 'object' && ans !== null) {
+            extractedAns = ans.selectedOption || '';
+          } else {
+            extractedAns = ans;
+          }
+          const ansStr = String(extractedAns).trim().toUpperCase();
           if (idx < tokens.length && ansStr && ansStr !== 'NULL' && tokens[idx]) {
             const corStr = String(tokens[idx]).trim().toUpperCase();
             let matched = false;
@@ -1098,7 +1110,14 @@ export default function Tests() {
         const studentAns = studentAnswers ? studentAnswers[i] : null;
         const correctAns = answerKey[i];
         
-        const sAnsStr = studentAns ? String(studentAns).trim().toUpperCase() : 'NULL';
+        let extractedAns = '';
+        if (typeof studentAns === 'object' && studentAns !== null) {
+          extractedAns = studentAns.selectedOption || '';
+        } else {
+          extractedAns = studentAns;
+        }
+        
+        const sAnsStr = extractedAns ? String(extractedAns).trim().toUpperCase() : 'NULL';
         const cAnsStr = correctAns ? String(correctAns).trim().toUpperCase() : 'NULL';
         
         if (!sAnsStr || sAnsStr === 'NULL' || sAnsStr === 'UNDEFINED' || sAnsStr === '') {
