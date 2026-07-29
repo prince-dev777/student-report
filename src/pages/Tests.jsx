@@ -1424,7 +1424,11 @@ export default function Tests() {
                       <button 
                         type="button" 
                         className="btn btn-sm btn-secondary"
-                        onClick={() => setSubjectMapping(prev => [...prev, { subject: 'Physics', fromQ: prev.length ? prev[prev.length-1].toQ + 1 : 1, toQ: '' }])}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSubjectMapping(prev => [...prev, { subject: 'Physics', fromQ: prev.length ? prev[prev.length-1].toQ + 1 : 1, toQ: '' }]);
+                        }}
                       >
                         <Plus size={14} style={{ marginRight: '4px' }} /> Add Row
                       </button>
@@ -1516,7 +1520,7 @@ export default function Tests() {
 
                 <div className="form-row">
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="form-label text-primary" style={{ fontWeight: '600' }}>Questions to Detect (Auto-calculated)</label>
+                    <label className="form-label text-primary" style={{ fontWeight: '600' }}>OMR Sheet Layout (Bubbles)</label>
                     <input
                       type="number"
                       className="form-input"
@@ -1977,7 +1981,7 @@ export default function Tests() {
       {/* Results details / leaderboard Modal */}
       {showResultsModal && selectedTestResults && createPortal(
         <div className="modal-overlay" onClick={() => setShowResultsModal(false)}>
-          <div className="modal-content modal-lg" style={{ maxHeight: '75vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+          <div className="modal-content modal-lg" style={{ width: '95vw', maxWidth: '1200px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header" style={{ flexShrink: 0, padding: '16px 24px' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>
@@ -1992,7 +1996,7 @@ export default function Tests() {
               </button>
             </div>
             <div className="modal-body" style={{ flex: '1 1 auto', overflowY: 'auto', minHeight: 0, padding: '16px 24px' }}>
-              <div className="table-container" style={{ maxHeight: 'calc(75vh - 140px)', overflowY: 'auto' }}>
+              <div className="table-container" style={{ maxHeight: 'calc(90vh - 140px)', overflowY: 'auto' }}>
                 <table className="data-table">
                   <thead>
                     <tr>

@@ -1833,10 +1833,10 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
           if (r.subjects) {
             const subjectNames = Object.keys(r.subjects).sort();
             for (const subj of subjectNames) {
-              studentAnswers = studentAnswers.concat(r.subjects[subj]);
+              studentAnswers = studentAnswers.concat(r.subjects[subj].map(q => q.selectedOptions ? q.selectedOptions.join('') : (q.studentAns || '')));
             }
           } else {
-            studentAnswers = r.studentAnswers || [];
+            studentAnswers = (r.studentAnswers || []).map(q => typeof q === 'object' ? (q.selectedOptions ? q.selectedOptions.join('') : (q.studentAns || '')) : String(q));
           }
 
           parsedData.push({

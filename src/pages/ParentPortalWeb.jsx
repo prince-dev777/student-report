@@ -526,7 +526,7 @@ export default function ParentPortalWeb() {
                       <div>
                         <strong style={{ display: 'block', fontSize: '0.86rem', color: '#0f172a' }}>{item.date}</strong>
                         <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                          Punch: {item.entryTime || (isPresent ? '09:00 AM' : '-')}
+                          Punch In: {item.entryTime || (isPresent ? '09:00 AM' : '-')} | Punch Out: {item.exitTime || '-'}
                         </span>
                       </div>
                     </div>
@@ -597,7 +597,7 @@ export default function ParentPortalWeb() {
 
                   {t.omrSheetImage && (
                     <button
-                      onClick={() => setSelectedOmrImage(t.omrSheetImage)}
+                      onClick={() => setSelectedOmrImage(t.omrSheetImage.startsWith('data:') ? t.omrSheetImage : (window.location.protocol === 'file:' ? `http://localhost:5000${t.omrSheetImage}` : `${window.location.protocol}//${window.location.hostname}:5000${t.omrSheetImage}`))}
                       style={{
                         marginTop: '10px', width: '100%', background: '#f0f9ff',
                         border: '1px solid #bae6fd', color: '#0284c7', padding: '7px',
