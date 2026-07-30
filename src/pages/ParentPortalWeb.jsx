@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Lock, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { getMediaUrl } from '../utils/api';
 
 export default function ParentPortalWeb() {
   const [userId, setUserId] = useState('');
@@ -620,7 +621,7 @@ export default function ParentPortalWeb() {
 
                   {t.omrSheetImage && (
                     <button
-                      onClick={() => setSelectedOmrImage(t.omrSheetImage.startsWith('data:') ? t.omrSheetImage : (window.location.protocol === 'file:' ? `http://localhost:5000${t.omrSheetImage}` : `${window.location.protocol}//${window.location.hostname}:5000${t.omrSheetImage}`))}
+                      onClick={() => setSelectedOmrImage(getMediaUrl(t.omrSheetImage))}
                       style={{
                         marginTop: '10px', width: '100%', background: '#f0f9ff',
                         border: '1px solid #bae6fd', color: '#0284c7', padding: '7px',

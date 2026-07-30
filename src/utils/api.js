@@ -7,11 +7,7 @@
 const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 const isDev = window.location.port === '5173';
 // Use Cloud API server as the primary source of truth for the database
-let API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://student-report-ezgw.onrender.com/api';
-
-if (isElectron) {
-  API_BASE = 'http://localhost:5000/api';
-}
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Helper to check if backend is online
 export async function checkBackendStatus() {
@@ -108,6 +104,7 @@ export const api = {
 
   // Test Results
   getTestResults: () => apiRequest('/test-results'),
+  downloadOMRImages: (data) => apiRequest('/test-results/download-omr-images', { method: 'POST', body: JSON.stringify(data) }),
   uploadOMRImages: async (formData) => {
     // Check if running inside Electron Desktop App
     const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
@@ -135,6 +132,7 @@ export const api = {
     }
   },
   saveTestResultsBulk: (results) => apiRequest('/test-results/bulk', { method: 'POST', body: JSON.stringify(results) }),
+  publishTestResults: (testId, sendSMS) => apiRequest(`/test-results/${testId}/publish`, { method: 'PUT', body: JSON.stringify({ sendSMS }) }),
 
   // SMS Logs
   getSMSLogs: () => apiRequest('/sms-logs'),

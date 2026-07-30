@@ -132,7 +132,9 @@ export default function Tests() {
   const [scannedAnswersData, setScannedAnswersData] = useState({}); // studentId: [selectedOption1, selectedOption2, ...]
   const [omrUploading, setOmrUploading] = useState(false);
   const [omrTemplate, setOmrTemplate] = useState('T1');
-  const [detectQuestions, setDetectQuestions] = useState(180);
+  const [lastOmrScanDir, setLastOmrScanDir] = useState('');
+  const [lastScannedImages, setLastScannedImages] = useState([]);
+  const [isDownloadingOmrs, setIsDownloadingOmrs] = useState(false);
   const [submittingAction, setSubmittingAction] = useState(null);
   const [omrImagesData, setOmrImagesData] = useState({}); // studentId: image dataURI
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
@@ -141,20 +143,6 @@ export default function Tests() {
   const [manualAnswersGrid, setManualAnswersGrid] = useState([]);
   const [searchStudentQuery, setSearchStudentQuery] = useState('');
   const [singleOmrUploadingId, setSingleOmrUploadingId] = useState(null);
-
-  // Auto-update manual answer grid when detect questions change
-  React.useEffect(() => {
-    if (detectQuestions > 0) {
-      setManualAnswersGrid(prev => {
-        if (prev.length === detectQuestions) return prev;
-        const newGrid = new Array(detectQuestions).fill('');
-        for (let i = 0; i < Math.min(prev.length, detectQuestions); i++) {
-          newGrid[i] = prev[i];
-        }
-        return newGrid;
-      });
-    }
-  }, [detectQuestions]);
 
   // Memoize selected test for marks entry
   const selectedEntryTest = React.useMemo(() => {
@@ -173,13 +161,13 @@ export default function Tests() {
         }
       });
     } else {
-      const totalQ = detectQuestions || selectedEntryTest?.questionsToDetect || 100;
+      const totalQ = selectedEntryTest?.questionsToDetect || 100;
       for (let i = 1; i <= totalQ; i++) {
         qNums.push(i);
       }
     }
     return qNums;
-  }, [selectedEntryTest, detectQuestions]);
+  }, [selectedEntryTest]);
 
   // Handle test creation
   const handleCreateTest = async (e) => {
@@ -249,11 +237,6 @@ export default function Tests() {
     } else {
       setOmrTemplate('T1');
     }
-    if (test.questionsToDetect) {
-      setDetectQuestions(test.questionsToDetect);
-    } else {
-      setDetectQuestions(180);
-    }
 
     // Get all active students in the selected test's course & class
     const batchStudents = students.filter(s => s.batch === test.batch && (!test.targetClass || s.class === test.targetClass) && s.status === 'active');
@@ -296,8 +279,8 @@ export default function Tests() {
   // Submit test results
   const handleMarksSubmit = async (e, forceAction) => {
     if (e) e.preventDefault();
-    const action = forceAction || (e?.nativeEvent?.submitter?.value) || 'Publish';
-    const submitStatus = action === 'Save' ? 'Saved' : 'Published';
+    const action = forceAction || (e?.nativeEvent?.submitter?.value) || 'Save';
+    const submitStatus = 'Draft';
     if (!entryTestId) return toast.error('Select a test first');
 
     const test = selectedEntryTest;
@@ -315,8 +298,8 @@ export default function Tests() {
       if (mark === '' || mark === undefined) {
         continue;
       }
-      if (mark < 0 || mark > test.totalMarks) {
-        return toast.error(`Marks for ${student.name} must be between 0 and ${test.totalMarks}`);
+      if (mark > test.totalMarks) {
+        return toast.error(`Marks for ${student.name} cannot exceed maximum marks (${test.totalMarks})`);
       }
       resultsPayload.push({
         studentId: student.id,
@@ -354,17 +337,27 @@ export default function Tests() {
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
     if (imageFiles.length === 0) return toast.error('Please select valid image files (.jpg, .png)');
 
+    if (imageFiles[0] && imageFiles[0].path) {
+      setLastOmrScanDir(imageFiles[0].path.replace(/[^\\/]+$/, ''));
+    }
+
     setOmrUploading(true);
     const formData = new FormData();
     formData.append('testId', entryTestId);
     formData.append('templateId', omrTemplate);
-    formData.append('questionsToDetect', detectQuestions);
+    
+    let maxMappedQ = test.questionsToDetect || 180;
+    if (test.subjectMapping && test.subjectMapping.length > 0) {
+        maxMappedQ = Math.max(...test.subjectMapping.map(m => Number(m.toQ) || 0));
+    }
+    formData.append('questionsToDetect', maxMappedQ);
     
     // Pass test configurations for grading
     const testData = {
       marksPerQuestion: test.marksPerQuestion || 1,
       negativeMarking: test.negativeMarking || 0,
-      answer_keys: test.answerKey || {}
+      answer_keys: test.answerKey || {},
+      mapped_questions: questionNumbers || []
     };
     formData.append('testData', JSON.stringify(testData));
     
@@ -382,6 +375,15 @@ export default function Tests() {
       let matchedCount = 0;
       const currentErrors = res.errors || [];
       const seenRolls = new Set();
+
+      const allScannedImages = [];
+      res.results.forEach(r => {
+        if (r.omrSheetImage) allScannedImages.push({ url: r.omrSheetImage, rollNo: String(r.rollNo) });
+      });
+      currentErrors.forEach((e, i) => {
+        if (e.omrSheetImage) allScannedImages.push({ url: e.omrSheetImage, rollNo: 'Wrong_OMR_' + (i + 1) });
+      });
+      setLastScannedImages(allScannedImages);
 
       res.results.forEach(r => {
         let isDuplicate = false;
@@ -437,9 +439,8 @@ export default function Tests() {
           }
         }
 
-        if (detectQuestions > 0 && rawAnswers.length > detectQuestions) {
-          rawAnswers = rawAnswers.slice(0, detectQuestions);
-        }
+        // Do not slice rawAnswers by detectQuestions here, because answerKey acts as a natural bound
+        // and slicing breaks non-contiguous mappings (e.g. Q1-25 and Q51-75).
 
         const answerKey = test.answerKey || [];
         const marksPerQ = test.marksPerQuestion || 1;
@@ -453,19 +454,27 @@ export default function Tests() {
            const status = isObj ? ans.status : (ans ? 'valid' : 'blank');
            const selected = isObj ? ans.selectedOption : ans;
            
-           if (status === 'invalid') {
-              wrong++;
-           } else if (status === 'valid' && selected && selected !== 'NULL') {
-              if (idx < answerKey.length) {
-                 const corStr = String(answerKey[idx]).trim().toUpperCase();
-                 const selStr = String(selected).trim().toUpperCase();
-                 
-                 let matched = false;
-                 if (selStr === corStr) matched = true;
-                 else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) matched = true;
-                 
-                 if (matched) correct++;
-                 else wrong++;
+           let isMapped = true;
+           if (test.subjectMapping && test.subjectMapping.length > 0) {
+              const qNum = idx + 1;
+              isMapped = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
+           }
+           
+           if (isMapped) {
+              if (status === 'invalid') {
+                 wrong++;
+              } else if (status === 'valid' && selected && selected !== 'NULL') {
+                 if (idx < answerKey.length) {
+                    const corStr = String(answerKey[idx]).trim().toUpperCase();
+                    const selStr = String(selected).trim().toUpperCase();
+                    
+                    let matched = false;
+                    if (selStr === corStr) matched = true;
+                    else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) matched = true;
+                    
+                    if (matched) correct++;
+                    else wrong++;
+                 }
               }
            }
            return selected;
@@ -515,12 +524,18 @@ export default function Tests() {
     const formData = new FormData();
     formData.append('testId', entryTestId);
     formData.append('templateId', omrTemplate);
-    formData.append('questionsToDetect', detectQuestions);
+    
+    let maxMappedQ = test.questionsToDetect || 180;
+    if (test.subjectMapping && test.subjectMapping.length > 0) {
+        maxMappedQ = Math.max(...test.subjectMapping.map(m => Number(m.toQ) || 0));
+    }
+    formData.append('questionsToDetect', maxMappedQ);
     
     const testData = {
       marksPerQuestion: test.marksPerQuestion || 1,
       negativeMarking: test.negativeMarking || 0,
-      answer_keys: test.answerKey || {}
+      answer_keys: test.answerKey || {},
+      mapped_questions: questionNumbers || []
     };
     formData.append('testData', JSON.stringify(testData));
     formData.append('images', file);
@@ -568,19 +583,27 @@ export default function Tests() {
          const status = isObj ? ans.status : (ans ? 'valid' : 'blank');
          const selected = isObj ? ans.selectedOption : ans;
          
-         if (status === 'invalid') {
-            wrong++;
-         } else if (status === 'valid' && selected && selected !== 'NULL') {
-            if (idx < answerKey.length && answerKey[idx]) {
-               const corStr = String(answerKey[idx]).trim().toUpperCase();
-               const selStr = String(selected).trim().toUpperCase();
-               
-               let matched = false;
-               if (selStr === corStr) matched = true;
-               else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) matched = true;
-               
-               if (matched) correct++;
-               else wrong++;
+         let isMapped = true;
+         if (test.subjectMapping && test.subjectMapping.length > 0) {
+            const qNum = idx + 1;
+            isMapped = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
+         }
+         
+         if (isMapped) {
+            if (status === 'invalid') {
+               wrong++;
+            } else if (status === 'valid' && selected && selected !== 'NULL') {
+               if (idx < answerKey.length && answerKey[idx]) {
+                  const corStr = String(answerKey[idx]).trim().toUpperCase();
+                  const selStr = String(selected).trim().toUpperCase();
+                  
+                  let matched = false;
+                  if (selStr === corStr) matched = true;
+                  else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) matched = true;
+                  
+                  if (matched) correct++;
+                  else wrong++;
+               }
             }
          }
          return selected;
@@ -602,6 +625,36 @@ export default function Tests() {
     } finally {
       setSingleOmrUploadingId(null);
       e.target.value = null; // reset input
+    }
+  };
+
+  const handleDownloadOMRs = async () => {
+    if (lastScannedImages.length === 0) {
+      return toast.error('No scanned OMR images available to download.');
+    }
+
+    setIsDownloadingOmrs(true);
+    try {
+      let targetDir = lastOmrScanDir;
+      if (window.electronAPI) {
+        const result = await window.electronAPI.selectDirectory();
+        if (result.canceled) {
+          setIsDownloadingOmrs(false);
+          return;
+        }
+        targetDir = result.filePaths[0];
+      }
+
+      const res = await api.downloadOMRImages({
+        targetDir: targetDir,
+        images: lastScannedImages
+      });
+      toast.success(`Successfully saved ${res.copiedCount} OMR images to ${res.outputDir}`);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to download OMR images');
+    } finally {
+      setIsDownloadingOmrs(false);
     }
   };
 
@@ -1154,6 +1207,19 @@ export default function Tests() {
     
     return stats;
   };
+  const handlePublishTest = async (sendSMS) => {
+    if (!selectedTestResults || !selectedTestResults.test) return;
+    const toastId = toast.loading(sendSMS ? 'Publishing and Sending SMS...' : 'Publishing Results...');
+    try {
+      const res = await api.publishTestResults(selectedTestResults.test.id, sendSMS);
+      toast.success(res.message || 'Results published successfully', { id: toastId });
+      setShowResultsModal(false);
+      // Wait for 1s then reload to see changes
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      toast.error(err.message || 'Failed to publish results', { id: toastId });
+    }
+  };
 
   const handleDownloadExcel = () => {
     if (!selectedTestResults || !selectedTestResults.results) return;
@@ -1197,7 +1263,7 @@ export default function Tests() {
 
     // Make header bold
     const range = XLSX.utils.decode_range(worksheet['!ref']);
-    for (let C = range.s.c; C <= range.e.c; ++C) {
+    for (C = range.s.c; C <= range.e.c; ++C) {
       const address = XLSX.utils.encode_col(C) + '1';
       if (!worksheet[address]) continue;
       worksheet[address].s = { font: { bold: true } };
@@ -1692,13 +1758,6 @@ export default function Tests() {
                           onChange={e => {
                             const tempId = e.target.value;
                             setOmrTemplate(tempId);
-                            let defaultDetect = 75;
-                            if (tempId === 'T1' || tempId === 'T2') defaultDetect = 75;
-                            else if (tempId === 'T3') defaultDetect = 180;
-                            else if (tempId === 'T4') defaultDetect = 90;
-                            else if (tempId === 'T5' || tempId === 'T6') defaultDetect = 200;
-                            else if (tempId === 'T7') defaultDetect = 50;
-                            setDetectQuestions(defaultDetect);
                           }}
                           style={{ width: '180px', padding: '4px 8px', fontSize: '0.85rem' }}
                         >
@@ -1712,36 +1771,6 @@ export default function Tests() {
                         </select>
                       </div>
 
-                      <div className="flex items-center gap-4">
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Detect:</span>
-                        {omrTemplate === 'T7' ? (
-                          <select
-                            className="form-select form-select-sm"
-                            value={detectQuestions}
-                            onChange={e => setDetectQuestions(Number(e.target.value))}
-                            style={{ width: '150px', padding: '4px 8px', fontSize: '0.85rem' }}
-                          >
-                            <option value={25}>25</option>
-                            <option value={45}>45</option>
-                            <option value={50}>50</option>
-                          </select>
-                        ) : (
-                          <input
-                            type="number"
-                            className="form-input form-input-sm"
-                            value={detectQuestions}
-                            onChange={e => setDetectQuestions(Number(e.target.value))}
-                            min="1"
-                            max={
-                              omrTemplate === 'T5' || omrTemplate === 'T6' ? 200 :
-                              omrTemplate === 'T3' ? 180 :
-                              omrTemplate === 'T4' ? 90 :
-                              (omrTemplate === 'T1' || omrTemplate === 'T2') ? 75 : 50
-                            }
-                            style={{ width: '80px', padding: '4px 8px', fontSize: '0.85rem', display: 'inline-block' }}
-                          />
-                        )}
-                      </div>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
                         <button 
                           type="button" 
@@ -1772,7 +1801,10 @@ export default function Tests() {
                           <Eye size={14} /> Show Answer Key
                         </button>
                       )}
-                      <label className={`btn btn-secondary btn-sm ${omrUploading ? 'opacity-50 pointer-events-none' : ''}`} style={{ cursor: 'pointer', display: 'inline-flex', gap: '6px' }} title="Upload folder of OMR images">
+                      <label 
+                        className={`btn btn-secondary btn-sm ${omrUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                        style={{ display: 'inline-flex', gap: '6px', cursor: 'pointer', margin: 0 }}
+                      >
                         {omrUploading ? (
                           <div className="btn-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', marginRight: '4px' }}></div>
                         ) : (
@@ -1787,29 +1819,32 @@ export default function Tests() {
                           style={{ display: 'none' }} 
                         />
                       </label>
-                      <button 
-                        type="button" 
-                        name="action" 
-                        value="Save" 
-                        className="btn btn-outline-primary" 
-                        disabled={omrUploading || submittingAction}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                        onClick={(e) => handleMarksSubmit(e, 'Save')}
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', gap: '6px', marginLeft: '6px' }}
+                        onClick={handleDownloadOMRs}
+                        disabled={lastScannedImages.length === 0 || isDownloadingOmrs || omrUploading}
+                        title="Save scanned OMRs with green bubbles to the original folder"
                       >
-                        {submittingAction === 'Save' ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                        {submittingAction === 'Save' ? 'Saving...' : 'Save Marks'}
+                        {isDownloadingOmrs ? (
+                          <div className="btn-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', marginRight: '4px' }}></div>
+                        ) : (
+                          <Download size={14} />
+                        )}
+                        {isDownloadingOmrs ? 'Saving...' : 'Download OMRs'}
                       </button>
                       <button 
                         type="button" 
                         name="action" 
-                        value="Publish" 
-                        className="btn btn-success" 
+                        value="Draft" 
+                        className="btn btn-outline-primary" 
                         disabled={omrUploading || submittingAction}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                        onClick={(e) => handleMarksSubmit(e, 'Publish')}
+                        onClick={(e) => handleMarksSubmit(e, 'Draft')}
                       >
-                        {submittingAction === 'Publish' ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
-                        {submittingAction === 'Publish' ? 'Publishing...' : 'Publish & Send SMS'}
+                        {submittingAction === 'Draft' ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                        {submittingAction === 'Draft' ? 'Saving...' : 'Save Draft'}
                       </button>
                     </div>
                   </div>
@@ -2079,10 +2114,20 @@ export default function Tests() {
               </div>
             </div>
             <div className="modal-footer" style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px' }}>
-              <button className="btn btn-outline-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={handleDownloadExcel}>
-                <Download size={16} />
-                Download Excel
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button className="btn btn-outline-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={handleDownloadExcel}>
+                  <Download size={16} />
+                  Download Excel
+                </button>
+                <button className="btn btn-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePublishTest(false)}>
+                  <Award size={16} />
+                  Publish Marks
+                </button>
+                <button className="btn btn-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePublishTest(true)}>
+                  <UserCheck size={16} />
+                  Publish & Send SMS
+                </button>
+              </div>
               <button className="btn btn-primary" onClick={() => setShowResultsModal(false)}>
                 Close
               </button>

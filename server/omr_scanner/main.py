@@ -22,7 +22,7 @@ from omr_scanner.analysis.scoring import calculate_score
 from omr_scanner.output.json_exporter import export_to_json
 from omr_scanner.debug.visualizer import Visualizer
 
-def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", debug: bool = False):
+def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", mapped_questions: list = None, debug: bool = False):
     name = template_name.upper()
     if name == "T90":
         config = T90_TEMPLATE
@@ -101,7 +101,7 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", deb
     
     # 11. DEBUG VISUALIZATION
     if visualizer:
-        visualizer.draw_results(warped, results, config)
+        visualizer.draw_results(warped, results, config, mapped_questions=mapped_questions)
         
     return final_json
 

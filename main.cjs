@@ -47,7 +47,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false
+      webSecurity: false,
+      preload: path.join(__dirname, 'preload.cjs')
     },
     autoHideMenuBar: true,
     title: "Career Xone Pro",
@@ -204,6 +205,13 @@ async function startServer() {
 }
 
 app.whenReady().then(async () => {
+  ipcMain.handle('dialog:showOpenDialog', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory']
+    });
+    return result;
+  });
+
   await startServer();
   // Wait a moment for server to start before creating window
   setTimeout(() => {

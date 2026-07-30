@@ -58,7 +58,14 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const dataPath = process.env.USER_DATA_PATH || __dirname;
-app.use('/uploads', express.static(path.join(dataPath, 'uploads')));
+app.use('/uploads', express.static(path.join(dataPath, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    // Force image/jpeg for omr uploads without extension
+    if (!path.extname(filePath)) {
+      res.set('Content-Type', 'image/jpeg');
+    }
+  }
+}));
 
 function generateServerId(prefix = 'ID') {
   return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
@@ -480,7 +487,7 @@ app.post('/api/parent/login', async (req, res) => {
       .limit(30);
 
     // Fetch Test Results for this student
-    const rawTestResults = await TestResult.find({ studentId: student.id })
+    const rawTestResults = await TestResult.find({ studentId: student.id, status: 'Published' })
       .sort({ createdAt: -1 })
       .limit(20);
 
@@ -795,14 +802,25 @@ app.post('/api/staff/attendance', async (req, res) => {
       return res.status(404).json({ error: 'Student not found in your institute' });
     }
 
+    const updateTime = timestamp || new Date().toISOString();
+    const formattedTime = new Date(updateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let updateFields = {
+      timestamp: updateTime,
+      status,
+      method: method || 'MANUAL_STAFF',
+    };
+
+    if (status === 'IN') {
+      updateFields.entryTime = formattedTime;
+    } else if (status === 'OUT') {
+      updateFields.exitTime = formattedTime;
+    }
+
     const record = await Attendance.findOneAndUpdate(
       { studentId, date, instituteId: req.user.instituteId },
       {
-        $set: {
-          timestamp: timestamp || new Date().toISOString(),
-          status,
-          method: method || 'MANUAL_STAFF',
-        },
+        $set: updateFields,
         $setOnInsert: {
           id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         }
@@ -1327,23 +1345,33 @@ app.post('/api/attendance', async (req, res) => {
   try {
     const { studentId, date, status, entryTime, exitTime, smsSent } = req.body;
 
+    let isNewEntry = false;
+    let isNewExit = false;
+
     // Find if already exists for this institute
     let record = await Attendance.findOne({ studentId, date, instituteId: req.user.instituteId });
     if (record) {
+      if (entryTime && !record.entryTime) isNewEntry = true;
+      if (exitTime && !record.exitTime) isNewExit = true;
+
       if (entryTime) record.entryTime = entryTime;
       if (exitTime) record.exitTime = exitTime;
       if (status) record.status = status;
       if (smsSent !== undefined) record.smsSent = smsSent;
       await record.save();
     } else {
+      if (entryTime) isNewEntry = true;
+      if (exitTime) isNewExit = true;
+
       record = new Attendance({ ...req.body, instituteId: req.user.instituteId });
       await record.save();
     }
 
-    // Trigger WhatsApp Absent Alert if status is absent and message has not been sent yet
-    if ((status === 'absent' || status === 'Absent') && !record.smsSent) {
-      const student = await Student.findOne({ id: studentId, instituteId: req.user.instituteId });
-      if (student && student.parentPhone) {
+    // Trigger WhatsApp Alerts and Notifications
+    const student = await Student.findOne({ id: studentId, instituteId: req.user.instituteId });
+    if (student) {
+      // 1. Absent Alert
+      if ((status === 'absent' || status === 'Absent') && !record.smsSent && student.parentPhone) {
         sendWhatsAppAlert({
           instituteId: req.user.instituteId,
           studentId: student.id,
@@ -1355,6 +1383,56 @@ app.post('/api/attendance', async (req, res) => {
 
         record.smsSent = true;
         await record.save();
+      }
+
+      // 2. Entry Alert
+      if (isNewEntry) {
+        const title = 'Check-In Alert';
+        const message = `${student.name} has checked IN at ${entryTime}.`;
+        
+        await Notification.create({
+          instituteId: req.user.instituteId,
+          studentId: student._id,
+          title,
+          message,
+          type: 'ATTENDANCE'
+        });
+
+        if (student.parentPhone) {
+          sendWhatsAppAlert({
+            instituteId: req.user.instituteId,
+            studentId: student.id,
+            parentPhone: student.parentPhone,
+            studentName: student.name,
+            type: 'IN',
+            detail: entryTime
+          }).catch(err => console.error('Failed to send entry WhatsApp alert:', err.message));
+        }
+      }
+
+      // 3. Exit Alert
+      if (isNewExit) {
+        const title = 'Check-Out Alert';
+        const message = `${student.name} has checked OUT at ${exitTime}.`;
+        
+        await Notification.create({
+          instituteId: req.user.instituteId,
+          studentId: student._id,
+          title,
+          message,
+          type: 'ATTENDANCE'
+        });
+
+        if (student.parentPhone) {
+          sendWhatsAppAlert({
+            instituteId: req.user.instituteId,
+            studentId: student.id,
+            parentPhone: student.parentPhone,
+            studentName: student.name,
+            type: 'OUT',
+            detail: exitTime
+          }).catch(err => console.error('Failed to send exit WhatsApp alert:', err.message));
+        }
       }
     }
 
@@ -1530,6 +1608,47 @@ app.get('/api/test-results', async (req, res) => {
   }
 });
 
+app.post('/api/test-results/download-omr-images', authenticateToken, async (req, res) => {
+  try {
+    let { targetDir, images } = req.body;
+    if (!images || !Array.isArray(images)) {
+      return res.status(400).json({ error: 'images array is required' });
+    }
+    
+    let outputDir = targetDir;
+    if (!outputDir) {
+      outputDir = path.join(os.homedir(), 'Downloads', 'Scanned OMR');
+    }
+
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    let copiedCount = 0;
+    images.forEach(img => {
+      const imgUrl = typeof img === 'string' ? img : img.url;
+      const rollNo = typeof img === 'object' && img.rollNo ? img.rollNo : null;
+      if (!imgUrl) return;
+      const originalFilename = path.basename(imgUrl);
+      const sourcePath = path.join(uploadDir, originalFilename);
+      
+      if (fs.existsSync(sourcePath)) {
+        let destFilename = rollNo ? String(rollNo) : originalFilename;
+        if (!destFilename.toLowerCase().endsWith('.jpg') && !destFilename.toLowerCase().endsWith('.png') && !destFilename.toLowerCase().endsWith('.jpeg')) {
+          destFilename += '.jpg';
+        }
+        const destPath = path.join(outputDir, destFilename);
+        fs.copyFileSync(sourcePath, destPath);
+        copiedCount++;
+      }
+    });
+
+    res.json({ success: true, copiedCount, outputDir });
+  } catch (err) {
+    console.error('Error downloading OMR images:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 app.post('/api/test-results/bulk', authenticateToken, async (req, res) => {
   try {
     const results = req.body;
@@ -1621,6 +1740,63 @@ app.post('/api/test-results/bulk', authenticateToken, async (req, res) => {
   }
 });
 
+app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res) => {
+  try {
+    const { testId } = req.params;
+    const { sendSMS } = req.body;
+    
+    const test = await Test.findOne(buildTestLookup(testId, req.user.instituteId));
+    if (!test) return res.status(404).json({ error: 'Test not found' });
+
+    const results = await TestResult.find({ testId: test.id, instituteId: req.user.instituteId });
+    if (!results || results.length === 0) return res.status(404).json({ error: 'No results found for this test' });
+
+    let publishCount = 0;
+    
+    for (const r of results) {
+      r.status = 'Published';
+      await r.save();
+      publishCount++;
+
+      if (sendSMS) {
+        const student = await Student.findOne({ id: r.studentId, instituteId: req.user.instituteId });
+        if (student) {
+          const notification = new Notification({
+            instituteId: req.user.instituteId,
+            studentId: student._id,
+            title: 'Test Result Published',
+            message: `${student.name} scored ${r.marks}/${test.totalMarks} in ${test.subject}. Rank: ${r.rank}/${r.totalStudents}.`,
+            type: 'TEST_RESULT'
+          });
+          await notification.save();
+
+          if (student.parentPhone) {
+            sendWhatsAppAlert({
+              instituteId: req.user.instituteId,
+              studentId: student.id,
+              parentPhone: student.parentPhone,
+              studentName: student.name,
+              type: 'TEST_RESULT',
+              detail: {
+                marks: r.marks,
+                totalMarks: test.totalMarks,
+                subject: test.subject,
+                rank: r.rank,
+                totalStudents: r.totalStudents
+              }
+            }).catch(err => console.error('Failed to send test result WhatsApp alert:', err.message));
+          }
+        }
+      }
+    }
+
+    res.json({ message: `Successfully published ${publishCount} results.`, count: publishCount });
+  } catch (err) {
+    console.error('Publish Test Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/test-results/omr-process', upload.array('images', 500), async (req, res) => {
   try {
     const testId = req.body.testId;
@@ -1644,7 +1820,15 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
     if (templateId === 'jee_75' || templateId === 'jee_75_mcq') {
       templateId = 'T2';
     }
-    const questionsToDetect = Number(req.body.questionsToDetect) || test.questionsToDetect || 0;
+    let questionsToDetect = Number(req.body.questionsToDetect) || test.questionsToDetect || 0;
+    
+    // Ensure we scan enough questions to cover the subject mapping, even if user set a lower detection limit
+    if (test.subjectMapping && test.subjectMapping.length > 0) {
+      const maxMappedQ = Math.max(...test.subjectMapping.map(m => m.toQ));
+      if (maxMappedQ > questionsToDetect) {
+        questionsToDetect = maxMappedQ;
+      }
+    }
 
     // Save to temp JSON file to avoid OS argument length limits
     let answer_keys = {};
@@ -1714,10 +1898,22 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
 
     const tempArgsPath = path.join(uploadDir, `omr_args_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.json`);
 
+    let mapped_questions = [];
+    if (test.subjectMapping && test.subjectMapping.length > 0) {
+      test.subjectMapping.forEach(m => {
+        if (m.fromQ && m.toQ) {
+          for (let i = Number(m.fromQ); i <= Number(m.toQ); i++) {
+            mapped_questions.push(i);
+          }
+        }
+      });
+    }
+
     const jsonPayload = {
       image_paths: imagePaths,
       original_names: req.files.map(file => file.originalname),
       answer_keys: answer_keys,
+      mapped_questions: mapped_questions,
       marks_per_question: test.marksPerQuestion || 1,
       negative_marking: test.negativeMarking !== undefined ? test.negativeMarking : 0
     };
@@ -1798,9 +1994,13 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
 
               if (isSelected) {
                 newTotalMarks += (q.marks || 0);
-                if (q.isCorrect) newCorrect++;
-                else if (q.status === 'wrong') newWrong++;
-                else if (q.status === 'blank') newBlank++;
+                if (q.status === 'blank') {
+                  newBlank++;
+                } else if (q.isCorrect) {
+                  newCorrect++;
+                } else {
+                  newWrong++;
+                }
               } else {
                 q.status = 'ignored';
                 q.marks = 0;
@@ -1833,10 +2033,21 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
           if (r.subjects) {
             const subjectNames = Object.keys(r.subjects).sort();
             for (const subj of subjectNames) {
-              studentAnswers = studentAnswers.concat(r.subjects[subj].map(q => q.selectedOptions ? q.selectedOptions.join('') : (q.studentAns || '')));
+              studentAnswers = studentAnswers.concat(r.subjects[subj].map(q => {
+                if (q.selectedOptions) return q.selectedOptions.join('');
+                if (q.selectedOption) return q.selectedOption;
+                return q.studentAns || '';
+              }));
             }
           } else {
-            studentAnswers = (r.studentAnswers || []).map(q => typeof q === 'object' ? (q.selectedOptions ? q.selectedOptions.join('') : (q.studentAns || '')) : String(q));
+            studentAnswers = (r.studentAnswers || []).map(q => {
+              if (typeof q === 'object') {
+                if (q.selectedOptions) return q.selectedOptions.join('');
+                if (q.selectedOption) return q.selectedOption;
+                return q.studentAns || '';
+              }
+              return String(q);
+            });
           }
 
           parsedData.push({

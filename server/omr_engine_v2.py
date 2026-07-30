@@ -46,6 +46,7 @@ def main():
     image_paths = args.get('image_paths', [])
     original_names = args.get('original_names', [])
     answer_keys = args.get('answer_keys', {}).get("General", {})
+    mapped_questions = args.get('mapped_questions', [])
     marks_per_question = float(args.get('marks_per_question', 4.0))
     negative_marking = float(args.get('negative_marking', -1.0))
     template_id_raw = args.get('template_id', '')
@@ -70,6 +71,7 @@ def main():
                 input_path=img_path,
                 output_dir=temp_output_dir,
                 template_name=template_id,
+                mapped_questions=mapped_questions,
                 debug=True
             )
             

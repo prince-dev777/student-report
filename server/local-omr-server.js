@@ -154,6 +154,7 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
       answer_keys = { "General": answer_keys };
     }
     let template_config = testData.template_config;
+    let mapped_questions = testData.mapped_questions || [];
     
     // Do NOT override templateId — the frontend already sends the correct value
     // (either 'jee_75' for MCQ-only or 'jee_75_with_numerical' for MCQ+Numerical).
@@ -164,6 +165,7 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
       image_paths: imagePaths,
       original_names: req.files.map(file => file.originalname),
       answer_keys: answer_keys,
+      mapped_questions: mapped_questions,
       marks_per_question: marksPerQuestion,
       negative_marking: negativeMarking
     };
