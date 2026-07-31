@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { User, Lock, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut, AlertTriangle, Book, ChevronLeft, Info, MapPin, Maximize, Minimize, Phone, Search, Send } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { api, API_BASE } from '../utils/api';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { getMediaUrl } from '../utils/api';
 
@@ -28,8 +29,8 @@ export default function ParentPortalWeb() {
   // Check if App is already installed or running as standalone PWA
   const [isAppInstalled, setIsAppInstalled] = useState(() => {
     return window.matchMedia('(display-mode: standalone)').matches ||
-           window.navigator.standalone === true ||
-           localStorage.getItem('pwa_installed') === 'true';
+      window.navigator.standalone === true ||
+      localStorage.getItem('pwa_installed') === 'true';
   });
 
   // Catch PWA beforeinstallprompt event
@@ -117,89 +118,39 @@ export default function ParentPortalWeb() {
     }
 
     setLoading(true);
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const endpoints = isLocal
-      ? ['http://localhost:5000/api/parent/login', 'https://student-report-ezgw.onrender.com/api/parent/login']
-      : ['https://student-report-ezgw.onrender.com/api/parent/login', 'http://localhost:5000/api/parent/login'];
-
     let loginSuccess = false;
     let lastErrorMessage = '';
 
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId.trim(), password: password.trim() })
-        });
+    try {
+      const res = await fetch(`${API_BASE}/parent/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId.trim(), password: password.trim() })
+      });
 
-        const data = await res.json();
+      const data = await res.json();
 
-        if (res.ok && (data.success || data.token)) {
-          setStudentData(data.student || data.student_data);
-          setAttendanceRecords(data.attendance || []);
-          setTestResults(data.testResults || []);
-          setIsLoggedIn(true);
-          sessionStorage.setItem('parentSession', JSON.stringify({
-            studentData: data.student || data.student_data,
-            attendanceRecords: data.attendance || [],
-            testResults: data.testResults || []
-          }));
-          toast.success(`Welcome Parent of ${(data.student || data.student_data)?.name || 'Student'}!`);
-          loginSuccess = true;
-          break;
-        } else {
-          lastErrorMessage = data.error || 'Invalid User ID or Password';
-        }
-      } catch (err) {
-        console.warn(`Failed to connect to ${url}:`, err.message);
+      if (res.ok && (data.success || data.token)) {
+        setStudentData(data.student || data.student_data);
+        setAttendanceRecords(data.attendance || []);
+        setTestResults(data.testResults || []);
+        setIsLoggedIn(true);
+        sessionStorage.setItem('parentSession', JSON.stringify({
+          studentData: data.student || data.student_data,
+          attendanceRecords: data.attendance || [],
+          testResults: data.testResults || []
+        }));
+        toast.success(`Welcome Parent of ${(data.student || data.student_data)?.name || 'Student'}!`);
+        loginSuccess = true;
+      } else {
+        lastErrorMessage = data.message || data.error || 'Invalid credentials';
       }
+    } catch (err) {
+      lastErrorMessage = err.message || 'Network error';
     }
 
     if (!loginSuccess) {
-      // Fallback local check
-      const localStudents = JSON.parse(localStorage.getItem('students') || '[]');
-      const foundLocal = localStudents.find(s => 
-        String(s.parentUserId || s.rollNumber || s.roll_no || s.id || '').toLowerCase() === userId.trim().toLowerCase() ||
-        String(s.parentPhone || '').replace(/\D/g, '').includes(userId.trim().replace(/\D/g, ''))
-      );
-
-      if (foundLocal) {
-        const mockStudentData = {
-          id: foundLocal.id,
-          name: foundLocal.name,
-          rollNo: foundLocal.rollNumber || foundLocal.roll_no || userId.trim(),
-          parentUserId: foundLocal.parentUserId || foundLocal.rollNumber || userId.trim(),
-          batch: foundLocal.batch || 'JEE Mains',
-          parentPhone: foundLocal.parentPhone || '9876543210',
-          attendanceRate: 92,
-          presentCount: 23,
-          totalAttendanceCount: 25
-        };
-        const mockAttendance = [
-          { date: '2026-07-22', status: 'present', entryTime: '09:02 AM' },
-          { date: '2026-07-21', status: 'present', entryTime: '08:58 AM' },
-          { date: '2026-07-20', status: 'absent', entryTime: '-' },
-          { date: '2026-07-19', status: 'present', entryTime: '09:05 AM' }
-        ];
-        const mockTestResults = [
-          { testName: 'Full Syllabus Test #3', testDate: '18 Jul 2026', marks: 245, totalMarks: 300, percentage: 81.6, rank: 4, totalStudents: 45 },
-          { testName: 'Physics & Chemistry Minor', testDate: '10 Jul 2026', marks: 160, totalMarks: 200, percentage: 80.0, rank: 6, totalStudents: 45 }
-        ];
-        
-        setStudentData(mockStudentData);
-        setAttendanceRecords(mockAttendance);
-        setTestResults(mockTestResults);
-        setIsLoggedIn(true);
-        sessionStorage.setItem('parentSession', JSON.stringify({
-          studentData: mockStudentData,
-          attendanceRecords: mockAttendance,
-          testResults: mockTestResults
-        }));
-        toast.success(`Welcome Parent of ${foundLocal.name}!`);
-      } else {
-        toast.error(lastErrorMessage || '❌ Invalid User ID or Password. Please verify credentials.');
-      }
+      toast.error(lastErrorMessage || '❌ Invalid User ID or Password. Please verify credentials.');
     }
     setLoading(false);
   };
@@ -435,7 +386,7 @@ export default function ParentPortalWeb() {
 
       {/* Main Container */}
       <div style={{ maxWidth: '600px', margin: '16px auto 0', padding: '0 12px' }}>
-        
+
         {/* Student Profile Card */}
         <div className="student-card" style={{
           background: '#ffffff', border: '1px solid #bae6fd',
@@ -514,7 +465,7 @@ export default function ParentPortalWeb() {
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
             }}
           >
-            <Award size={16} /> OMR Reports ({testResults.length})
+            <Award size={16} /> Test Reports ({testResults.length})
           </button>
         </div>
 
@@ -711,12 +662,12 @@ export default function ParentPortalWeb() {
                     <button onClick={() => resetTransform()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#475569', fontWeight: 'bold', marginLeft: '4px' }}>Reset</button>
                   </div>
                 </div>
-                
+
                 <div style={{ flex: 1, overflow: 'hidden', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'grab' }}>
                   <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
-                    <img 
-                      src={selectedOmrImage} 
-                      alt="OMR Sheet" 
+                    <img
+                      src={selectedOmrImage}
+                      alt="OMR Sheet"
                       style={{ width: '100%', display: 'block', pointerEvents: 'none' }}
                     />
                   </TransformComponent>

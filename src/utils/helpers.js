@@ -34,6 +34,7 @@ export function formatTime(timeStr) {
 export function getRelativeTime(timestamp) {
   const now = new Date();
   const then = new Date(timestamp);
+  if (isNaN(then.getTime())) return timestamp; // Return raw string if invalid
   const diffMs = now - then;
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);

@@ -9,6 +9,7 @@ import { getAvatarClass, getInitials } from '../data/sampleData';
 import AddStudentModal from '../components/AddStudentModal';
 import StudentProfileModal from '../components/StudentProfileModal';
 import BulkUploadModal from '../components/BulkUploadModal';
+import * as XLSX from 'xlsx';
 
 const AnimatedCounter = ({ to }) => {
   const [count, setCount] = useState(0);
@@ -98,7 +99,41 @@ export default function Students() {
 
   const handleBulkSuccess = () => {
     setBulkModalOpen(false);
-    window.location.reload();
+    fetchData(1, searchQuery);
+  };
+
+  const handleDownloadExcel = () => {
+    if (!paginatedStudents || paginatedStudents.length === 0) return;
+    
+    // Only export the currently filtered students based on batch/class selections
+    // To export ALL, they just select "All Courses" and "All Classes"
+    const worksheetData = filteredStudents.map((s, index) => ({
+      'S.No': index + 1,
+      'Roll No': s.rollNo || '',
+      'Student Name': s.name,
+      'Parent Name': s.parentName || '',
+      'Mobile No': s.parentPhone || '',
+      'Class': s.class || '',
+      'Batch/Course': s.batch || '',
+      'Status': 'Active'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const colWidths = [
+      { wch: 6 },
+      { wch: 15 },
+      { wch: 25 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 10 },
+      { wch: 15 },
+      { wch: 10 }
+    ];
+    worksheet['!cols'] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
+    XLSX.writeFile(workbook, `Students_Export_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
   const handleEditClick = (student) => {
@@ -172,10 +207,14 @@ export default function Students() {
           <p>Enrolled students details, courses, classes, parents info, and attendance statistics.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn btn-secondary" onClick={handleBulkAddClick} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FileSpreadsheet size={18} />
-            Add with Excel
-          </button>
+            <button className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }} onClick={handleDownloadExcel} disabled={filteredStudents.length === 0}>
+              <Download size={16} />
+              Export Excel
+            </button>
+            <button className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }} onClick={handleBulkAddClick}>
+              <FileSpreadsheet size={16} />
+              Bulk Import
+            </button>
           <button className="btn btn-primary" onClick={handleAddClick}>
             <UserPlus size={18} />
             Add Student

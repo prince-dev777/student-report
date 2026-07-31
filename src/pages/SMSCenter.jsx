@@ -25,6 +25,9 @@ import {
   Info
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { api, API_BASE } from '../utils/api';
+import * as XLSX from 'xlsx';
+import { Download } from 'lucide-react';
 import { getRelativeTime } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
@@ -58,7 +61,7 @@ export default function SMSCenter() {
   useEffect(() => {
     const fetchWhatsAppStatus = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/whatsapp/local-status');
+        const res = await fetch(`${API_BASE}/whatsapp/local-status`);
         if (!res.ok) throw new Error();
         const data = await res.json();
         setWhatsappStatus(data.status);
@@ -90,11 +93,11 @@ export default function SMSCenter() {
     setLoadingAction(true);
     try {
       setWhatsappStatus('connecting');
-      await fetch('http://localhost:5000/api/whatsapp/local-initialize', { method: 'POST' });
+      await fetch(`${API_BASE}/whatsapp/local-initialize`, { method: 'POST' });
       toast.success('Initializing WhatsApp Client...');
       setTimeout(async () => {
         try {
-          const res = await fetch('http://localhost:5000/api/whatsapp/local-status');
+          const res = await fetch(`${API_BASE}/whatsapp/local-status`);
           const data = await res.json();
           setWhatsappStatus(data.status);
           setQrCode(data.qrCode);
@@ -113,7 +116,7 @@ export default function SMSCenter() {
     if (!window.confirm('Are you sure you want to disconnect and log out from WhatsApp?')) return;
     setLoadingAction(true);
     try {
-      await fetch('http://localhost:5000/api/whatsapp/local-disconnect', { method: 'POST' });
+      await fetch(`${API_BASE}/whatsapp/local-disconnect`, { method: 'POST' });
       toast.success('WhatsApp disconnected.');
       setWhatsappStatus('disconnected');
       setQrCode(null);
@@ -157,6 +160,61 @@ export default function SMSCenter() {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // SMS Export State
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportDateRange, setExportDateRange] = useState({
+    from: new Date().toISOString().split('T')[0],
+    to: new Date().toISOString().split('T')[0]
+  });
+
+  const handleExportSMS = () => {
+    try {
+      const fromD = new Date(exportDateRange.from);
+      fromD.setHours(0, 0, 0, 0);
+      const toD = new Date(exportDateRange.to);
+      toD.setHours(23, 59, 59, 999);
+
+      const filteredData = smsHistory.filter(sms => {
+        let smsD = new Date(sms.timestamp);
+        if (isNaN(smsD.getTime())) {
+          smsD = sms.createdAt ? new Date(sms.createdAt) : new Date();
+        }
+        return smsD >= fromD && smsD <= toD;
+      });
+
+      if (filteredData.length === 0) {
+        toast.error('No SMS found in this date range');
+        return;
+      }
+
+      const excelData = filteredData.map(sms => ({
+        'Student Name': getStudentName(sms.studentId),
+        'Parent Phone': sms.parentPhone,
+        'Type': sms.type ? sms.type.toUpperCase() : 'SMS',
+        'Message': sms.message,
+        'Status': sms.status,
+        'Date & Time': (() => {
+          let d = new Date(sms.timestamp);
+          if (isNaN(d.getTime())) {
+            d = sms.createdAt ? new Date(sms.createdAt) : new Date();
+            return `${d.toLocaleDateString()} ${sms.timestamp}`;
+          }
+          return d.toLocaleString();
+        })(),
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'SMS Logs');
+      XLSX.writeFile(workbook, `SMS_Logs_${exportDateRange.from}_to_${exportDateRange.to}.xlsx`);
+      
+      toast.success(`Exported ${filteredData.length} logs successfully`);
+      setShowExportModal(false);
+    } catch (err) {
+      toast.error('Failed to export SMS: ' + err.message);
+    }
+  };
 
   // Stats
   const stats = useMemo(() => {
@@ -462,6 +520,16 @@ export default function SMSCenter() {
           </select>
         </div>
 
+        <div className="flex items-center gap-8">
+          <button 
+            className="btn btn-outline" 
+            style={{ padding: '0.4rem 1rem', height: 'auto', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid var(--border-color)' }}
+            onClick={() => setShowExportModal(true)}
+          >
+            <Download size={16} /> Download SMS
+          </button>
+        </div>
+
         <div className="flex items-center gap-12" style={{ marginLeft: 'auto' }}>
           <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'rgba(37, 99, 235, 0.05)', padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Info size={14} /> If message is 'pending', refresh to see 'delivered'
@@ -541,7 +609,15 @@ export default function SMSCenter() {
                         </span>
                       </td>
                       <td style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        {sms.timestamp ? getRelativeTime(sms.timestamp) : '-'}
+                        {(() => {
+                          if (!sms.timestamp) return '-';
+                          const d = new Date(sms.timestamp);
+                          if (isNaN(d.getTime())) {
+                            const fallback = sms.createdAt ? new Date(sms.createdAt) : new Date();
+                            return `${fallback.toLocaleDateString()} ${sms.timestamp}`;
+                          }
+                          return getRelativeTime(sms.timestamp);
+                        })()}
                       </td>
                       <td>
                         <span className={`sms-status ${sms.status || 'sent'}`}>
@@ -586,6 +662,72 @@ export default function SMSCenter() {
           </div>
         )}
       </motion.div>
+
+      {/* Export SMS Modal */}
+      <AnimatePresence>
+        {showExportModal && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowExportModal(false)}
+          >
+            <motion.div
+              className="modal-content"
+              style={{ maxWidth: '400px' }}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h2>Export SMS to Excel</h2>
+                <button
+                  className="icon-btn"
+                  onClick={() => setShowExportModal(false)}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label>From Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={exportDateRange.from}
+                    onChange={(e) => setExportDateRange({ ...exportDateRange, from: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>To Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={exportDateRange.to}
+                    onChange={(e) => setExportDateRange({ ...exportDateRange, to: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer" style={{ marginTop: '24px' }}>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => setShowExportModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleExportSMS}
+                >
+                  <Download size={18} style={{ marginRight: '8px' }} /> Export
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Send Custom SMS Modal */}
       <AnimatePresence>
@@ -771,7 +913,7 @@ export default function SMSCenter() {
                   style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}
                   onClick={() => {
                     if (window.confirm('Are you sure you want to delete this SMS log?')) {
-                      deleteSMS(selectedMessage._id || selectedMessage.id);
+                      deleteSMS(selectedMessage.id);
                       setSelectedMessage(null);
                     }
                   }}

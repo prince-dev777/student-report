@@ -118,7 +118,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       studentId,
       parentPhone,
       message: messageText,
-      timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
+      timestamp: new Date().toISOString(),
       status
     });
     await log.save();

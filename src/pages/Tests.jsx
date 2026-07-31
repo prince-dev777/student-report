@@ -11,7 +11,7 @@ import { useApp } from '../context/AppContext';
 import { subjects } from '../data/sampleData';
 import { formatDate, calcTestAverage, getMarksCategory, getRankBadgeClass } from '../utils/helpers';
 import toast from 'react-hot-toast';
-import { api } from '../utils/api';
+import { api, getMediaUrl } from '../utils/api';
 
 export default function Tests() {
   const { 
@@ -1237,8 +1237,7 @@ export default function Tests() {
         baseData[`${stat.subject} Marks`] = stat.marks;
       });
 
-      baseData['Total Marks'] = res.marks;
-      baseData['Max Marks'] = res.totalMarks;
+      baseData['Total Marks'] = `${res.marks}/${res.totalMarks}`;
       baseData['Percentage'] = res.percentage !== undefined ? res.percentage : 'N/A';
 
       return baseData;
@@ -1263,7 +1262,7 @@ export default function Tests() {
 
     // Make header bold
     const range = XLSX.utils.decode_range(worksheet['!ref']);
-    for (C = range.s.c; C <= range.e.c; ++C) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
       const address = XLSX.utils.encode_col(C) + '1';
       if (!worksheet[address]) continue;
       worksheet[address].s = { font: { bold: true } };
@@ -1889,7 +1888,7 @@ export default function Tests() {
                             {err.omrSheetImage && (
                               <button 
                                 type="button"
-                                onClick={() => setSelectedOmrImage(err.omrSheetImage.startsWith('data:') ? err.omrSheetImage : (window.location.protocol === 'file:' ? `http://localhost:5000${err.omrSheetImage}` : `${window.location.protocol}//${window.location.hostname}:5000${err.omrSheetImage}`))}
+                                onClick={() => setSelectedOmrImage(getMediaUrl(err.omrSheetImage))}
                                 className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors"
                               >
                                 <Eye size={16} />
@@ -1989,7 +1988,7 @@ export default function Tests() {
                                     {omrImagesData[student.id] && (
                                       <button
                                         type="button"
-                                        onClick={() => setSelectedOmrImage(omrImagesData[student.id].startsWith('data:') ? omrImagesData[student.id] : (window.location.protocol === 'file:' ? `http://localhost:5000${omrImagesData[student.id]}` : `${window.location.protocol}//${window.location.hostname}:5000${omrImagesData[student.id]}`))}
+                                        onClick={() => setSelectedOmrImage(getMediaUrl(omrImagesData[student.id]))}
                                         className="btn btn-ghost btn-xs text-accent flex-shrink-0"
                                         style={{ padding: '4px 8px', fontSize: '0.75rem', marginTop: '-2px' }}
                                       >
@@ -2096,7 +2095,7 @@ export default function Tests() {
                               </button>
                               {res.omrSheetImage && (
                                 <button 
-                                  onClick={() => setSelectedOmrImage(res.omrSheetImage.startsWith('data:') ? res.omrSheetImage : (window.location.protocol === 'file:' ? `http://localhost:5000${res.omrSheetImage}` : `${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`))}
+                                  onClick={() => setSelectedOmrImage(getMediaUrl(res.omrSheetImage))}
                                   className="btn btn-ghost btn-xs text-accent"
                                   style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
                                 >
@@ -2169,6 +2168,19 @@ export default function Tests() {
                       src={selectedOmrImage} 
                       alt="OMR Sheet" 
                       style={{ width: '100%', display: 'block', pointerEvents: 'none' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = `
+                          <div style="padding: 40px 20px; text-align: center; color: #64748b;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px;">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                              <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            <p style="font-weight: 600; font-size: 1rem; margin: 0 0 6px;">OMR Sheet Unavailable</p>
+                            <p style="font-size: 0.85rem; margin: 0; color: #94a3b8;">This image was deleted from local storage.<br/>Please re-scan the OMR sheet to view it again.</p>
+                          </div>`;
+                      }}
                     />
                   </TransformComponent>
                 </div>
@@ -2189,7 +2201,7 @@ export default function Tests() {
       {/* Student Result Details Modal */}
       {selectedStudentResult && selectedTestResults && createPortal(
         <div className="modal-overlay" onClick={() => setSelectedStudentResult(null)} style={{ zIndex: 9999 }}>
-          <div className="modal-content" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+          <div className="modal-content" style={{ width: '90vw', maxWidth: '1000px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <h3>Result Details - {selectedStudentResult.studentName}</h3>
@@ -2201,11 +2213,7 @@ export default function Tests() {
                 {selectedStudentResult.omrSheetImage && (
                   <button 
                     className="btn btn-outline-primary btn-sm flex items-center gap-2"
-                    onClick={() => setSelectedOmrImage(
-                      selectedStudentResult.omrSheetImage.startsWith('data:') 
-                        ? selectedStudentResult.omrSheetImage 
-                        : (window.location.protocol === 'file:' ? `http://localhost:5000${selectedStudentResult.omrSheetImage}` : `${window.location.protocol}//${window.location.hostname}:5000${selectedStudentResult.omrSheetImage}`)
-                    )}
+                    onClick={() => setSelectedOmrImage(getMediaUrl(selectedStudentResult.omrSheetImage))}
                   >
                     <Eye size={16} /> View OMR
                   </button>
@@ -2273,6 +2281,76 @@ export default function Tests() {
                   </tfoot>
                 </table>
               </div>
+
+              {selectedStudentResult.studentAnswers && selectedStudentResult.studentAnswers.length > 0 && selectedTestResults.test.answerKey && selectedTestResults.test.answerKey.length > 0 && (
+                <>
+                  <h4 className="mb-8 mt-16">Question-wise Analysis</h4>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))', 
+                    gap: '8px', 
+                    maxHeight: '250px', 
+                    overflowY: 'auto', 
+                    padding: '12px', 
+                    background: 'var(--bg-secondary)', 
+                    borderRadius: '12px', 
+                    border: '1px solid var(--border-color)' 
+                  }}>
+                    {selectedStudentResult.studentAnswers.map((ans, idx) => {
+                      const correctAns = selectedTestResults.test.answerKey[idx];
+                      if (correctAns === undefined || correctAns === null) return null;
+                      
+                      const selStr = String(ans || '').trim().toUpperCase();
+                      const corStr = String(correctAns).trim().toUpperCase();
+                      
+                      let isCorrect = false;
+                      let isSkipped = false;
+                      
+                      if (!selStr || selStr === 'NULL') {
+                        isSkipped = true;
+                      } else if (selStr === corStr) {
+                        isCorrect = true;
+                      } else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) {
+                        isCorrect = true;
+                      }
+
+                      let bgColor = 'var(--bg-primary)';
+                      let color = 'var(--text-primary)';
+                      let borderColor = 'var(--border-color)';
+
+                      if (isSkipped) {
+                        color = 'var(--text-tertiary)';
+                      } else if (isCorrect) {
+                        bgColor = 'rgba(34, 197, 94, 0.1)';
+                        color = 'var(--accent-green)';
+                        borderColor = 'rgba(34, 197, 94, 0.3)';
+                      } else {
+                        bgColor = 'rgba(239, 68, 68, 0.1)';
+                        color = '#ef4444';
+                        borderColor = 'rgba(239, 68, 68, 0.3)';
+                      }
+
+                      return (
+                        <div key={idx} style={{ 
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                          padding: '8px 4px', borderRadius: '8px', background: bgColor, 
+                          border: `1px solid ${borderColor}`, textAlign: 'center'
+                        }}>
+                          <span style={{ fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', fontSize: '0.75rem' }}>Q{idx + 1}</span>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color }}>
+                            {selStr !== 'NULL' && selStr ? selStr : '-'}
+                          </div>
+                          {!isCorrect && !isSkipped && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '2px', fontWeight: 600 }}>
+                              Ans: {corStr}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button className="btn btn-primary" onClick={() => setSelectedStudentResult(null)}>

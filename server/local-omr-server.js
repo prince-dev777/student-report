@@ -105,7 +105,8 @@ function cleanupOldOMRFiles() {
   try {
     const files = fs.readdirSync(uploadDir);
     const now = Date.now();
-    // Delete files older than 24 hours
+    // Only delete temporary JSON args files older than 24 hours
+    // NEVER delete OMR image files — they are needed for "View OMR" in results
     const maxAge = 24 * 60 * 60 * 1000;
     
     let deletedCount = 0;
@@ -113,8 +114,8 @@ function cleanupOldOMRFiles() {
       const filePath = path.join(uploadDir, file);
       const stats = fs.statSync(filePath);
       
-      // Delete old binary images (they don't have .txt extension)
-      if (stats.isFile() && !file.endsWith('.txt')) {
+      // Only delete temp args JSON files, not actual OMR images
+      if (stats.isFile() && file.endsWith('.json') && file.startsWith('omr_args_')) {
         if (now - stats.mtimeMs > maxAge) {
           safeUnlink(filePath);
           deletedCount++;
@@ -122,10 +123,10 @@ function cleanupOldOMRFiles() {
       }
     });
     if (deletedCount > 0) {
-      console.log(`[Cleanup] Deleted ${deletedCount} old OMR files from uploads directory.`);
+      console.log(`[Cleanup] Deleted ${deletedCount} old temp args files from uploads directory.`);
     }
   } catch (err) {
-    console.warn('[Cleanup] Failed to clean up old OMR files:', err.message);
+    console.warn('[Cleanup] Failed to clean up old files:', err.message);
   }
 }
 

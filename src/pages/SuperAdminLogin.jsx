@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, User, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { API_BASE } from '../utils/api';
 
 export default function SuperAdminLogin() {
   const [username, setUsername] = useState('');
@@ -15,7 +16,7 @@ export default function SuperAdminLogin() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:5000/api/superadmin/login', {
+      const response = await fetch(`${API_BASE}/superadmin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })

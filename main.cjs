@@ -6,6 +6,7 @@ const fs = require('fs');
 
 let mainWindow;
 let serverProcess;
+let mongoProcess;
 
 // Disable disk caching to prevent "Access is denied" and "Gpu Cache Creation failed" errors
 app.commandLine.appendSwitch('disable-http-cache');
@@ -36,6 +37,14 @@ function killPort(port) {
           }
         });
       }
+    });
+  });
+}
+
+function killMongo() {
+  return new Promise((resolve) => {
+    exec(`taskkill /F /IM mongod.exe`, (err) => {
+      resolve();
     });
   });
 }
@@ -165,8 +174,35 @@ async function startServer() {
     console.error('Failed to write log', e);
   }
 
-  // Use fork which natively supports running scripts inside app.asar
   const { fork } = require('child_process');
+  
+  // Start local MongoDB first
+  const dbPath = path.join(app.getPath('userData'), 'mongodb_data');
+  if (!fs.existsSync(dbPath)) {
+    fs.mkdirSync(dbPath, { recursive: true });
+  }
+
+  const mongodExePath = app.isPackaged 
+    ? path.join(process.resourcesPath, 'bin', 'mongod.exe')
+    : path.join(__dirname, 'server', 'bin', 'mongod.exe');
+
+  if (fs.existsSync(mongodExePath)) {
+    fs.appendFileSync(logFile, `Starting MongoDB from: ${mongodExePath}\n`);
+    const mongoPort = 27018; // Use custom port to avoid conflict with existing installations
+    mongoProcess = spawn(mongodExePath, [
+      '--dbpath', dbPath,
+      '--port', mongoPort.toString(),
+      '--bind_ip', '127.0.0.1'
+    ], { detached: true });
+
+    mongoProcess.unref(); // Allow node to exit independently if needed
+
+    // Pass this local URI to the express server
+    process.env.MONGODB_URI = `mongodb://127.0.0.1:${mongoPort}/student-report`;
+    fs.appendFileSync(logFile, `Set local MONGODB_URI: ${process.env.MONGODB_URI}\n`);
+  } else {
+    fs.appendFileSync(logFile, `MongoDB binary NOT FOUND at: ${mongodExePath}\n`);
+  }
   
   const env = { 
     ...process.env, 
@@ -174,6 +210,9 @@ async function startServer() {
     USER_DATA_PATH: app.getPath('userData'),
     ELECTRON_EXEC_PATH: process.execPath // Pass the Electron binary path for Puppeteer
   };
+
+  // Give Mongo a tiny bit of time to bind the port
+  await new Promise(r => setTimeout(r, 2000));
 
   // 2. Start Local Server (Port 5000)
   serverProcess = fork(localOmrPath, [], { env: env, silent: true });
@@ -319,4 +358,13 @@ app.on('before-quit', () => {
       } catch (e) {}
     }, 1000);
   }
+
+  if (mongoProcess) {
+    try {
+      mongoProcess.kill();
+    } catch (e) {}
+  }
+  
+  // Failsafe
+  killMongo();
 });

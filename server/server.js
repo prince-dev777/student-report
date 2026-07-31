@@ -10,6 +10,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { v2 as cloudinary } from 'cloudinary';
 import cron from 'node-cron';
+import AdmZip from 'adm-zip';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,6 +67,17 @@ app.use('/uploads', express.static(path.join(dataPath, 'uploads'), {
     }
   }
 }));
+
+// Fallback for older drafts saved in the local project directory
+if (dataPath !== __dirname) {
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    setHeaders: (res, filePath) => {
+      if (!path.extname(filePath)) {
+        res.set('Content-Type', 'image/jpeg');
+      }
+    }
+  }));
+}
 
 function generateServerId(prefix = 'ID') {
   return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
@@ -370,6 +382,22 @@ app.put('/api/settings', protect, async (req, res) => {
     res.json({ message: 'Settings updated successfully', logo: institute.logo, staffPasscode: institute.staffPasscode });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Trigger Cloud Sync Background Task
+app.post('/api/settings/sync-to-cloud', protect, (req, res) => {
+  try {
+    const syncProcess = spawn('node', ['sync-cloud.js'], {
+      cwd: __dirname,
+      env: { ...process.env }, // Inherit local MONGODB_URI
+      detached: true,
+      stdio: 'ignore'
+    });
+    syncProcess.unref();
+    res.json({ message: 'Cloud sync started in background' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to start cloud sync' });
   }
 });
 
@@ -1789,6 +1817,19 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
         }
       }
     }
+    // Automatically trigger cloud sync in background
+    try {
+      const syncProcess = spawn('node', ['sync-cloud.js'], {
+        cwd: __dirname,
+        env: { ...process.env }, // Inherit environment including USER_DATA_PATH
+        detached: true,
+        stdio: 'ignore'
+      });
+      syncProcess.unref();
+      console.log('🔄 Auto Cloud Sync triggered after publishing results');
+    } catch (syncErr) {
+      console.error('❌ Failed to auto-trigger Cloud Sync:', syncErr.message);
+    }
 
     res.json({ message: `Successfully published ${publishCount} results.`, count: publishCount });
   } catch (err) {
@@ -2113,7 +2154,7 @@ app.post('/api/sms-logs', async (req, res) => {
 
 app.delete('/api/sms-logs/:id', async (req, res) => {
   try {
-    const log = await SMSLog.findOneAndDelete({ _id: req.params.id, instituteId: req.user.instituteId });
+    const log = await SMSLog.findOneAndDelete({ id: req.params.id, instituteId: req.user.instituteId });
     if (!log) return res.status(404).json({ error: 'SMS log not found' });
     res.json({ message: 'SMS log deleted successfully' });
   } catch (err) {
@@ -2378,6 +2419,86 @@ app.post('/api/system/restart-and-update', (req, res) => {
     try { process.send({ type: 'QUIT_AND_INSTALL' }); } catch (e) { }
   }
   res.json({ success: true, message: 'Restarting application...' });
+});
+
+// ---- 📦 Local App Data Backup API ----
+app.get('/api/system/local-backup', protect, async (req, res) => {
+  try {
+    const backupDir = path.join(os.tmpdir(), `backup_${Date.now()}`);
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    const dbDir = path.join(backupDir, 'database');
+    fs.mkdirSync(dbDir, { recursive: true });
+
+    // Dump collections to JSON
+    const collections = ['institutes', 'users', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'notifications', 'devices'];
+    for (const col of collections) {
+      const docs = await mongoose.connection.collection(col).find({}).toArray();
+      fs.writeFileSync(path.join(dbDir, `${col}.json`), JSON.stringify(docs, null, 2));
+    }
+
+    // Initialize ZIP
+    const zip = new AdmZip();
+    
+    // Add database folder
+    zip.addLocalFolder(dbDir, 'database');
+
+    // Add uploads folders if they exist
+    const uploadsDir = path.join(dataPath, 'uploads');
+    if (fs.existsSync(uploadsDir)) {
+      zip.addLocalFolder(uploadsDir, 'uploads');
+    }
+
+    // Generate ZIP buffer
+    const zipBuffer = zip.toBuffer();
+
+    // Cleanup temp backup dir
+    fs.rmSync(backupDir, { recursive: true, force: true });
+
+    // Send the ZIP file
+    const dateStr = new Date().toISOString().split('T')[0];
+    res.set('Content-Type', 'application/zip');
+    res.set('Content-Disposition', `attachment; filename=CareerXone_Backup_${dateStr}.zip`);
+    res.set('Content-Length', zipBuffer.length);
+    res.send(zipBuffer);
+  } catch (err) {
+    console.error('❌ Local backup failed:', err);
+    res.status(500).json({ error: 'Failed to generate local backup' });
+  }
+});
+
+// ---- 🔄 Sync API (Local to Cloud Backup) ----
+app.post('/api/sync', protect, async (req, res) => {
+  const CLOUD_URI = 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
+  
+  try {
+    console.log('🔄 Starting Backup Sync to Cloud...');
+    
+    // Connect to Cloud DB
+    const cloudConn = await mongoose.createConnection(CLOUD_URI).asPromise();
+    
+    const collections = ['institutes', 'users', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'notifications', 'devices'];
+    
+    let totalMigrated = 0;
+
+    for (const colName of collections) {
+      const localDocs = await mongoose.connection.collection(colName).find({}).toArray();
+      
+      if (localDocs.length > 0) {
+        const cloudCollection = cloudConn.collection(colName);
+        await cloudCollection.deleteMany({}); // Wipe cloud target
+        await cloudCollection.insertMany(localDocs); // Insert all
+        totalMigrated += localDocs.length;
+      }
+    }
+
+    await cloudConn.close();
+    console.log(`✅ Backup complete! Migrated ${totalMigrated} documents to Cloud.`);
+    res.json({ message: `Successfully backed up ${totalMigrated} records to the Cloud.` });
+  } catch (err) {
+    console.error('❌ Sync failed:', err);
+    res.status(500).json({ error: 'Failed to sync data to the cloud. Check internet connection.' });
+  }
 });
 
 app.get('*', (req, res) => {

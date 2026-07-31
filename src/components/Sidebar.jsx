@@ -12,10 +12,14 @@ import {
   FileJson,
   Smartphone,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Cloud,
+  Archive
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../utils/api';
+import toast from 'react-hot-toast';
 
 const mainMenuItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -35,6 +39,7 @@ export default function Sidebar() {
   const location = useLocation();
   const [lastSeenSmsCount, setLastSeenSmsCount] = useState(smsHistory.length);
   const [appVersion, setAppVersion] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     // Check for version from Electron main process
@@ -64,6 +69,52 @@ export default function Sidebar() {
     // Close sidebar on mobile after navigating
     if (window.innerWidth <= 768) {
       setSidebarOpen(false);
+    }
+  };
+
+  const handleSync = async () => {
+    const confirmSync = window.confirm('Are you sure you want to push all local data to the Cloud? This will overwrite the Cloud database with your current data.');
+    if (!confirmSync) return;
+    
+    setIsSyncing(true);
+    const tid = toast.loading('Syncing data to Cloud...');
+    try {
+      const res = await api.syncDataToCloud();
+      toast.success(res.message || 'Sync successful!', { id: tid });
+    } catch (err) {
+      toast.error(err.message || 'Sync failed. Check internet connection.', { id: tid });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleLocalBackup = async () => {
+    const tid = toast.loading('Generating local backup... Please wait.');
+    try {
+      const response = await fetch(`${API_BASE}/system/local-backup`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to generate backup');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `CareerXone_Backup_${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Backup downloaded successfully!', { id: tid });
+    } catch (err) {
+      toast.error(err.message || 'Backup failed.', { id: tid });
     }
   };
 
@@ -172,11 +223,32 @@ export default function Sidebar() {
           ))}
         </nav>
 
+        {/* Sync Button */}
+        <div style={{ padding: '0 20px', marginTop: 'auto', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <button 
+            className="btn btn-primary" 
+            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', opacity: isSyncing ? 0.7 : 1 }}
+            onClick={handleSync}
+            disabled={isSyncing}
+          >
+            <Cloud size={18} />
+            {isSyncing ? 'Syncing...' : 'Cloud Backup'}
+          </button>
+          
+          <button 
+            className="btn btn-outline" 
+            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}
+            onClick={handleLocalBackup}
+          >
+            <Archive size={18} />
+            Local Backup
+          </button>
+        </div>
+
         {/* Version Info */}
         {appVersion && (
           <div style={{
             padding: '12px 20px',
-            marginTop: 'auto',
             borderTop: '1px solid var(--border-color)',
             fontSize: '0.7rem',
             color: 'var(--text-muted)',

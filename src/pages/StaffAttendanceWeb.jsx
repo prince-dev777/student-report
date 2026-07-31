@@ -5,7 +5,7 @@ import {
   Calendar, RefreshCw, LogOut, LogIn, CheckCheck, UserCheck, ShieldAlert 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { api } from '../utils/api';
+import { api, API_BASE } from '../utils/api';
 
 export default function StaffAttendanceWeb() {
   const [students, setStudents] = useState([]);
@@ -77,7 +77,7 @@ export default function StaffAttendanceWeb() {
     setIsLoggingIn(true);
     
     const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const baseUrl = isLocalHost ? 'http://localhost:5000/api' : 'https://student-report-ezgw.onrender.com/api';
+    const baseUrl = API_BASE;
 
     try {
       const controller = new AbortController();
@@ -126,7 +126,7 @@ export default function StaffAttendanceWeb() {
       let attData = [];
       
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const baseUrl = isLocalHost ? 'http://localhost:5000/api' : 'https://student-report-ezgw.onrender.com/api';
+      const baseUrl = API_BASE;
       
       const token = localStorage.getItem('staff_token') || localStorage.getItem('token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -299,7 +299,7 @@ export default function StaffAttendanceWeb() {
 
     try {
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const baseUrl = isLocalHost ? 'http://localhost:5000/api' : 'https://student-report-ezgw.onrender.com/api';
+      const baseUrl = API_BASE;
       const token = localStorage.getItem('staff_token') || localStorage.getItem('token');
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;

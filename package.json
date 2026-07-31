@@ -1,7 +1,7 @@
 {
   "name": "student-report",
   "private": true,
-  "version": "1.0.33",
+  "version": "1.0.34",
   "description": "Career Xone OMR Desktop Application",
   "author": "Career Xone",
   "type": "module",
@@ -10,8 +10,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "postinstall": "cd server && npm install --omit=dev && cd .. && npm run build",
-    "electron:dev": "concurrently \"npm run dev\" \"node server/server.js\" \"wait-on http://localhost:5173 && wait-on http://localhost:5000 && electron .\"",
+    "postinstall": "cd server && npm install --omit=dev && node download-mongodb.js && cd .. && npm run build",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:publish": "npm run build && electron-builder -p always"
   },
@@ -25,6 +25,7 @@
       "dist/**/*",
       "main.cjs",
       "server/**/*",
+      "server/bin/**",
       "!server/myenv/**",
       "!server/__pycache__/**",
       "!server/scratch/**",

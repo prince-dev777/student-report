@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, Plus, LogOut, Building, User, Calendar, Trash2, Key, Save, X, Edit3, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { API_BASE } from '../utils/api';
 
 export default function SuperAdminDashboard() {
   const [institutes, setInstitutes] = useState([]);
@@ -50,7 +51,7 @@ export default function SuperAdminDashboard() {
   const fetchInstitutes = async () => {
     try {
       const token = localStorage.getItem('superadminToken');
-      const res = await fetch('http://localhost:5000/api/superadmin/institutes', {
+      const res = await fetch(`${API_BASE}/superadmin/institutes`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -78,7 +79,7 @@ export default function SuperAdminDashboard() {
     
     try {
       const token = localStorage.getItem('superadminToken');
-      const res = await fetch('http://localhost:5000/api/superadmin/create-institute', {
+      const res = await fetch(`${API_BASE}/superadmin/create-institute`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ export default function SuperAdminDashboard() {
     
     try {
       const token = localStorage.getItem('superadminToken');
-      const res = await fetch(`http://localhost:5000/api/superadmin/institutes/${id}`, {
+      const res = await fetch(`${API_BASE}/superadmin/institutes/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -141,7 +142,7 @@ export default function SuperAdminDashboard() {
 
     try {
       const token = localStorage.getItem('superadminToken');
-      const res = await fetch(`http://localhost:5000/api/superadmin/institutes/${selectedInst._id}/reset-password`, {
+      const res = await fetch(`${API_BASE}/superadmin/institutes/${selectedInst._id}/reset-password`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -166,7 +167,7 @@ export default function SuperAdminDashboard() {
     setIsSavingNotes(true);
     try {
       const token = localStorage.getItem('superadminToken');
-      const res = await fetch(`http://localhost:5000/api/superadmin/institutes/${selectedInst._id}/notes`, {
+      const res = await fetch(`${API_BASE}/superadmin/institutes/${selectedInst._id}/notes`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

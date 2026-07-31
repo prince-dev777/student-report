@@ -7,7 +7,8 @@
 const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 const isDev = window.location.port === '5173';
 // Use Cloud API server as the primary source of truth for the database
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || ((isLocalhost || isElectron) ? 'http://localhost:5000/api' : 'https://student-report-ezgw.onrender.com/api');
 
 // Helper to check if backend is online
 export async function checkBackendStatus() {
@@ -33,6 +34,12 @@ export function getMediaUrl(path) {
   
   // replace backslashes with forward slashes for URLs
   const normalizedPath = path.replace(/\\/g, '/');
+  
+  // Electron edge-computing: local uploads (like OMR images) are on local server
+  if (isElectron && (normalizedPath.startsWith('/uploads/') || normalizedPath.startsWith('uploads/'))) {
+    const safePath = normalizedPath.startsWith('/') ? normalizedPath : '/' + normalizedPath;
+    return `http://localhost:5000${safePath}`;
+  }
   
   const base = API_BASE.replace('/api', '');
   return `${base}${normalizedPath.startsWith('/') ? '' : '/'}${normalizedPath}`;
@@ -165,4 +172,7 @@ export const api = {
       await fetch('/api/system/restart-and-update', { method: 'POST' });
     } catch (e) {}
   },
+  
+  // Cloud Sync
+  syncDataToCloud: () => apiRequest('/sync', { method: 'POST' }),
 };

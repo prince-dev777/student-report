@@ -177,6 +177,7 @@ export function AppProvider({ children }) {
         return;
       } catch (err) {
         toast.error('Failed to update student');
+        return;
       }
     }
 
@@ -196,6 +197,7 @@ export function AppProvider({ children }) {
         return;
       } catch (err) {
         toast.error('Failed to delete student');
+        return;
       }
     }
 
@@ -360,6 +362,7 @@ export function AppProvider({ children }) {
         return;
       } catch (err) {
         toast.error('Failed to delete test');
+        return;
       }
     }
     setTests((prev) => prev.filter((t) => t.id !== testId));
@@ -494,6 +497,7 @@ export function AppProvider({ children }) {
         return;
       } catch (err) {
         toast.error('Failed to delete SMS');
+        return;
       }
     }
     setSMSHistory((prev) => prev.filter((sms) => (sms._id || sms.id) !== id));
