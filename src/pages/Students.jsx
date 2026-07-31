@@ -114,7 +114,7 @@ export default function Students() {
       'Parent Name': s.parentName || '',
       'Mobile No': s.parentPhone || '',
       'Class': s.class || '',
-      'Batch/Course': s.batch || '',
+      'Batch/Course': batches.find(b => b.id === s.batch)?.name || s.batch || '',
       'Status': 'Active'
     }));
 
