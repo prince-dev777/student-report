@@ -10,10 +10,6 @@ def add_confidence_scores(results: Dict[str, Any], threshold: float) -> None:
         for q_num, data in results["answers"].items():
             conf = calculate_confidence(data["fills"], threshold)
             data["confidence"] = conf
-            
-            # Reclassify as UNCERTAIN if confidence is too low
-            if conf < 0.2:
-                data["status"] = "UNCERTAIN"
                 
     if "roll_number" in results:
         roll_data = results["roll_number"]

@@ -142,6 +142,7 @@ export default function Tests() {
   const [showManualAnswerKeyModal, setShowManualAnswerKeyModal] = useState(false);
   const [manualAnswersGrid, setManualAnswersGrid] = useState([]);
   const [searchStudentQuery, setSearchStudentQuery] = useState('');
+  const [searchLeaderboardQuery, setSearchLeaderboardQuery] = useState('');
   const [singleOmrUploadingId, setSingleOmrUploadingId] = useState(null);
 
   // Memoize selected test for marks entry
@@ -256,10 +257,39 @@ export default function Tests() {
         initialOmrImages[s.id] = match.omrSheetImage;
       }
       if (match && match.studentAnswers && match.studentAnswers.length > 0) {
-        initialOmrStats[s.id] = {
-          correct: match.marks,
-          wrong: match.studentAnswers.length - match.marks
-        };
+        const answerKey = test.answerKey || [];
+        let correct = 0;
+        let wrong = 0;
+        match.studentAnswers.forEach((ans, idx) => {
+           const isObj = typeof ans === 'object' && ans !== null;
+           const status = isObj ? ans.status : (ans && ans !== 'NULL' ? 'valid' : 'blank');
+           const selected = isObj ? ans.selectedOption : ans;
+           
+           let isMapped = true;
+           if (test.subjectMapping && test.subjectMapping.length > 0) {
+              const qNum = idx + 1;
+              isMapped = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
+           }
+           
+           if (isMapped) {
+              if (status === 'invalid') {
+                 wrong++;
+              } else if (status === 'valid' && selected && selected !== 'NULL') {
+                 if (idx < answerKey.length) {
+                    const corStr = String(answerKey[idx]).trim().toUpperCase();
+                    const selStr = String(selected).trim().toUpperCase();
+                    
+                    let matched = false;
+                    if (selStr === corStr) matched = true;
+                    else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) matched = true;
+                    
+                    if (matched) correct++;
+                    else wrong++;
+                 }
+              }
+           }
+        });
+        initialOmrStats[s.id] = { correct, wrong };
       }
     });
     setMarksData(initialMarks);
@@ -410,7 +440,8 @@ export default function Tests() {
           currentErrors.push({
             rollNumber: r.rollNo,
             error: isDuplicate ? `Duplicate Roll No: ${r.rollNo}` : (r.rollNo ? `Roll No ${r.rollNo} not found` : 'Roll No missing'),
-            omrSheetImage: r.omrSheetImage
+            omrSheetImage: r.omrSheetImage,
+            filename: r.filename
           });
           
           if (!matchedStudent) {
@@ -636,14 +667,6 @@ export default function Tests() {
     setIsDownloadingOmrs(true);
     try {
       let targetDir = lastOmrScanDir;
-      if (window.electronAPI) {
-        const result = await window.electronAPI.selectDirectory();
-        if (result.canceled) {
-          setIsDownloadingOmrs(false);
-          return;
-        }
-        targetDir = result.filePaths[0];
-      }
 
       const res = await api.downloadOMRImages({
         targetDir: targetDir,
@@ -1879,8 +1902,13 @@ export default function Tests() {
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-gray-800 bg-white px-2 py-0.5 rounded text-sm border border-gray-200 shadow-sm">
-                                  Roll No: {err.rollNumber || 'Unknown'}
+                                  Roll No: {err.rollNumber || 'Unknown'} ⇒ 
                                 </span>
+                                {err.filename && (
+                                  <span className="font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded text-sm border border-gray-200">
+                                    {err.filename} ⇒ 
+                                  </span>
+                                )}
                                 <span className="text-sm font-medium text-red-600">{err.error}</span>
                               </div>
                               {err.details && <p className="text-xs text-gray-500">{err.details}</p>}
@@ -1938,6 +1966,14 @@ export default function Tests() {
                             
                             if (hasMarksA && !hasMarksB) return -1;
                             if (!hasMarksA && hasMarksB) return 1;
+
+                            if (hasMarksA && hasMarksB) {
+                              const marksA = Number(marksData[a.id]);
+                              const marksB = Number(marksData[b.id]);
+                              if (marksA !== marksB) {
+                                return marksB - marksA; // Descending order
+                              }
+                            }
                             
                             const rollA = a.rollNo ? String(a.rollNo) : '';
                             const rollB = b.rollNo ? String(b.rollNo) : '';
@@ -2026,14 +2062,24 @@ export default function Tests() {
       {showResultsModal && selectedTestResults && createPortal(
         <div className="modal-overlay" onClick={() => setShowResultsModal(false)}>
           <div className="modal-content modal-lg" style={{ width: '95vw', maxWidth: '1200px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header" style={{ flexShrink: 0, padding: '16px 24px' }}>
-              <div>
+            <div className="modal-header" style={{ flexShrink: 0, padding: '16px 24px', display: 'flex', alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
                 <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                   Leaderboard - {selectedTestResults.test.name}
                 </h3>
                 <p className="card-subtitle" style={{ margin: '4px 0 0 0', fontSize: '0.82rem' }}>
                   Subject: <strong>{selectedTestResults.test.subject}</strong> | Date: <strong>{formatDate(selectedTestResults.test.date)}</strong>
                 </p>
+              </div>
+              <div style={{ marginRight: '40px' }}>
+                <input 
+                  type="text" 
+                  className="form-input form-input-sm" 
+                  placeholder="Search student..." 
+                  style={{ width: '250px', padding: '6px 12px' }}
+                  value={searchLeaderboardQuery}
+                  onChange={e => setSearchLeaderboardQuery(e.target.value)}
+                />
               </div>
               <button className="modal-close" onClick={() => setShowResultsModal(false)}>
                 <X size={18} />
@@ -2058,7 +2104,14 @@ export default function Tests() {
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedTestResults.results.map((res) => {
+                    {selectedTestResults.results
+                      .filter(res => {
+                        if (!searchLeaderboardQuery) return true;
+                        const query = searchLeaderboardQuery.toLowerCase();
+                        return (res.studentName && res.studentName.toLowerCase().includes(query)) ||
+                               (res.rollNo && String(res.rollNo).toLowerCase().includes(query));
+                      })
+                      .map((res) => {
                       const rankClass = res.rank !== undefined ? getRankBadgeClass(res.rank) : 'rank-badge-default';
                       const marksCategory = res.percentage !== undefined ? getMarksCategory(res.percentage) : 'badge-default';
 

@@ -186,7 +186,7 @@ async function startServer() {
     ? path.join(process.resourcesPath, 'bin', 'mongod.exe')
     : path.join(__dirname, 'server', 'bin', 'mongod.exe');
 
-  if (fs.existsSync(mongodExePath)) {
+  if (fs.existsSync(mongodExePath) && app.isPackaged) {
     fs.appendFileSync(logFile, `Starting MongoDB from: ${mongodExePath}\n`);
     const mongoPort = 27018; // Use custom port to avoid conflict with existing installations
     mongoProcess = spawn(mongodExePath, [
@@ -200,6 +200,8 @@ async function startServer() {
     // Pass this local URI to the express server
     process.env.MONGODB_URI = `mongodb://127.0.0.1:${mongoPort}/student-report`;
     fs.appendFileSync(logFile, `Set local MONGODB_URI: ${process.env.MONGODB_URI}\n`);
+  } else if (!app.isPackaged) {
+    fs.appendFileSync(logFile, `Development mode: Skipping local MongoDB, connecting to Cloud DB.\n`);
   } else {
     fs.appendFileSync(logFile, `MongoDB binary NOT FOUND at: ${mongodExePath}\n`);
   }

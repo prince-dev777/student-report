@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../utils/api';
+import { api, API_BASE } from '../utils/api';
 import toast from 'react-hot-toast';
 
 const mainMenuItems = [
