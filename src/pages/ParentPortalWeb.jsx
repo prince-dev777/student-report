@@ -648,11 +648,13 @@ export default function ParentPortalWeb() {
             minScale={0.5}
             maxScale={4}
             centerOnInit
-            wheel={{ step: 0.1 }}
-            pinch={{ step: 5 }}
+            limitToBounds={false}
+            wheel={{ step: 0.005 }}
+            pinch={{ step: 1 }}
+            panning={{ velocityDisabled: true }}
           >
             {({ zoomIn, zoomOut, resetTransform, state }) => (
-              <div style={{ background: '#fff', borderRadius: '18px', padding: '18px', maxWidth: '560px', width: '100%', textAlign: 'center', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+              <div style={{ background: '#fff', borderRadius: '18px', padding: '18px', maxWidth: '900px', width: '90vw', textAlign: 'center', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -664,11 +666,12 @@ export default function ParentPortalWeb() {
                 </div>
 
                 <div style={{ flex: 1, overflow: 'hidden', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'grab' }}>
-                  <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
+                  <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }} contentStyle={{ width: '100%' }}>
                     <img
                       src={selectedOmrImage}
                       alt="OMR Sheet"
-                      style={{ width: '100%', display: 'block', pointerEvents: 'none' }}
+                      style={{ width: '100%', display: 'block' }}
+                      draggable={false}
                     />
                   </TransformComponent>
                 </div>

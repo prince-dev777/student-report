@@ -119,3 +119,12 @@ cd ..
 
 > [!TIP]
 > Har jagah `XX` ki jagah apna version number daalna! (e.g., `31`, `32`, `33`...)
+
+
+
+
+git add .
+git commit -m "Version 1.0.36"
+git tag v1.0.36
+git push origin master
+git push origin v1.0.36

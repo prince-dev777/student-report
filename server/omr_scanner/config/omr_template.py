@@ -29,7 +29,7 @@ class TemplateConfig:
 # T1 Template configuration based on Phase 0 validation
 T1_TEMPLATE = TemplateConfig(
     name="T1",
-    roi_size=12,
+    roi_size=18,
     fill_threshold=65.0,
     target_width=1000,
     target_height=1400,
@@ -84,7 +84,7 @@ for i in range(51, 76):
 
 T75_TEMPLATE = TemplateConfig(
     name="T75",
-    roi_size=12,
+    roi_size=18,
     fill_threshold=65.0,
     target_width=1000,
     target_height=1600,
@@ -151,7 +151,7 @@ t90_y_coords = [
 
 T90_TEMPLATE = TemplateConfig(
     name="T90",
-    roi_size=12,
+    roi_size=18,
     fill_threshold=65.0,
     target_width=1000,
     target_height=1800,
@@ -197,7 +197,7 @@ t2_num_y = [839, 929, 1020, 1110, 1201]
 
 T2_TEMPLATE = TemplateConfig(
     name="T2",
-    roi_size=12,
+    roi_size=18,
     fill_threshold=65.0,
     numerical_fill_threshold=45.0,
     target_width=903,
@@ -275,7 +275,7 @@ t6_y_coords = [int(380.0 + r * 19.5) for r in range(50)]
 
 T6_TEMPLATE = TemplateConfig(
     name="T6",
-    roi_size=12,
+    roi_size=18,
     fill_threshold=65.0,
     target_width=903,
     target_height=1412,
@@ -327,7 +327,7 @@ t3_y_coords = [int(375.0 + r * 21.8) for r in range(45)]
 
 T3_TEMPLATE = TemplateConfig(
     name="T3",
-    roi_size=12,
+    roi_size=18,
     fill_threshold=65.0,
     target_width=903,
     target_height=1412,
@@ -389,7 +389,7 @@ for block in range(6):
 
 T4_TEMPLATE = TemplateConfig(
     name="T4",
-    roi_size=12,
+    roi_size=18,
     fill_threshold=65.0,
     target_width=903,
     target_height=1412,
@@ -434,7 +434,7 @@ T4_TEMPLATE = TemplateConfig(
 # --- T5 (MHCET 200) ---
 T5_TEMPLATE = TemplateConfig(
     name="T5",
-    roi_size=12,
+    roi_size=18,
     fill_threshold=65.0,
     target_width=903,
     target_height=1412,
@@ -496,7 +496,7 @@ for block in range(5):
 
 T7_TEMPLATE = TemplateConfig(
     name="T7",
-    roi_size=12,
+    roi_size=18,
     fill_threshold=65.0,
     target_width=903,
     target_height=1412,

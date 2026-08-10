@@ -31,7 +31,7 @@ class Visualizer:
                     try:
                         idx = int(char)
                         sel_x, sel_y = digit_res["coordinates"][idx]
-                        cv2.circle(debug_img, (int(sel_x), int(sel_y)), config.roi_size, (0, 0, 255), 2)
+                        cv2.circle(debug_img, (int(sel_x), int(sel_y)), roi_half + 2, (0, 0, 255), 2)
                     except ValueError:
                         pass
                         
@@ -72,7 +72,7 @@ class Visualizer:
                                 block_opts = opts[base_idx : base_idx + options_per_row]
                                 idx = base_idx + block_opts.index(char)
                                 sel_x, sel_y = coords[idx]
-                                cv2.circle(debug_img, (int(sel_x), int(sel_y)), config.roi_size, (0, 255, 0), 2)
+                                cv2.circle(debug_img, (int(sel_x), int(sel_y)), roi_half + 2, (0, 255, 0), 2)
                             except ValueError:
                                 pass
                     else:
@@ -81,7 +81,7 @@ class Visualizer:
                             if char in opts:
                                 idx = opts.index(char)
                                 sel_x, sel_y = coords[idx]
-                                cv2.circle(debug_img, (int(sel_x), int(sel_y)), config.roi_size, (0, 255, 0), 2)
+                                cv2.circle(debug_img, (int(sel_x), int(sel_y)), roi_half + 2, (0, 255, 0), 2)
                 elif status == "UNCERTAIN":
                     # Mark uncertain question entirely in red
                     for x, y in coords:

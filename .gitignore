@@ -58,3 +58,4 @@ server/.wwebjs_cache/
 # Test output files
 server/test_scan_out*.txt
 server/warped_*.png
+.md
