@@ -78,53 +78,16 @@ cd ..
    - ✅ `latest.yml`
 6. **"Publish release"** button dabao
 
----
 
-## ✅ Verification Checklist
 
-Upload ke baad ye check karo:
-
-- [ ] Release pe **"Latest"** badge hai?
-- [ ] `.exe` ka naam mein **hyphens** hain? (dots ya spaces nahi)
-- [ ] `.blockmap` ka naam mein **hyphens** hain?
-- [ ] `latest.yml` uploaded hai?
-- [ ] Total **3 files** + Source code dikhna chahiye
-
----
-
-## 📋 Quick Reference (Saari Commands Ek Jagah)
-
-```powershell
-# 1. Version badhao package.json mein (manually)
-
-# 2. Git
 git add .
-git commit -m "Version 1.0.XX"
-git tag v1.0.XX
+git commit -m "Version 1.0.37"
+git tag v1.0.37
 git push origin master
-git push origin v1.0.XX
+git push origin v1.0.37
 
-# 3. Build
+
+
 npm run build
 npx electron-builder
 
-# 4. Rename (version number apna daalna)
-cd dist-electron-v2
-Rename-Item "Career Xone Pro Setup 1.0.XX.exe" "Career-Xone-Pro-Setup-1.0.XX.exe"
-Rename-Item "Career Xone Pro Setup 1.0.XX.exe.blockmap" "Career-Xone-Pro-Setup-1.0.XX.exe.blockmap"
-cd ..
-
-# 5. GitHub pe manually 3 files upload karo (exe + blockmap + latest.yml)
-```
-
-> [!TIP]
-> Har jagah `XX` ki jagah apna version number daalna! (e.g., `31`, `32`, `33`...)
-
-
-
-
-git add .
-git commit -m "Version 1.0.36"
-git tag v1.0.36
-git push origin master
-git push origin v1.0.36

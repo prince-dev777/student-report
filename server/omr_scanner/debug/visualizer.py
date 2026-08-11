@@ -27,7 +27,7 @@ class Visualizer:
                 status = digit_res["status"]
                 char = digit_res["digit"]
                 conf = digit_res.get("confidence", 0.0)
-                if status == "DETECTED" and char is not None:
+                if status in ("DETECTED", "UNCERTAIN") and char is not None:
                     try:
                         idx = int(char)
                         sel_x, sel_y = digit_res["coordinates"][idx]
