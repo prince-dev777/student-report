@@ -2500,7 +2500,7 @@ app.get('/api/system/backup-info', protect, (req, res) => {
       lastSync = data.lastSync;
     } catch(e) {}
   }
-  res.json({ autoBackupTime: '11:00 PM', lastSync });
+  res.json({ autoBackupTime: '4:00 PM', lastSync });
 });
 
 app.get('*', (req, res) => {
@@ -2569,8 +2569,8 @@ setInterval(() => {
 
   let shouldBackup = false;
   if (lastSyncStr !== todayStr) {
-    if (now.getHours() >= 23) {
-      shouldBackup = true; // 11:00 PM reached
+    if (now.getHours() >= 16) {
+      shouldBackup = true; // 4:00 PM reached
     } else if (lastSync) {
       // If we missed yesterday completely (more than 24h ago), catch up now
       const msSinceLastSync = now - lastSync;
