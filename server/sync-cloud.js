@@ -11,7 +11,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config({ path: path.join(__dirname, '..', '.env') }); // Load root .env for Cloudinary keys if running locally
 
 const CLOUD_URI = 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
-const LOCAL_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/student-report';
+const LOCAL_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27018/student-report';
 const dataPath = process.env.USER_DATA_PATH || __dirname;
 
 cloudinary.config({

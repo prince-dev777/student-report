@@ -186,7 +186,7 @@ async function startServer() {
     ? path.join(process.resourcesPath, 'bin', 'mongod.exe')
     : path.join(__dirname, 'server', 'bin', 'mongod.exe');
 
-  if (fs.existsSync(mongodExePath) && app.isPackaged) {
+  if (fs.existsSync(mongodExePath)) {
     fs.appendFileSync(logFile, `Starting MongoDB from: ${mongodExePath}\n`);
     const mongoPort = 27018; // Use custom port to avoid conflict with existing installations
     mongoProcess = spawn(mongodExePath, [

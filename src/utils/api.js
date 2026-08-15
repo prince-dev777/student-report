@@ -175,4 +175,5 @@ export const api = {
   
   // Cloud Sync
   syncDataToCloud: () => apiRequest('/sync', { method: 'POST' }),
+  getBackupInfo: () => apiRequest('/system/backup-info'),
 };

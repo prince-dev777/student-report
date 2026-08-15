@@ -40,6 +40,7 @@ export default function Sidebar() {
   const [lastSeenSmsCount, setLastSeenSmsCount] = useState(smsHistory.length);
   const [appVersion, setAppVersion] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [backupInfo, setBackupInfo] = useState(null);
 
   useEffect(() => {
     // Check for version from Electron main process
@@ -51,7 +52,21 @@ export default function Sidebar() {
     checkVersion();
     // Re-check after a short delay in case Electron sets it after load
     const timer = setTimeout(checkVersion, 2000);
-    return () => clearTimeout(timer);
+    
+    // Fetch backup info
+    const fetchBackup = async () => {
+      try {
+        const info = await api.getBackupInfo();
+        setBackupInfo(info);
+      } catch(e) {}
+    };
+    fetchBackup();
+    const backupTimer = setInterval(fetchBackup, 60000); // refresh every min
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(backupTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -243,6 +258,14 @@ export default function Sidebar() {
             <Archive size={18} />
             Local Backup
           </button>
+          
+          {backupInfo && (
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '5px' }}>
+              Auto-Sync: {backupInfo.autoBackupTime}
+              <br />
+              Last Synced: {backupInfo.lastSync ? new Date(backupInfo.lastSync).toLocaleDateString() + ' ' + new Date(backupInfo.lastSync).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Pending'}
+            </div>
+          )}
         </div>
 
         {/* Version Info */}
