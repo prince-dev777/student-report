@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, User, Phone, MapPin, Calendar, CheckCircle2, 
-  AlertTriangle, BookOpen, Clock, Mail, LineChart, BarChart2 
+  AlertTriangle, BookOpen, Clock, Mail, LineChart, BarChart2,
+  CreditCard, Printer
 } from 'lucide-react';
 import { 
   LineChart as ReLineChart, Line, XAxis, YAxis, Tooltip, 
@@ -12,9 +13,11 @@ import {
 import { getAvatarClass, getInitials } from '../data/sampleData';
 import { formatDate, formatTime, calcAttendancePercent } from '../utils/helpers';
 import { useApp } from '../context/AppContext';
+import { QRCodeSVG } from 'qrcode.react';
+import idLogo from '../assets/id-logo.png';
 
 export default function StudentProfileModal({ student: initialStudent, onClose, attendance, testResults, tests, smsHistory }) {
-  const { students, regenerateParentCredentials } = useApp();
+  const { students, batches, regenerateParentCredentials } = useApp();
   const [regenPassword, setRegenPassword] = useState('');
 
   const student = useMemo(() => {
@@ -143,6 +146,13 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
                 >
                   <Mail size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                   SMS Logs ({studentSMS.length})
+                </button>
+                <button
+                  className={`tab ${activeTab === 'idcard' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('idcard')}
+                >
+                  <CreditCard size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  ID Card
                 </button>
               </div>
             </div>
@@ -468,6 +478,81 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
                         </div>
                       )}
                     </div>
+                  </motion.div>
+                )}
+                {activeTab === 'idcard' && (
+                  <motion.div
+                    key="idcard"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '20px' }}
+                  >
+                    <div className="print-id-card" style={{ 
+                      width: '250px', 
+                      height: '420px', 
+                      background: 'linear-gradient(135deg, #f0f7ff 0%, #dbeafe 100%)', 
+                      borderRadius: '12px', 
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.15)', 
+                      overflow: 'hidden', 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      border: '1px solid #bfdbfe',
+                      position: 'relative',
+                      fontFamily: "'Montserrat', sans-serif"
+                    }}>
+                      <div style={{ height: '95px', width: '100%', overflow: 'hidden', background: '#fff', borderBottom: '2px solid #3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img src={idLogo} alt="Career Xone" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.2)' }} />
+                      </div>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-35px', zIndex: 2 }}>
+                        {student.photo ? (
+                          <img src={student.photo} alt={student.name} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
+                        ) : (
+                          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontSize: '2rem', color: 'var(--text-tertiary)', fontWeight: 'bold' }}>
+                            {getInitials(student.name)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div style={{ padding: '16px', textAlign: 'center', flex: 1 }}>
+                        <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: 'var(--text-primary)', fontWeight: '700' }}>{student.name}</h3>
+                        <p style={{ margin: '0 0 16px 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Course: {batches?.find(b => b.id === student.batch)?.name || student.batch || 'N/A'}</p>
+                        
+                        <div style={{ textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-primary)', lineHeight: '1.6' }}>
+                          <div style={{ display: 'flex' }}><strong style={{ width: '60px' }}>Roll No:</strong> <span>{student.rollNo}</span></div>
+                          <div style={{ display: 'flex' }}><strong style={{ width: '60px' }}>Parent:</strong> <span>{student.parentName || 'N/A'}</span></div>
+                          <div style={{ display: 'flex' }}><strong style={{ width: '60px' }}>Contact:</strong> <span>{student.parentPhone}</span></div>
+                          <div style={{ display: 'flex', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong style={{ width: '60px' }}>Address:</strong> <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{student.address || 'N/A'}</span></div>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '16px', padding: '0 8px' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ width: '60px', height: '24px', borderBottom: '1px solid var(--border-color)', marginBottom: '4px' }}></div>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <QRCodeSVG value={student.rollNo || student.id} size={56} level="M" />
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ width: '60px', height: '24px', borderBottom: '1px solid var(--border-color)', marginBottom: '4px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                              <img src="/principal-sign.png" alt="Principal" style={{ maxHeight: '24px', maxWidth: '60px', display: 'none' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div style={{ background: '#3b82f6', padding: '8px', textAlign: 'center', fontSize: '0.65rem', color: '#fff', fontWeight: '600', letterSpacing: '0.5px' }}>
+                        ID: {student.id}
+                      </div>
+                    </div>
+                    
+                    <button 
+                      className="btn btn-primary" 
+                      onClick={() => window.print()}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <Printer size={16} /> Print ID Card
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>

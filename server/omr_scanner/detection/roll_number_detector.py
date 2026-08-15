@@ -58,8 +58,8 @@ def detect_roll_number(thresh_image: np.ndarray, config: TemplateConfig) -> Dict
         
         final_str += char
 
-    # Handle leading and trailing '?'
-    final_str = final_str.strip("?")
+    # Handle trailing '?'
+    final_str = final_str.rstrip("?")
     if not final_str:
         final_str = "?" * len(x_coords)
         

@@ -983,7 +983,8 @@ app.get('/api/students', async (req, res) => {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { rollNo: { $regex: search, $options: 'i' } },
-        { parentPhone: { $regex: search, $options: 'i' } }
+        { parentPhone: { $regex: search, $options: 'i' } },
+        { id: { $regex: search, $options: 'i' } }
       ];
     }
 

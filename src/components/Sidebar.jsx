@@ -23,7 +23,7 @@ import toast from 'react-hot-toast';
 
 const mainMenuItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/students', icon: Users, label: 'Students' },
+  { to: '/students', icon: Users, label: 'Admission' },
   { to: '/attendance', icon: Fingerprint, label: 'Attendance' },
   { to: '/tests', icon: ClipboardList, label: 'Tests' },
 ];

@@ -13,14 +13,13 @@ except ImportError as e:
 # Template Mapping
 TEMPLATE_MAP = {
     "jee_75_with_numerical": "T2",
-    "jee_75_mcq": "T75",
+    "jee_75_mcq": "T1",
     "neet_180": "T3",
     "neet_90": "T4",
     "mhcet_200": "T5",
     "mhcet_200_bio": "T6",
     "omr_50": "T7",
-    "neet_bio_90": "T90",
-    "T1": "T75",
+    "T1": "T1",
     "T2": "T2",
     "T3": "T3",
     "T4": "T4",

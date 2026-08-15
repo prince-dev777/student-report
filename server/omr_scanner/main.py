@@ -7,7 +7,7 @@ from pathlib import Path
 
 from omr_scanner.config.omr_template import (
     T1_TEMPLATE, T2_TEMPLATE, T3_TEMPLATE, T4_TEMPLATE,
-    T5_TEMPLATE, T6_TEMPLATE, T7_TEMPLATE, T75_TEMPLATE, T90_TEMPLATE
+    T5_TEMPLATE, T6_TEMPLATE, T7_TEMPLATE
 )
 from omr_scanner.preprocessing.image_loader import load_image
 from omr_scanner.preprocessing.perspective import apply_perspective_correction
@@ -24,11 +24,7 @@ from omr_scanner.debug.visualizer import Visualizer
 
 def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", mapped_questions: list = None, debug: bool = False):
     name = template_name.upper()
-    if name == "T90":
-        config = T90_TEMPLATE
-    elif name == "T75":
-        config = T75_TEMPLATE
-    elif name == "T7":
+    if name == "T7":
         config = T7_TEMPLATE
     elif name == "T6":
         config = T6_TEMPLATE
@@ -49,8 +45,7 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", map
     try:
         image = load_image(input_path)
     except Exception as e:
-        print(f"Error loading image: {e}")
-        sys.exit(1)
+        raise Exception(f"Error loading image: {e}")
         
     if visualizer:
         visualizer.save_step("01_original.jpg", image)
@@ -62,8 +57,7 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", map
         if visualizer:
             visualizer.save_step("05_perspective_corrected.jpg", warped)
     except Exception as e:
-        print(f"Error during perspective correction: {e}")
-        sys.exit(1)
+        raise Exception(f"Error during perspective correction: {e}")
         
     # 4. PREPROCESSING
     thresh = preprocess_image(warped)
@@ -89,8 +83,7 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", map
     try:
         validate_results(results, config)
     except Exception as e:
-        print(f"Validation Error: {e}")
-        sys.exit(1)
+        raise Exception(f"Validation Error: {e}")
         
     # 10. SCORING
     calculate_score(results, config)
@@ -109,7 +102,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Modular OMR Scanner")
     parser.add_argument("--input", required=True, help="Path to input image")
     parser.add_argument("--output", default="debug_output", help="Directory for output JSON and debug images")
-    parser.add_argument('--template', choices=['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T75', 'T90'], default='T1',
+    parser.add_argument('--template', choices=['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'], default='T1',
                         help='Template format (default: T1)')
     parser.add_argument("--debug", action="store_true", help="Enable debug visualizations")
     args = parser.parse_args()

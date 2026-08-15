@@ -105,7 +105,7 @@ export default function Topbar() {
             <Search className="topbar-search-icon" size={16} />
             <input
               type="text"
-              placeholder="Search students, tests..."
+              placeholder="Search students, IDs, tests..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

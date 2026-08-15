@@ -147,7 +147,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OMR Scanner Batch Processor")
     parser.add_argument("--input", type=str, required=True, help="Directory containing input OMR images")
     parser.add_argument("--output", type=str, required=True, help="Directory to save JSON results and summaries")
-    parser.add_argument("--template", type=str, default="T1", choices=["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T75", "T90"], help="OMR template to use")
+    parser.add_argument("--template", type=str, default="T1", choices=["T1", "T2", "T3", "T4", "T5", "T6", "T7"], help="OMR template to use")
     parser.add_argument("--debug", action="store_true", help="Generate visual debug overlays")
     args = parser.parse_args()
     

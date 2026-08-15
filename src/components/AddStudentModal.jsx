@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Loader2, Camera } from 'lucide-react';
 import { batches } from '../data/sampleData';
+import { useApp } from '../context/AppContext';
 
 export default function AddStudentModal({ isEdit, studentData, onClose, onSave }) {
+  const { students } = useApp();
   const [form, setForm] = useState({
     name: '',
     rollNo: '',
@@ -22,6 +24,25 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAutoGenerate, setIsAutoGenerate] = useState(false);
+
+  useEffect(() => {
+    if (isAutoGenerate && !isEdit) {
+      // Find max roll number, starting from 1000
+      let maxRoll = 999;
+      if (students && students.length > 0) {
+        students.forEach(s => {
+          const rollInt = parseInt(s.rollNo, 10);
+          if (!isNaN(rollInt) && rollInt > maxRoll) {
+            maxRoll = rollInt;
+          }
+        });
+      }
+      setForm((prev) => ({ ...prev, rollNo: (maxRoll + 1).toString() }));
+    } else if (!isAutoGenerate && !isEdit && !studentData) {
+      setForm((prev) => ({ ...prev, rollNo: '' }));
+    }
+  }, [isAutoGenerate, students, isEdit, studentData]);
 
   useEffect(() => {
     if (isEdit && studentData) {
@@ -173,7 +194,23 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
                     )}
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Roll Number *</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label className="form-label" style={{ marginBottom: 0 }}>Roll Number *</label>
+                      {!isEdit && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input 
+                            type="checkbox" 
+                            id="auto-generate" 
+                            checked={isAutoGenerate}
+                            onChange={(e) => setIsAutoGenerate(e.target.checked)}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <label htmlFor="auto-generate" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                            Auto Generate
+                          </label>
+                        </div>
+                      )}
+                    </div>
                     <input
                       type="text"
                       name="rollNo"
@@ -181,6 +218,8 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
                       onChange={handleChange}
                       className="form-input"
                       placeholder="Enter roll number"
+                      disabled={isAutoGenerate}
+                      style={isAutoGenerate ? { background: 'var(--bg-tertiary)', cursor: 'not-allowed' } : {}}
                     />
                     {errors.rollNo && (
                       <span className="form-error" style={{ color: 'var(--accent-red)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>

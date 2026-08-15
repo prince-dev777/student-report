@@ -1,0 +1,399 @@
+{
+    "success": true,
+    "document": {
+        "filename": "jee_75_num_template.png"
+    },
+    "student": {
+        "name": null,
+        "roll_number": "?????"
+    },
+    "answers": {
+        "1": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "2": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "3": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "4": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "5": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "6": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "7": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "8": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "9": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "10": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "11": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "12": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "13": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "14": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "15": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "16": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "17": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "18": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "19": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "20": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 0.7
+        },
+        "26": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "27": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "28": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "29": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "30": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "31": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "32": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "33": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "34": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "35": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "36": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "37": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "38": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "39": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "40": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "41": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "42": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "43": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "44": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "45": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 0.89
+        },
+        "51": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "52": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "53": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "54": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "55": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "56": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "57": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "58": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "59": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "60": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "61": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "62": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "63": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "64": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "65": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "66": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "67": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "68": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "69": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "70": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 0.93
+        },
+        "21": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.15
+        },
+        "22": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.2
+        },
+        "23": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.23
+        },
+        "24": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.15
+        },
+        "25": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.24
+        },
+        "46": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.2
+        },
+        "47": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.3
+        },
+        "48": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.15
+        },
+        "49": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.06
+        },
+        "50": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.11
+        },
+        "71": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.28
+        },
+        "72": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.14
+        },
+        "73": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.17
+        },
+        "74": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.22
+        },
+        "75": {
+            "answer": "0",
+            "status": "ANSWERED",
+            "confidence": 0.16
+        }
+    },
+    "summary": {
+        "total_questions": 75,
+        "answered": 15,
+        "blank": 60,
+        "multiple": 0,
+        "uncertain": 0
+    },
+    "quality": {
+        "image_quality": 1.0,
+        "page_detection_confidence": 1.0,
+        "overall_confidence": 0.82
+    }
+}

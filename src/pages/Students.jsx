@@ -262,7 +262,7 @@ export default function Students() {
             <Search className="topbar-search-icon" size={16} />
             <input
               type="text"
-              placeholder="Search by name or roll no..."
+              placeholder="Search by name, roll no, or ID..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);

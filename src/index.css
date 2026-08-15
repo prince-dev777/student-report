@@ -1660,3 +1660,29 @@ h4 { font-size: 1.1rem; }
 .app-layout.sidebar-collapsed .topbar {
   left: var(--sidebar-collapsed);
 }
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .print-id-card, .print-id-card * {
+    visibility: visible !important;
+  }
+  .print-id-card {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    padding: 0;
+    box-shadow: none !important;
+    border: none !important;
+    width: 250px;
+    height: 420px;
+  }
+  .modal-overlay, .modal-content {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+

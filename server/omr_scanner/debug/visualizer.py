@@ -58,23 +58,43 @@ class Visualizer:
                     
                 # Label question
                 start_x, y = coords[0]
+                text_x = int(start_x) - 120
+                text_y = int(y) + 5
+                if len(opts) > len(set(opts)):  # numerical question
+                    text_x = int(start_x) + 30
+                    text_y = int(y) - 10
+                
                 cv2.putText(debug_img, f"Q{q_num}: {ans if ans else status} | {conf}", 
-                            (int(start_x) - 120, int(y) + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1)
+                            (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1)
                             
                 if status in ("ANSWERED", "MULTIPLE") and ans is not None:
                     # Highlight selected options
                     if len(opts) > len(set(opts)):
                         # Multi-row question (e.g. numerical) where options repeat
                         options_per_row = len(set(opts))
-                        for i, char in enumerate(ans):
-                            base_idx = i * options_per_row
-                            try:
-                                block_opts = opts[base_idx : base_idx + options_per_row]
-                                idx = base_idx + block_opts.index(char)
-                                sel_x, sel_y = coords[idx]
-                                cv2.circle(debug_img, (int(sel_x), int(sel_y)), roi_half + 2, (0, 255, 0), 2)
-                            except ValueError:
-                                pass
+                        row_digits = data.get("row_digits")
+                        if row_digits:
+                            for row_idx, char in enumerate(row_digits):
+                                if not char:
+                                    continue
+                                base_idx = row_idx * options_per_row
+                                try:
+                                    block_opts = opts[base_idx : base_idx + options_per_row]
+                                    idx = base_idx + block_opts.index(char)
+                                    sel_x, sel_y = coords[idx]
+                                    cv2.circle(debug_img, (int(sel_x), int(sel_y)), roi_half + 2, (0, 255, 0), 2)
+                                except ValueError:
+                                    pass
+                        else:
+                            for i, char in enumerate(ans):
+                                base_idx = i * options_per_row
+                                try:
+                                    block_opts = opts[base_idx : base_idx + options_per_row]
+                                    idx = base_idx + block_opts.index(char)
+                                    sel_x, sel_y = coords[idx]
+                                    cv2.circle(debug_img, (int(sel_x), int(sel_y)), roi_half + 2, (0, 255, 0), 2)
+                                except ValueError:
+                                    pass
                     else:
                         # Standard MCQ
                         for char in ans:
