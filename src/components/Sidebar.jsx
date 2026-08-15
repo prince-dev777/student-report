@@ -14,6 +14,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Cloud,
+  DownloadCloud,
   Archive
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -40,6 +41,7 @@ export default function Sidebar() {
   const [lastSeenSmsCount, setLastSeenSmsCount] = useState(smsHistory.length);
   const [appVersion, setAppVersion] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [backupInfo, setBackupInfo] = useState(null);
 
   useEffect(() => {
@@ -84,6 +86,30 @@ export default function Sidebar() {
     // Close sidebar on mobile after navigating
     if (window.innerWidth <= 768) {
       setSidebarOpen(false);
+    }
+  };
+
+  const handleRestoreCloud = async () => {
+    const confirmRestore = window.confirm('Are you sure you want to restore data from the Cloud? This will download all missing data from Cloud to your Local PC.');
+    if (!confirmRestore) return;
+    
+    setIsRestoring(true);
+    const tid = toast.loading('Restoring data from Cloud... Please wait.');
+    try {
+      const response = await fetch(`${API_BASE}/system/restore-cloud`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to restore');
+      
+      toast.success(data.message || 'Restore successful!', { id: tid });
+    } catch (err) {
+      toast.error(err.message || 'Restore failed. Check internet connection.', { id: tid });
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -252,7 +278,17 @@ export default function Sidebar() {
           
           <button 
             className="btn btn-outline" 
-            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}
+            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', opacity: isRestoring ? 0.7 : 1, marginTop: '-2px' }}
+            onClick={handleRestoreCloud}
+            disabled={isRestoring}
+          >
+            <DownloadCloud size={18} />
+            {isRestoring ? 'Restoring...' : 'Restore from Cloud'}
+          </button>
+
+          <button 
+            className="btn btn-outline" 
+            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '-2px' }}
             onClick={handleLocalBackup}
           >
             <Archive size={18} />

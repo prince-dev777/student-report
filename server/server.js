@@ -88,7 +88,7 @@ function buildTestLookup(testId, instituteId) {
   if (mongoose.Types.ObjectId.isValid(testId)) {
     lookup.push({ _id: testId });
   }
-  return { instituteId, $or: lookup };
+  return { instituteId, isDeleted: { $ne: true }, $or: lookup };
 }
 
 function safeUnlink(filePath) {
@@ -102,7 +102,7 @@ function safeUnlink(filePath) {
 async function attachTestDetailsToResults(results, instituteId) {
   const testIds = [...new Set(results.map((result) => result.testId).filter(Boolean))];
   const testDocs = testIds.length > 0
-    ? await Test.find({ instituteId, id: { $in: testIds } })
+    ? await Test.find({ isDeleted: { $ne: true },  instituteId, id: { $in: testIds } })
     : [];
   const testsById = new Map(testDocs.map((test) => [test.id, test.toObject()]));
 
@@ -124,9 +124,22 @@ mongoose.connect(MONGODB_URI)
   .then(async () => {
     console.log('🔌 Connected to MongoDB database.');
 
+    // Auto-restore check
+    try {
+      const studentCount = await Student.countDocuments();
+      if (studentCount === 0) {
+        console.log('🔄 Local DB is empty (0 students). Triggering Cloud Restoration...');
+        const child = spawn(process.execPath, ['restore-from-cloud.js'], { cwd: __dirname, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
+        child.stdout.on('data', (d) => process.stdout.write(d.toString()));
+        child.stderr.on('data', (d) => process.stderr.write(d.toString()));
+      }
+    } catch(err) {
+      console.error('Error checking DB count for auto-restore:', err);
+    }
+
     // Migration: reconstruct parentPasswordPlain for existing students
     try {
-      const students = await Student.find({
+      const students = await Student.find({ isDeleted: { $ne: true }, 
         $or: [
           { parentPasswordPlain: { $exists: false } },
           { parentPasswordPlain: null },
@@ -230,8 +243,8 @@ app.post('/api/superadmin/login', (req, res) => {
 
 app.get('/api/superadmin/institutes', superAdminProtect, async (req, res) => {
   try {
-    const institutes = await Institute.find().lean();
-    const users = await User.find({ role: 'owner' }).lean();
+    const institutes = await Institute.find({ isDeleted: { $ne: true } }).lean();
+    const users = await User.find({ isDeleted: { $ne: true },  role: 'owner' }).lean();
 
     // Combine data
     const result = institutes.map(inst => {
@@ -252,7 +265,7 @@ app.post('/api/superadmin/create-institute', superAdminProtect, async (req, res)
   try {
     const { instituteName, adminName, username, password } = req.body;
 
-    const userExists = await User.findOne({ username });
+    const userExists = await User.findOne({ isDeleted: { $ne: true },  username });
     if (userExists) {
       return res.status(400).json({ error: 'Username already exists' });
     }
@@ -277,9 +290,9 @@ app.post('/api/superadmin/create-institute', superAdminProtect, async (req, res)
 app.delete('/api/superadmin/institutes/:id', superAdminProtect, async (req, res) => {
   try {
     const instituteId = req.params.id;
-    await Institute.findByIdAndDelete(instituteId);
-    await User.deleteMany({ instituteId });
-    res.json({ message: 'Institute and owner deleted successfully' });
+    await Institute.findByIdAndUpdate(instituteId, { isDeleted: true, deletedAt: new Date() });
+    await User.updateMany({ instituteId }, { isDeleted: true, deletedAt: new Date() });
+    res.json({ message: 'Institute and associated users softly deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -289,7 +302,7 @@ app.put('/api/superadmin/institutes/:id/reset-password', superAdminProtect, asyn
   try {
     const instituteId = req.params.id;
     const { newPassword } = req.body;
-    const user = await User.findOne({ instituteId, role: 'owner' });
+    const user = await User.findOne({ isDeleted: { $ne: true },  instituteId, role: 'owner' });
     if (!user) return res.status(404).json({ error: 'Owner not found for this institute' });
     
     user.password = newPassword;
@@ -314,7 +327,7 @@ app.put('/api/superadmin/institutes/:id/notes', superAdminProtect, async (req, r
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await User.findOne({ username }).populate('instituteId');
+    const user = await User.findOne({ isDeleted: { $ne: true },  username }).populate('instituteId');
     if (user && (await user.comparePassword(password))) {
       const token = jwt.sign(
         { id: user._id, username: user.username, instituteId: user.instituteId._id, instituteName: user.instituteId.name },
@@ -406,9 +419,9 @@ app.post('/api/auth/staff-login', async (req, res) => {
 
     let user;
     if (username) {
-      user = await User.findOne({ username: username.trim() }).populate('instituteId');
+      user = await User.findOne({ isDeleted: { $ne: true },  username: username.trim() }).populate('instituteId');
     } else {
-      user = await User.findOne().populate('instituteId');
+      user = await User.findOne({ isDeleted: { $ne: true } }).populate('instituteId');
     }
 
     if (!user) {
@@ -456,7 +469,7 @@ app.post('/api/parent/login', async (req, res) => {
     const digitsOnlyUserId = cleanUserId.replace(/\D/g, '');
 
     // Search student by parentUserId, rollNo, id, or parentPhone
-    const student = await Student.findOne({
+    const student = await Student.findOne({ isDeleted: { $ne: true }, 
       $or: [
         { parentUserId: cleanUserId },
         { parentUserId: { $regex: new RegExp(`^${cleanUserId}$`, 'i') } },
@@ -505,17 +518,17 @@ app.post('/api/parent/login', async (req, res) => {
     );
 
     // Fetch Attendance records for this student
-    const attendanceRecords = await Attendance.find({ studentId: student.id })
+    const attendanceRecords = await Attendance.find({ isDeleted: { $ne: true },  studentId: student.id })
       .sort({ date: -1 })
       .limit(30);
 
     // Fetch Test Results for this student
-    const rawTestResults = await TestResult.find({ studentId: student.id, status: 'Published' })
+    const rawTestResults = await TestResult.find({ isDeleted: { $ne: true },  studentId: student.id, status: 'Published' })
       .sort({ createdAt: -1 })
       .limit(20);
 
     const testIds = rawTestResults.map(r => r.testId);
-    const tests = await Test.find({ id: { $in: testIds } });
+    const tests = await Test.find({ isDeleted: { $ne: true },  id: { $in: testIds } });
     const testMap = {};
     tests.forEach(t => { testMap[t.id] = t; });
 
@@ -621,7 +634,7 @@ app.post('/iclock/cdata', async (req, res) => {
       }
 
       // Find Student to get Institute ID
-      const student = await Student.findOne({ rollNo: String(rollNumber) });
+      const student = await Student.findOne({ isDeleted: { $ne: true },  rollNo: String(rollNumber) });
       if (!student) {
         console.warn(`[ADMS] Unrecognized Roll Number: ${rollNumber}`);
         continue;
@@ -631,7 +644,7 @@ app.post('/iclock/cdata', async (req, res) => {
       const today = dateStr;
 
       // Find or create attendance record
-      let record = await Attendance.findOne({ studentId: student.id, date: today, instituteId });
+      let record = await Attendance.findOne({ isDeleted: { $ne: true },  studentId: student.id, date: today, instituteId });
 
       let isNewPunch = false;
       if (!record) {
@@ -702,7 +715,7 @@ app.get('/api/whatsapp/pending', async (req, res) => {
   }
 
   try {
-    const pendingLogs = await SMSLog.find({ status: 'pending' }).sort({ createdAt: 1 });
+    const pendingLogs = await SMSLog.find({ isDeleted: { $ne: true },  status: 'pending' }).sort({ createdAt: 1 });
     res.json(pendingLogs);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -744,7 +757,7 @@ app.post('/api/attendance/biometric', async (req, res) => {
       return res.status(400).json({ error: 'Missing instituteId or rollNumber' });
     }
 
-    const student = await Student.findOne({ rollNo: String(rollNumber), instituteId });
+    const student = await Student.findOne({ isDeleted: { $ne: true },  rollNo: String(rollNumber), instituteId });
     if (!student) {
       return res.status(404).json({ error: `Student with Roll Number ${rollNumber} not found` });
     }
@@ -752,7 +765,7 @@ app.post('/api/attendance/biometric', async (req, res) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    let record = await Attendance.findOne({ studentId: student.id, date: todayStr, instituteId });
+    let record = await Attendance.findOne({ isDeleted: { $ne: true },  studentId: student.id, date: todayStr, instituteId });
 
     if (record) {
       if (type === 'IN') {
@@ -800,7 +813,7 @@ app.use('/api/staff', protect);
 
 app.get('/api/staff/students', async (req, res) => {
   try {
-    const students = await Student.find({ instituteId: req.user.instituteId }).sort({ createdAt: -1 });
+    const students = await Student.find({ isDeleted: { $ne: true },  instituteId: req.user.instituteId }).sort({ createdAt: -1 });
     res.json(students);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -809,7 +822,7 @@ app.get('/api/staff/students', async (req, res) => {
 
 app.get('/api/staff/attendance', async (req, res) => {
   try {
-    const attendance = await Attendance.find({ instituteId: req.user.instituteId }).sort({ timestamp: -1 });
+    const attendance = await Attendance.find({ isDeleted: { $ne: true },  instituteId: req.user.instituteId }).sort({ timestamp: -1 });
     res.json(attendance);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -820,7 +833,7 @@ app.post('/api/staff/attendance', async (req, res) => {
   try {
     const { studentId, date, timestamp, status, method } = req.body;
 
-    const student = await Student.findOne({ id: studentId, instituteId: req.user.instituteId });
+    const student = await Student.findOne({ isDeleted: { $ne: true },  id: studentId, instituteId: req.user.instituteId });
     if (!student) {
       return res.status(404).json({ error: 'Student not found in your institute' });
     }
@@ -906,12 +919,12 @@ app.get('/api/parent/data', async (req, res) => {
     const studentId = req.user.studentId;
     const instituteId = req.user.instituteId;
 
-    const student = await Student.findOne({ _id: studentId, instituteId });
+    const student = await Student.findOne({ isDeleted: { $ne: true },  _id: studentId, instituteId });
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
     const studentKeys = [student.id, String(student._id)];
-    const attendance = await Attendance.find({ studentId: { $in: studentKeys }, instituteId }).sort({ date: -1 });
-    const resultDocs = await TestResult.find({
+    const attendance = await Attendance.find({ isDeleted: { $ne: true },  studentId: { $in: studentKeys }, instituteId }).sort({ date: -1 });
+    const resultDocs = await TestResult.find({ isDeleted: { $ne: true }, 
       studentId: student.id,
       instituteId,
       status: 'Published'
@@ -935,7 +948,7 @@ app.get('/api/parent/attendance', async (req, res) => {
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
     const studentKeys = [student.id, String(student._id)];
-    const attendance = await Attendance.find({ studentId: { $in: studentKeys }, instituteId: req.user.instituteId }).sort({ date: -1 });
+    const attendance = await Attendance.find({ isDeleted: { $ne: true },  studentId: { $in: studentKeys }, instituteId: req.user.instituteId }).sort({ date: -1 });
     res.json(attendance);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -948,7 +961,7 @@ app.get('/api/parent/results', async (req, res) => {
     const student = await Student.findById(req.user.studentId);
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
-    const resultDocs = await TestResult.find({
+    const resultDocs = await TestResult.find({ isDeleted: { $ne: true }, 
       studentId: student.id,
       instituteId: req.user.instituteId,
       status: 'Published'
@@ -978,7 +991,7 @@ app.get('/api/students', async (req, res) => {
     const limit = parseInt(req.query.limit) || 10000;
     const search = req.query.search || '';
 
-    const query = { instituteId: req.user.instituteId };
+    const query = { instituteId: req.user.instituteId, isDeleted: { $ne: true } };
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -1028,7 +1041,7 @@ app.post('/api/students/bulk', authenticateToken, async (req, res) => {
       let parentUserId = data.parentUserId || rollNo;
 
       // Check if student exists
-      const existingStudent = await Student.findOne({ rollNo, instituteId: req.user.instituteId });
+      const existingStudent = await Student.findOne({ isDeleted: { $ne: true },  rollNo, instituteId: req.user.instituteId });
 
       if (existingStudent) {
         // Update (Merge)
@@ -1053,7 +1066,7 @@ app.post('/api/students/bulk', authenticateToken, async (req, res) => {
         // Create new
         // Check if parentUserId is unique
         let finalParentUserId = parentUserId;
-        let exists = await Student.findOne({ parentUserId: String(finalParentUserId) });
+        let exists = await Student.findOne({ isDeleted: { $ne: true },  parentUserId: String(finalParentUserId) });
         if (exists) {
           const random4 = Math.floor(1000 + Math.random() * 9000); // 4 digits
           finalParentUserId = `${rollNo}-${random4}`;
@@ -1086,14 +1099,14 @@ app.post('/api/students', async (req, res) => {
     let parentUserId = req.body.parentUserId;
     if (!parentUserId || !parentUserId.trim()) {
       parentUserId = rollNo;
-      const exists = await Student.findOne({ parentUserId: String(parentUserId) });
+      const exists = await Student.findOne({ isDeleted: { $ne: true },  parentUserId: String(parentUserId) });
       if (exists) {
         const random4 = Math.floor(1000 + Math.random() * 9000); // 4 digits
         parentUserId = `${rollNo}-${random4}`;
       }
     } else {
       parentUserId = parentUserId.trim();
-      const exists = await Student.findOne({ parentUserId: String(parentUserId) });
+      const exists = await Student.findOne({ isDeleted: { $ne: true },  parentUserId: String(parentUserId) });
       if (exists) {
         return res.status(400).json({ error: 'This Parent User ID is already in use by another student!' });
       }
@@ -1146,7 +1159,7 @@ app.post('/api/students', async (req, res) => {
 
 app.post('/api/students/:id/regenerate-parent', async (req, res) => {
   try {
-    const student = await Student.findOne({ id: req.params.id, instituteId: req.user.instituteId });
+    const student = await Student.findOne({ isDeleted: { $ne: true },  id: req.params.id, instituteId: req.user.instituteId });
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
     const rollNo = student.rollNo;
@@ -1174,7 +1187,7 @@ app.post('/api/students/:id/regenerate-parent', async (req, res) => {
 
 app.put('/api/students/:id', async (req, res) => {
   try {
-    const studentToUpdate = await Student.findOne({ id: req.params.id, instituteId: req.user.instituteId });
+    const studentToUpdate = await Student.findOne({ isDeleted: { $ne: true },  id: req.params.id, instituteId: req.user.instituteId });
     if (!studentToUpdate) return res.status(404).json({ error: 'Student not found' });
 
     const updateData = { ...req.body };
@@ -1183,7 +1196,7 @@ app.put('/api/students/:id', async (req, res) => {
     if (req.body.parentUserId && req.body.parentUserId.trim()) {
       const parentUserIdClean = req.body.parentUserId.trim();
       if (parentUserIdClean !== studentToUpdate.parentUserId) {
-        const exists = await Student.findOne({ parentUserId: parentUserIdClean });
+        const exists = await Student.findOne({ isDeleted: { $ne: true },  parentUserId: parentUserIdClean });
         if (exists) {
           return res.status(400).json({ error: 'This Parent User ID is already in use by another student!' });
         }
@@ -1211,15 +1224,19 @@ app.put('/api/students/:id', async (req, res) => {
 
 app.delete('/api/students/:id', async (req, res) => {
   try {
-    const student = await Student.findOneAndDelete({ id: req.params.id, instituteId: req.user.instituteId });
+    const student = await Student.findOneAndUpdate(
+      { id: req.params.id, instituteId: req.user.instituteId },
+      { isDeleted: true, deletedAt: new Date() },
+      { new: true }
+    );
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
-    // Cascade delete associated records
-    await Attendance.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
-    await TestResult.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
-    await SMSLog.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
+    // Cascade soft delete associated records
+    await Attendance.updateMany({ studentId: req.params.id, instituteId: req.user.instituteId }, { isDeleted: true, deletedAt: new Date() });
+    await TestResult.updateMany({ studentId: req.params.id, instituteId: req.user.instituteId }, { isDeleted: true, deletedAt: new Date() });
+    await SMSLog.updateMany({ studentId: req.params.id, instituteId: req.user.instituteId }, { isDeleted: true, deletedAt: new Date() });
 
-    res.json({ message: 'Student and all associated records deleted successfully' });
+    res.json({ message: 'Student and all associated records softly deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1228,7 +1245,7 @@ app.delete('/api/students/:id', async (req, res) => {
 // ---- 🔗 Biometric ADMS Relay / Proxy for Edofox ----
 async function processBiometricPunch(rollNo, type, time) {
   try {
-    const student = await Student.findOne({ rollNo: String(rollNo) });
+    const student = await Student.findOne({ isDeleted: { $ne: true },  rollNo: String(rollNo) });
     if (!student) {
       console.warn(`[ADMS Relay] Student with Roll Number ${rollNo} not found in DB.`);
       return;
@@ -1238,7 +1255,7 @@ async function processBiometricPunch(rollNo, type, time) {
     const todayStr = new Date().toISOString().split('T')[0];
     const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    let record = await Attendance.findOne({ studentId: student.id, date: todayStr, instituteId });
+    let record = await Attendance.findOne({ isDeleted: { $ne: true },  studentId: student.id, date: todayStr, instituteId });
 
     if (record) {
       if (type === 'IN') {
@@ -1358,7 +1375,7 @@ app.all('/iclock/*', async (req, res) => {
 
 app.get('/api/attendance', async (req, res) => {
   try {
-    const records = await Attendance.find({ instituteId: req.user.instituteId });
+    const records = await Attendance.find({ isDeleted: { $ne: true },  instituteId: req.user.instituteId });
     res.json(records);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1373,7 +1390,7 @@ app.post('/api/attendance', async (req, res) => {
     let isNewExit = false;
 
     // Find if already exists for this institute
-    let record = await Attendance.findOne({ studentId, date, instituteId: req.user.instituteId });
+    let record = await Attendance.findOne({ isDeleted: { $ne: true },  studentId, date, instituteId: req.user.instituteId });
     if (record) {
       if (entryTime && !record.entryTime) isNewEntry = true;
       if (exitTime && !record.exitTime) isNewExit = true;
@@ -1392,7 +1409,7 @@ app.post('/api/attendance', async (req, res) => {
     }
 
     // Trigger WhatsApp Alerts and Notifications
-    const student = await Student.findOne({ id: studentId, instituteId: req.user.instituteId });
+    const student = await Student.findOne({ isDeleted: { $ne: true },  id: studentId, instituteId: req.user.instituteId });
     if (student) {
       // 1. Absent Alert
       if ((status === 'absent' || status === 'Absent') && !record.smsSent && student.parentPhone) {
@@ -1469,7 +1486,7 @@ app.post('/api/attendance', async (req, res) => {
 // ---- 📝 Tests API ----
 app.get('/api/tests', authenticateToken, async (req, res) => {
   try {
-    const tests = await Test.find({ instituteId: req.user.instituteId }).sort({ date: -1 });
+    const tests = await Test.find({ isDeleted: { $ne: true },  instituteId: req.user.instituteId }).sort({ date: -1 });
     res.json(tests);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1502,11 +1519,15 @@ app.put('/api/tests/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/tests/:id', authenticateToken, async (req, res) => {
   try {
-    const test = await Test.findOneAndDelete(buildTestLookup(req.params.id, req.user.instituteId));
+    const test = await Test.findOneAndUpdate(
+      buildTestLookup(req.params.id, req.user.instituteId),
+      { isDeleted: true, deletedAt: new Date() },
+      { new: true }
+    );
     if (!test) return res.status(404).json({ error: 'Test not found' });
-    // Also delete all related test results
-    await TestResult.deleteMany({ testId: test.id, instituteId: req.user.instituteId });
-    res.json({ message: 'Test and associated results deleted successfully' });
+    // Also soft delete all related test results
+    await TestResult.updateMany({ testId: test.id, instituteId: req.user.instituteId }, { isDeleted: true, deletedAt: new Date() });
+    res.json({ message: 'Test and associated results softly deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1548,7 +1569,7 @@ app.post('/api/tests/:id/regrade', authenticateToken, async (req, res) => {
     const negMarks = test.negativeMarking || 0;
 
     // Fetch all results for this test that have studentAnswers
-    const results = await TestResult.find({ testId: test.id, instituteId: req.user.instituteId });
+    const results = await TestResult.find({ isDeleted: { $ne: true },  testId: test.id, instituteId: req.user.instituteId });
     let regradedCount = 0;
 
     for (const result of results) {
@@ -1609,7 +1630,7 @@ app.post('/api/tests/:id/regrade', authenticateToken, async (req, res) => {
     }
 
     // Recalculate ranks
-    const allResults = await TestResult.find({ testId: test.id, instituteId: req.user.instituteId }).sort({ marks: -1 });
+    const allResults = await TestResult.find({ isDeleted: { $ne: true },  testId: test.id, instituteId: req.user.instituteId }).sort({ marks: -1 });
     for (let i = 0; i < allResults.length; i++) {
       allResults[i].rank = i + 1;
       allResults[i].totalStudents = allResults.length;
@@ -1625,7 +1646,7 @@ app.post('/api/tests/:id/regrade', authenticateToken, async (req, res) => {
 // ---- 🏆 Test Results API ----
 app.get('/api/test-results', async (req, res) => {
   try {
-    const results = await TestResult.find({ instituteId: req.user.instituteId });
+    const results = await TestResult.find({ isDeleted: { $ne: true },  instituteId: req.user.instituteId });
     res.json(results);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1729,7 +1750,7 @@ app.post('/api/test-results/bulk', authenticateToken, async (req, res) => {
       saved.push(record);
 
       if (r.status === 'Published') {
-        const student = await Student.findOne({ id: r.studentId, instituteId: req.user.instituteId });
+        const student = await Student.findOne({ isDeleted: { $ne: true },  id: r.studentId, instituteId: req.user.instituteId });
         if (student && test) {
           const notification = new Notification({
             instituteId: req.user.instituteId,
@@ -1774,7 +1795,7 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
     const test = await Test.findOne(buildTestLookup(testId, req.user.instituteId));
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
-    const results = await TestResult.find({ testId: test.id, instituteId: req.user.instituteId });
+    const results = await TestResult.find({ isDeleted: { $ne: true },  testId: test.id, instituteId: req.user.instituteId });
     if (!results || results.length === 0) return res.status(404).json({ error: 'No results found for this test' });
 
     let publishCount = 0;
@@ -1785,7 +1806,7 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
       publishCount++;
 
       if (sendSMS) {
-        const student = await Student.findOne({ id: r.studentId, instituteId: req.user.instituteId });
+        const student = await Student.findOne({ isDeleted: { $ne: true },  id: r.studentId, instituteId: req.user.instituteId });
         if (student) {
           const notification = new Notification({
             instituteId: req.user.instituteId,
@@ -2131,7 +2152,7 @@ app.put('/api/notifications/:id/read', async (req, res) => {
 // ---- 📱 SMS Logs API ----
 app.get('/api/sms-logs', async (req, res) => {
   try {
-    const logs = await SMSLog.find({ instituteId: req.user.instituteId }).sort({ createdAt: -1 });
+    const logs = await SMSLog.find({ isDeleted: { $ne: true },  instituteId: req.user.instituteId }).sort({ createdAt: -1 });
     res.json(logs);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2154,9 +2175,13 @@ app.post('/api/sms-logs', async (req, res) => {
 
 app.delete('/api/sms-logs/:id', async (req, res) => {
   try {
-    const log = await SMSLog.findOneAndDelete({ id: req.params.id, instituteId: req.user.instituteId });
+    const log = await SMSLog.findOneAndUpdate(
+      { id: req.params.id, instituteId: req.user.instituteId },
+      { isDeleted: true, deletedAt: new Date() },
+      { new: true }
+    );
     if (!log) return res.status(404).json({ error: 'SMS log not found' });
-    res.json({ message: 'SMS log deleted successfully' });
+    res.json({ message: 'SMS log softly deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -2253,7 +2278,7 @@ cron.schedule('0 0 * * *', async () => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     // Find records older than 30 days that have a Cloudinary public ID
-    const recordsToDelete = await TestResult.find({
+    const recordsToDelete = await TestResult.find({ isDeleted: { $ne: true }, 
       createdAt: { $lt: thirtyDaysAgo },
       omrSheetPublicId: { $ne: null }
     });
@@ -2331,7 +2356,7 @@ async function pollPendingWhatsAppMessages() {
 
   isPolling = true;
   try {
-    const pendingLogs = await SMSLog.find({ status: 'pending' }).sort({ createdAt: 1 });
+    const pendingLogs = await SMSLog.find({ isDeleted: { $ne: true },  status: 'pending' }).sort({ createdAt: 1 });
     if (pendingLogs && pendingLogs.length > 0) {
       console.log(`[WhatsApp Poller] Found ${pendingLogs.length} pending messages.`);
       for (const log of pendingLogs) {
@@ -2488,6 +2513,26 @@ app.post('/api/sync', protect, (req, res) => {
       fs.writeFileSync(path.join(__dirname, 'sync-status.json'), JSON.stringify({ lastSync: new Date().toISOString() }));
     } catch(e) { console.error('Failed to write sync-status.json', e); }
     res.json({ message: 'Successfully backed up all records and images to the Cloud.' });
+  });
+});
+
+// ---- 🔄 Restore API (Cloud to Local) ----
+app.post('/api/system/restore-cloud', protect, (req, res) => {
+  console.log('🔄 Triggering restore-from-cloud.js...');
+  
+  const child = spawn(process.execPath, ['restore-from-cloud.js'], { cwd: __dirname, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
+  
+  let output = '';
+  child.stdout.on('data', (data) => output += data.toString());
+  child.stderr.on('data', (data) => output += data.toString());
+  
+  child.on('close', (code) => {
+    if (code !== 0) {
+      console.error(`❌ Restore failed with code ${code}. Output: ${output}`);
+      return res.status(500).json({ error: 'Failed to restore data from the cloud. Check internet connection.' });
+    }
+    console.log(`✅ Restore complete! Output: ${output}`);
+    res.json({ message: 'Successfully restored all data from the Cloud to Local PC.' });
   });
 });
 

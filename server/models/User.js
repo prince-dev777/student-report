@@ -15,6 +15,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null }
 }, { timestamps: true });
 
 // Pre-save hook to hash password
@@ -34,6 +36,9 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// TTL Index for Soft Deletes (7 days = 604800 seconds)
+userSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 604800 });
 
 const User = mongoose.model('User', userSchema);
 export default User;

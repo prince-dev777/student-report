@@ -14,10 +14,15 @@ const testResultSchema = new mongoose.Schema({
   status: { type: String, enum: ['Draft', 'Published'], default: 'Draft' },
   studentAnswers: { type: [String], default: [] },
   omrSheetImage: { type: String, default: null },
-  omrSheetPublicId: { type: String, default: null }
+  omrSheetPublicId: { type: String, default: null },
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null }
 }, { timestamps: true });
 
 // Ensure unique result per student per test
 testResultSchema.index({ testId: 1, studentId: 1 }, { unique: true });
+
+// TTL Index for Soft Deletes (7 days = 604800 seconds)
+testResultSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 604800 });
 
 export default mongoose.model('TestResult', testResultSchema);

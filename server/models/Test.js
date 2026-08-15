@@ -22,6 +22,10 @@ const testSchema = new mongoose.Schema({
   templateConfig: { type: mongoose.Schema.Types.Mixed },
   templateId: { type: String },
   questionsToDetect: { type: Number },
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null }
 }, { timestamps: true });
+// TTL Index for Soft Deletes (7 days = 604800 seconds)
+testSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 604800 });
 
 export default mongoose.model('Test', testSchema);
