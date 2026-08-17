@@ -750,23 +750,6 @@ export default function ParentPortalWeb() {
             </div>
           </div>
 
-          {/* AI Performance Insight Strip */}
-          <div style={{
-            marginTop: '14px',
-            background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
-            border: '1.5px solid #a7f3d0',
-            borderRadius: '12px',
-            padding: '10px 12px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '8px'
-          }}>
-            <Sparkles size={16} color="#059669" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <p style={{ margin: 0, fontSize: '0.76rem', color: '#065f46', lineHeight: 1.45, fontWeight: 600 }}>
-              <strong>AI Performance Advisor:</strong> {analyticsData.aiInsight}
-            </p>
-          </div>
-
           {/* Quick Metrics Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '12px' }}>
             <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '8px 6px', borderRadius: '10px', textAlign: 'center' }}>
@@ -1227,7 +1210,7 @@ export default function ParentPortalWeb() {
               {/* Remarks & Signatures */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '24px', paddingTop: '12px', borderTop: '1px dashed #cbd5e1' }}>
                 <div style={{ fontSize: '0.72rem', color: '#475569' }}>
-                  <div><strong>Remarks:</strong> {analyticsData.growthBadge} ({analyticsData.aiInsight})</div>
+                  <div><strong>Remarks:</strong> Good Academic Progress</div>
                   <div style={{ marginTop: '4px' }}>Generated Date: {new Date().toLocaleDateString('en-IN')}</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
