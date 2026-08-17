@@ -1,4 +1,5 @@
 import SMSLog from '../models/SMSLog.js';
+import { sendWhatsAppMessageWeb, getWhatsAppClientState } from './whatsappClient.js';
 
 /**
  * Sends a WhatsApp message to the specified parent phone number.
@@ -43,10 +44,16 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       formattedPhone = '+' + formattedPhone;
     }
 
-    console.log(`[WhatsAppService] Sending WhatsApp alert via provider: ${provider} to ${formattedPhone}`);
+    console.log(`[WhatsAppService] Sending WhatsApp alert to ${formattedPhone} (Type: ${type})`);
 
     try {
-      if (provider === 'ultramsg') {
+      // 1. Primary: If local WhatsApp Web client is linked and ready, send via connected WhatsApp account
+      const waState = getWhatsAppClientState();
+      if (waState && waState.status === 'ready') {
+        await sendWhatsAppMessageWeb(formattedPhone, messageText);
+        status = 'delivered';
+        console.log(`[WhatsAppService] Successfully sent WhatsApp message via local client to ${formattedPhone}`);
+      } else if (provider === 'ultramsg') {
         const instanceId = process.env.WHATSAPP_INSTANCE_ID;
         const token = process.env.WHATSAPP_TOKEN;
 
@@ -99,10 +106,8 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
           throw new Error(resData.message || `HTTP ${response.status}`);
         }
         status = 'delivered';
-      } else if (provider === 'whatsapp-web') {
-        status = 'pending';
       } else {
-        status = 'sent';
+        status = 'pending';
       }
     } catch (err) {
       console.error('[WhatsAppService] Error sending WhatsApp message:', err.message);

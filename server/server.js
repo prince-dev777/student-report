@@ -1209,6 +1209,15 @@ app.post('/api/students', async (req, res) => {
     const responseData = student.toObject();
     responseData.parentPlainPassword = plainPassword;
 
+    // Trigger immediate background Cloud Sync so Parents App has the new student credentials right away
+    try {
+      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: 'ignore'
+      });
+      syncProc.on('error', (e) => console.warn('Student add sync fork error:', e.message));
+    } catch(syncErr) {}
+
     res.status(201).json(responseData);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -1235,6 +1244,15 @@ app.post('/api/students/:id/regenerate-parent', async (req, res) => {
 
     const responseData = student.toObject();
     responseData.parentPlainPassword = plainPassword;
+
+    // Trigger immediate background Cloud Sync
+    try {
+      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: 'ignore'
+      });
+      syncProc.on('error', (e) => console.warn('Student regen sync fork error:', e.message));
+    } catch(syncErr) {}
 
     res.json(responseData);
   } catch (err) {
@@ -1282,19 +1300,26 @@ app.put('/api/students/:id', async (req, res) => {
 
 app.delete('/api/students/:id', async (req, res) => {
   try {
-    const student = await Student.findOneAndUpdate(
-      { id: req.params.id, instituteId: req.user.instituteId },
-      { isDeleted: true, deletedAt: new Date() },
-      { new: true }
+    const student = await Student.findOneAndDelete(
+      { id: req.params.id, instituteId: req.user.instituteId }
     );
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
-    // Cascade soft delete associated records
-    await Attendance.updateMany({ studentId: req.params.id, instituteId: req.user.instituteId }, { isDeleted: true, deletedAt: new Date() });
-    await TestResult.updateMany({ studentId: req.params.id, instituteId: req.user.instituteId }, { isDeleted: true, deletedAt: new Date() });
-    await SMSLog.updateMany({ studentId: req.params.id, instituteId: req.user.instituteId }, { isDeleted: true, deletedAt: new Date() });
+    // Cascade hard delete associated records
+    await Attendance.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
+    await TestResult.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
+    await SMSLog.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
 
-    res.json({ message: 'Student and all associated records softly deleted successfully' });
+    // Trigger immediate background Cloud Sync to wipe it from Cloud immediately
+    try {
+      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: 'ignore'
+      });
+      syncProc.on('error', (e) => console.warn('Student delete sync fork error:', e.message));
+    } catch(syncErr) {}
+
+    res.json({ message: 'Student and all associated records permanently deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1675,13 +1700,20 @@ app.put('/api/sessions/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
   try {
-    const session = await Session.findOneAndUpdate(
-      { id: req.params.id, instituteId: req.user.instituteId },
-      { isDeleted: true, deletedAt: new Date() },
-      { new: true }
+    const session = await Session.findOneAndDelete(
+      { id: req.params.id, instituteId: req.user.instituteId }
     );
     if (!session) return res.status(404).json({ error: 'Session not found' });
-    res.json({ message: 'Session deleted successfully' });
+
+    try {
+      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: 'ignore'
+      });
+      syncProc.on('error', (e) => console.warn('Session delete sync fork error:', e.message));
+    } catch(syncErr) {}
+
+    res.json({ message: 'Session permanently deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1723,13 +1755,20 @@ app.put('/api/inquiries/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/inquiries/:id', authenticateToken, async (req, res) => {
   try {
-    const inquiry = await Inquiry.findOneAndUpdate(
-      { id: req.params.id, instituteId: req.user.instituteId },
-      { isDeleted: true, deletedAt: new Date() },
-      { new: true }
+    const inquiry = await Inquiry.findOneAndDelete(
+      { id: req.params.id, instituteId: req.user.instituteId }
     );
     if (!inquiry) return res.status(404).json({ error: 'Inquiry not found' });
-    res.json({ message: 'Inquiry deleted successfully' });
+
+    try {
+      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: 'ignore'
+      });
+      syncProc.on('error', (e) => console.warn('Inquiry delete sync fork error:', e.message));
+    } catch(syncErr) {}
+
+    res.json({ message: 'Inquiry permanently deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1771,15 +1810,23 @@ app.put('/api/tests/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/tests/:id', authenticateToken, async (req, res) => {
   try {
-    const test = await Test.findOneAndUpdate(
-      buildTestLookup(req.params.id, req.user.instituteId),
-      { isDeleted: true, deletedAt: new Date() },
-      { new: true }
+    const test = await Test.findOneAndDelete(
+      buildTestLookup(req.params.id, req.user.instituteId)
     );
     if (!test) return res.status(404).json({ error: 'Test not found' });
-    // Also soft delete all related test results
-    await TestResult.updateMany({ testId: test.id, instituteId: req.user.instituteId }, { isDeleted: true, deletedAt: new Date() });
-    res.json({ message: 'Test and associated results softly deleted successfully' });
+    // Also permanently delete all related test results
+    await TestResult.deleteMany({ testId: test.id, instituteId: req.user.instituteId });
+
+    // Trigger immediate background Cloud Sync
+    try {
+      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: 'ignore'
+      });
+      syncProc.on('error', (e) => console.warn('Test delete sync fork error:', e.message));
+    } catch(syncErr) {}
+
+    res.json({ message: 'Test and associated results permanently deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -2435,13 +2482,26 @@ app.post('/api/sms-logs', async (req, res) => {
 
 app.delete('/api/sms-logs/:id', async (req, res) => {
   try {
-    const log = await SMSLog.findOneAndUpdate(
-      { id: req.params.id, instituteId: req.user.instituteId },
-      { isDeleted: true, deletedAt: new Date() },
-      { new: true }
-    );
+    const rawId = req.params.id;
+    const query = {
+      instituteId: req.user.instituteId,
+      $or: [
+        { id: rawId },
+        ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
+      ]
+    };
+    const log = await SMSLog.findOneAndDelete(query);
     if (!log) return res.status(404).json({ error: 'SMS log not found' });
-    res.json({ message: 'SMS log softly deleted successfully' });
+
+    try {
+      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: 'ignore'
+      });
+      syncProc.on('error', (e) => console.warn('SMSLog delete sync fork error:', e.message));
+    } catch(syncErr) {}
+
+    res.json({ message: 'SMS log permanently deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

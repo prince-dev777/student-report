@@ -494,19 +494,19 @@ export function AppProvider({ children }) {
   }, [students, backendOnline, user]);
 
   const deleteSMS = useCallback(async (id) => {
+    // ⚡ Optimistic UI Update: Instantly remove from React state with 0ms delay
+    setSMSHistory((prev) => prev.filter((sms) => sms._id !== id && sms.id !== id));
+
     if (backendOnline) {
       try {
         await api.deleteSMSLog(id);
-        setSMSHistory((prev) => prev.filter((sms) => (sms._id || sms.id) !== id));
-        toast.success('SMS deleted from database!');
-        return;
+        toast.success('SMS deleted permanently!');
       } catch (err) {
-        toast.error('Failed to delete SMS');
-        return;
+        console.error('Failed to delete SMS log from backend:', err);
       }
+    } else {
+      toast.success('SMS deleted locally!');
     }
-    setSMSHistory((prev) => prev.filter((sms) => (sms._id || sms.id) !== id));
-    toast.success('SMS deleted locally!');
   }, [backendOnline]);
 
   // ---- Reset Data ----

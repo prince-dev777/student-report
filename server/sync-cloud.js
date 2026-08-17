@@ -43,10 +43,27 @@ async function syncToCloud() {
         continue;
       }
 
+      // Separate active and deleted documents
+      const activeDocs = docs.filter(doc => !doc.isDeleted);
+      const deletedDocIds = docs.filter(doc => doc.isDeleted).map(doc => doc._id);
+
+      // 1. Purge soft-deleted documents from Cloud
+      if (deletedDocIds.length > 0) {
+        const purgeRes = await cloudColl.deleteMany({ _id: { $in: deletedDocIds } });
+        if (purgeRes.deletedCount > 0) {
+          console.log(`   - 🗑️ Purged ${purgeRes.deletedCount} soft-deleted records from Cloud.`);
+        }
+      }
+
+      if (activeDocs.length === 0) {
+        console.log(`   - 0 active documents to sync.`);
+        continue;
+      }
+
       // Process specific collections for local file uploads (OMR images)
       if (collName === 'testresults') {
-        for (let i = 0; i < docs.length; i++) {
-          const doc = docs[i];
+        for (let i = 0; i < activeDocs.length; i++) {
+          const doc = activeDocs[i];
           // If the OMR image is a local path (starts with /uploads/omr/)
           if (doc.omrSheetImage && doc.omrSheetImage.startsWith('/uploads/omr/')) {
             const localFilePath = path.join(dataPath, doc.omrSheetImage);
@@ -72,8 +89,8 @@ async function syncToCloud() {
         }
       }
 
-      // Upsert to cloud
-      const bulkOps = docs.map(doc => ({
+      // Upsert active documents to cloud
+      const bulkOps = activeDocs.map(doc => ({
         replaceOne: {
           filter: { _id: doc._id },
           replacement: doc,

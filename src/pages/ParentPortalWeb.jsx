@@ -35,6 +35,7 @@ export default function ParentPortalWeb() {
 
   // Catch PWA beforeinstallprompt event
   useEffect(() => {
+    document.title = 'Career Xone - Parent App Portal';
     const handleBeforeInstall = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -254,43 +255,54 @@ export default function ParentPortalWeb() {
             </button>
           </form>
 
-          {/* PWA Download Button on Login Screen */}
-          {!isAppInstalled && deferredPrompt && (
-            <button
-              onClick={() => deferredPrompt.prompt()}
-              type="button"
-              style={{
-                marginTop: '20px',
-                width: '100%',
-                background: '#f0f9ff',
-                border: '1.5px dashed #7dd3fc',
-                color: '#0369a1',
-                padding: '12px',
-                borderRadius: '12px',
-                fontWeight: 800,
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#e0f2fe';
-                e.currentTarget.style.borderColor = '#38bdf8';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#f0f9ff';
-                e.currentTarget.style.borderColor = '#7dd3fc';
-              }}
-            >
-              <Smartphone size={18} /> Download Parents App
-            </button>
+          {/* Prominent Download Parents App Banner on Login Screen */}
+          {!isAppInstalled && (
+            <div style={{
+              marginTop: '20px',
+              padding: '14px',
+              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+              border: '1.5px solid #7dd3fc',
+              borderRadius: '16px',
+              textAlign: 'center',
+              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.08)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '6px' }}>
+                <Smartphone size={20} color="#0284c7" />
+                <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0369a1' }}>
+                  Download Parents Mobile App
+                </span>
+              </div>
+              <p style={{ margin: '0 0 10px 0', fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4 }}>
+                Install directly on your Phone Home Screen for 1-tap daily access without opening browser!
+              </p>
+              <button
+                onClick={handleInstallApp}
+                type="button"
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '11px 14px',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Download size={16} /> 📲 Install App on Phone
+              </button>
+            </div>
           )}
         </div>
 
-        {/* Force Install App Modal Prompt */}
+        {/* Install App Guidance Modal */}
         {showForceInstallModal && !isAppInstalled && (
           <div style={{
             position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
@@ -316,9 +328,26 @@ export default function ParentPortalWeb() {
               <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', fontWeight: 900, color: '#0369a1' }}>
                 Install Parent App
               </h3>
-              <p style={{ margin: '0 0 18px 0', fontSize: '0.82rem', color: '#475569', lineHeight: 1.5 }}>
-                For a smooth, 1-tap app experience & instant notifications, please install the Parent App on your Phone Home Screen!
+              <p style={{ margin: '0 0 16px 0', fontSize: '0.82rem', color: '#475569', lineHeight: 1.5 }}>
+                For a smooth 1-tap app experience & instant attendance notifications, install the Parent App on your Phone Home Screen!
               </p>
+
+              {/* Step-by-step guidance for manual install */}
+              <div style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '12px',
+                textAlign: 'left',
+                fontSize: '0.78rem',
+                color: '#334155',
+                marginBottom: '16px',
+                lineHeight: 1.6
+              }}>
+                <div style={{ fontWeight: 800, color: '#0284c7', marginBottom: '4px' }}>📌 How to Install:</div>
+                <div>📱 <strong>Android (Chrome):</strong> Tap <strong>⋮ (3 dots)</strong> top right ➔ Tap <strong>"Install app"</strong></div>
+                <div style={{ marginTop: '4px' }}>🍎 <strong>iPhone (Safari):</strong> Tap <strong>Share (📤)</strong> bottom ➔ Tap <strong>"Add to Home Screen (➕)"</strong></div>
+              </div>
 
               <button
                 onClick={handleInstallApp}
@@ -329,7 +358,7 @@ export default function ParentPortalWeb() {
                   boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
                 }}
               >
-                <Download size={18} /> Add App to Home Screen Now
+                <Download size={18} /> 📲 Install App Now
               </button>
             </div>
           </div>

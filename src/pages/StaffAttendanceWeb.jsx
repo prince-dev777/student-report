@@ -24,6 +24,7 @@ export default function StaffAttendanceWeb() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    document.title = 'Career Xone - Staff Attendance Portal';
     const checkStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     setIsStandalone(!!checkStandalone);
 

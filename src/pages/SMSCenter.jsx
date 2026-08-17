@@ -556,12 +556,13 @@ export default function SMSCenter() {
                 <th>Message</th>
                 <th>Time</th>
                 <th>Status</th>
+                <th style={{ textAlign: 'center', width: '60px' }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {paginatedHistory.length === 0 ? (
                 <tr>
-                  <td colSpan="6">
+                  <td colSpan="7">
                     <div className="empty-state">
                       <div className="empty-state-icon">
                         <MessageCircle size={28} />
@@ -580,7 +581,7 @@ export default function SMSCenter() {
 
                   return (
                     <motion.tr
-                      key={sms.id || idx}
+                      key={sms._id || sms.id || idx}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: idx * 0.02 }}
@@ -626,6 +627,31 @@ export default function SMSCenter() {
                           {sms.status === 'failed' && <AlertCircle size={12} />}
                           {sms.status || 'sent'}
                         </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className="btn-icon"
+                          style={{
+                            color: '#ef4444',
+                            background: 'rgba(239, 68, 68, 0.08)',
+                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                            borderRadius: '8px',
+                            padding: '6px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          title="Delete SMS Log"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Are you sure you want to delete this SMS log?')) {
+                              deleteSMS(sms._id || sms.id);
+                            }
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </td>
                     </motion.tr>
                   );
@@ -913,7 +939,7 @@ export default function SMSCenter() {
                   style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}
                   onClick={() => {
                     if (window.confirm('Are you sure you want to delete this SMS log?')) {
-                      deleteSMS(selectedMessage.id);
+                      deleteSMS(selectedMessage._id || selectedMessage.id);
                       setSelectedMessage(null);
                     }
                   }}
