@@ -561,6 +561,50 @@ app.post('/api/parent/login', async (req, res) => {
     const presentAtt = attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length;
     const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
 
+    // Fetch upcoming scheduled tests for student's batch
+    const todayStr = new Date().toISOString().split('T')[0];
+    const upcomingTestsRaw = await Test.find({
+      isDeleted: { $ne: true },
+      instituteId: student.instituteId,
+      $or: [
+        { batch: student.batch },
+        { batch: 'All' },
+        { batch: 'ALL' },
+        { batch: '' }
+      ]
+    })
+      .sort({ date: 1 })
+      .limit(10);
+
+    const upcomingTests = upcomingTestsRaw.map(t => ({
+      id: t.id,
+      name: t.name,
+      subject: t.subject,
+      date: t.date,
+      totalMarks: t.totalMarks,
+      batch: t.batch,
+      targetClass: t.targetClass || ''
+    }));
+
+    // Fetch notices / notifications for student & institute
+    const noticesRaw = await Notification.find({
+      instituteId: student.instituteId,
+      $or: [
+        { studentId: student._id },
+        { studentId: null }
+      ]
+    })
+      .sort({ createdAt: -1 })
+      .limit(15);
+
+    const notices = noticesRaw.map(n => ({
+      id: n._id,
+      title: n.title,
+      message: n.message,
+      type: n.type || 'GENERAL',
+      createdAt: n.createdAt
+    }));
+
     res.json({
       token,
       success: true,
@@ -580,7 +624,9 @@ app.post('/api/parent/login', async (req, res) => {
         totalAttendanceCount: totalAtt
       },
       attendance: attendanceRecords,
-      testResults: enrichedResults
+      testResults: enrichedResults,
+      upcomingTests: upcomingTests || [],
+      notices: notices || []
     });
 
   } catch (err) {
