@@ -22,7 +22,7 @@ async function restoreFromCloud() {
     console.log(`🔌 Connecting to local DB: ${LOCAL_URI}`);
     localConn = await mongoose.createConnection(LOCAL_URI).asPromise();
 
-    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs'];
+    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries'];
 
     for (const collName of collections) {
       console.log(`📦 Restoring collection: ${collName}...`);

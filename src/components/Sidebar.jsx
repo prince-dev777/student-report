@@ -15,7 +15,10 @@ import {
   PanelLeftOpen,
   Cloud,
   DownloadCloud,
-  Archive
+  Archive,
+  PhoneCall,
+  Clock,
+  Library
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -25,8 +28,11 @@ import toast from 'react-hot-toast';
 const mainMenuItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/students', icon: Users, label: 'Admission' },
+  { to: '/inquiries', icon: PhoneCall, label: 'Inquiries' },
   { to: '/attendance', icon: Fingerprint, label: 'Attendance' },
+  { to: '/sessions', icon: Clock, label: 'Sessions' },
   { to: '/tests', icon: ClipboardList, label: 'Tests' },
+  { to: '/test-series', icon: Library, label: 'Test Series' },
 ];
 
 const commMenuItems = [
@@ -35,10 +41,10 @@ const commMenuItems = [
 ];
 
 export default function Sidebar() {
-  const { sidebarOpen, setSidebarOpen, smsHistory, sidebarCollapsed, setSidebarCollapsed } = useApp();
+  const { sidebarOpen, setSidebarOpen, smsHistory, sidebarCollapsed, setSidebarCollapsed, loading } = useApp();
   const { user } = useAuth();
   const location = useLocation();
-  const [lastSeenSmsCount, setLastSeenSmsCount] = useState(smsHistory.length);
+  const [lastSeenSmsCount, setLastSeenSmsCount] = useState(0);
   const [appVersion, setAppVersion] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -72,12 +78,19 @@ export default function Sidebar() {
   }, []);
 
   useEffect(() => {
+    if (!loading) {
+      setLastSeenSmsCount(smsHistory.length);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+  useEffect(() => {
     if (location.pathname === '/sms') {
       setLastSeenSmsCount(smsHistory.length);
     }
   }, [location.pathname, smsHistory.length]);
 
-  const unreadCount = smsHistory.length - lastSeenSmsCount;
+  const unreadCount = Math.max(0, smsHistory.length - lastSeenSmsCount);
 
   const linkClass = ({ isActive }) =>
     `sidebar-link${isActive ? ' active' : ''}`;
@@ -265,37 +278,40 @@ export default function Sidebar() {
         </nav>
 
         {/* Sync Button */}
-        <div style={{ padding: '0 20px', marginTop: 'auto', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ padding: sidebarCollapsed ? '0 10px' : '0 20px', marginTop: 'auto', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <button 
             className="btn btn-primary" 
-            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', opacity: isSyncing ? 0.7 : 1 }}
+            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', opacity: isSyncing ? 0.7 : 1, padding: sidebarCollapsed ? '10px 0' : '10px 16px' }}
             onClick={handleSync}
             disabled={isSyncing}
+            title="Cloud Backup"
           >
             <Cloud size={18} />
-            {isSyncing ? 'Syncing...' : 'Cloud Backup'}
+            {!sidebarCollapsed && (isSyncing ? 'Syncing...' : 'Cloud Backup')}
           </button>
           
           <button 
             className="btn btn-outline" 
-            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', opacity: isRestoring ? 0.7 : 1, marginTop: '-2px' }}
+            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', opacity: isRestoring ? 0.7 : 1, marginTop: '-2px', padding: sidebarCollapsed ? '10px 0' : '10px 16px' }}
             onClick={handleRestoreCloud}
             disabled={isRestoring}
+            title="Restore from Cloud"
           >
             <DownloadCloud size={18} />
-            {isRestoring ? 'Restoring...' : 'Restore from Cloud'}
+            {!sidebarCollapsed && (isRestoring ? 'Restoring...' : 'Restore from Cloud')}
           </button>
 
           <button 
             className="btn btn-outline" 
-            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '-2px' }}
+            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '-2px', padding: sidebarCollapsed ? '10px 0' : '10px 16px' }}
             onClick={handleLocalBackup}
+            title="Local Backup"
           >
             <Archive size={18} />
-            Local Backup
+            {!sidebarCollapsed && 'Local Backup'}
           </button>
           
-          {backupInfo && (
+          {!sidebarCollapsed && backupInfo && (
             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '5px' }}>
               Auto-Sync: {backupInfo.autoBackupTime}
               <br />
@@ -305,7 +321,7 @@ export default function Sidebar() {
         </div>
 
         {/* Version Info */}
-        {appVersion && (
+        {!sidebarCollapsed && appVersion && (
           <div style={{
             padding: '12px 20px',
             borderTop: '1px solid var(--border-color)',

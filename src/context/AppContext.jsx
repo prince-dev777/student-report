@@ -39,6 +39,8 @@ export function AppProvider({ children }) {
   const [tests, setTests] = useState([]);
   const [testResults, setTestResults] = useState([]);
   const [smsHistory, setSMSHistory] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
   const [backendOnline, setBackendOnline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -65,12 +67,21 @@ export function AppProvider({ children }) {
             setTests([]);
             setTestResults([]);
             setSMSHistory([]);
+            setSessions([]);
+            setInquiries([]);
           } else {
             // Load all from server
             const serverAttendance = await api.getAttendance();
             const serverTests = await api.getTests();
             const serverResults = await api.getTestResults();
             const serverSMS = await api.getSMSLogs();
+            
+            let serverSessions = [];
+            let serverInquiries = [];
+            try {
+              serverSessions = await api.getSessions();
+              serverInquiries = await api.getInquiries();
+            } catch(e) { console.warn('Failed to load new schemas', e); }
 
             const validIds = new Set(serverStudents.map((s) => s.id));
             setStudents(serverStudents);
@@ -78,6 +89,8 @@ export function AppProvider({ children }) {
             setTests(serverTests);
             setTestResults(serverResults.filter((r) => validIds.has(r.studentId)));
             setSMSHistory(serverSMS.filter((sms) => validIds.has(sms.studentId)));
+            setSessions(serverSessions);
+            setInquiries(serverInquiries);
             
             toast.success('Synced successfully!');
           }
@@ -103,6 +116,8 @@ export function AppProvider({ children }) {
       setTests(loadLocalData('tests', []));
       setTestResults(loadLocalData('testResults', []).filter((r) => validIds.has(r.studentId)));
       setSMSHistory(loadLocalData('smsHistory', []).filter((sms) => validIds.has(sms.studentId)));
+      setSessions(loadLocalData('sessions', []));
+      setInquiries(loadLocalData('inquiries', []));
     }
 
     initData();
@@ -138,6 +153,14 @@ export function AppProvider({ children }) {
       saveLocalData('smsHistory', smsHistory);
     }
   }, [smsHistory, loading]);
+
+  useEffect(() => {
+    if (!loading && sessions.length > 0) saveLocalData('sessions', sessions);
+  }, [sessions, loading]);
+
+  useEffect(() => {
+    if (!loading && inquiries.length > 0) saveLocalData('inquiries', inquiries);
+  }, [inquiries, loading]);
 
 
   // ---- Student CRUD ----
@@ -265,19 +288,7 @@ export function AppProvider({ children }) {
     }
 
     const instName = user?.instituteName || 'Career Xone Pro';
-    // Trigger SMS and update log
-    sendAttendanceSMS(student, type, currentTime, instName).then(async (smsLog) => {
-      if (backendOnline) {
-        try {
-          const savedLog = await api.createSMSLog(smsLog);
-          setSMSHistory((h) => [savedLog, ...h]);
-        } catch (e) {
-          console.error('Failed to save SMS log to backend', e);
-        }
-      } else {
-        setSMSHistory((h) => [smsLog, ...h]);
-      }
-    });
+
 
     if (backendOnline) {
       try {
@@ -291,6 +302,17 @@ export function AppProvider({ children }) {
           }
         });
         toast.success(`✅ Attendance sync: ${type === 'entry' ? 'Entry' : 'Exit'} marked.`);
+        
+        // Trigger SMS and update log with correct session name
+        sendAttendanceSMS(student, type, currentTime, instName, saved.sessionName).then(async (smsLog) => {
+          try {
+            const savedLog = await api.createSMSLog(smsLog);
+            setSMSHistory((h) => [savedLog, ...h]);
+          } catch (e) {
+            console.error('Failed to save SMS log to backend', e);
+          }
+        });
+        
         return;
       } catch (err) {
         console.error(err);
@@ -519,6 +541,8 @@ export function AppProvider({ children }) {
     setTests([]);
     setTestResults([]);
     setSMSHistory([]);
+    setSessions([]);
+    setInquiries([]);
     localStorage.clear();
     toast.success('All data reset to defaults!');
   }, [backendOnline]);
@@ -529,6 +553,10 @@ export function AppProvider({ children }) {
     tests,
     testResults,
     smsHistory,
+    sessions,
+    setSessions,
+    inquiries,
+    setInquiries,
     batches,
     backendOnline,
     loading,

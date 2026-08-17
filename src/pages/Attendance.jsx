@@ -672,6 +672,11 @@ export default function Attendance() {
                             <Timer size={13} />
                             {calcDuration(row.entryTime, row.exitTime)}
                           </span>
+                          {row.sessionName && (
+                            <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--accent-blue)', marginTop: '2px' }}>
+                              Session: {row.sessionName}
+                            </span>
+                          )}
                         </td>
                         <td>
                           {row.smsSent ? (

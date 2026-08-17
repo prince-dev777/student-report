@@ -18,11 +18,11 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   // Build message text based on type
   let messageText;
   if (type === 'IN') {
-    messageText = `Dear Parent, ${studentName} has checked IN at ${detail}.`;
+    messageText = `Dear Parent, this is to inform you that your ward ${studentName} has safely arrived at the institute at ${detail}. - Career Xone`;
   } else if (type === 'OUT') {
-    messageText = `Dear Parent, ${studentName} has checked OUT at ${detail}.`;
+    messageText = `Dear Parent, this is to inform you that your ward ${studentName} has left the institute at ${detail}. - Career Xone`;
   } else if (type === 'ABSENT') {
-    messageText = `Dear Parent, ${studentName} was marked ABSENT on ${detail}.`;
+    messageText = `Dear Parent, this is to inform you that your ward ${studentName} is absent from the institute today (${detail}). - Career Xone`;
   } else if (type === 'TEST_RESULT' && typeof detail === 'object') {
     messageText = `Dear Parent, ${studentName} scored ${detail.marks}/${detail.totalMarks} in ${detail.subject || 'Exam'}. Rank: ${detail.rank || '-'}/${detail.totalStudents || '-'}.`;
   } else if (type === 'WELCOME') {

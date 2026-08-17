@@ -12,11 +12,14 @@ import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import SMSCenter from './pages/SMSCenter';
 import ShareApp from './pages/ShareApp';
+import Sessions from './pages/Sessions';
+import Inquiries from './pages/Inquiries';
 import SuperAdminLogin from './pages/SuperAdminLogin';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 
 import Login from './pages/Login';
 import Tests from './pages/Tests';
+import TestSeries from './pages/TestSeries';
 
 import StaffAttendanceWeb from './pages/StaffAttendanceWeb';
 import SaaSShowcaseLandingPage from './pages/SaaSShowcaseLandingPage';
@@ -38,9 +41,13 @@ function AppLayout() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/students" element={<Students />} />
             <Route path="/attendance" element={<Attendance />} />
+            <Route path="/sessions" element={<Sessions />} />
             <Route path="/tests" element={<Tests />} />
+            <Route path="/test-series" element={<TestSeries />} />
+            <Route path="/inquiries" element={<Inquiries />} />
             <Route path="/sms" element={<SMSCenter />} />
             <Route path="/share-app" element={<ShareApp />} />
+            <Route path="/sessions" element={<Sessions />} />
           </Routes>
         </div>
       </div>

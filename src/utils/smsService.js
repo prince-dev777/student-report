@@ -8,11 +8,15 @@ import { generateId, getCurrentTime, getTodayStr } from './helpers';
 
 // SMS Templates
 export const smsTemplates = {
-  attendanceEntry: (parentName, studentName, time, instituteName = 'Institute') =>
-    `Dear ${parentName}, this is to inform you that your ward ${studentName} has safely arrived at the institute at ${time}. - ${instituteName}`,
+  attendanceEntry: (parentName, studentName, time, instituteName = 'Institute', sessionName = null) => {
+    const sessionCtx = sessionName ? ` for ${sessionName}` : '';
+    return `Dear ${parentName}, this is to inform you that your ward ${studentName} has safely arrived at the institute at ${time}${sessionCtx}. - ${instituteName}`;
+  },
 
-  attendanceExit: (parentName, studentName, time, instituteName = 'Institute') =>
-    `Dear ${parentName}, this is to inform you that your ward ${studentName} has left the institute at ${time}. - ${instituteName}`,
+  attendanceExit: (parentName, studentName, time, instituteName = 'Institute', sessionName = null) => {
+    const sessionCtx = sessionName ? ` for ${sessionName}` : '';
+    return `Dear ${parentName}, this is to inform you that your ward ${studentName} has left the institute at ${time}${sessionCtx}. - ${instituteName}`;
+  },
 
   testResult: (parentName, studentName, testName, marks, totalMarks, percentage, rank, totalStudents, instituteName = 'Institute') =>
     `Dear ${parentName}, ${studentName}'s result for ${testName} has been declared. Score: ${marks}/${totalMarks} (${percentage}%), Rank: ${rank}/${totalStudents}. - ${instituteName}`,
@@ -56,10 +60,10 @@ export function createSMSLog(type, student, parentPhone, message, status = 'sent
 }
 
 // Send attendance SMS and return log
-export async function sendAttendanceSMS(student, type, time, instituteName = 'Institute') {
+export async function sendAttendanceSMS(student, type, time, instituteName = 'Institute', sessionName = null) {
   const template = type === 'entry'
-    ? smsTemplates.attendanceEntry(student.parentName, student.name, time, instituteName)
-    : smsTemplates.attendanceExit(student.parentName, student.name, time, instituteName);
+    ? smsTemplates.attendanceEntry(student.parentName, student.name, time, instituteName, sessionName)
+    : smsTemplates.attendanceExit(student.parentName, student.name, time, instituteName, sessionName);
 
   const targetPhones = student.parentPhone2 ? `${student.parentPhone}, ${student.parentPhone2}` : student.parentPhone;
   const result = await sendSMS(targetPhones, template);

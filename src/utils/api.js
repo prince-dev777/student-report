@@ -146,6 +146,18 @@ export const api = {
   createSMSLog: (log) => apiRequest('/sms-logs', { method: 'POST', body: JSON.stringify(log) }),
   deleteSMSLog: (id) => apiRequest(`/sms-logs/${id}`, { method: 'DELETE' }),
 
+  // Sessions
+  getSessions: () => apiRequest('/sessions'),
+  createSession: (data) => apiRequest('/sessions', { method: 'POST', body: JSON.stringify(data) }),
+  updateSession: (id, data) => apiRequest(`/sessions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSession: (id) => apiRequest(`/sessions/${id}`, { method: 'DELETE' }),
+
+  // Inquiries
+  getInquiries: () => apiRequest('/inquiries'),
+  createInquiry: (data) => apiRequest('/inquiries', { method: 'POST', body: JSON.stringify(data) }),
+  updateInquiry: (id, data) => apiRequest(`/inquiries/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteInquiry: (id) => apiRequest(`/inquiries/${id}`, { method: 'DELETE' }),
+
   // Seed / Reset
   seedDatabase: (data) => apiRequest('/seed', { method: 'POST', body: JSON.stringify(data) }),
   resetDatabase: () => apiRequest('/reset', { method: 'POST' }),

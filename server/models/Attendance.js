@@ -8,6 +8,8 @@ const attendanceSchema = new mongoose.Schema({
   status: { type: String, required: true, enum: ['present', 'absent', 'late', 'Present', 'Absent', 'Late', 'IN', 'OUT', 'ABSENT', 'UNMARKED'] },
   entryTime: { type: String }, // HH:MM
   exitTime: { type: String },  // HH:MM
+  durationMinutes: { type: Number, default: 0 },
+  sessionName: { type: String, default: null },
   smsSent: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null }

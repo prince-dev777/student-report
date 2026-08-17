@@ -1662,27 +1662,64 @@ h4 { font-size: 1.1rem; }
 }
 
 @media print {
-  body * {
+  @page { 
+    margin: 0; 
+    size: 250px 390px; 
+  }
+  
+  body, html {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+    background: transparent !important;
+    overflow: hidden !important;
+  }
+  
+  /* Hide the main app root */
+  #root {
+    display: none !important;
+  }
+  
+  /* Hide all elements by default (using display:none to save space) */
+  body > *:not(.modal-overlay) {
+    display: none !important;
+  }
+  
+  .modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: transparent !important;
+  }
+  
+  .modal-overlay * {
     visibility: hidden !important;
   }
+  
   .print-id-card, .print-id-card * {
     visibility: visible !important;
   }
+  
   .print-id-card {
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
-    padding: 0;
+    position: fixed !important;
+    left: 5px !important;
+    top: 5px !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
     box-shadow: none !important;
-    border: none !important;
-    width: 250px;
-    height: 420px;
-  }
-  .modal-overlay, .modal-content {
-    background: transparent !important;
-    box-shadow: none !important;
+    width: 240px !important;
+    height: 380px !important;
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 }
 

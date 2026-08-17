@@ -12,6 +12,7 @@ import { subjects } from '../data/sampleData';
 import { formatDate, calcTestAverage, getMarksCategory, getRankBadgeClass } from '../utils/helpers';
 import toast from 'react-hot-toast';
 import { api, getMediaUrl } from '../utils/api';
+import omrTemplatePdf from '../assets/OMR_Templates.pdf';
 
 export default function Tests() {
   const { 
@@ -1324,9 +1325,20 @@ export default function Tests() {
       transition={{ duration: 0.4 }}
     >
       {/* Header */}
-      <div className="page-header">
-        <h1>Test & Exam Management</h1>
-        <p>Create tests, record scores, automatically calculate ranks and notify parents instantly.</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1>Test & Exam Management</h1>
+          <p>Create tests, record scores, automatically calculate ranks and notify parents instantly.</p>
+        </div>
+        <a 
+          href={omrTemplatePdf} 
+          download="OMR_Templates.pdf"
+          className="btn btn-primary" 
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+        >
+          <Download size={18} />
+          Download OMR Template
+        </a>
       </div>
 
       {/* Tabs */}

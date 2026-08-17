@@ -30,7 +30,7 @@ async function syncToCloud() {
     console.log(`☁️ Connecting to cloud DB: ${CLOUD_URI}`);
     cloudConn = await mongoose.createConnection(CLOUD_URI).asPromise();
 
-    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs'];
+    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries'];
 
     for (const collName of collections) {
       console.log(`📦 Syncing collection: ${collName}...`);
