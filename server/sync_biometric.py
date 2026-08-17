@@ -4,8 +4,8 @@ from zk import ZK, const
 
 # Configuration
 DEVICE_IP = '192.168.0.12'
-DEVICE_PORT = 71
-RENDER_API_URL = 'https://student-report-ezgw.onrender.com/api/attendance/biometric'
+DEVICE_PORT = 4370 # Default ZKTeco Port
+LOCAL_API_URL = 'http://127.0.0.1:5000/api/attendance/biometric'
 INSTITUTE_ID = '6a4234d917e9263d070eab02' # Replace with your actual Mongo Institute ID
 POLL_INTERVAL = 10 # Check for new scans every 10 seconds
 
@@ -46,7 +46,7 @@ def fetch_and_sync():
             }
             
             try:
-                res = requests.post(RENDER_API_URL, json=payload, timeout=5)
+                res = requests.post(LOCAL_API_URL, json=payload, timeout=5)
                 if res.status_code == 200:
                     synced_count += 1
             except Exception as e:
