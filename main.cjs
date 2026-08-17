@@ -183,7 +183,7 @@ async function startServer() {
   }
 
   const mongodExePath = app.isPackaged 
-    ? path.join(process.resourcesPath, 'bin', 'mongod.exe')
+    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'bin', 'mongod.exe')
     : path.join(__dirname, 'server', 'bin', 'mongod.exe');
 
   if (fs.existsSync(mongodExePath)) {
