@@ -109,7 +109,17 @@ export default function ParentPortalWeb() {
     return batch.replace(/^batch-?/i, 'Batch ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  // Check device and browser environments
+  const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isWhatsApp = typeof navigator !== 'undefined' && /WhatsApp/i.test(navigator.userAgent);
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
   const handleInstallApp = async () => {
+    if (isAppInstalled) {
+      toast.success('✅ App aapke device par pehle se installed hai! Home Screen se open karein.');
+      return;
+    }
+
     const promptEvent = deferredPrompt || window.deferredPrompt;
     if (promptEvent) {
       try {
@@ -120,7 +130,7 @@ export default function ParentPortalWeb() {
           setShowForceInstallModal(false);
           window.deferredPrompt = null;
           setDeferredPrompt(null);
-          toast.success('🎉 Parent App added to Home Screen!');
+          toast.success('🎉 Career Xone App added to Phone Home Screen!');
         }
       } catch (err) {
         console.warn('Install prompt error:', err);
@@ -128,6 +138,18 @@ export default function ParentPortalWeb() {
       }
     } else {
       setShowForceInstallModal(true);
+    }
+  };
+
+  const handleOpenInChrome = () => {
+    const currentUrl = window.location.href;
+    if (isAndroid) {
+      // Android Chrome intent launcher
+      const cleanUrl = currentUrl.replace(/^https?:\/\//, '');
+      window.location.href = `intent://${cleanUrl}#Intent;scheme=https;package=com.android.chrome;end`;
+    } else {
+      navigator.clipboard.writeText(currentUrl);
+      toast.success('📋 Link copied! Chrome me paste karein.');
     }
   };
 
@@ -467,57 +489,153 @@ export default function ParentPortalWeb() {
             </div>
           )}
 
+          {/* WhatsApp In-App Webview Banner */}
+          {isWhatsApp && (
+            <div style={{
+              marginTop: '14px',
+              background: '#fef3c7',
+              border: '1.5px solid #fde68a',
+              borderRadius: '12px',
+              padding: '10px 12px',
+              textAlign: 'left'
+            }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#92400e', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <AlertCircle size={14} color="#b45309" /> WhatsApp Browser Detected:
+              </div>
+              <p style={{ margin: '0 0 8px 0', fontSize: '0.7rem', color: '#78350f', lineHeight: 1.35 }}>
+                App direct phone me install karne ke liye Google Chrome me open karein:
+              </p>
+              <button
+                type="button"
+                onClick={handleOpenInChrome}
+                style={{
+                  width: '100%',
+                  background: '#0284c7',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '7px 10px',
+                  borderRadius: '8px',
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                🚀 Open in Google Chrome
+              </button>
+            </div>
+          )}
+
+          {/* Download Parents Mobile App Card (Login Screen) */}
+          <div style={{
+            marginTop: '16px',
+            background: isAppInstalled ? '#f0fdf4' : '#f0f9ff',
+            border: `1.5px solid ${isAppInstalled ? '#bbf7d0' : '#bae6fd'}`,
+            borderRadius: '14px',
+            padding: '12px',
+            textAlign: 'center',
+            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.06)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
+              <Smartphone size={16} color={isAppInstalled ? '#16a34a' : '#0284c7'} />
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: isAppInstalled ? '#15803d' : '#0369a1' }}>
+                {isAppInstalled ? 'Official App Installed' : 'Install Parents Mobile App'}
+              </span>
+            </div>
+            <p style={{ margin: '0 0 8px 0', fontSize: '0.7rem', color: '#64748b', lineHeight: 1.35 }}>
+              {isAppInstalled
+                ? 'App is installed! You can open it anytime from your Phone Home Screen.'
+                : '1-Tap daily access without opening browser repeatedly!'}
+            </p>
+            <button
+              onClick={handleInstallApp}
+              type="button"
+              style={{
+                width: '100%',
+                background: isAppInstalled ? '#16a34a' : 'linear-gradient(135deg, #0284c7, #0369a1)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '9px 12px',
+                borderRadius: '8px',
+                fontWeight: 800,
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                boxShadow: '0 3px 10px rgba(2, 132, 199, 0.2)'
+              }}
+            >
+              {isAppInstalled ? (
+                <>✅ App Already on Phone</>
+              ) : (
+                <><Download size={14} /> 📲 Tap to Install on Phone</>
+              )}
+            </button>
+          </div>
+
           {/* Quick Helpline Info */}
-          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
-            <span>Need Help? Institute Helpline: </span>
+          <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.72rem', color: '#64748b' }}>
+            <span>Need Help? Helpline: </span>
             <strong style={{ color: '#0284c7' }}>{helplineNumber}</strong>
           </div>
         </div>
 
-        {/* Force Install App Modal on Login Screen */}
+        {/* Smart Install App Modal on Login Screen */}
         {showForceInstallModal && !isAppInstalled && (
           <div style={{
             position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)',
             backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex',
-            alignItems: 'center', justifyContent: 'center', padding: '16px'
+            alignItems: 'center', justifyContent: 'center', padding: '14px'
           }}>
             <div style={{
-              background: '#ffffff', border: '2px solid #38bdf8', borderRadius: '24px',
-              padding: '24px 20px', maxWidth: '380px', width: '100%', textAlign: 'center',
+              background: '#ffffff', border: '2px solid #38bdf8', borderRadius: '20px',
+              padding: '20px 16px', maxWidth: '360px', width: '100%', textAlign: 'center',
               boxShadow: '0 25px 50px -12px rgba(2, 132, 199, 0.35)', position: 'relative'
             }}>
               <button
                 onClick={() => setShowForceInstallModal(false)}
-                style={{ position: 'absolute', right: '12px', top: '12px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ position: 'absolute', right: '10px', top: '10px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <X size={16} color="#64748b" />
+                <X size={14} color="#64748b" />
               </button>
 
-              <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.15)' }}>
-                <Smartphone size={28} color="#0284c7" />
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.15)' }}>
+                <Smartphone size={24} color="#0284c7" />
               </div>
 
-              <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', fontWeight: 900, color: '#0369a1' }}>
-                Download Parents Mobile App
+              <h3 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 900, color: '#0369a1' }}>
+                Download Career Xone App
               </h3>
-              <p style={{ margin: '0 0 16px 0', fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
-                Install Career Xone directly on your phone home screen for 1-tap daily access & instant notifications!
+              <p style={{ margin: '0 0 12px 0', fontSize: '0.74rem', color: '#475569', lineHeight: 1.4 }}>
+                Directly add to your phone home screen for 1-tap marks & attendance access!
               </p>
 
+              {/* Dynamic OS-Specific Instructions */}
               <div style={{
                 background: '#f8fafc',
                 border: '1.5px solid #e2e8f0',
-                borderRadius: '16px',
-                padding: '12px 14px',
+                borderRadius: '12px',
+                padding: '10px 12px',
                 textAlign: 'left',
-                marginBottom: '16px'
+                marginBottom: '12px'
               }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0369a1', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Sparkles size={14} color="#0284c7" /> How to Install on your Phone:
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0369a1', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Sparkles size={13} color="#0284c7" />
+                  {isIOS ? 'iPhone (iOS) Steps:' : 'Android (Chrome) Steps:'}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#334155', lineHeight: '1.5', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div><strong>1.</strong> Tap <strong>(⋮) 3 Dots</strong> at the top right of your browser (or Share icon on iPhone).</div>
-                  <div><strong>2.</strong> Tap <strong>"Install App"</strong> or <strong>"Add to Home Screen"</strong>.</div>
+                <div style={{ fontSize: '0.72rem', color: '#334155', lineHeight: '1.45', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {isIOS ? (
+                    <>
+                      <div><strong>1.</strong> Safari me niche <strong>Share icon (⎋)</strong> par tap karein.</div>
+                      <div><strong>2.</strong> Niche scroll karke <strong>"Add to Home Screen" (+)</strong> select karein.</div>
+                    </>
+                  ) : (
+                    <>
+                      <div><strong>1.</strong> Browser me upar <strong>(⋮) 3 Dots</strong> par tap karein.</div>
+                      <div><strong>2.</strong> <strong>"Install App"</strong> ya <strong>"Add to Home Screen"</strong> par tap karein.</div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -526,37 +644,24 @@ export default function ParentPortalWeb() {
                   onClick={handleInstallApp}
                   style={{
                     width: '100%', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
-                    border: 'none', padding: '13px', borderRadius: '14px', fontWeight: 800, fontSize: '0.92rem',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
+                    border: 'none', padding: '11px', borderRadius: '10px', fontWeight: 800, fontSize: '0.84rem',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)'
                   }}
                 >
-                  <Download size={18} /> Tap to Install Directly Now
+                  <Download size={16} /> Tap to Install Now
                 </button>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{
-                    background: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
-                    borderRadius: '12px',
-                    padding: '10px',
-                    fontSize: '0.78rem',
-                    color: '#166534',
-                    fontWeight: 600
-                  }}>
-                    👆 Browser menu me jaakar <strong>"Install App"</strong> ya <strong>"Add to Home Screen"</strong> par tap karein!
-                  </div>
-                  <button
-                    onClick={() => setShowForceInstallModal(false)}
-                    style={{
-                      width: '100%', background: '#0f172a', color: '#ffffff',
-                      border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Got It (समझ गया)
-                  </button>
-                </div>
+                <button
+                  onClick={() => setShowForceInstallModal(false)}
+                  style={{
+                    width: '100%', background: '#0f172a', color: '#ffffff',
+                    border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Got It (समझ गया)
+                </button>
               )}
             </div>
           </div>
