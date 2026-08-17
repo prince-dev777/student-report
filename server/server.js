@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import https from 'https';
 import multer from 'multer';
-import { spawn, spawnSync } from 'child_process';
+import { spawn, spawnSync, fork } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -132,9 +132,10 @@ mongoose.connect(MONGODB_URI)
       const studentCount = await Student.countDocuments();
       if (studentCount === 0) {
         console.log('🔄 Local DB is empty (0 students). Triggering Cloud Restoration...');
-        const child = spawn(process.execPath, ['restore-from-cloud.js'], { cwd: __dirname, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
+        const child = fork(path.join(__dirname, 'restore-from-cloud.js'), [], { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
         child.stdout.on('data', (d) => process.stdout.write(d.toString()));
         child.stderr.on('data', (d) => process.stderr.write(d.toString()));
+        child.on('error', (err) => console.error('Restore process error:', err));
       }
     } catch(err) {
       console.error('Error checking DB count for auto-restore:', err);
@@ -399,9 +400,8 @@ app.put('/api/settings', protect, async (req, res) => {
 // Trigger Cloud Sync Background Task
 app.post('/api/settings/sync-to-cloud', protect, (req, res) => {
   try {
-    const syncProcess = spawn('node', ['sync-cloud.js'], {
-      cwd: __dirname,
-      env: { ...process.env }, // Inherit local MONGODB_URI
+    const syncProcess = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, // Inherit local MONGODB_URI
       detached: true,
       stdio: 'ignore'
     });
@@ -2757,11 +2757,15 @@ app.get('/api/system/local-backup', protect, async (req, res) => {
 app.post('/api/sync', protect, (req, res) => {
   console.log('🔄 Triggering sync-cloud.js...');
   
-  const child = spawn(process.execPath, ['sync-cloud.js'], { cwd: __dirname, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
+  const child = fork(path.join(__dirname, 'sync-cloud.js'), [], { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
   
   let output = '';
   child.stdout.on('data', (data) => output += data.toString());
   child.stderr.on('data', (data) => output += data.toString());
+  child.on('error', (err) => {
+    console.error('Sync process error:', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Failed to start sync process.' });
+  });
   
   child.on('close', (code) => {
     if (code !== 0) {
@@ -2781,11 +2785,15 @@ app.post('/api/sync', protect, (req, res) => {
 app.post('/api/system/restore-cloud', protect, (req, res) => {
   console.log('🔄 Triggering restore-from-cloud.js...');
   
-  const child = spawn(process.execPath, ['restore-from-cloud.js'], { cwd: __dirname, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
+  const child = fork(path.join(__dirname, 'restore-from-cloud.js'), [], { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
   
   let output = '';
   child.stdout.on('data', (data) => output += data.toString());
   child.stderr.on('data', (data) => output += data.toString());
+  child.on('error', (err) => {
+    console.error('Restore process error:', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Failed to start restore process.' });
+  });
   
   child.on('close', (code) => {
     if (code !== 0) {
