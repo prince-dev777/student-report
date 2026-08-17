@@ -49,7 +49,7 @@ const typeFilterOptions = [
 ];
 
 export default function SMSCenter() {
-  const { students, smsHistory, sendManualSMS, sendBulkManualSMS, deleteSMS } = useApp();
+  const { students, smsHistory, setSMSHistory, sendManualSMS, sendBulkManualSMS, deleteSMS } = useApp();
 
   // WhatsApp Local Client State
   const [whatsappStatus, setWhatsappStatus] = useState('offline');
@@ -57,6 +57,28 @@ export default function SMSCenter() {
   const [qrCode, setQrCode] = useState(null);
   const [loadingAction, setLoadingAction] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
+
+  // ⚡ Live Real-time Polling for SMS Logs & Status
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLatestSMSLogs = async () => {
+      try {
+        const freshLogs = await api.getSMSLogs();
+        if (isMounted && Array.isArray(freshLogs) && setSMSHistory) {
+          setSMSHistory(freshLogs);
+        }
+      } catch (err) {
+        // Background poll silent
+      }
+    };
+
+    fetchLatestSMSLogs(); // Initial immediate load
+    const logsInterval = setInterval(fetchLatestSMSLogs, 3000); // Live poll every 3s
+    return () => {
+      isMounted = false;
+      clearInterval(logsInterval);
+    };
+  }, [setSMSHistory]);
 
   useEffect(() => {
     const fetchWhatsAppStatus = async () => {
@@ -531,8 +553,9 @@ export default function SMSCenter() {
         </div>
 
         <div className="flex items-center gap-12" style={{ marginLeft: 'auto' }}>
-          <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'rgba(37, 99, 235, 0.05)', padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Info size={14} /> If message is 'pending', refresh to see 'delivered'
+          <span style={{ color: '#10b981', fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.08)', padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }}></span>
+            Real-time Live Sync
           </span>
           <span style={{ color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
             Showing {paginatedHistory.length} of {filteredHistory.length} messages

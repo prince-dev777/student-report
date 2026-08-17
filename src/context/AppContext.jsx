@@ -162,6 +162,12 @@ export function AppProvider({ children }) {
         setStudents((prev) => [saved, ...prev]);
         toast.success(`✅ Saved successfully: ${saved.name}`);
 
+        // Refresh SMS logs so welcome message appears in SMS Center immediately without manual refresh
+        try {
+          const freshLogs = await api.getSMSLogs();
+          if (Array.isArray(freshLogs)) setSMSHistory(freshLogs);
+        } catch (e) {}
+
         return saved;
       } catch (err) {
         toast.error('Failed to save data');
@@ -541,6 +547,7 @@ export function AppProvider({ children }) {
     tests,
     testResults,
     smsHistory,
+    setSMSHistory,
     sessions,
     setSessions,
     inquiries,

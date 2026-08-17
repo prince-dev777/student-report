@@ -488,73 +488,144 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
                     exit={{ opacity: 0, x: 10 }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '20px' }}
                   >
-                    <div className="print-id-card" style={{ 
-                      width: '240px', 
-                      height: '380px', 
-                      boxSizing: 'border-box',
-                      background: 'linear-gradient(135deg, #f0f7ff 0%, #dbeafe 100%)', 
-                      borderRadius: '12px', 
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.15)', 
-                      overflow: 'hidden', 
-                      display: 'flex', 
-                      flexDirection: 'column',
-                      border: '1px solid #bfdbfe',
-                      position: 'relative',
-                      fontFamily: "'Montserrat', sans-serif"
-                    }}>
-                      <div style={{ boxSizing: 'border-box', height: '100px', width: 'calc(100% - 8px)', margin: '4px auto 0', overflow: 'hidden', background: '#fff', border: '1.5px solid #3b82f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img src={idLogo} alt="Career Xone" style={{ width: '92%', height: '88%', objectFit: 'contain' }} />
-                      </div>
-                      
-                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-45px', zIndex: 2 }}>
-                        {student.photo ? (
-                          <img src={student.photo} alt={student.name} style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
-                        ) : (
-                          <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontSize: '2rem', color: 'var(--text-tertiary)', fontWeight: 'bold' }}>
-                            {getInitials(student.name)}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div style={{ padding: '8px 14px 10px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <div>
-                          <h3 style={{ margin: '0 0 2px 0', fontSize: '1.05rem', color: 'var(--text-primary)', fontWeight: '700' }}>{student.name}</h3>
-                          <p style={{ margin: '0 0 8px 0', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Course: {batches?.find(b => b.id === student.batch)?.name || student.batch || 'N/A'}</p>
-                          
-                          <div style={{ textAlign: 'left', fontSize: '0.72rem', color: 'var(--text-primary)', lineHeight: '1.5' }}>
-                            <div style={{ display: 'flex' }}><strong style={{ width: '56px' }}>Roll No:</strong> <span>{student.rollNo}</span></div>
-                            <div style={{ display: 'flex' }}><strong style={{ width: '56px' }}>Parent:</strong> <span>{student.parentName || 'N/A'}</span></div>
-                            <div style={{ display: 'flex' }}><strong style={{ width: '56px' }}>Contact:</strong> <span>{student.parentPhone}</span></div>
-                            <div style={{ display: 'flex', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong style={{ width: '56px' }}>Address:</strong> <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{student.address || 'N/A'}</span></div>
-                          </div>
+                    <div className="print-id-container" style={{ display: 'flex', gap: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                      {/* FRONT SIDE */}
+                      <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textAlign: 'center' }}>
+                          🪪 FRONT SIDE
                         </div>
-                        
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '8px', padding: '0 4px' }}>
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ width: '48px', height: '18px', borderBottom: '1px solid var(--border-color)', marginBottom: '2px' }}></div>
+                        <div className="print-id-card" style={{ 
+                          width: '240px', 
+                          height: '380px', 
+                          boxSizing: 'border-box',
+                          background: 'linear-gradient(135deg, #f0f7ff 0%, #dbeafe 100%)', 
+                          borderRadius: '12px', 
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.15)', 
+                          overflow: 'hidden', 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          border: '1px solid #bfdbfe',
+                          position: 'relative',
+                          fontFamily: "'Montserrat', sans-serif"
+                        }}>
+                          <div style={{ boxSizing: 'border-box', height: '100px', width: 'calc(100% - 8px)', margin: '4px auto 0', overflow: 'hidden', background: '#fff', border: '1.5px solid #3b82f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img src={idLogo} alt="Career Xone" style={{ width: '92%', height: '88%', objectFit: 'contain' }} />
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'center' }}>
-                            <QRCodeSVG value={student.rollNo || student.id} size={46} level="M" />
+                          
+                          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-45px', zIndex: 2 }}>
+                            {student.photo ? (
+                              <img src={student.photo} alt={student.name} style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
+                            ) : (
+                              <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontSize: '2rem', color: 'var(--text-tertiary)', fontWeight: 'bold' }}>
+                                {getInitials(student.name)}
+                              </div>
+                            )}
                           </div>
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ width: '48px', height: '18px', borderBottom: '1px solid var(--border-color)', marginBottom: '2px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                              <img src="/principal-sign.png" alt="Principal" style={{ maxHeight: '18px', maxWidth: '48px', display: 'none' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }} />
+                          
+                          <div style={{ padding: '8px 14px 10px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div>
+                              <h3 style={{ margin: '0 0 2px 0', fontSize: '1.05rem', color: 'var(--text-primary)', fontWeight: '700' }}>{student.name}</h3>
+                              <p style={{ margin: '0 0 8px 0', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Course: {batches?.find(b => b.id === student.batch)?.name || student.batch || 'N/A'}</p>
+                              
+                              <div style={{ textAlign: 'left', fontSize: '0.72rem', color: 'var(--text-primary)', lineHeight: '1.5' }}>
+                                <div style={{ display: 'flex' }}><strong style={{ width: '56px' }}>Roll No:</strong> <span>{student.rollNo}</span></div>
+                                <div style={{ display: 'flex' }}><strong style={{ width: '56px' }}>Parent:</strong> <span>{student.parentName || 'N/A'}</span></div>
+                                <div style={{ display: 'flex' }}><strong style={{ width: '56px' }}>Contact:</strong> <span>{student.parentPhone}</span></div>
+                                <div style={{ display: 'flex', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong style={{ width: '56px' }}>Address:</strong> <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{student.address || 'N/A'}</span></div>
+                              </div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '8px', padding: '0 4px' }}>
+                              <div style={{ textAlign: 'center' }}>
+                                <div style={{ width: '48px', height: '18px', borderBottom: '1px solid var(--border-color)', marginBottom: '2px' }}></div>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <QRCodeSVG value={String(student.rollNo || '')} size={48} level="M" />
+                              </div>
+                              <div style={{ textAlign: 'center' }}>
+                                <div style={{ width: '48px', height: '18px', borderBottom: '1px solid var(--border-color)', marginBottom: '2px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                  <img src="/principal-sign.png" alt="Principal" style={{ maxHeight: '18px', maxWidth: '48px', display: 'none' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }} />
+                                </div>
+                              </div>
                             </div>
                           </div>
+                          
+                          <div style={{ background: '#3b82f6', padding: '6px', textAlign: 'center', fontSize: '0.68rem', color: '#fff', fontWeight: '700', letterSpacing: '0.5px' }}>
+                            ROLL NO: {student.rollNo}
+                          </div>
                         </div>
                       </div>
-                      
-                      <div style={{ background: '#3b82f6', padding: '6px', textAlign: 'center', fontSize: '0.62rem', color: '#fff', fontWeight: '600', letterSpacing: '0.5px' }}>
-                        ID: {student.id}
+
+                      {/* BACK SIDE */}
+                      <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textAlign: 'center' }}>
+                          📜 BACK SIDE (Rules & Terms)
+                        </div>
+                        <div className="print-id-card" style={{ 
+                          width: '240px', 
+                          height: '380px', 
+                          boxSizing: 'border-box',
+                          background: '#ffffff', 
+                          borderRadius: '12px', 
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.15)', 
+                          overflow: 'hidden', 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          border: '1px solid #bfdbfe',
+                          position: 'relative',
+                          fontFamily: "'Montserrat', sans-serif"
+                        }}>
+                          {/* Header */}
+                          <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', padding: '9px 10px', textAlign: 'center', color: '#fff' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.5px' }}>TERMS & INSTRUCTIONS</h4>
+                            <span style={{ fontSize: '0.58rem', opacity: 0.9 }}>नियम एवं महत्वपूर्ण निर्देश</span>
+                          </div>
+
+                          {/* Rules Body */}
+                          <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '0.62rem', color: '#334155', lineHeight: '1.45', display: 'flex', flexDirection: 'column', gap: '5px', textAlign: 'left' }}>
+                              <li><strong>Mandatory:</strong> Student must carry this ID card daily for biometric punch & entry.</li>
+                              <li><strong>Non-Transferable:</strong> This card is non-transferable and valid for active academic session.</li>
+                              <li><strong>Loss / Duplicate:</strong> Report loss immediately to the office for reissuance.</li>
+                              <li><strong>Discipline:</strong> Misuse of ID card or proxy attendance will lead to strict action.</li>
+                            </ul>
+
+                            {/* Emergency & Address Box */}
+                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px 8px', fontSize: '0.58rem', color: '#1e293b', marginTop: '6px', textAlign: 'left' }}>
+                              <div style={{ fontWeight: 700, color: '#0369a1', marginBottom: '2px' }}>📍 Campus & Helpline:</div>
+                              <div>📞 <strong>Helpline:</strong> 8538949912 / 9022108606</div>
+                              <div>🌐 <strong>Parents Portal:</strong> cxjeeneet.com</div>
+                              <div style={{ marginTop: '2px', color: '#64748b' }}>Career Xone Campus, Gondia (MH)</div>
+                            </div>
+
+                            {/* Signatures Row */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '6px', paddingTop: '4px' }}>
+                              <div style={{ textAlign: 'center', width: '80px' }}>
+                                <div style={{ borderBottom: '1px dashed #94a3b8', height: '14px', marginBottom: '2px' }}></div>
+                                <span style={{ fontSize: '0.55rem', color: '#64748b', fontWeight: 600 }}>Student Sign</span>
+                              </div>
+                              <div style={{ textAlign: 'center', width: '80px' }}>
+                                <div style={{ borderBottom: '1px dashed #94a3b8', height: '14px', marginBottom: '2px' }}></div>
+                                <span style={{ fontSize: '0.55rem', color: '#64748b', fontWeight: 600 }}>Authorized Sign</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Footer */}
+                          <div style={{ background: '#1e3a8a', padding: '5px', textAlign: 'center', fontSize: '0.58rem', color: '#fff', fontWeight: 700, letterSpacing: '0.5px' }}>
+                            CAREER XONE • ACADEMIC EXCELLENCE
+                          </div>
+                        </div>
                       </div>
                     </div>
                     
                     <button 
                       className="btn btn-primary" 
                       onClick={() => window.print()}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}
                     >
-                      <Printer size={16} /> Print ID Card
+                      <Printer size={16} /> Print Both Sides (Front & Back)
                     </button>
                   </motion.div>
                 )}
