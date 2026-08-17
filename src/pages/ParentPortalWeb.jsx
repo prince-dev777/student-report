@@ -456,12 +456,146 @@ export default function ParentPortalWeb() {
             </button>
           </form>
 
+          {/* Download Parents Mobile App Card (Login Screen) */}
+          {!isAppInstalled && (
+            <div style={{
+              marginTop: '20px',
+              background: '#f0f9ff',
+              border: '1.5px solid #bae6fd',
+              borderRadius: '16px',
+              padding: '14px',
+              textAlign: 'center',
+              boxShadow: '0 4px 14px rgba(2, 132, 199, 0.08)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '6px' }}>
+                <Smartphone size={18} color="#0284c7" />
+                <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0369a1' }}>
+                  Download Parents Mobile App
+                </span>
+              </div>
+              <p style={{ margin: '0 0 10px 0', fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4 }}>
+                Install directly on your Phone Home Screen for 1-tap daily access without opening browser!
+              </p>
+              <button
+                onClick={handleInstallApp}
+                type="button"
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '11px 14px',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Download size={16} /> 📲 Install App on Phone
+              </button>
+            </div>
+          )}
+
           {/* Quick Helpline Info */}
-          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
+          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
             <span>Need Help? Institute Helpline: </span>
             <strong style={{ color: '#0284c7' }}>{helplineNumber}</strong>
           </div>
         </div>
+
+        {/* Force Install App Modal on Login Screen */}
+        {showForceInstallModal && !isAppInstalled && (
+          <div style={{
+            position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)',
+            backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', padding: '16px'
+          }}>
+            <div style={{
+              background: '#ffffff', border: '2px solid #38bdf8', borderRadius: '24px',
+              padding: '24px 20px', maxWidth: '380px', width: '100%', textAlign: 'center',
+              boxShadow: '0 25px 50px -12px rgba(2, 132, 199, 0.35)', position: 'relative'
+            }}>
+              <button
+                onClick={() => setShowForceInstallModal(false)}
+                style={{ position: 'absolute', right: '12px', top: '12px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={16} color="#64748b" />
+              </button>
+
+              <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.15)' }}>
+                <Smartphone size={28} color="#0284c7" />
+              </div>
+
+              <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', fontWeight: 900, color: '#0369a1' }}>
+                Download Parents Mobile App
+              </h3>
+              <p style={{ margin: '0 0 16px 0', fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                Install Career Xone directly on your phone home screen for 1-tap daily access & instant notifications!
+              </p>
+
+              <div style={{
+                background: '#f8fafc',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '16px',
+                padding: '12px 14px',
+                textAlign: 'left',
+                marginBottom: '16px'
+              }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0369a1', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={14} color="#0284c7" /> How to Install on your Phone:
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#334155', lineHeight: '1.5', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div><strong>1.</strong> Tap <strong>(⋮) 3 Dots</strong> at the top right of your browser (or Share icon on iPhone).</div>
+                  <div><strong>2.</strong> Tap <strong>"Install App"</strong> or <strong>"Add to Home Screen"</strong>.</div>
+                </div>
+              </div>
+
+              {deferredPrompt ? (
+                <button
+                  onClick={handleInstallApp}
+                  style={{
+                    width: '100%', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
+                    border: 'none', padding: '13px', borderRadius: '14px', fontWeight: 800, fontSize: '0.92rem',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
+                  }}
+                >
+                  <Download size={18} /> Tap to Install Directly Now
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '12px',
+                    padding: '10px',
+                    fontSize: '0.78rem',
+                    color: '#166534',
+                    fontWeight: 600
+                  }}>
+                    👆 Browser menu me jaakar <strong>"Install App"</strong> ya <strong>"Add to Home Screen"</strong> par tap karein!
+                  </div>
+                  <button
+                    onClick={() => setShowForceInstallModal(false)}
+                    style={{
+                      width: '100%', background: '#0f172a', color: '#ffffff',
+                      border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Got It (समझ गया)
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
