@@ -1,7 +1,10 @@
 {
-  "short_name": "Career Xone",
-  "name": "Career Xone - Smart Portal",
-  "start_url": "./",
+  "short_name": "Parent App",
+  "name": "Career Xone - Parents App",
+  "description": "Career Xone Student Attendance, Test Performance & OMR Report Parent App",
+  "start_url": "/#/parent",
+  "scope": "/",
+  "id": "/parent-app",
   "icons": [
     {
       "src": "/logo.png",
@@ -16,8 +19,8 @@
       "purpose": "any maskable"
     }
   ],
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#ffffff",
+  "theme_color": "#0284c7",
   "display": "standalone",
   "orientation": "portrait"
 }

@@ -24,7 +24,7 @@ export default function ParentPortalWeb() {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
   const [omrZoomScale, setOmrZoomScale] = useState(1);
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState(() => window.deferredPrompt || null);
   const [showForceInstallModal, setShowForceInstallModal] = useState(false);
 
   // Check if App is already running as standalone PWA
@@ -36,21 +36,39 @@ export default function ParentPortalWeb() {
   // Catch PWA beforeinstallprompt event
   useEffect(() => {
     document.title = 'Career Xone - Parent App Portal';
+
+    if (window.deferredPrompt) {
+      setDeferredPrompt(window.deferredPrompt);
+    }
+
+    const handlePromptReady = (e) => {
+      const promptObj = e?.detail || window.deferredPrompt;
+      if (promptObj) {
+        setDeferredPrompt(promptObj);
+      }
+    };
+
     const handleBeforeInstall = (e) => {
       e.preventDefault();
+      window.deferredPrompt = e;
       setDeferredPrompt(e);
     };
+
     const handleAppInstalled = () => {
       setIsAppInstalled(true);
       setShowForceInstallModal(false);
+      window.deferredPrompt = null;
+      setDeferredPrompt(null);
       toast.success('🎉 Parent App added to Home Screen!');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('pwa-prompt-ready', handlePromptReady);
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('pwa-prompt-ready', handlePromptReady);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
@@ -66,16 +84,23 @@ export default function ParentPortalWeb() {
     return batch.replace(/^batch-?/i, 'Batch ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const handleInstallApp = () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
+  const handleInstallApp = async () => {
+    const promptEvent = deferredPrompt || window.deferredPrompt;
+    if (promptEvent) {
+      try {
+        await promptEvent.prompt();
+        const choiceResult = await promptEvent.userChoice;
+        if (choiceResult && choiceResult.outcome === 'accepted') {
           setIsAppInstalled(true);
           setShowForceInstallModal(false);
+          window.deferredPrompt = null;
+          setDeferredPrompt(null);
           toast.success('🎉 Parent App added to Home Screen!');
         }
-      });
+      } catch (err) {
+        console.warn('Install prompt error:', err);
+        setShowForceInstallModal(true);
+      }
     } else {
       setShowForceInstallModal(true);
     }
@@ -649,43 +674,61 @@ export default function ParentPortalWeb() {
       {/* Force Install App Modal Prompt (Hides when installed) */}
       {showForceInstallModal && !isAppInstalled && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
+          position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)',
           backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex',
           alignItems: 'center', justifyContent: 'center', padding: '16px'
         }}>
           <div style={{
-            background: '#ffffff', border: '2px solid #38bdf8', borderRadius: '22px',
-            padding: '24px 20px', maxWidth: '360px', width: '100%', textAlign: 'center',
+            background: '#ffffff', border: '2px solid #38bdf8', borderRadius: '24px',
+            padding: '24px 20px', maxWidth: '380px', width: '100%', textAlign: 'center',
             boxShadow: '0 25px 50px -12px rgba(2, 132, 199, 0.35)', position: 'relative'
           }}>
             <button
               onClick={() => setShowForceInstallModal(false)}
-              style={{ position: 'absolute', right: '12px', top: '12px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ position: 'absolute', right: '12px', top: '12px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <X size={15} color="#64748b" />
+              <X size={16} color="#64748b" />
             </button>
 
-            <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-              <Smartphone size={26} color="#0284c7" />
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.15)' }}>
+              <Smartphone size={28} color="#0284c7" />
             </div>
 
-            <h3 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', fontWeight: 900, color: '#0369a1' }}>
-              Install Parent App
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', fontWeight: 900, color: '#0369a1' }}>
+              Download Parents Mobile App
             </h3>
             <p style={{ margin: '0 0 16px 0', fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
-              For a smooth, 1-tap app experience & instant notifications, please install the Parent App on your Phone Home Screen!
+              Install Career Xone directly on your phone home screen for 1-tap daily access & instant notifications!
             </p>
+
+            {/* Quick 2-Step Visual Guide */}
+            <div style={{
+              background: '#f8fafc',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '12px 14px',
+              textAlign: 'left',
+              marginBottom: '16px'
+            }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0369a1', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles size={14} color="#0284c7" /> How to Install on your Phone:
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#334155', lineHeight: '1.5', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div><strong>1.</strong> Tap <strong>(⋮) 3 Dots</strong> at the top right of your browser (or Share icon on iPhone).</div>
+                <div><strong>2.</strong> Tap <strong>"Install App"</strong> or <strong>"Add to Home Screen"</strong>.</div>
+              </div>
+            </div>
 
             <button
               onClick={handleInstallApp}
               style={{
                 width: '100%', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
-                border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.9rem',
+                border: 'none', padding: '13px', borderRadius: '14px', fontWeight: 800, fontSize: '0.92rem',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                boxShadow: '0 6px 18px rgba(2, 132, 199, 0.35)'
+                boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
               }}
             >
-              <Download size={16} /> Add App to Home Screen Now
+              <Download size={18} /> Tap to Install Now
             </button>
           </div>
         </div>
