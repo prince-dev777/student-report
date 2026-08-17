@@ -2099,11 +2099,14 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
     }
     // Automatically trigger cloud sync in background
     try {
-      const syncProcess = spawn('node', ['sync-cloud.js'], {
+      const syncProcess = fork('sync-cloud.js', [], {
         cwd: __dirname,
-        env: { ...process.env }, // Inherit environment including USER_DATA_PATH
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, // Inherit environment including USER_DATA_PATH
         detached: true,
         stdio: 'ignore'
+      });
+      syncProcess.on('error', (err) => {
+        console.error('❌ Auto Cloud Sync process error:', err.message);
       });
       syncProcess.unref();
       console.log('🔄 Auto Cloud Sync triggered after publishing results');
@@ -2269,6 +2272,11 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
 
     pythonProcess.stderr.on('data', (data) => {
       pythonError += data.toString();
+    });
+    
+    pythonProcess.on('error', (err) => {
+      console.error('❌ Failed to start OMR engine:', err);
+      pythonError += err.message;
     });
 
     pythonProcess.on('close', async (code) => {
