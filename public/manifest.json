@@ -7,21 +7,15 @@
   "id": "/?source=pwa",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/logo-192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "/logo.png",
+      "src": "/logo-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any"
-    },
-    {
-      "src": "/logo.png",
-      "type": "image/png",
-      "sizes": "1024x1024",
       "purpose": "any maskable"
     }
   ],

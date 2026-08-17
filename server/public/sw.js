@@ -1,8 +1,13 @@
 // Progressive Web App (PWA) Service Worker for Career Xone Parent Portal
-const CACHE_NAME = 'careerxone-parent-v2';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'career-xone-v3';
+const URLS_TO_CACHE = [
   '/',
+  '/index.html',
+  '/?source=pwa',
+  '/?source=pwa#/parent',
   '/manifest.json',
+  '/logo-192.png',
+  '/logo-512.png',
   '/logo.png'
 ];
 
@@ -10,7 +15,9 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE).catch(() => {});
+      return cache.addAll(URLS_TO_CACHE).catch((err) => {
+        console.warn('SW cache addAll partial error:', err);
+      });
     })
   );
 });
@@ -32,8 +39,15 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).catch(() => {
+        if (event.request.headers.get('accept')?.includes('text/html')) {
+          return caches.match('/index.html') || caches.match('/');
+        }
+      });
     })
   );
 });

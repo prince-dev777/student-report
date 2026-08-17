@@ -2689,7 +2689,7 @@ app.post('/api/reset', async (req, res) => {
 
 
 
-// Explicit PWA Endpoints so they are NEVER intercepted by catch-all
+// Explicit PWA Endpoints with strict Cache-Control for Cloudflare/PWA reliability
 app.get('/manifest.json', (req, res) => {
   const manifestLocations = [
     path.join(__dirname, '../dist/manifest.json'),
@@ -2699,6 +2699,7 @@ app.get('/manifest.json', (req, res) => {
   for (const loc of manifestLocations) {
     if (fs.existsSync(loc)) {
       res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       return res.sendFile(loc);
     }
   }
@@ -2715,26 +2716,31 @@ app.get('/sw.js', (req, res) => {
     if (fs.existsSync(loc)) {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       res.setHeader('Service-Worker-Allowed', '/');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       return res.sendFile(loc);
     }
   }
   res.status(404).send('// Service Worker not found');
 });
 
-app.get('/logo.png', (req, res) => {
-  const logoLocations = [
-    path.join(__dirname, '../dist/logo.png'),
-    path.join(__dirname, '../public/logo.png'),
-    path.join(__dirname, 'public/logo.png')
+const sendIcon = (filename, res) => {
+  const iconLocations = [
+    path.join(__dirname, '../dist', filename),
+    path.join(__dirname, '../public', filename),
+    path.join(__dirname, 'public', filename)
   ];
-  for (const loc of logoLocations) {
+  for (const loc of iconLocations) {
     if (fs.existsSync(loc)) {
       res.setHeader('Content-Type', 'image/png');
       return res.sendFile(loc);
     }
   }
-  res.status(404).send('Logo not found');
-});
+  res.status(404).send('Icon not found');
+};
+
+app.get('/logo.png', (req, res) => sendIcon('logo.png', res));
+app.get('/logo-192.png', (req, res) => sendIcon('logo-192.png', res));
+app.get('/logo-512.png', (req, res) => sendIcon('logo-512.png', res));
 
 // Serve Frontend Static Files & SPA Routing for Staff Attendance Web Portal
 // Serve Frontend Static Files & SPA Routing for Staff Attendance Web Portal & Parents PWA
