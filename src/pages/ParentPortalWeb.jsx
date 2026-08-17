@@ -58,7 +58,7 @@ export default function ParentPortalWeb() {
       (typeof window !== 'undefined' && window.navigator.standalone === true);
   });
 
-  // Catch PWA beforeinstallprompt event
+  // Catch PWA beforeinstallprompt event & check installed status
   useEffect(() => {
     document.title = 'Career Xone - Parents Official Mobile App';
 
@@ -66,25 +66,35 @@ export default function ParentPortalWeb() {
       setDeferredPrompt(window.deferredPrompt);
     }
 
-    const handlePromptReady = (e) => {
-      const promptObj = e?.detail || window.deferredPrompt;
-      if (promptObj) {
-        setDeferredPrompt(promptObj);
-      }
-    };
+    if (typeof navigator !== 'undefined' && 'getInstalledRelatedApps' in navigator) {
+      navigator.getInstalledRelatedApps().then((relatedApps) => {
+        if (relatedApps && relatedApps.length > 0) {
+          setIsAppInstalled(true);
+        }
+      }).catch(() => {});
+    }
 
     const handleBeforeInstall = (e) => {
       e.preventDefault();
-      window.deferredPrompt = e;
       setDeferredPrompt(e);
+      window.deferredPrompt = e;
+      setShowInstallBanner(true);
+    };
+
+    const handlePromptReady = (e) => {
+      if (e && e.detail) {
+        setDeferredPrompt(e.detail);
+        window.deferredPrompt = e.detail;
+      }
     };
 
     const handleAppInstalled = () => {
       setIsAppInstalled(true);
+      setShowInstallBanner(false);
       setShowForceInstallModal(false);
-      window.deferredPrompt = null;
       setDeferredPrompt(null);
-      toast.success('🎉 Parent App added to Home Screen!');
+      window.deferredPrompt = null;
+      toast.success('🎉 Career Xone App successfully installed!');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
@@ -585,10 +595,15 @@ export default function ParentPortalWeb() {
                       <div><strong>1.</strong> Safari me niche <strong>Share icon (⎋)</strong> par tap karein.</div>
                       <div><strong>2.</strong> Niche scroll karke <strong>"Add to Home Screen" (+)</strong> select karein.</div>
                     </>
-                  ) : (
+                  ) : isAndroid ? (
                     <>
                       <div><strong>1.</strong> Browser me upar <strong>(⋮) 3 Dots</strong> par tap karein.</div>
                       <div><strong>2.</strong> <strong>"Install App"</strong> ya <strong>"Add to Home Screen"</strong> par tap karein.</div>
+                    </>
+                  ) : (
+                    <>
+                      <div><strong>1.</strong> Upar address bar me <strong>[Open in app]</strong> button par click karein.</div>
+                      <div><strong>2.</strong> Ya browser menu <strong>(⋮)</strong> me jaakar <strong>"Install Career Xone"</strong> karein.</div>
                     </>
                   )}
                 </div>
