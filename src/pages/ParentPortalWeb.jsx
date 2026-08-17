@@ -579,14 +579,17 @@ export default function ParentPortalWeb() {
       {/* Global CSS for Mobile & Print */}
       <style>{`
         @media (max-width: 600px) {
-          .parent-header { padding: 10px 14px !important; }
+          .parent-header { padding: 8px 12px !important; }
           .parent-logo-img { width: 32px !important; height: 32px !important; }
-          .parent-inst-name { font-size: 0.9rem !important; }
-          .student-card { padding: 16px !important; border-radius: 16px !important; }
-          .student-avatar { width: 46px !important; height: 46px !important; font-size: 1.2rem !important; }
-          .student-name { font-size: 1.15rem !important; }
-          .tab-btn-bar { gap: 6px !important; }
-          .tab-btn { padding: 9px 4px !important; font-size: 0.72rem !important; }
+          .parent-inst-name { font-size: 0.88rem !important; }
+          .student-card { padding: 14px !important; border-radius: 16px !important; margin-bottom: 12px !important; }
+          .student-avatar { width: 44px !important; height: 44px !important; font-size: 1.15rem !important; }
+          .student-name { font-size: 1.1rem !important; }
+          .tab-btn-bar { gap: 4px !important; margin-bottom: 12px !important; }
+          .tab-btn { padding: 8px 2px !important; font-size: 0.7rem !important; }
+          .metrics-grid { gap: 6px !important; }
+          .metric-box { padding: 8px 4px !important; }
+          .metric-value { font-size: 0.95rem !important; }
         }
         @media print {
           body * { visibility: hidden !important; }
@@ -596,31 +599,46 @@ export default function ParentPortalWeb() {
         }
       `}</style>
 
-      {/* Header */}
+      {/* Header (Sleek Mobile App Bar) */}
       <header className="parent-header no-print" style={{
         background: '#ffffff',
         borderBottom: '1px solid #e2e8f0',
-        padding: '12px 5%',
+        padding: '10px 16px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+        boxShadow: '0 2px 8px rgba(2, 132, 199, 0.05)',
         position: 'sticky',
         top: 0,
         zIndex: 50
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <img src={instituteLogo} alt="Logo" className="parent-logo-img" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} />
-          <div>
-            <h4 className="parent-inst-name" style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#0369a1', lineHeight: 1.1 }}>{instituteName}</h4>
-            <span style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 700 }}>Parents Official App</span>
+        {/* Left: Institute Logo & Name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+          <img
+            src={instituteLogo}
+            alt="Logo"
+            className="parent-logo-img"
+            style={{ width: '36px', height: '36px', borderRadius: '10px', objectFit: 'contain', border: '1px solid #e2e8f0', flexShrink: 0 }}
+          />
+          <div style={{ minWidth: 0, overflow: 'hidden' }}>
+            <h4 className="parent-inst-name" style={{
+              margin: 0, fontSize: '0.92rem', fontWeight: 900, color: '#0369a1',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.15
+            }}>
+              {instituteName}
+            </h4>
+            <span style={{ fontSize: '0.66rem', color: '#0284c7', fontWeight: 700, display: 'block' }}>
+              Parents Official App
+            </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {/* Notification Bell with Badge */}
+        {/* Right: Actions (Notification, Report Card, Logout) */}
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+          {/* Notification Bell */}
           <button
             onClick={() => setShowNotificationDrawer(true)}
+            aria-label="Notifications"
             style={{
               position: 'relative',
               background: '#f0f9ff',
@@ -635,112 +653,117 @@ export default function ParentPortalWeb() {
               cursor: 'pointer'
             }}
           >
-            <Bell size={18} />
+            <Bell size={17} />
             {allNotifications.length > 0 && (
               <span style={{
-                position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444',
-                color: '#ffffff', fontSize: '0.65rem', fontWeight: 900, width: '17px',
-                height: '17px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                position: 'absolute', top: '-3px', right: '-3px', background: '#ef4444',
+                color: '#ffffff', fontSize: '0.62rem', fontWeight: 900, width: '16px',
+                height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 {allNotifications.length}
               </span>
             )}
           </button>
 
-          {/* 1-Tap Download Report Card Button */}
+          {/* 1-Tap Report Card Button */}
           <button
             onClick={() => setShowReportCardModal(true)}
             style={{
               background: 'linear-gradient(135deg, #059669, #047857)',
-              color: '#ffffff', border: 'none', padding: '7px 12px', borderRadius: '10px',
-              fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer', display: 'flex',
-              alignItems: 'center', gap: '5px', boxShadow: '0 4px 10px rgba(5, 150, 105, 0.25)'
+              color: '#ffffff', border: 'none', padding: '0 10px', height: '36px',
+              borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '5px', boxShadow: '0 3px 8px rgba(5, 150, 105, 0.25)'
             }}
           >
-            <FileText size={14} /> Report Card
+            <FileText size={14} /> <span>Report</span>
           </button>
 
-          {/* Logout */}
+          {/* Logout Button */}
           <button
             onClick={() => {
               setIsLoggedIn(false);
               sessionStorage.removeItem('parentSession');
             }}
+            aria-label="Logout"
             style={{
               background: '#fff1f2', border: '1px solid #fecdd3', color: '#e11d48',
-              padding: '7px 10px', borderRadius: '10px', fontSize: '0.74rem', fontWeight: 700,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+              width: '36px', height: '36px', borderRadius: '10px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}
           >
-            <LogOut size={14} />
+            <LogOut size={16} />
           </button>
         </div>
       </header>
 
-      {/* Main Container */}
-      <div style={{ maxWidth: '640px', margin: '14px auto 0', padding: '0 12px' }}>
+      {/* Main App Container */}
+      <div style={{ maxWidth: '640px', margin: '10px auto 0', padding: '0 10px' }}>
 
-        {/* Student Profile & AI Summary Header Card */}
+        {/* Student Profile Card */}
         <div className="student-card no-print" style={{
-          background: '#ffffff', border: '1px solid #bae6fd',
-          borderRadius: '20px', padding: '18px', marginBottom: '14px',
-          boxShadow: '0 6px 20px rgba(2, 132, 199, 0.06)'
+          background: '#ffffff',
+          border: '1.5px solid #bae6fd',
+          borderRadius: '18px',
+          padding: '16px',
+          marginBottom: '12px',
+          boxShadow: '0 4px 16px rgba(2, 132, 199, 0.06)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="student-avatar" style={{
-              width: '52px', height: '52px', borderRadius: '14px',
+              width: '48px', height: '48px', borderRadius: '14px',
               background: 'linear-gradient(135deg, #0284c7, #0369a1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1.35rem', fontWeight: 800, color: '#ffffff',
+              fontSize: '1.25rem', fontWeight: 800, color: '#ffffff',
               boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)', flexShrink: 0
             }}>
               {studentData?.name ? studentData.name.charAt(0) : 'S'}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <h2 className="student-name" style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <h2 className="student-name" style={{
+                  margin: 0, fontSize: '1.12rem', fontWeight: 900, color: '#0f172a',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                }}>
                   {studentData?.name}
                 </h2>
-                <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: '12px', fontSize: '0.68rem', fontWeight: 800 }}>
-                  {analyticsData.growthBadge}
-                </span>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px', fontSize: '0.74rem', color: '#64748b', alignItems: 'center', marginTop: '3px' }}>
-                <span>Roll: <strong style={{ color: '#0f172a' }}>{studentData?.rollNo}</strong></span>
-                <span>•</span>
-                <span>Batch: <strong style={{ color: '#0284c7', fontWeight: 800 }}>{formatBatchName(studentData?.batch)}</strong></span>
-                <span>•</span>
-                <span>ID: <strong style={{ color: '#475569' }}>{studentData?.id}</strong></span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 6px', fontSize: '0.72rem', color: '#64748b', alignItems: 'center', marginTop: '3px' }}>
+                <span style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: '6px', fontWeight: 700, color: '#334155' }}>
+                  Roll: <strong style={{ color: '#0f172a' }}>{studentData?.rollNo}</strong>
+                </span>
+                <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>
+                  {formatBatchName(studentData?.batch)}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Quick Metrics Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '12px' }}>
-            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '8px 6px', borderRadius: '10px', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.65rem', color: '#0369a1', fontWeight: 700, display: 'block' }}>Attendance</span>
-              <strong style={{ fontSize: '1.05rem', color: '#0284c7', fontWeight: 900 }}>
+          {/* Quick Metrics 4-Grid */}
+          <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '12px' }}>
+            <div className="metric-box" style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '8px 4px', borderRadius: '12px', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.62rem', color: '#0369a1', fontWeight: 700, display: 'block', marginBottom: '2px' }}>Attendance</span>
+              <strong className="metric-value" style={{ fontSize: '1rem', color: '#0284c7', fontWeight: 900 }}>
                 {studentData?.attendanceRate !== undefined ? studentData.attendanceRate : (attendanceRecords.length > 0 ? Math.round((attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length / attendanceRecords.length) * 100) : 100)}%
               </strong>
             </div>
 
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 6px', borderRadius: '10px', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.65rem', color: '#15803d', fontWeight: 700, display: 'block' }}>Present</span>
-              <strong style={{ fontSize: '1.05rem', color: '#16a34a', fontWeight: 900 }}>
+            <div className="metric-box" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 4px', borderRadius: '12px', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.62rem', color: '#15803d', fontWeight: 700, display: 'block', marginBottom: '2px' }}>Present</span>
+              <strong className="metric-value" style={{ fontSize: '1rem', color: '#16a34a', fontWeight: 900 }}>
                 {studentData?.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length}d
               </strong>
             </div>
 
-            <div style={{ background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '8px 6px', borderRadius: '10px', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.65rem', color: '#a21caf', fontWeight: 700, display: 'block' }}>Avg Score</span>
-              <strong style={{ fontSize: '1.05rem', color: '#c026d3', fontWeight: 900 }}>
-                {testResults.length > 0 ? `${analyticsData.avgPercentage}%` : '-'}
+            <div className="metric-box" style={{ background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '8px 4px', borderRadius: '12px', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.62rem', color: '#a21caf', fontWeight: 700, display: 'block', marginBottom: '2px' }}>Avg Score</span>
+              <strong className="metric-value" style={{ fontSize: '1rem', color: '#c026d3', fontWeight: 900 }}>
+                {testResults.length > 0 ? `${Math.max(0, analyticsData.avgPercentage)}%` : '-'}
               </strong>
             </div>
 
-            <div style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: '8px 6px', borderRadius: '10px', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.65rem', color: '#c2410c', fontWeight: 700, display: 'block' }}>Best Rank</span>
-              <strong style={{ fontSize: '1.05rem', color: '#ea580c', fontWeight: 900 }}>
+            <div className="metric-box" style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: '8px 4px', borderRadius: '12px', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.62rem', color: '#c2410c', fontWeight: 700, display: 'block', marginBottom: '2px' }}>Best Rank</span>
+              <strong className="metric-value" style={{ fontSize: '1rem', color: '#ea580c', fontWeight: 900 }}>
                 {testResults.length > 0 && analyticsData.bestRank !== '-' ? `#${analyticsData.bestRank}` : '-'}
               </strong>
             </div>
