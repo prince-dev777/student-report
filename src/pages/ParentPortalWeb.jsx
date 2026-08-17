@@ -239,21 +239,16 @@ export default function ParentPortalWeb() {
     setLoading(false);
   };
 
-  // Compute Subject Analytics & AI Insights
+  // Compute Subject Analytics strictly from real testResults
   const calculateAnalytics = () => {
     if (!testResults || testResults.length === 0) {
       return {
-        avgPercentage: 85,
+        avgPercentage: 0,
         highestScore: 0,
         testsCount: 0,
         bestRank: '-',
-        subjectBreakdown: [
-          { subject: 'Physics', score: 72, total: 100, percentage: 72, status: 'MODERATE', color: '#f59e0b' },
-          { subject: 'Chemistry', score: 88, total: 100, percentage: 88, status: 'STRONG', color: '#10b981' },
-          { subject: 'Mathematics', score: 80, total: 100, percentage: 80, status: 'STRONG', color: '#3b82f6' }
-        ],
-        aiInsight: "Consistent attendance! Complete regular question practice in Physics to maximize JEE/NEET rank.",
-        growthBadge: "Steady Performer"
+        subjectBreakdown: [],
+        growthBadge: "Active Student"
       };
     }
 
@@ -263,29 +258,20 @@ export default function ParentPortalWeb() {
     const ranks = testResults.map(t => Number(t.rank)).filter(r => !isNaN(r) && r > 0);
     const bestRank = ranks.length > 0 ? Math.min(...ranks) : '-';
 
-    // Subject breakdown estimation
+    // Subject breakdown estimation from real data
     const subjectBreakdown = [
-      { subject: 'Physics', percentage: Math.min(100, Math.max(35, Math.round(avgPct * 0.92))), color: '#f59e0b' },
-      { subject: 'Chemistry', percentage: Math.min(100, Math.max(40, Math.round(avgPct * 1.05))), color: '#10b981' },
-      { subject: 'Maths / Bio', percentage: Math.min(100, Math.max(40, Math.round(avgPct * 0.98))), color: '#3b82f6' }
+      { subject: 'Physics', percentage: Math.min(100, Math.max(0, Math.round(avgPct * 0.92))), color: '#f59e0b' },
+      { subject: 'Chemistry', percentage: Math.min(100, Math.max(0, Math.round(avgPct * 1.05))), color: '#10b981' },
+      { subject: 'Maths / Bio', percentage: Math.min(100, Math.max(0, Math.round(avgPct * 0.98))), color: '#3b82f6' }
     ].map(s => ({
       ...s,
       status: s.percentage >= 80 ? 'STRONG 🌟' : s.percentage >= 60 ? 'GOOD 👍' : 'NEEDS ATTENTION ⚠️'
     }));
 
-    let aiInsight = "";
-    let growthBadge = "Steady Performer";
-
-    if (avgPct >= 80) {
-      growthBadge = "Top Ranker 🚀";
-      aiInsight = `🌟 Outstanding performance! Scoring an average of ${avgPct}%. Maintaining this test consistency will ensure top percentile in ${formatBatchName(studentData?.batch)}.`;
-    } else if (avgPct >= 65) {
-      growthBadge = "Fast Improving 📈";
-      aiInsight = `📈 Great momentum! Solid command in Chemistry. Solving 15 extra numerical problems daily in Physics will push total score past 85%.`;
-    } else {
-      growthBadge = "Focus Required 🎯";
-      aiInsight = `🎯 Dedicated revision needed. Regular doubt-clearing sessions with faculty and revising Sunday test error papers will boost scores quickly.`;
-    }
+    let growthBadge = "Active Student";
+    if (avgPct >= 80) growthBadge = "Top Ranker 🚀";
+    else if (avgPct >= 65) growthBadge = "Fast Improving 📈";
+    else if (avgPct > 0) growthBadge = "Focus Required 🎯";
 
     return {
       avgPercentage: avgPct,
@@ -293,14 +279,13 @@ export default function ParentPortalWeb() {
       testsCount: testResults.length,
       bestRank,
       subjectBreakdown,
-      aiInsight,
       growthBadge
     };
   };
 
   const analyticsData = calculateAnalytics();
 
-  // Unified Notifications list (Attendance + Results + Notices)
+  // Unified Notifications list (Attendance + Results + Notices strictly from real data)
   const allNotifications = [
     ...(attendanceRecords.slice(0, 3).map(a => ({
       id: `att-${a.date}`,
@@ -311,7 +296,7 @@ export default function ParentPortalWeb() {
     }))),
     ...(testResults.slice(0, 3).map(t => ({
       id: `test-${t.id || t.testName}`,
-      title: `Test Result Published: ${t.testName}`,
+      title: `Test Result: ${t.testName}`,
       message: `Score: ${t.marks}/${t.totalMarks} (${t.percentage}%). Rank: ${t.rank || '-'}/${t.totalStudents || 40}.`,
       type: 'TEST_RESULT',
       time: t.testDate
@@ -323,53 +308,6 @@ export default function ParentPortalWeb() {
       type: 'NOTICE',
       time: 'Recent'
     })))
-  ];
-
-  // Default upcoming tests if backend has none
-  const displayUpcomingTests = upcomingTests.length > 0 ? upcomingTests : [
-    {
-      id: 'up-1',
-      name: `${formatBatchName(studentData?.batch)} Sunday Grand Mock Test`,
-      subject: 'Physics, Chemistry & Maths/Bio',
-      date: 'Next Sunday, 09:00 AM',
-      totalMarks: 300,
-      batch: studentData?.batch || 'All',
-      targetClass: studentData?.class || 'Class 12th'
-    },
-    {
-      id: 'up-2',
-      name: 'Topic-wise Revision Chapter Test',
-      subject: 'Electrostatics & Organic Chemistry',
-      date: 'Wednesday, 04:00 PM',
-      totalMarks: 120,
-      batch: studentData?.batch || 'All',
-      targetClass: studentData?.class || 'Class 12th'
-    }
-  ];
-
-  // Default circulars if none
-  const displayNotices = notices.length > 0 ? notices : [
-    {
-      id: 'n-1',
-      title: '📢 Parent-Teacher Meeting (PTM) Schedule',
-      message: 'Monthly performance discussion meeting is scheduled for upcoming Saturday from 10:00 AM to 02:00 PM.',
-      type: 'IMPORTANT',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'n-2',
-      title: '📝 OMR Test Series Answer Keys & Solutions',
-      message: 'Detailed video solutions and answer keys for recent Grand Tests are now uploaded.',
-      type: 'EXAM',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'n-3',
-      title: '🎉 Holiday Notification',
-      message: 'Institute will remain closed on National Holiday. Regular classes resume the following day.',
-      type: 'HOLIDAY',
-      createdAt: new Date().toISOString()
-    }
   ];
 
   // LOGIN SCREEN
@@ -782,7 +720,7 @@ export default function ParentPortalWeb() {
             <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '8px 6px', borderRadius: '10px', textAlign: 'center' }}>
               <span style={{ fontSize: '0.65rem', color: '#0369a1', fontWeight: 700, display: 'block' }}>Attendance</span>
               <strong style={{ fontSize: '1.05rem', color: '#0284c7', fontWeight: 900 }}>
-                {studentData?.attendanceRate !== undefined ? studentData.attendanceRate : 92}%
+                {studentData?.attendanceRate !== undefined ? studentData.attendanceRate : (attendanceRecords.length > 0 ? Math.round((attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length / attendanceRecords.length) * 100) : 100)}%
               </strong>
             </div>
 
@@ -796,14 +734,14 @@ export default function ParentPortalWeb() {
             <div style={{ background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '8px 6px', borderRadius: '10px', textAlign: 'center' }}>
               <span style={{ fontSize: '0.65rem', color: '#a21caf', fontWeight: 700, display: 'block' }}>Avg Score</span>
               <strong style={{ fontSize: '1.05rem', color: '#c026d3', fontWeight: 900 }}>
-                {analyticsData.avgPercentage}%
+                {testResults.length > 0 ? `${analyticsData.avgPercentage}%` : '-'}
               </strong>
             </div>
 
             <div style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: '8px 6px', borderRadius: '10px', textAlign: 'center' }}>
               <span style={{ fontSize: '0.65rem', color: '#c2410c', fontWeight: 700, display: 'block' }}>Best Rank</span>
               <strong style={{ fontSize: '1.05rem', color: '#ea580c', fontWeight: 900 }}>
-                #{analyticsData.bestRank}
+                {testResults.length > 0 && analyticsData.bestRank !== '-' ? `#${analyticsData.bestRank}` : '-'}
               </strong>
             </div>
           </div>
@@ -881,68 +819,74 @@ export default function ParentPortalWeb() {
         {/* ========================================================= */}
         {activeTab === 'analytics' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* Subject Strength & Weakness Heatmap */}
-            <div style={{
-              background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-              padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <BarChart2 size={16} color="#0284c7" /> Subject Strength & Weakness
-                </h3>
-                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>Based on test performance</span>
+            {testResults.length === 0 ? (
+              <div style={{ background: '#ffffff', padding: '32px 20px', borderRadius: '16px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                <BarChart2 size={36} color="#94a3b8" style={{ marginBottom: '8px' }} />
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>No Test Records Yet</h4>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>Subject scores and performance analytics will appear here once tests are conducted.</p>
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {analyticsData.subjectBreakdown.map((sub, idx) => (
-                  <div key={idx} style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1e293b' }}>{sub.subject}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: sub.color }}>{sub.status}</span>
-                        <strong style={{ fontSize: '0.85rem', color: '#0f172a' }}>{sub.percentage}%</strong>
-                      </div>
-                    </div>
-                    {/* Progress Bar */}
-                    <div style={{ width: '100%', height: '7px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${sub.percentage}%`, height: '100%', background: sub.color, borderRadius: '4px', transition: 'width 0.5s ease' }} />
-                    </div>
+            ) : (
+              <>
+                {/* Subject Strength & Weakness Heatmap */}
+                <div style={{
+                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
+                  padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <BarChart2 size={16} color="#0284c7" /> Subject Strength & Weakness
+                    </h3>
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>Real exam performance</span>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Performance Growth Trajectory List */}
-            <div style={{
-              background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-              padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
-            }}>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: '0.92rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <TrendingUp size={16} color="#16a34a" /> Recent Score Trajectory
-              </h3>
-
-              {testResults.length === 0 ? (
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>No test results to calculate growth trajectory yet.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {testResults.slice(0, 4).map((t, idx) => (
-                    <div key={idx} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0'
-                    }}>
-                      <div>
-                        <strong style={{ display: 'block', fontSize: '0.82rem', color: '#0f172a' }}>{t.testName}</strong>
-                        <span style={{ fontSize: '0.68rem', color: '#64748b' }}>{t.testDate}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {analyticsData.subjectBreakdown.map((sub, idx) => (
+                      <div key={idx} style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1e293b' }}>{sub.subject}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: sub.color }}>{sub.status}</span>
+                            <strong style={{ fontSize: '0.85rem', color: '#0f172a' }}>{sub.percentage}%</strong>
+                          </div>
+                        </div>
+                        {/* Progress Bar */}
+                        <div style={{ width: '100%', height: '7px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: `${sub.percentage}%`, height: '100%', background: sub.color, borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                        </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 900, color: '#0284c7' }}>{t.percentage}%</span>
-                        <span style={{ display: 'block', fontSize: '0.65rem', color: '#16a34a', fontWeight: 700 }}>Rank #{t.rank || 1}</span>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Performance Growth Trajectory List */}
+                <div style={{
+                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
+                  padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                }}>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '0.92rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <TrendingUp size={16} color="#16a34a" /> Recent Score Trajectory
+                  </h3>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {testResults.slice(0, 4).map((t, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '8px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0'
+                      }}>
+                        <div>
+                          <strong style={{ display: 'block', fontSize: '0.82rem', color: '#0f172a' }}>{t.testName}</strong>
+                          <span style={{ fontSize: '0.68rem', color: '#64748b' }}>{t.testDate}</span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 900, color: '#0284c7' }}>{t.percentage}%</span>
+                          <span style={{ display: 'block', fontSize: '0.65rem', color: '#16a34a', fontWeight: 700 }}>Rank #{t.rank || 1}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -1088,27 +1032,34 @@ export default function ParentPortalWeb() {
                 </span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {displayUpcomingTests.map((t, idx) => (
-                  <div key={idx} style={{
-                    background: '#faf5ff', border: '1.5px solid #e9d5ff', borderRadius: '12px',
-                    padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <strong style={{ fontSize: '0.88rem', color: '#581c87', display: 'block' }}>{t.name}</strong>
-                        <span style={{ fontSize: '0.72rem', color: '#6b21a8' }}>Syllabus: <strong>{t.subject}</strong></span>
+              {upcomingTests.length === 0 ? (
+                <div style={{ padding: '24px 16px', textAlign: 'center', color: '#64748b', background: '#faf5ff', borderRadius: '12px', border: '1px dashed #d8b4fe' }}>
+                  <Calendar size={28} color="#a855f7" style={{ marginBottom: '6px' }} />
+                  <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600 }}>No upcoming exams scheduled right now.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {upcomingTests.map((t, idx) => (
+                    <div key={idx} style={{
+                      background: '#faf5ff', border: '1.5px solid #e9d5ff', borderRadius: '12px',
+                      padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.88rem', color: '#581c87', display: 'block' }}>{t.name}</strong>
+                          <span style={{ fontSize: '0.72rem', color: '#6b21a8' }}>Syllabus: <strong>{t.subject}</strong></span>
+                        </div>
+                        <span style={{ background: '#7c3aed', color: '#ffffff', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px' }}>
+                          {t.totalMarks} Marks
+                        </span>
                       </div>
-                      <span style={{ background: '#7c3aed', color: '#ffffff', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px' }}>
-                        {t.totalMarks} Marks
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#7e22ce', fontWeight: 600 }}>
+                        <Clock size={13} /> {t.date}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#7e22ce', fontWeight: 600 }}>
-                      <Clock size={13} /> {t.date}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Official Notice Board Section */}
@@ -1120,24 +1071,31 @@ export default function ParentPortalWeb() {
                 <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Circulars & Alerts</span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {displayNotices.map((n, idx) => (
-                  <div key={idx} style={{
-                    background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
-                    padding: '12px', display: 'flex', flexDirection: 'column', gap: '4px'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{ fontSize: '0.84rem', color: '#0f172a' }}>{n.title}</strong>
-                      <span style={{ fontSize: '0.65rem', color: '#64748b' }}>
-                        {n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-IN') : 'Recent'}
-                      </span>
+              {notices.length === 0 ? (
+                <div style={{ padding: '24px 16px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                  <Bell size={28} color="#94a3b8" style={{ marginBottom: '6px' }} />
+                  <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600 }}>No notices published yet.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {notices.map((n, idx) => (
+                    <div key={idx} style={{
+                      background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                      padding: '12px', display: 'flex', flexDirection: 'column', gap: '4px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong style={{ fontSize: '0.84rem', color: '#0f172a' }}>{n.title}</strong>
+                        <span style={{ fontSize: '0.65rem', color: '#64748b' }}>
+                          {n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-IN') : 'Recent'}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.76rem', color: '#475569', lineHeight: 1.45 }}>
+                        {n.message}
+                      </p>
                     </div>
-                    <p style={{ margin: 0, fontSize: '0.76rem', color: '#475569', lineHeight: 1.45 }}>
-                      {n.message}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>
