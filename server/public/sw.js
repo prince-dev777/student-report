@@ -1,5 +1,5 @@
 // Progressive Web App (PWA) Service Worker for Career Xone Parent Portal
-const CACHE_NAME = 'careerxone-parent-v1';
+const CACHE_NAME = 'careerxone-parent-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',
@@ -31,7 +31,6 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  // Pass through fetch with cache fallback
   event.respondWith(
     fetch(event.request).catch(() => {
       return caches.match(event.request);

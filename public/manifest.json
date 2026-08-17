@@ -1,22 +1,28 @@
 {
-  "short_name": "Parent App",
+  "short_name": "Career Xone",
   "name": "Career Xone - Parents App",
   "description": "Career Xone Student Attendance, Test Performance & OMR Report Parent App",
   "start_url": "/#/parent",
   "scope": "/",
-  "id": "/?source=pwa",
+  "id": "/#/parent",
   "icons": [
     {
       "src": "/logo.png",
       "type": "image/png",
-      "sizes": "192x192 512x512 1024x1024",
+      "sizes": "192x192",
       "purpose": "any"
     },
     {
       "src": "/logo.png",
       "type": "image/png",
-      "sizes": "192x192 512x512 1024x1024",
-      "purpose": "maskable"
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "1024x1024",
+      "purpose": "any maskable"
     }
   ],
   "background_color": "#ffffff",
