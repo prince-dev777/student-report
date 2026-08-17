@@ -554,9 +554,7 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
                             STUDENT ID: {student.id}
                           </div>
                         </div>
-                      </div>
-
-                      {/* BACK SIDE */}
+                      </div>                      {/* BACK SIDE */}
                       <div>
                         <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textAlign: 'center' }}>
                           📜 BACK SIDE (Rules & Terms)
@@ -577,14 +575,14 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
                           fontFamily: "'Montserrat', sans-serif"
                         }}>
                           {/* Header */}
-                          <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', padding: '10px 10px', textAlign: 'center', color: '#fff' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.5px' }}>TERMS & INSTRUCTIONS</h4>
-                            <span style={{ fontSize: '0.6rem', opacity: 0.9 }}>नियम एवं महत्वपूर्ण निर्देश</span>
+                          <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', padding: '6px 8px', textAlign: 'center', color: '#fff' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.5px' }}>TERMS & INSTRUCTIONS</h4>
+                            <span style={{ fontSize: '0.56rem', opacity: 0.9 }}>नियम एवं महत्वपूर्ण निर्देश</span>
                           </div>
 
                           {/* Rules Body */}
-                          <div style={{ padding: '14px 14px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.66rem', color: '#334155', lineHeight: '1.55', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
+                          <div style={{ padding: '8px 10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '0.60rem', color: '#334155', lineHeight: '1.4', display: 'flex', flexDirection: 'column', gap: '5px', textAlign: 'left' }}>
                               <li><strong>Mandatory:</strong> Student must carry this ID card daily for biometric punch & entry verification.</li>
                               <li><strong>Non-Transferable:</strong> This card is strictly non-transferable & valid for active academic session.</li>
                               <li><strong>Loss / Duplicate:</strong> Report loss immediately to the office for duplicate reissuance.</li>
@@ -592,16 +590,16 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
                             </ul>
 
                             {/* Emergency & Address Box */}
-                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 12px', fontSize: '0.64rem', color: '#1e293b', marginTop: '12px', textAlign: 'left', lineHeight: '1.5' }}>
-                              <div style={{ fontWeight: 800, color: '#0369a1', marginBottom: '4px', fontSize: '0.68rem' }}>📍 Campus & Helpline:</div>
+                            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '6px 8px', fontSize: '0.58rem', color: '#1e293b', textAlign: 'left', lineHeight: '1.4' }}>
+                              <div style={{ fontWeight: 800, color: '#0369a1', marginBottom: '2px', fontSize: '0.64rem' }}>📍 Campus & Helpline:</div>
                               <div>📞 <strong>Helpline:</strong> 9673383561 / 91454 81323</div>
                               <div>🌐 <strong>Website:</strong> www.cxjeeneet.com</div>
-                              <div style={{ marginTop: '3px', color: '#64748b' }}>Career Xone Campus, Gondia (MH)</div>
+                              <div style={{ marginTop: '2px', color: '#64748b' }}>Career Xone Campus, Gondia (MH)</div>
                             </div>
                           </div>
 
                           {/* Footer */}
-                          <div style={{ background: '#1e3a8a', padding: '6px', textAlign: 'center', fontSize: '0.6rem', color: '#fff', fontWeight: 700, letterSpacing: '0.5px' }}>
+                          <div style={{ background: '#1e3a8a', padding: '5px', textAlign: 'center', fontSize: '0.58rem', color: '#fff', fontWeight: 700, letterSpacing: '0.5px' }}>
                             CAREER XONE • ACADEMIC EXCELLENCE
                           </div>
                         </div>

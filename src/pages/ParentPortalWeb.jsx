@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Eye, EyeOff, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut, AlertTriangle, Book, ChevronLeft, Info, MapPin, Maximize, Minimize, Phone, Search, Send } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut, AlertTriangle, AlertCircle, Book, ChevronLeft, Info, MapPin, Maximize, Minimize, Phone, Search, Send } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -26,6 +26,12 @@ export default function ParentPortalWeb() {
   const [omrZoomScale, setOmrZoomScale] = useState(1);
   const [deferredPrompt, setDeferredPrompt] = useState(() => window.deferredPrompt || null);
   const [showForceInstallModal, setShowForceInstallModal] = useState(false);
+
+  // Detect if opened inside WhatsApp / In-App browser
+  const [isInAppBrowser] = useState(() => {
+    const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+    return /FBAN|FBAV|Instagram|WhatsApp|Telegram|Line|MicroMessenger/i.test(ua);
+  });
 
   // Check if App is already running as standalone PWA
   const [isAppInstalled, setIsAppInstalled] = useState(() => {
@@ -194,10 +200,32 @@ export default function ParentPortalWeb() {
           <span style={{
             display: 'inline-block', background: '#e0f2fe', color: '#0284c7',
             padding: '4px 14px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 700,
-            marginBottom: '20px', border: '1px solid #bae6fd'
+            marginBottom: '16px', border: '1px solid #bae6fd'
           }}>
             👨‍👩‍👧 Parent App Portal
           </span>
+
+          {isInAppBrowser && (
+            <div style={{
+              background: '#fffbeb',
+              border: '1.5px solid #fde68a',
+              color: '#92400e',
+              borderRadius: '14px',
+              padding: '10px 12px',
+              marginBottom: '16px',
+              fontSize: '0.76rem',
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 2px 8px rgba(217, 119, 6, 0.1)'
+            }}>
+              <AlertCircle size={18} color="#d97706" style={{ flexShrink: 0 }} />
+              <div>
+                <strong>WhatsApp me khula hai:</strong> App install karne ke liye upar right side me <strong>(⋮) 3 Dots</strong> par tap karke <strong>'Open in Chrome'</strong> karein!
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
             <div>
@@ -719,17 +747,43 @@ export default function ParentPortalWeb() {
               </div>
             </div>
 
-            <button
-              onClick={handleInstallApp}
-              style={{
-                width: '100%', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
-                border: 'none', padding: '13px', borderRadius: '14px', fontWeight: 800, fontSize: '0.92rem',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
-              }}
-            >
-              <Download size={18} /> Tap to Install Now
-            </button>
+            {deferredPrompt ? (
+              <button
+                onClick={handleInstallApp}
+                style={{
+                  width: '100%', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
+                  border: 'none', padding: '13px', borderRadius: '14px', fontWeight: 800, fontSize: '0.92rem',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
+                }}
+              >
+                <Download size={18} /> Tap to Install Directly Now
+              </button>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '12px',
+                  padding: '10px',
+                  fontSize: '0.78rem',
+                  color: '#166534',
+                  fontWeight: 600
+                }}>
+                  👆 Browser menu me jaakar <strong>"Install App"</strong> ya <strong>"Add to Home Screen"</strong> par tap karein!
+                </div>
+                <button
+                  onClick={() => setShowForceInstallModal(false)}
+                  style={{
+                    width: '100%', background: '#0f172a', color: '#ffffff',
+                    border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Got It (समझ गया)
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

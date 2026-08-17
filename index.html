@@ -12,6 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Career Xone" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -24,11 +25,16 @@
         e.preventDefault();
         window.deferredPrompt = e;
         window.dispatchEvent(new CustomEvent('pwa-prompt-ready', { detail: e }));
+        console.log('[PWA] beforeinstallprompt captured successfully!');
       });
 
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            console.log('[PWA] ServiceWorker registered:', reg.scope);
+          }).catch((err) => {
+            console.warn('[PWA] ServiceWorker registration error:', err);
+          });
         });
       }
     </script>
