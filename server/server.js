@@ -516,15 +516,31 @@ app.post('/api/parent/login', async (req, res) => {
       .sort({ date: -1 })
       .limit(30);
 
-    // Fetch Test Results for this student
-    const rawTestResults = await TestResult.find({ isDeleted: { $ne: true },  studentId: student.id, status: 'Published' })
+    // Fetch Test Results for this student (matching id, rollNo, or _id)
+    const studentIdentifiers = [student.id, String(student.rollNo)];
+    if (student._id) studentIdentifiers.push(student._id.toString());
+
+    const rawTestResults = await TestResult.find({ 
+      isDeleted: { $ne: true },  
+      studentId: { $in: studentIdentifiers.filter(Boolean) }, 
+      status: 'Published' 
+    })
       .sort({ createdAt: -1 })
-      .limit(20);
+      .limit(30);
 
     const testIds = rawTestResults.map(r => r.testId);
-    const tests = await Test.find({ isDeleted: { $ne: true },  id: { $in: testIds } });
+    const tests = await Test.find({ 
+      isDeleted: { $ne: true },  
+      $or: [
+        { id: { $in: testIds } },
+        { _id: { $in: testIds.filter(id => mongoose.Types.ObjectId.isValid(id)) } }
+      ]
+    });
     const testMap = {};
-    tests.forEach(t => { testMap[t.id] = t; });
+    tests.forEach(t => { 
+      if (t.id) testMap[t.id] = t; 
+      if (t._id) testMap[t._id.toString()] = t;
+    });
 
     const enrichedResults = rawTestResults.map(r => {
       const t = testMap[r.testId] || {};
@@ -1300,15 +1316,24 @@ app.put('/api/students/:id', async (req, res) => {
 
 app.delete('/api/students/:id', async (req, res) => {
   try {
-    const student = await Student.findOneAndDelete(
-      { id: req.params.id, instituteId: req.user.instituteId }
-    );
+    const rawId = req.params.id;
+    const query = {
+      $or: [
+        { id: rawId },
+        ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
+      ]
+    };
+    if (req.user && req.user.instituteId) {
+      query.instituteId = req.user.instituteId;
+    }
+    const student = await Student.findOneAndDelete(query);
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
+    const studentIds = [student.id, String(student._id), String(student.rollNo)].filter(Boolean);
     // Cascade hard delete associated records
-    await Attendance.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
-    await TestResult.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
-    await SMSLog.deleteMany({ studentId: req.params.id, instituteId: req.user.instituteId });
+    await Attendance.deleteMany({ studentId: { $in: studentIds } });
+    await TestResult.deleteMany({ studentId: { $in: studentIds } });
+    await SMSLog.deleteMany({ studentId: { $in: studentIds } });
 
     // Trigger immediate background Cloud Sync to wipe it from Cloud immediately
     try {
@@ -1321,6 +1346,7 @@ app.delete('/api/students/:id', async (req, res) => {
 
     res.json({ message: 'Student and all associated records permanently deleted successfully' });
   } catch (err) {
+    console.error('Error deleting student:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -2069,16 +2095,33 @@ app.post('/api/test-results/bulk', authenticateToken, async (req, res) => {
               type: 'TEST_RESULT',
               detail: {
                 marks: r.marks,
-                totalMarks: test.totalMarks,
+                totalMarks: r.totalMarks || test.totalMarks,
+                percentage: r.percentage,
                 subject: test.subject,
+                testName: test.name,
                 rank: r.rank,
-                totalStudents: r.totalStudents
+                totalStudents: r.totalStudents,
+                omrSheetImage: r.omrSheetImage
               }
             }).catch(err => console.error('Failed to send test result WhatsApp alert:', err.message));
           }
         }
       }
     }
+
+    // Automatically trigger cloud sync in background
+    try {
+      const syncProcess = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        cwd: __dirname,
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        detached: true,
+        stdio: 'ignore'
+      });
+      syncProcess.on('error', (err) => {
+        console.error('❌ Auto Cloud Sync process error on bulk save:', err.message);
+      });
+      syncProcess.unref();
+    } catch (syncErr) {}
 
     res.status(201).json(saved);
   } catch (err) {
@@ -2094,7 +2137,15 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
     const test = await Test.findOne(buildTestLookup(testId, req.user.instituteId));
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
-    const results = await TestResult.find({ isDeleted: { $ne: true },  testId: test.id, instituteId: req.user.instituteId });
+    const possibleTestIds = [testId];
+    if (test.id) possibleTestIds.push(test.id);
+    if (test._id) possibleTestIds.push(test._id.toString());
+
+    const results = await TestResult.find({ 
+      isDeleted: { $ne: true },  
+      testId: { $in: possibleTestIds }, 
+      instituteId: req.user.instituteId 
+    });
     if (!results || results.length === 0) return res.status(404).json({ error: 'No results found for this test' });
 
     let publishCount = 0;
@@ -2105,7 +2156,16 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
       publishCount++;
 
       if (sendSMS) {
-        const student = await Student.findOne({ isDeleted: { $ne: true },  id: r.studentId, instituteId: req.user.instituteId });
+        const studentIdentifiers = [r.studentId];
+        const student = await Student.findOne({ 
+          isDeleted: { $ne: true },  
+          $or: [
+            { id: r.studentId },
+            { rollNo: isNaN(r.studentId) ? -999999 : Number(r.studentId) },
+            { _id: mongoose.Types.ObjectId.isValid(r.studentId) ? r.studentId : null }
+          ], 
+          instituteId: req.user.instituteId 
+        });
         if (student) {
           const notification = new Notification({
             instituteId: req.user.instituteId,
@@ -2125,10 +2185,13 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
               type: 'TEST_RESULT',
               detail: {
                 marks: r.marks,
-                totalMarks: test.totalMarks,
+                totalMarks: r.totalMarks || test.totalMarks,
+                percentage: r.percentage,
                 subject: test.subject,
+                testName: test.name,
                 rank: r.rank,
-                totalStudents: r.totalStudents
+                totalStudents: r.totalStudents,
+                omrSheetImage: r.omrSheetImage
               }
             }).catch(err => console.error('Failed to send test result WhatsApp alert:', err.message));
           }
@@ -2137,7 +2200,7 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
     }
     // Automatically trigger cloud sync in background
     try {
-      const syncProcess = fork('sync-cloud.js', [], {
+      const syncProcess = fork(path.join(__dirname, 'sync-cloud.js'), [], {
         cwd: __dirname,
         env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, // Inherit environment including USER_DATA_PATH
         detached: true,
@@ -2484,12 +2547,14 @@ app.delete('/api/sms-logs/:id', async (req, res) => {
   try {
     const rawId = req.params.id;
     const query = {
-      instituteId: req.user.instituteId,
       $or: [
         { id: rawId },
         ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
       ]
     };
+    if (req.user && req.user.instituteId) {
+      query.instituteId = req.user.instituteId;
+    }
     const log = await SMSLog.findOneAndDelete(query);
     if (!log) return res.status(404).json({ error: 'SMS log not found' });
 
@@ -2503,6 +2568,7 @@ app.delete('/api/sms-logs/:id', async (req, res) => {
 
     res.json({ message: 'SMS log permanently deleted successfully' });
   } catch (err) {
+    console.error('Error deleting SMS log:', err);
     res.status(500).json({ error: err.message });
   }
 });

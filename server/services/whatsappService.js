@@ -25,7 +25,9 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   } else if (type === 'ABSENT') {
     messageText = `Dear Parent, this is to inform you that your ward ${studentName} is absent from the institute today (${detail}). - Career Xone`;
   } else if (type === 'TEST_RESULT' && typeof detail === 'object') {
-    messageText = `Dear Parent, ${studentName} scored ${detail.marks}/${detail.totalMarks} in ${detail.subject || 'Exam'}. Rank: ${detail.rank || '-'}/${detail.totalStudents || '-'}.`;
+    const portalUrl = 'https://studentreport.cxjeeneet.com/#/parent';
+    const percent = detail.percentage ?? (detail.totalMarks ? Math.round((Number(detail.marks) / detail.totalMarks) * 1000) / 10 : 0);
+    messageText = `📊 *Test Result Announcement - Career Xone*\n\nDear Parent, your ward *${studentName}* has appeared for *${detail.testName || detail.subject || 'Exam'}*.\n\n🎯 *Marks Scored:* ${detail.marks}/${detail.totalMarks} (${percent}%)\n🏆 *Rank:* ${detail.rank || '-'}/${detail.totalStudents || '-'}\n\n📱 *View Complete Report & Scanned OMR Sheet:*\n🔗 ${portalUrl}\n\n- Career Xone (CX Career Academy)`;
   } else if (type === 'WELCOME') {
     const portalUrl = 'https://studentreport.cxjeeneet.com/#/parent';
     messageText = `🎉 Welcome to Career Xone!\n\n${studentName} has been registered successfully.\n\n📱 *Download/Access Parents App:*\n🔗 Link: ${portalUrl}\n\n*Login Credentials:*\nUser ID: ${detail.parentUserId}\nPassword: ${detail.parentPassword}\n\nPlease login to track attendance and test results regularly.`;

@@ -500,12 +500,13 @@ export function AppProvider({ children }) {
   }, [students, backendOnline, user]);
 
   const deleteSMS = useCallback(async (id) => {
+    const targetId = String(id);
     // ⚡ Optimistic UI Update: Instantly remove from React state with 0ms delay
-    setSMSHistory((prev) => prev.filter((sms) => sms._id !== id && sms.id !== id));
+    setSMSHistory((prev) => prev.filter((sms) => String(sms._id) !== targetId && String(sms.id) !== targetId));
 
     if (backendOnline) {
       try {
-        await api.deleteSMSLog(id);
+        await api.deleteSMSLog(targetId);
         toast.success('SMS deleted permanently!');
       } catch (err) {
         console.error('Failed to delete SMS log from backend:', err);

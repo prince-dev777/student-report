@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut, AlertTriangle, Book, ChevronLeft, Info, MapPin, Maximize, Minimize, Phone, Search, Send } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, CheckCircle2, XCircle, Clock, Award, Calendar, BookOpen, Download, LogOut, ArrowRight, ShieldCheck, Sparkles, FileText, ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut, AlertTriangle, Book, ChevronLeft, Info, MapPin, Maximize, Minimize, Phone, Search, Send } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -8,6 +8,7 @@ import { getMediaUrl } from '../utils/api';
 export default function ParentPortalWeb() {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!sessionStorage.getItem('parentSession'));
   const [studentData, setStudentData] = useState(() => {
@@ -26,11 +27,10 @@ export default function ParentPortalWeb() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showForceInstallModal, setShowForceInstallModal] = useState(false);
 
-  // Check if App is already installed or running as standalone PWA
+  // Check if App is already running as standalone PWA
   const [isAppInstalled, setIsAppInstalled] = useState(() => {
     return window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true ||
-      localStorage.getItem('pwa_installed') === 'true';
+      window.navigator.standalone === true;
   });
 
   // Catch PWA beforeinstallprompt event
@@ -41,7 +41,6 @@ export default function ParentPortalWeb() {
       setDeferredPrompt(e);
     };
     const handleAppInstalled = () => {
-      localStorage.setItem('pwa_installed', 'true');
       setIsAppInstalled(true);
       setShowForceInstallModal(false);
       toast.success('🎉 Parent App added to Home Screen!');
@@ -56,28 +55,7 @@ export default function ParentPortalWeb() {
     };
   }, []);
 
-  // Initial PWA Install Prompt (shown once on load if not installed)
-  useEffect(() => {
-    if (isAppInstalled) {
-      setShowForceInstallModal(false);
-      return;
-    }
-
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || localStorage.getItem('pwa_installed') === 'true';
-    if (!isStandalone) {
-      const initialTimer = setTimeout(() => {
-        setShowForceInstallModal(true);
-      }, 3000);
-
-      return () => {
-        clearTimeout(initialTimer);
-      };
-    } else {
-      setIsAppInstalled(true);
-    }
-  }, [isAppInstalled]);
-
-  // Helper to map batch-1, batch-2, batch-3, batch-4 to real readable batch names
+  // Format batch helper
   const formatBatchName = (batch) => {
     if (!batch) return 'JEE Mains';
     const b = String(batch).trim().toLowerCase();
@@ -89,19 +67,17 @@ export default function ParentPortalWeb() {
   };
 
   const handleInstallApp = () => {
-    setShowForceInstallModal(false);
     if (deferredPrompt) {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then((choiceResult) => {
         if (choiceResult.outcome === 'accepted') {
-          localStorage.setItem('pwa_installed', 'true');
           setIsAppInstalled(true);
+          setShowForceInstallModal(false);
           toast.success('🎉 Parent App added to Home Screen!');
         }
       });
     } else {
-      localStorage.setItem('pwa_installed', 'true');
-      toast('📱 Tap Browser Menu (⋮ or Share) ➔ "Add to Home Screen"', { icon: '📱', duration: 7000 });
+      setShowForceInstallModal(true);
     }
   };
 
@@ -227,16 +203,36 @@ export default function ParentPortalWeb() {
               <div style={{ position: 'relative' }}>
                 <Lock size={18} color="#0284c7" style={{ position: 'absolute', left: '12px', top: '13px' }} />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
-                    width: '100%', padding: '11px 12px 11px 40px', background: '#f8fafc',
+                    width: '100%', padding: '11px 40px 11px 40px', background: '#f8fafc',
                     border: '1.5px solid #cbd5e1', borderRadius: '12px', color: '#0f172a', fontSize: '0.9rem',
                     fontWeight: 600, outline: 'none'
                   }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '11px',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#64748b'
+                  }}
+                  title={showPassword ? "Hide Password" : "Show Password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
