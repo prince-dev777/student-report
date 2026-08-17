@@ -59,6 +59,10 @@ const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 
 export default function App() {
   if (!isElectron) {
+    if (typeof window !== 'undefined' && window.location.search.includes('source=pwa') && (!window.location.hash || window.location.hash === '#/')) {
+      window.location.hash = '/parent';
+    }
+
     return (
       <HashRouter>
         <Routes>
