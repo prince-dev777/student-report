@@ -2643,16 +2643,67 @@ app.post('/api/reset', async (req, res) => {
 
 
 
+// Explicit PWA Endpoints so they are NEVER intercepted by catch-all
+app.get('/manifest.json', (req, res) => {
+  const manifestLocations = [
+    path.join(__dirname, '../dist/manifest.json'),
+    path.join(__dirname, '../public/manifest.json'),
+    path.join(__dirname, 'public/manifest.json')
+  ];
+  for (const loc of manifestLocations) {
+    if (fs.existsSync(loc)) {
+      res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+      return res.sendFile(loc);
+    }
+  }
+  res.status(404).json({ error: 'Manifest not found' });
+});
+
+app.get('/sw.js', (req, res) => {
+  const swLocations = [
+    path.join(__dirname, '../dist/sw.js'),
+    path.join(__dirname, '../public/sw.js'),
+    path.join(__dirname, 'public/sw.js')
+  ];
+  for (const loc of swLocations) {
+    if (fs.existsSync(loc)) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Service-Worker-Allowed', '/');
+      return res.sendFile(loc);
+    }
+  }
+  res.status(404).send('// Service Worker not found');
+});
+
+app.get('/logo.png', (req, res) => {
+  const logoLocations = [
+    path.join(__dirname, '../dist/logo.png'),
+    path.join(__dirname, '../public/logo.png'),
+    path.join(__dirname, 'public/logo.png')
+  ];
+  for (const loc of logoLocations) {
+    if (fs.existsSync(loc)) {
+      res.setHeader('Content-Type', 'image/png');
+      return res.sendFile(loc);
+    }
+  }
+  res.status(404).send('Logo not found');
+});
+
 // Serve Frontend Static Files & SPA Routing for Staff Attendance Web Portal
 // In Electron production: dist is bundled inside app.asar alongside server/
 // On Render/cloud: dist is at ../dist relative to server/
 let distPath = path.join(__dirname, '../dist');
 if (!fs.existsSync(distPath)) {
-  // Fallback: try resolve from app.asar root (Electron production)
   distPath = path.join(__dirname, '..', 'dist');
 }
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
+}
+
+const publicPath = path.join(__dirname, '../public');
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath));
 }
 
 
