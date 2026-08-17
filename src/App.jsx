@@ -18,6 +18,7 @@ import SuperAdminLogin from './pages/SuperAdminLogin';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Tests from './pages/Tests';
 import TestSeries from './pages/TestSeries';
 
@@ -47,7 +48,6 @@ function AppLayout() {
             <Route path="/inquiries" element={<Inquiries />} />
             <Route path="/sms" element={<SMSCenter />} />
             <Route path="/share-app" element={<ShareApp />} />
-            <Route path="/sessions" element={<Sessions />} />
           </Routes>
         </div>
       </div>
@@ -80,6 +80,7 @@ export default function App() {
           <Route path="/superadmin" element={<SuperAdminLogin />} />
           <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/*" element={
             <ProtectedRoute>
               <AppProvider>

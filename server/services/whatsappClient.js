@@ -99,8 +99,8 @@ export async function disconnectWhatsAppClient() {
 
     // Now safely delete session folder
     const dataPath = getAuthDataPath();
-    const authPath = path.join(dataPath, '.wwebjs_auth');
-    await safeDeleteDir(authPath);
+    await safeDeleteDir(path.join(dataPath, 'data', '.wwebjs_auth'));
+    await safeDeleteDir(path.join(dataPath, '.wwebjs_auth'));
 
     return true;
   }

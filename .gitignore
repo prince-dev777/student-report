@@ -28,8 +28,10 @@ dist-ssr
 
 # Environment files
 .env
+.env.production
 server/.env
 server/.env.production
+server/.env.backup
 
 # Electron build output
 dist-electron

@@ -55,7 +55,7 @@ export default function ParentPortalWeb() {
     };
   }, []);
 
-  // Recurring 12-second PWA Install Prompt (ONLY IF NOT INSTALLED)
+  // Initial PWA Install Prompt (shown once on load if not installed)
   useEffect(() => {
     if (isAppInstalled) {
       setShowForceInstallModal(false);
@@ -68,13 +68,8 @@ export default function ParentPortalWeb() {
         setShowForceInstallModal(true);
       }, 3000);
 
-      const interval = setInterval(() => {
-        setShowForceInstallModal(true);
-      }, 12000);
-
       return () => {
         clearTimeout(initialTimer);
-        clearInterval(interval);
       };
     } else {
       setIsAppInstalled(true);
@@ -258,6 +253,41 @@ export default function ParentPortalWeb() {
               {loading ? 'Authenticating...' : <>Login to Parent App <ArrowRight size={18} /></>}
             </button>
           </form>
+
+          {/* PWA Download Button on Login Screen */}
+          {!isAppInstalled && deferredPrompt && (
+            <button
+              onClick={() => deferredPrompt.prompt()}
+              type="button"
+              style={{
+                marginTop: '20px',
+                width: '100%',
+                background: '#f0f9ff',
+                border: '1.5px dashed #7dd3fc',
+                color: '#0369a1',
+                padding: '12px',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#e0f2fe';
+                e.currentTarget.style.borderColor = '#38bdf8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#f0f9ff';
+                e.currentTarget.style.borderColor = '#7dd3fc';
+              }}
+            >
+              <Smartphone size={18} /> Download Parents App
+            </button>
+          )}
         </div>
 
         {/* Force Install App Modal Prompt */}

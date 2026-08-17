@@ -193,6 +193,11 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
     let pythonOutput = '';
     let pythonError = '';
 
+    pythonProcess.on('error', (err) => {
+      console.error('❌ OMR Process spawn failed:', err.message);
+      pythonError += `Process spawn error: ${err.message}\n`;
+    });
+
     pythonProcess.stdout.on('data', (data) => {
       pythonOutput += data.toString();
     });

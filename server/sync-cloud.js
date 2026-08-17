@@ -82,6 +82,23 @@ async function syncToCloud() {
       }));
 
       const result = await cloudColl.bulkWrite(bulkOps);
+      
+      // Cleanup orphaned documents on the cloud (docs that exist in cloud for this institute but not locally)
+      if (collName !== 'institutes' && docs.length > 0) {
+        // Find the institute ID from the first document (assuming all docs belong to the local institute)
+        const instId = docs[0].instituteId;
+        if (instId) {
+          const localIds = docs.map(doc => doc._id);
+          const delResult = await cloudColl.deleteMany({
+            instituteId: instId,
+            _id: { $nin: localIds }
+          });
+          if (delResult.deletedCount > 0) {
+            console.log(`   - 🗑️ Deleted ${delResult.deletedCount} orphaned cloud documents.`);
+          }
+        }
+      }
+
       console.log(`   - Synced ${docs.length} documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
     }
 

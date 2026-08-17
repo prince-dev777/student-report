@@ -1,12 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import {
-  initialStudents,
-  initialAttendance,
-  initialTests,
-  initialTestResults,
-  initialSMSHistory,
-  batches,
-} from '../data/sampleData';
+import { batches } from '../data/sampleData';
 import { generateId, getTodayStr, getCurrentTime, calculateRanks } from '../utils/helpers';
 import { sendAttendanceSMS, sendTestResultSMS, sendCustomSMS } from '../utils/smsService';
 import { api, checkBackendStatus } from '../utils/api';
@@ -125,41 +118,31 @@ export function AppProvider({ children }) {
 
   // Save local fallbacks so Demo Mode always has the latest data
   useEffect(() => {
-    if (!loading && students.length > 0) {
-      saveLocalData('students', students);
-    }
+    if (!loading) saveLocalData('students', students);
   }, [students, loading]);
 
   useEffect(() => {
-    if (!loading && attendance.length > 0) {
-      saveLocalData('attendance', attendance);
-    }
+    if (!loading) saveLocalData('attendance', attendance);
   }, [attendance, loading]);
 
   useEffect(() => {
-    if (!loading && tests.length > 0) {
-      saveLocalData('tests', tests);
-    }
+    if (!loading) saveLocalData('tests', tests);
   }, [tests, loading]);
 
   useEffect(() => {
-    if (!loading && testResults.length > 0) {
-      saveLocalData('testResults', testResults);
-    }
+    if (!loading) saveLocalData('testResults', testResults);
   }, [testResults, loading]);
 
   useEffect(() => {
-    if (!loading && smsHistory.length > 0) {
-      saveLocalData('smsHistory', smsHistory);
-    }
+    if (!loading) saveLocalData('smsHistory', smsHistory);
   }, [smsHistory, loading]);
 
   useEffect(() => {
-    if (!loading && sessions.length > 0) saveLocalData('sessions', sessions);
+    if (!loading) saveLocalData('sessions', sessions);
   }, [sessions, loading]);
 
   useEffect(() => {
-    if (!loading && inquiries.length > 0) saveLocalData('inquiries', inquiries);
+    if (!loading) saveLocalData('inquiries', inquiries);
   }, [inquiries, loading]);
 
 
@@ -543,7 +526,12 @@ export function AppProvider({ children }) {
     setSMSHistory([]);
     setSessions([]);
     setInquiries([]);
-    localStorage.clear();
+    // Only clear EduTrack cache, preserving auth and system settings
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('edutrack_')) {
+        localStorage.removeItem(key);
+      }
+    });
     toast.success('All data reset to defaults!');
   }, [backendOnline]);
 

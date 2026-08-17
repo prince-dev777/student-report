@@ -23,9 +23,9 @@ export default function Inquiries() {
 
   const filteredInquiries = inquiries.filter(
     (iq) =>
-      iq.visitorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      iq.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      iq.contactNumber.includes(searchTerm)
+      (iq.visitorName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (iq.studentName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (iq.contactNumber || '').includes(searchTerm)
   );
 
   const handleSubmit = async (e) => {

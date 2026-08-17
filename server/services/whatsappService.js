@@ -26,7 +26,8 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   } else if (type === 'TEST_RESULT' && typeof detail === 'object') {
     messageText = `Dear Parent, ${studentName} scored ${detail.marks}/${detail.totalMarks} in ${detail.subject || 'Exam'}. Rank: ${detail.rank || '-'}/${detail.totalStudents || '-'}.`;
   } else if (type === 'WELCOME') {
-    messageText = `Welcome! ${studentName} has been registered successfully.`;
+    const portalUrl = 'https://studentreport.cxjeeneet.com/#/parent';
+    messageText = `🎉 Welcome to Career Xone!\n\n${studentName} has been registered successfully.\n\n📱 *Download/Access Parents App:*\n🔗 Link: ${portalUrl}\n\n*Login Credentials:*\nUser ID: ${detail.parentUserId}\nPassword: ${detail.parentPassword}\n\nPlease login to track attendance and test results regularly.`;
   } else {
     messageText = `Notification for ${studentName}: ${detail || 'No details provided.'}`;
   }

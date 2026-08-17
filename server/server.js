@@ -500,18 +500,9 @@ app.post('/api/parent/login', async (req, res) => {
     if (!isMatch && cleanPassword && String(student.rollNo).toLowerCase() === cleanPassword.toLowerCase()) {
       isMatch = true;
     }
-    if (!isMatch && cleanPassword && student.parentPhone && student.parentPhone.includes(cleanPassword)) {
-      isMatch = true;
-    }
-    if (!isMatch && (cleanPassword === '1234' || cleanPassword === '123456' || cleanPassword === '0001')) {
-      isMatch = true;
-    }
-    if (!isMatch && (!cleanPassword || cleanUserId.toLowerCase() === String(student.rollNo).toLowerCase() || cleanUserId.toLowerCase() === String(student.parentUserId).toLowerCase())) {
-      isMatch = true;
-    }
 
     if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid Password. Try Roll Number or 123456' });
+      return res.status(401).json({ error: 'Invalid Password. Please enter the correct password or Roll Number.' });
     }
 
     const token = jwt.sign(
@@ -540,7 +531,7 @@ app.post('/api/parent/login', async (req, res) => {
       return {
         id: r.id,
         testName: t.name || 'OMR Exam',
-        testDate: t.testDate || (r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN') : 'Recent'),
+        testDate: t.date || (r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN') : 'Recent'),
         marks: r.marks,
         totalMarks: r.totalMarks,
         percentage: r.percentage,
@@ -2906,7 +2897,16 @@ setInterval(() => {
     isSyncingAuto = true;
     console.log('🔄 [Scheduler] Auto-Backup triggered...');
     
-    const child = spawn(process.execPath, ['sync-cloud.js'], { cwd: __dirname, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
+    const child = fork('sync-cloud.js', [], {
+      cwd: __dirname,
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      stdio: 'ignore'
+    });
+
+    child.on('error', (err) => {
+      isSyncingAuto = false;
+      console.error('❌ [Scheduler] Auto-Backup child process error:', err.message);
+    });
     
     child.on('close', (code) => {
       isSyncingAuto = false;

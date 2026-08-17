@@ -14,9 +14,9 @@ export const API_BASE = import.meta.env.VITE_API_BASE_URL || ((isLocalhost || is
 export async function checkBackendStatus() {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes for Render free tier wake up
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds max
     const signal = typeof AbortSignal.timeout === 'function' 
-      ? AbortSignal.timeout(180000) 
+      ? AbortSignal.timeout(15000) 
       : controller.signal;
     
     const res = await fetch(`${API_BASE.replace('/api', '')}/`, { method: 'GET', signal });
