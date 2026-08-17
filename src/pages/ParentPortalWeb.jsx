@@ -133,21 +133,48 @@ export default function ParentPortalWeb() {
 
   // Request Web Push Notification Permission
   const handleRequestNotification = async () => {
-    if (!('Notification' in window)) {
-      toast.error('Notifications not supported in this browser.');
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      toast.error('Notifications are not supported on this browser.');
       return;
     }
+
+    if (Notification.permission === 'denied') {
+      toast('🔔 Notifications browser settings me blocked hain. Address bar / Site Settings me "Allow" karein.', { icon: '⚙️', duration: 4000 });
+      return;
+    }
+
     try {
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
+
       if (permission === 'granted') {
-        toast.success('🔔 Attendance & Result Notifications enabled!');
-        new Notification('Career Xone Parents App', {
-          body: '🎉 Notifications active! You will receive live Attendance & Exam alerts here.',
-          icon: '/logo.png'
-        });
-      } else {
-        toast('⚠️ Notification permission was not granted.', { icon: 'ℹ️' });
+        toast.success('🔔 Lock-screen notifications enabled!');
+        
+        // Show test notification using Service Worker on mobile or fallback
+        if ('serviceWorker' in navigator) {
+          try {
+            const reg = await navigator.serviceWorker.ready;
+            if (reg && reg.showNotification) {
+              await reg.showNotification('Career Xone Parents App', {
+                body: '🎉 Notifications active! You will receive live Attendance & Exam alerts here.',
+                icon: '/logo.png',
+                badge: '/logo.png'
+              });
+              return;
+            }
+          } catch(swErr) {
+            console.warn('SW notification fallback:', swErr);
+          }
+        }
+
+        try {
+          new Notification('Career Xone Parents App', {
+            body: '🎉 Notifications active! You will receive live Attendance & Exam alerts here.',
+            icon: '/logo.png'
+          });
+        } catch(e) {}
+      } else if (permission === 'denied') {
+        toast('🔔 Notification permission was blocked in browser.', { icon: 'ℹ️' });
       }
     } catch (e) {
       console.warn('Notification permission error:', e);
