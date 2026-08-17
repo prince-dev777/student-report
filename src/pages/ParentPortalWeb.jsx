@@ -443,51 +443,6 @@ export default function ParentPortalWeb() {
             </button>
           </form>
 
-          {/* Download Parents Mobile App Card (Login Screen) */}
-          {!isAppInstalled && (
-            <div style={{
-              marginTop: '20px',
-              background: '#f0f9ff',
-              border: '1.5px solid #bae6fd',
-              borderRadius: '16px',
-              padding: '14px',
-              textAlign: 'center',
-              boxShadow: '0 4px 14px rgba(2, 132, 199, 0.08)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '6px' }}>
-                <Smartphone size={18} color="#0284c7" />
-                <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0369a1' }}>
-                  Download Parents Mobile App
-                </span>
-              </div>
-              <p style={{ margin: '0 0 10px 0', fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4 }}>
-                Install directly on your Phone Home Screen for 1-tap daily access without opening browser!
-              </p>
-              <button
-                onClick={handleInstallApp}
-                type="button"
-                style={{
-                  width: '100%',
-                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '11px 14px',
-                  borderRadius: '10px',
-                  fontWeight: 800,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <Download size={16} /> 📲 Install App on Phone
-              </button>
-            </div>
-          )}
 
           {/* WhatsApp In-App Webview Banner */}
           {isWhatsApp && (
