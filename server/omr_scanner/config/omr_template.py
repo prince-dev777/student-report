@@ -40,7 +40,7 @@ T1_TEMPLATE = TemplateConfig(
         "x_coords": [60, 86, 112, 138, 164],
         "y_coords": [145 + r * 20 for r in range(10)]
     },
-    roll_fill_threshold=55.0,
+    roll_fill_threshold=35.0,
     sections=[
         {
             "name": "PHYSICS",
@@ -90,7 +90,7 @@ T2_TEMPLATE = TemplateConfig(
         "x_coords": [60, 86, 112, 138, 164],
         "y_coords": [145 + r * 20 for r in range(10)]
     },
-    roll_fill_threshold=55.0,
+    roll_fill_threshold=35.0,
     sections=[
         {
             "name": "PHYSICS MCQ",
@@ -153,7 +153,7 @@ T2_TEMPLATE = TemplateConfig(
     answer_key={} # No key defined to avoid reference table mismatch, detection only
 )
 
-t6_y_coords = [410, 429, 449, 468, 488, 507, 527, 546, 566, 585, 605, 624, 644, 663, 683, 702, 722, 741, 761, 780, 800, 819, 839, 858, 878, 897, 917, 936, 956, 975, 995, 1014, 1034, 1053, 1073, 1092, 1112, 1131, 1151, 1170, 1190, 1209, 1229, 1248, 1268, 1287, 1307, 1326, 1346, 1365]
+t6_y_coords = [int(round(383.5 + i * 19.42857)) for i in range(50)]
 
 T6_TEMPLATE = TemplateConfig(
     name="T6",
@@ -167,14 +167,14 @@ T6_TEMPLATE = TemplateConfig(
         "x_coords": [60, 86, 112, 138, 164],
         "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
     },
-    roll_fill_threshold=55.0,
+    roll_fill_threshold=35.0,
     sections=[
         {
             "name": "PHYSICS",
             "start_q": 1,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [102, 122, 142, 162],
+            "x_coords": [100, 120, 140, 160],
             "y_coords": t6_y_coords
         },
         {
@@ -182,7 +182,7 @@ T6_TEMPLATE = TemplateConfig(
             "start_q": 51,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [315, 335, 355, 375],
+            "x_coords": [314, 334, 354, 374],
             "y_coords": t6_y_coords
         },
         {
@@ -190,7 +190,7 @@ T6_TEMPLATE = TemplateConfig(
             "start_q": 101,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [528, 548, 568, 588],
+            "x_coords": [527, 547, 567, 587],
             "y_coords": t6_y_coords
         },
         {
@@ -198,7 +198,7 @@ T6_TEMPLATE = TemplateConfig(
             "start_q": 151,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [741, 761, 781, 801],
+            "x_coords": [740, 760, 780, 800],
             "y_coords": t6_y_coords
         }
     ]
@@ -219,7 +219,7 @@ T3_TEMPLATE = TemplateConfig(
         "x_coords": [60, 86, 112, 138, 164],
         "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
     },
-    roll_fill_threshold=55.0,
+    roll_fill_threshold=35.0,
     sections=[
         {
             "name": "PHYSICS",
@@ -261,7 +261,7 @@ T3_TEMPLATE = TemplateConfig(
 )
 
 # --- T4 (NEET 90) ---
-t4_y_coords = [410, 435, 460, 485, 510, 548, 573, 598, 623, 648, 686, 711, 736, 761, 786, 824, 849, 874, 899, 924, 962, 987, 1012, 1037, 1062, 1100, 1125, 1150, 1175, 1200]
+t4_y_coords = [381, 407, 432, 457, 483, 521, 546, 571, 596, 622, 658, 685, 709, 733, 758, 797, 822, 847, 872, 897, 935, 960, 985, 1011, 1036, 1073, 1099, 1124, 1149, 1174]
 
 T4_TEMPLATE = TemplateConfig(
     name="T4",
@@ -275,7 +275,7 @@ T4_TEMPLATE = TemplateConfig(
         "x_coords": [60, 86, 112, 138, 164],
         "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
     },
-    roll_fill_threshold=55.0,
+    roll_fill_threshold=35.0,
     sections=[
         {
             "name": "BIOLOGY COL 1",
@@ -320,7 +320,7 @@ T5_TEMPLATE = TemplateConfig(
         "x_coords": [60, 86, 112, 138, 164],
         "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
     },
-    roll_fill_threshold=55.0,
+    roll_fill_threshold=35.0,
     sections=[
         {
             "name": "PHYSICS",
@@ -328,7 +328,7 @@ T5_TEMPLATE = TemplateConfig(
             "start_q": 1,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [102, 122, 142, 162],
+            "x_coords": [100, 120, 140, 160],
             "y_coords": t6_y_coords
         },
         {
@@ -337,7 +337,7 @@ T5_TEMPLATE = TemplateConfig(
             "start_q": 51,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [315, 335, 355, 375],
+            "x_coords": [314, 334, 354, 374],
             "y_coords": t6_y_coords
         },
         {
@@ -346,7 +346,7 @@ T5_TEMPLATE = TemplateConfig(
             "start_q": 101,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [528, 548, 568, 588],
+            "x_coords": [527, 547, 567, 587],
             "y_coords": t6_y_coords
         },
         {
@@ -355,7 +355,7 @@ T5_TEMPLATE = TemplateConfig(
             "start_q": 151,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [741, 761, 781, 801],
+            "x_coords": [740, 760, 780, 800],
             "y_coords": t6_y_coords
         }
     ]
@@ -376,7 +376,7 @@ T7_TEMPLATE = TemplateConfig(
         "x_coords": [60, 86, 112, 138, 164],
         "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
     },
-    roll_fill_threshold=55.0,
+    roll_fill_threshold=35.0,
     sections=[
         {
             "name": "SECTION 1 (1-25)",
