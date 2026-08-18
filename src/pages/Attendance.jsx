@@ -890,7 +890,7 @@ export default function Attendance() {
                   </div>
                   <div style={{ flex: 1, background: 'rgba(99, 102, 241, 0.05)', padding: 20, borderRadius: 12, border: '1px dashed rgba(99, 102, 241, 0.3)' }}>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Server Port</div>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--accent-indigo)' }}>5001</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--accent-indigo)' }}>5000</div>
                   </div>
                 </div>
               </div>
