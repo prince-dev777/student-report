@@ -31,7 +31,19 @@ git push origin v1.0.31
 
 ---
 
-## Step 3: Local Build Karo
+## Step 3: (ZARURI) Agar OMR Scanner code change hua hai, PyInstaller se EXE Recompile Karo
+
+```powershell
+cd server
+pyinstaller --noconfirm --onefile --collect-all omr_scanner omr_engine_v2.py
+Copy-Item dist/omr_engine_v2.exe omr_engine_v2.exe -Force
+Remove-Item dist, build -Recurse -Force
+cd ..
+```
+
+---
+
+## Step 4: Local Build Karo
 
 ```powershell
 npm run build
