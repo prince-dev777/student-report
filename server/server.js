@@ -87,11 +87,16 @@ function generateServerId(prefix = 'ID') {
 }
 
 function buildTestLookup(testId, instituteId) {
+  if (!testId) return { _id: new mongoose.Types.ObjectId() };
   const lookup = [{ id: String(testId) }];
   if (mongoose.Types.ObjectId.isValid(testId)) {
     lookup.push({ _id: testId });
   }
-  return { instituteId, isDeleted: { $ne: true }, $or: lookup };
+  const query = { isDeleted: { $ne: true }, $or: lookup };
+  if (instituteId) {
+    query.instituteId = instituteId;
+  }
+  return query;
 }
 
 function safeUnlink(filePath) {
@@ -1846,20 +1851,6 @@ app.delete('/api/inquiries/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Helper to look up a test by either string id or Mongo _id, optionally scoped to institute
-function buildTestLookup(rawId, instituteId) {
-  if (!rawId) return { _id: new mongoose.Types.ObjectId() };
-  const query = {
-    $or: [
-      { id: String(rawId) },
-      ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
-    ]
-  };
-  if (instituteId) {
-    query.instituteId = instituteId;
-  }
-  return query;
-}
 
 // ---- 📝 Tests API ----
 app.get('/api/tests', authenticateToken, async (req, res) => {
