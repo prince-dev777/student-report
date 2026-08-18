@@ -98,6 +98,9 @@ def main():
             subj_results = []
             
             q_keys = sorted(questions.keys(), key=lambda x: int(x) if x.isdigit() else x)
+            if mapped_questions and len(mapped_questions) > 0:
+                mapped_set = set(int(x) for x in mapped_questions if str(x).isdigit())
+                q_keys = [q for q in q_keys if int(q) in mapped_set]
             
             for q_num_str in q_keys:
                 q_data = questions[q_num_str]

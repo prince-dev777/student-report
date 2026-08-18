@@ -49,14 +49,14 @@ class Visualizer:
                     
                 # Label question
                 start_x, y = coords[0]
-                text_x = int(start_x) - 120
-                text_y = int(y) + 5
+                text_x = max(5, int(start_x) - 95)
+                text_y = int(y) + 4
                 if len(opts) > len(set(opts)):  # numerical question
                     text_x = int(start_x) + 30
                     text_y = int(y) - 10
                 
                 cv2.putText(debug_img, f"Q{q_num}: {ans if ans else status} | {conf}", 
-                            (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1)
+                            (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 0), 1)
                             
                 if status in ("ANSWERED", "MULTIPLE") and ans is not None:
                     # Highlight selected options

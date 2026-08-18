@@ -4,7 +4,7 @@ from omr_scanner.config.omr_template import TemplateConfig
 class OMRTemplateValidationError(Exception):
     pass
 
-def validate_results(results: Dict[str, Any], config: TemplateConfig):
+def validate_results(results: Dict[str, Any], config: TemplateConfig, mapped_questions=None):
     """
     Validates the generated results against the template configuration.
     Raises OMRTemplateValidationError if mismatches occur.
@@ -12,7 +12,10 @@ def validate_results(results: Dict[str, Any], config: TemplateConfig):
     if "answers" not in results:
         raise OMRTemplateValidationError("No answers found in results.")
         
-    expected_q_count = sum(sec["num_q"] for sec in config.sections)
+    if mapped_questions and len(mapped_questions) > 0:
+        expected_q_count = len(mapped_questions)
+    else:
+        expected_q_count = sum(sec["num_q"] for sec in config.sections)
     actual_q_count = len(results["answers"])
     
     if expected_q_count != actual_q_count:

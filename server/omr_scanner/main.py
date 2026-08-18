@@ -72,6 +72,9 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", deb
     results = {}
     
     ans_res = detect_answers(thresh, config)
+    if mapped_questions and len(mapped_questions) > 0:
+        mapped_set = set(str(q) for q in mapped_questions)
+        ans_res = {k: v for k, v in ans_res.items() if str(k) in mapped_set}
     results["answers"] = ans_res
     
     roll_res = detect_roll_number(thresh, config)
@@ -85,7 +88,7 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", deb
     
     # 9. VALIDATION
     try:
-        validate_results(results, config)
+        validate_results(results, config, mapped_questions=mapped_questions)
     except Exception as e:
         print(f"Validation Error: {e}")
         sys.exit(1)

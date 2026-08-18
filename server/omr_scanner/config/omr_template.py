@@ -22,10 +22,22 @@ class TemplateConfig:
         self.roll_no_config = roll_no_config
         self.sections = sections
         self.answer_key = answer_key or {}
-        self.roll_fill_threshold = roll_fill_threshold
-        self.numerical_fill_threshold = numerical_fill_threshold
+        self.roll_fill_threshold = roll_fill_threshold or fill_threshold
+        self.numerical_fill_threshold = numerical_fill_threshold or fill_threshold
 
 
+# Standard Roll Number Configuration across all templates
+DEFAULT_ROLL_NO_CONFIG = {
+    "cols": 5,
+    "rows": 10,
+    "x_coords": [60, 86, 112, 138, 164],
+    "y_coords": [145 + r * 20 for r in range(10)]
+}
+
+
+# ==========================================
+# --- T1 (JEE 75 MCQ) ---
+# ==========================================
 t1_mcq_y = [405, 433, 461, 489, 517, 563, 591, 619, 647, 675, 721, 749, 777, 805, 833, 879, 907, 935, 963, 991, 1037, 1065, 1093, 1121, 1149]
 
 T1_TEMPLATE = TemplateConfig(
@@ -34,12 +46,7 @@ T1_TEMPLATE = TemplateConfig(
     fill_threshold=35.0,
     target_width=903,
     target_height=1412,
-    roll_no_config={
-        "cols": 5,
-        "rows": 10,
-        "x_coords": [60, 86, 112, 138, 164],
-        "y_coords": [145 + r * 20 for r in range(10)]
-    },
+    roll_no_config=DEFAULT_ROLL_NO_CONFIG,
     roll_fill_threshold=35.0,
     sections=[
         {
@@ -70,10 +77,13 @@ T1_TEMPLATE = TemplateConfig(
             "y_coords": t1_mcq_y
         }
     ],
-    answer_key={} # No key defined for T1 yet
+    answer_key={}
 )
 
 
+# ==========================================
+# --- T2 (JEE 75 with Numerical) ---
+# ==========================================
 t2_mcq_y = [380 + r * 22 for r in range(20)]
 t2_num_y = [910, 1008, 1106, 1204, 1302]
 
@@ -81,15 +91,10 @@ T2_TEMPLATE = TemplateConfig(
     name="T2",
     roi_size=18,
     fill_threshold=35.0,
-    numerical_fill_threshold=35.0,
+    numerical_fill_threshold=48.0,
     target_width=903,
     target_height=1412,
-    roll_no_config={
-        "cols": 5,
-        "rows": 10,
-        "x_coords": [60, 86, 112, 138, 164],
-        "y_coords": [145 + r * 20 for r in range(10)]
-    },
+    roll_no_config=DEFAULT_ROLL_NO_CONFIG,
     roll_fill_threshold=35.0,
     sections=[
         {
@@ -150,62 +155,14 @@ T2_TEMPLATE = TemplateConfig(
             "row_offsets": [0.0, 17.5, 35.0, 52.5]
         }
     ],
-    answer_key={} # No key defined to avoid reference table mismatch, detection only
+    answer_key={}
 )
 
-t6_y_coords = [int(round(383.5 + i * 19.42857)) for i in range(50)]
 
-T6_TEMPLATE = TemplateConfig(
-    name="T6",
-    roi_size=18,
-    fill_threshold=35.0,
-    target_width=903,
-    target_height=1412,
-    roll_no_config={
-        "cols": 5,
-        "rows": 10,
-        "x_coords": [60, 86, 112, 138, 164],
-        "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
-    },
-    roll_fill_threshold=35.0,
-    sections=[
-        {
-            "name": "PHYSICS",
-            "start_q": 1,
-            "num_q": 50,
-            "options": ["A", "B", "C", "D"],
-            "x_coords": [100, 120, 140, 160],
-            "y_coords": t6_y_coords
-        },
-        {
-            "name": "CHEMISTRY",
-            "start_q": 51,
-            "num_q": 50,
-            "options": ["A", "B", "C", "D"],
-            "x_coords": [314, 334, 354, 374],
-            "y_coords": t6_y_coords
-        },
-        {
-            "name": "BIOLOGY P1",
-            "start_q": 101,
-            "num_q": 50,
-            "options": ["A", "B", "C", "D"],
-            "x_coords": [527, 547, 567, 587],
-            "y_coords": t6_y_coords
-        },
-        {
-            "name": "BIOLOGY P2",
-            "start_q": 151,
-            "num_q": 50,
-            "options": ["A", "B", "C", "D"],
-            "x_coords": [740, 760, 780, 800],
-            "y_coords": t6_y_coords
-        }
-    ]
-)
-
+# ==========================================
 # --- T3 (NEET 180) ---
-t3_y_coords = [int(round(398.5 + i * 21.2727)) for i in range(45)]
+# ==========================================
+t3_y_coords = [375, 397, 419, 440, 462, 484, 506, 528, 549, 571, 593, 615, 637, 658, 680, 702, 724, 746, 767, 789, 811, 833, 855, 876, 898, 920, 942, 964, 985, 1007, 1029, 1051, 1073, 1094, 1116, 1138, 1160, 1182, 1203, 1225, 1247, 1269, 1291, 1312, 1334]
 
 T3_TEMPLATE = TemplateConfig(
     name="T3",
@@ -213,12 +170,7 @@ T3_TEMPLATE = TemplateConfig(
     fill_threshold=35.0,
     target_width=903,
     target_height=1412,
-    roll_no_config={
-        "cols": 5,
-        "rows": 10,
-        "x_coords": [60, 86, 112, 138, 164],
-        "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
-    },
+    roll_no_config=DEFAULT_ROLL_NO_CONFIG,
     roll_fill_threshold=35.0,
     sections=[
         {
@@ -227,7 +179,7 @@ T3_TEMPLATE = TemplateConfig(
             "start_q": 1,
             "num_q": 45,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [100, 120, 140, 160],
+            "x_coords": [102, 122, 142, 162],
             "y_coords": t3_y_coords
         },
         {
@@ -236,7 +188,7 @@ T3_TEMPLATE = TemplateConfig(
             "start_q": 46,
             "num_q": 45,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [314, 334, 354, 374],
+            "x_coords": [315, 335, 355, 375],
             "y_coords": t3_y_coords
         },
         {
@@ -245,7 +197,7 @@ T3_TEMPLATE = TemplateConfig(
             "start_q": 91,
             "num_q": 45,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [527, 547, 567, 587],
+            "x_coords": [528, 548, 568, 588],
             "y_coords": t3_y_coords
         },
         {
@@ -254,14 +206,17 @@ T3_TEMPLATE = TemplateConfig(
             "start_q": 136,
             "num_q": 45,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [740, 761, 780, 800],
+            "x_coords": [741, 761, 781, 801],
             "y_coords": t3_y_coords
         }
     ]
 )
 
+
+# ==========================================
 # --- T4 (NEET 90) ---
-t4_y_coords = [381, 407, 432, 457, 483, 521, 546, 571, 596, 622, 658, 685, 709, 733, 758, 797, 822, 847, 872, 897, 935, 960, 985, 1011, 1036, 1073, 1099, 1124, 1149, 1174]
+# ==========================================
+t4_y_coords = [380, 405, 430, 455, 480, 518, 543, 568, 593, 618, 656, 681, 706, 731, 756, 794, 819, 844, 869, 894, 932, 957, 982, 1007, 1032, 1070, 1095, 1120, 1145, 1170]
 
 T4_TEMPLATE = TemplateConfig(
     name="T4",
@@ -269,12 +224,7 @@ T4_TEMPLATE = TemplateConfig(
     fill_threshold=35.0,
     target_width=903,
     target_height=1412,
-    roll_no_config={
-        "cols": 5,
-        "rows": 10,
-        "x_coords": [60, 86, 112, 138, 164],
-        "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
-    },
+    roll_no_config=DEFAULT_ROLL_NO_CONFIG,
     roll_fill_threshold=35.0,
     sections=[
         {
@@ -283,7 +233,7 @@ T4_TEMPLATE = TemplateConfig(
             "start_q": 1,
             "num_q": 30,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [139, 164, 189, 214],
+            "x_coords": [130, 155, 180, 205],
             "y_coords": t4_y_coords
         },
         {
@@ -301,25 +251,25 @@ T4_TEMPLATE = TemplateConfig(
             "start_q": 61,
             "num_q": 30,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [688, 713, 738, 763],
+            "x_coords": [698, 723, 748, 773],
             "y_coords": t4_y_coords
         }
     ]
 )
 
+
+# ==========================================
 # --- T5 (MHCET 200) ---
+# ==========================================
+t5_y_coords = [384, 403, 423, 442, 462, 481, 500, 520, 539, 558, 578, 597, 617, 636, 655, 675, 694, 714, 733, 752, 772, 791, 811, 830, 849, 869, 888, 907, 927, 946, 966, 985, 1004, 1024, 1043, 1063, 1082, 1101, 1121, 1140, 1160, 1179, 1198, 1218, 1237, 1256, 1276, 1295, 1315, 1334]
+
 T5_TEMPLATE = TemplateConfig(
     name="T5",
     roi_size=18,
     fill_threshold=35.0,
     target_width=903,
     target_height=1412,
-    roll_no_config={
-        "cols": 5,
-        "rows": 10,
-        "x_coords": [60, 86, 112, 138, 164],
-        "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
-    },
+    roll_no_config=DEFAULT_ROLL_NO_CONFIG,
     roll_fill_threshold=35.0,
     sections=[
         {
@@ -328,8 +278,8 @@ T5_TEMPLATE = TemplateConfig(
             "start_q": 1,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [100, 120, 140, 160],
-            "y_coords": t6_y_coords
+            "x_coords": [102, 122, 142, 162],
+            "y_coords": t5_y_coords
         },
         {
             "name": "CHEMISTRY",
@@ -337,8 +287,8 @@ T5_TEMPLATE = TemplateConfig(
             "start_q": 51,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [314, 334, 354, 374],
-            "y_coords": t6_y_coords
+            "x_coords": [315, 335, 355, 375],
+            "y_coords": t5_y_coords
         },
         {
             "name": "MATHEMATICS",
@@ -346,8 +296,8 @@ T5_TEMPLATE = TemplateConfig(
             "start_q": 101,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [527, 547, 567, 587],
-            "y_coords": t6_y_coords
+            "x_coords": [528, 548, 568, 588],
+            "y_coords": t5_y_coords
         },
         {
             "name": "BIOLOGY",
@@ -355,14 +305,69 @@ T5_TEMPLATE = TemplateConfig(
             "start_q": 151,
             "num_q": 50,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [740, 760, 780, 800],
-            "y_coords": t6_y_coords
+            "x_coords": [741, 761, 781, 801],
+            "y_coords": t5_y_coords
         }
     ]
 )
 
+
+# ==========================================
+# --- T6 (MHCET 200 BIO) ---
+# ==========================================
+T6_TEMPLATE = TemplateConfig(
+    name="T6",
+    roi_size=18,
+    fill_threshold=35.0,
+    target_width=903,
+    target_height=1412,
+    roll_no_config=DEFAULT_ROLL_NO_CONFIG,
+    roll_fill_threshold=35.0,
+    sections=[
+        {
+            "name": "PHYSICS",
+            "type": "mcq",
+            "start_q": 1,
+            "num_q": 50,
+            "options": ["A", "B", "C", "D"],
+            "x_coords": [102, 122, 142, 162],
+            "y_coords": t5_y_coords
+        },
+        {
+            "name": "CHEMISTRY",
+            "type": "mcq",
+            "start_q": 51,
+            "num_q": 50,
+            "options": ["A", "B", "C", "D"],
+            "x_coords": [315, 335, 355, 375],
+            "y_coords": t5_y_coords
+        },
+        {
+            "name": "BIOLOGY P1",
+            "type": "mcq",
+            "start_q": 101,
+            "num_q": 50,
+            "options": ["A", "B", "C", "D"],
+            "x_coords": [528, 548, 568, 588],
+            "y_coords": t5_y_coords
+        },
+        {
+            "name": "BIOLOGY P2",
+            "type": "mcq",
+            "start_q": 151,
+            "num_q": 50,
+            "options": ["A", "B", "C", "D"],
+            "x_coords": [741, 761, 781, 801],
+            "y_coords": t5_y_coords
+        }
+    ]
+)
+
+
+# ==========================================
 # --- T7 (OMR 50) ---
-t7_y_coords = [405, 433, 460, 487, 514, 559, 586, 613, 640, 667, 711, 738, 765, 793, 820, 864, 891, 918, 945, 973, 1017, 1044, 1071, 1098, 1125]
+# ==========================================
+t7_y_coords = [405, 432, 459, 486, 513, 557, 584, 611, 638, 665, 709, 736, 763, 790, 817, 861, 888, 915, 942, 969, 1013, 1040, 1067, 1094, 1121]
 
 T7_TEMPLATE = TemplateConfig(
     name="T7",
@@ -370,12 +375,7 @@ T7_TEMPLATE = TemplateConfig(
     fill_threshold=35.0,
     target_width=903,
     target_height=1412,
-    roll_no_config={
-        "cols": 5,
-        "rows": 10,
-        "x_coords": [60, 86, 112, 138, 164],
-        "y_coords": [int(145.0 + r * 20.0) for r in range(10)]
-    },
+    roll_no_config=DEFAULT_ROLL_NO_CONFIG,
     roll_fill_threshold=35.0,
     sections=[
         {
@@ -384,7 +384,7 @@ T7_TEMPLATE = TemplateConfig(
             "start_q": 1,
             "num_q": 25,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [197, 223, 250, 276],
+            "x_coords": [199, 225, 251, 277],
             "y_coords": t7_y_coords
         },
         {
@@ -393,7 +393,7 @@ T7_TEMPLATE = TemplateConfig(
             "start_q": 26,
             "num_q": 25,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [623, 649, 676, 702],
+            "x_coords": [626, 652, 678, 704],
             "y_coords": t7_y_coords
         }
     ]

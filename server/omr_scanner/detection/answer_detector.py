@@ -80,40 +80,39 @@ def detect_answers(thresh_image: np.ndarray, config: TemplateConfig) -> Dict[str
         sec_type = section.get("type", "mcq")
         row_offsets = section.get("row_offsets", [])
         
-        # Calculate dynamic alignment for this section
-        scale, dy = calculate_dynamic_alignment(thresh_image, x_coords, y_coords, row_offsets)
-        
-        if row_offsets:
-            y0 = y_coords[0] + row_offsets[0]
-        else:
-            y0 = y_coords[0]
-        
         for q_idx in range(num_q):
             expected_y_base = y_coords[q_idx]
             q_num = str(start_q + q_idx)
             
             if sec_type == "mcq":
-                y_base = int(round(y0 + dy + (expected_y_base - y0) * scale))
+                y_base = int(expected_y_base)
                 
                 fills = []
-                selected_options = []
-                
                 for opt_idx, x in enumerate(x_coords):
                     fill = calculate_fill_ratio(thresh_image, int(x), int(y_base), config.roi_size)
                     fills.append(fill)
-                    if fill > config.fill_threshold:
-                        selected_options.append(options[opt_idx])
-                        
-                # Basic Classification
-                if len(selected_options) == 0:
+                
+                sorted_indices = sorted(range(len(fills)), key=lambda k: fills[k], reverse=True)
+                top1_idx = sorted_indices[0]
+                top2_idx = sorted_indices[1] if len(sorted_indices) > 1 else None
+                
+                top1_fill = fills[top1_idx]
+                top2_fill = fills[top2_idx] if top2_idx is not None else 0.0
+                
+                threshold = config.fill_threshold
+                
+                if top1_fill < threshold:
                     status = "BLANK"
                     answer = None
-                elif len(selected_options) == 1:
-                    status = "ANSWERED"
-                    answer = selected_options[0]
                 else:
-                    status = "MULTIPLE"
-                    answer = "".join(selected_options)
+                    dynamic_mult_thresh = max(threshold, top1_fill - 15.0)
+                    if top2_fill >= dynamic_mult_thresh:
+                        mult_opts = [options[i] for i in range(len(options)) if fills[i] >= dynamic_mult_thresh]
+                        status = "MULTIPLE"
+                        answer = "".join(mult_opts)
+                    else:
+                        status = "ANSWERED"
+                        answer = options[top1_idx]
                     
                 results[q_num] = {
                     "answer": answer,
@@ -134,8 +133,7 @@ def detect_answers(thresh_image: np.ndarray, config: TemplateConfig) -> Dict[str
                 has_multiple_row = False
                 
                 for r_offset in row_offsets:
-                    expected_y = expected_y_base + r_offset
-                    y = int(round(y0 + dy + (expected_y - y0) * scale))
+                    y = int(expected_y_base + r_offset)
                     row_fills = []
                     
                     for opt_idx, x in enumerate(x_coords):

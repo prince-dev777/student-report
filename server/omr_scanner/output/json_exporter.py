@@ -50,11 +50,14 @@ def export_to_json(filename: str, results: Dict[str, Any], output_path: str):
         final_output["score"] = results["score"]
     
     for q_num, data in answers.items():
-        final_output["answers"][q_num] = {
+        ans_entry = {
             "answer": data["answer"],
             "status": data["status"],
             "confidence": data["confidence"]
         }
+        if "row_digits" in data:
+            ans_entry["row_digits"] = data["row_digits"]
+        final_output["answers"][q_num] = ans_entry
         
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:

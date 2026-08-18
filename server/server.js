@@ -2384,8 +2384,17 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
 
     const tempArgsPath = path.join(uploadDir, `omr_args_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.json`);
 
+    let testDataObj = {};
+    if (req.body.testData) {
+      try {
+        testDataObj = typeof req.body.testData === 'string' ? JSON.parse(req.body.testData) : req.body.testData;
+      } catch (e) {}
+    }
+
     let mapped_questions = [];
-    if (test.subjectMapping && test.subjectMapping.length > 0) {
+    if (testDataObj.mapped_questions && Array.isArray(testDataObj.mapped_questions) && testDataObj.mapped_questions.length > 0) {
+      mapped_questions = testDataObj.mapped_questions.map(Number);
+    } else if (test.subjectMapping && test.subjectMapping.length > 0) {
       test.subjectMapping.forEach(m => {
         if (m.fromQ && m.toQ) {
           for (let i = Number(m.fromQ); i <= Number(m.toQ); i++) {
@@ -2393,6 +2402,10 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
           }
         }
       });
+    } else if (questionsToDetect > 0) {
+      for (let i = 1; i <= questionsToDetect; i++) {
+        mapped_questions.push(i);
+      }
     }
 
     const jsonPayload = {
