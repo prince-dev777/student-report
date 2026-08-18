@@ -16,17 +16,28 @@ export default function Topbar() {
   const [updateState, setUpdateState] = useState({ status: 'idle', version: '', releaseDate: '', currentVersion: '', progress: 0 });
   const notifRef = useRef(null);
 
-  // Check for app updates
+  // Check for app updates only inside Electron desktop app
   useEffect(() => {
+    const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
+    if (!isElectron) return;
+
+    let isMounted = true;
     async function checkUpdate() {
-      const res = await api.getUpdateStatus();
-      if (res) {
-        setUpdateState(res);
+      try {
+        const res = await api.getUpdateStatus();
+        if (res && isMounted) {
+          setUpdateState(res);
+        }
+      } catch (e) {
+        // Silently catch during startup
       }
     }
     checkUpdate();
-    const interval = setInterval(checkUpdate, 1000); // Check every 1 second as requested
-    return () => clearInterval(interval);
+    const interval = setInterval(checkUpdate, 5000); // Check every 5 seconds
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleUpdateAction = async () => {
