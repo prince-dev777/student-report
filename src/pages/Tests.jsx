@@ -25,6 +25,7 @@ export default function Tests() {
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [selectedStudentResult, setSelectedStudentResult] = useState(null);
   const [omrScanErrors, setOmrScanErrors] = useState([]);
+  const [testToDelete, setTestToDelete] = useState(null);
 
   // For Create Test form (Answer Key input removed as it is now moved to Enter Marks page)
   const [testForm, setTestForm] = useState({
@@ -1433,7 +1434,7 @@ export default function Tests() {
                         </button>
                         <button 
                           className="btn btn-sm justify-center"
-                          onClick={() => { if(confirm('Delete this test and all results?')) deleteTest(test.id); }}
+                          onClick={() => setTestToDelete(test)}
                           style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 10px' }}
                           title="Delete Test"
                         >
@@ -1456,7 +1457,7 @@ export default function Tests() {
                       </button>
                       <button 
                         className="btn btn-sm mt-8 justify-center"
-                        onClick={() => { if(confirm('Delete this test?')) deleteTest(test.id); }}
+                        onClick={() => setTestToDelete(test)}
                         style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 10px' }}
                         title="Delete Test"
                       >
@@ -2534,6 +2535,52 @@ export default function Tests() {
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
               <button className="btn btn-secondary" onClick={() => setShowManualAnswerKeyModal(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={handleManualAnswerKeySubmit}>Save Answer Key</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete Test Confirmation Modal */}
+      {testToDelete && createPortal(
+        <div className="modal-overlay" onClick={() => setTestToDelete(null)} style={{ zIndex: 99999 }}>
+          <div className="modal-content" style={{ maxWidth: '420px', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Trash2 size={24} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Delete Test</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  Are you sure you want to delete <strong>{testToDelete.name}</strong>?
+                </p>
+              </div>
+            </div>
+            {getAppearedCount(testToDelete.id) > 0 && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '10px 12px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.8rem', color: '#ef4444' }}>
+                ⚠️ This will also permanently delete all student results and leaderboard data for this test.
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button 
+                type="button"
+                className="btn btn-secondary btn-sm" 
+                onClick={() => setTestToDelete(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                className="btn btn-sm" 
+                style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 14px' }}
+                onClick={() => {
+                  const id = testToDelete.id;
+                  setTestToDelete(null);
+                  deleteTest(id);
+                }}
+              >
+                Delete Test
+              </button>
             </div>
           </div>
         </div>,

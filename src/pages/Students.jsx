@@ -34,6 +34,7 @@ export default function Students() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedClass, setSelectedClass] = useState('all');
+  const [studentToDelete, setStudentToDelete] = useState(null);
 
   // Pagination State
   const [paginatedStudents, setPaginatedStudents] = useState([]);
@@ -159,11 +160,8 @@ export default function Students() {
     fetchData(currentPage, searchQuery);
   };
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      await deleteStudent(id);
-      fetchData(currentPage, searchQuery);
-    }
+  const handleDelete = (id, name) => {
+    setStudentToDelete({ id, name });
   };
 
   const getCourseName = (batchId) => {
@@ -509,6 +507,48 @@ export default function Students() {
         </div>,
         document.body
       )}
+      {/* Delete Student Confirmation Modal */}
+      {studentToDelete && createPortal(
+        <div className="modal-overlay" onClick={() => setStudentToDelete(null)} style={{ zIndex: 99999 }}>
+          <div className="modal-content" style={{ maxWidth: '420px', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Trash2 size={24} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Delete Student</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  Are you sure you want to delete <strong>{studentToDelete.name}</strong>?
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button 
+                type="button"
+                className="btn btn-secondary btn-sm" 
+                onClick={() => setStudentToDelete(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                className="btn btn-sm" 
+                style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 14px' }}
+                onClick={async () => {
+                  const id = studentToDelete.id;
+                  setStudentToDelete(null);
+                  await deleteStudent(id);
+                  fetchData(currentPage, searchQuery);
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Bulk Upload Modal */}
       <BulkUploadModal 
         isOpen={bulkModalOpen} 
