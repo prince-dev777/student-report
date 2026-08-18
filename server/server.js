@@ -1218,38 +1218,44 @@ app.post('/api/students/bulk', authenticateToken, async (req, res) => {
 
 app.post('/api/students', async (req, res) => {
   try {
-    const rollNo = req.body.rollNo;
+    const rollNo = String(req.body.rollNo || '').trim();
+    if (!rollNo) {
+      return res.status(400).json({ error: 'Roll number is required' });
+    }
 
     // Support custom parentUserId, fallback to rollNo (simple) or rollNo-random
-    let parentUserId = req.body.parentUserId;
-    if (!parentUserId || !parentUserId.trim()) {
+    let parentUserId = req.body.parentUserId ? String(req.body.parentUserId).trim() : '';
+    if (!parentUserId) {
       parentUserId = rollNo;
-      const exists = await Student.findOne({ isDeleted: { $ne: true },  parentUserId: String(parentUserId) });
+      const exists = await Student.findOne({ parentUserId: String(parentUserId) });
       if (exists) {
         const random4 = Math.floor(1000 + Math.random() * 9000); // 4 digits
         parentUserId = `${rollNo}-${random4}`;
       }
     } else {
-      parentUserId = parentUserId.trim();
-      const exists = await Student.findOne({ isDeleted: { $ne: true },  parentUserId: String(parentUserId) });
+      const exists = await Student.findOne({ parentUserId: String(parentUserId) });
       if (exists) {
         return res.status(400).json({ error: 'This Parent User ID is already in use by another student!' });
       }
     }
 
     // Support custom parentPassword, fallback to rollNo (simple)
-    let plainPassword = req.body.parentPassword;
-    if (!plainPassword || !plainPassword.trim()) {
+    let plainPassword = req.body.parentPassword ? String(req.body.parentPassword).trim() : '';
+    if (!plainPassword) {
       plainPassword = rollNo;
-    } else {
-      plainPassword = plainPassword.trim();
     }
 
     const salt = await bcrypt.genSalt(10);
-    const parentPasswordHash = await bcrypt.hash(plainPassword, salt);
+    const parentPasswordHash = await bcrypt.hash(String(plainPassword), salt);
+
+    const studentData = { ...req.body };
+    delete studentData._id;
+    delete studentData.__v;
+    delete studentData.id;
 
     const student = new Student({
-      ...req.body,
+      ...studentData,
+      rollNo,
       instituteId: req.user.instituteId,
       id: generateServerId('STU'),
       parentUserId,
@@ -1287,13 +1293,26 @@ app.post('/api/students', async (req, res) => {
 
     res.status(201).json(responseData);
   } catch (err) {
+    console.error('Error creating student:', err);
     res.status(400).json({ error: err.message });
   }
 });
 
 app.post('/api/students/:id/regenerate-parent', async (req, res) => {
   try {
-    const student = await Student.findOne({ isDeleted: { $ne: true },  id: req.params.id, instituteId: req.user.instituteId });
+    const rawId = req.params.id;
+    const query = {
+      isDeleted: { $ne: true },
+      $or: [
+        { id: rawId },
+        ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
+      ]
+    };
+    if (req.user && req.user.instituteId) {
+      query.instituteId = req.user.instituteId;
+    }
+
+    const student = await Student.findOne(query);
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
     const rollNo = student.rollNo;
@@ -1323,6 +1342,7 @@ app.post('/api/students/:id/regenerate-parent', async (req, res) => {
 
     res.json(responseData);
   } catch (err) {
+    console.error('Error regenerating parent creds:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1330,16 +1350,38 @@ app.post('/api/students/:id/regenerate-parent', async (req, res) => {
 
 app.put('/api/students/:id', async (req, res) => {
   try {
-    const studentToUpdate = await Student.findOne({ isDeleted: { $ne: true },  id: req.params.id, instituteId: req.user.instituteId });
+    const rawId = req.params.id;
+    const query = {
+      isDeleted: { $ne: true },
+      $or: [
+        { id: rawId },
+        ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
+      ]
+    };
+    if (req.user && req.user.instituteId) {
+      query.instituteId = req.user.instituteId;
+    }
+
+    const studentToUpdate = await Student.findOne(query);
     if (!studentToUpdate) return res.status(404).json({ error: 'Student not found' });
 
     const updateData = { ...req.body };
+    delete updateData._id;
+    delete updateData.__v;
+    delete updateData.id;
+    delete updateData.createdAt;
+    delete updateData.updatedAt;
+    delete updateData.instituteId;
+
+    if (updateData.rollNo) {
+      updateData.rollNo = String(updateData.rollNo).trim();
+    }
 
     // Check parentUserId uniqueness if updated
-    if (req.body.parentUserId && req.body.parentUserId.trim()) {
-      const parentUserIdClean = req.body.parentUserId.trim();
+    if (req.body.parentUserId && String(req.body.parentUserId).trim()) {
+      const parentUserIdClean = String(req.body.parentUserId).trim();
       if (parentUserIdClean !== studentToUpdate.parentUserId) {
-        const exists = await Student.findOne({ isDeleted: { $ne: true },  parentUserId: parentUserIdClean });
+        const exists = await Student.findOne({ parentUserId: parentUserIdClean });
         if (exists) {
           return res.status(400).json({ error: 'This Parent User ID is already in use by another student!' });
         }
@@ -1347,20 +1389,21 @@ app.put('/api/students/:id', async (req, res) => {
       }
     }
 
-    if (req.body.parentPassword && req.body.parentPassword.trim()) {
-      const plainPassword = req.body.parentPassword.trim();
+    if (req.body.parentPassword && String(req.body.parentPassword).trim()) {
+      const plainPassword = String(req.body.parentPassword).trim();
       const salt = await bcrypt.genSalt(10);
       updateData.parentPasswordHash = await bcrypt.hash(plainPassword, salt);
       updateData.parentPasswordPlain = plainPassword;
     }
 
     const student = await Student.findOneAndUpdate(
-      { id: req.params.id, instituteId: req.user.instituteId },
+      { _id: studentToUpdate._id },
       updateData,
       { new: true }
     );
     res.json(student);
   } catch (err) {
+    console.error('Error updating student:', err);
     res.status(400).json({ error: err.message });
   }
 });

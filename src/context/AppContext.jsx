@@ -170,7 +170,8 @@ export function AppProvider({ children }) {
 
         return saved;
       } catch (err) {
-        toast.error('Failed to save data');
+        toast.error(err.message || 'Failed to save student');
+        throw err;
       }
     }
 
@@ -186,10 +187,10 @@ export function AppProvider({ children }) {
         const updated = await api.updateStudent(id, updates);
         setStudents((prev) => prev.map((s) => (s.id === id ? updated : s)));
         toast.success('✅ Student updated successfully!');
-        return;
+        return updated;
       } catch (err) {
-        toast.error('Failed to update student');
-        return;
+        toast.error(err.message || 'Failed to update student');
+        throw err;
       }
     }
 

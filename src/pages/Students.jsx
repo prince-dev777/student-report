@@ -143,21 +143,25 @@ export default function Students() {
   };
 
   const handleSave = async (formData) => {
-    if (editingStudent) {
-      await updateStudent(editingStudent.id, formData);
-    } else {
-      const res = await addStudent(formData);
-      if (res && res.parentUserId && res.parentPlainPassword) {
-        setCreatedStudentCreds({
-          name: res.name,
-          parentUserId: res.parentUserId,
-          parentPlainPassword: res.parentPlainPassword
-        });
+    try {
+      if (editingStudent) {
+        await updateStudent(editingStudent.id, formData);
+      } else {
+        const res = await addStudent(formData);
+        if (res && res.parentUserId && res.parentPlainPassword) {
+          setCreatedStudentCreds({
+            name: res.name,
+            parentUserId: res.parentUserId,
+            parentPlainPassword: res.parentPlainPassword
+          });
+        }
       }
+      setModalOpen(false);
+      setEditingStudent(null);
+      fetchData(currentPage, searchQuery);
+    } catch (err) {
+      console.error('Error saving student:', err);
     }
-    setModalOpen(false);
-    setEditingStudent(null);
-    fetchData(currentPage, searchQuery);
   };
 
   const handleDelete = (id, name) => {
