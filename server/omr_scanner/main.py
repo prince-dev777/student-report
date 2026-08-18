@@ -22,9 +22,11 @@ from omr_scanner.analysis.scoring import calculate_score
 from omr_scanner.output.json_exporter import export_to_json
 from omr_scanner.debug.visualizer import Visualizer
 
-def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", mapped_questions: list = None, debug: bool = False):
+def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", debug: bool = False):
     name = template_name.upper()
-    if name == "T7":
+    if name == "T1":
+        config = T1_TEMPLATE
+    elif name == "T7":
         config = T7_TEMPLATE
     elif name == "T6":
         config = T6_TEMPLATE
@@ -45,7 +47,8 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", map
     try:
         image = load_image(input_path)
     except Exception as e:
-        raise Exception(f"Error loading image: {e}")
+        print(f"Error loading image: {e}")
+        sys.exit(1)
         
     if visualizer:
         visualizer.save_step("01_original.jpg", image)
@@ -57,7 +60,8 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", map
         if visualizer:
             visualizer.save_step("05_perspective_corrected.jpg", warped)
     except Exception as e:
-        raise Exception(f"Error during perspective correction: {e}")
+        print(f"Error during perspective correction: {e}")
+        sys.exit(1)
         
     # 4. PREPROCESSING
     thresh = preprocess_image(warped)
@@ -83,7 +87,8 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", map
     try:
         validate_results(results, config)
     except Exception as e:
-        raise Exception(f"Validation Error: {e}")
+        print(f"Validation Error: {e}")
+        sys.exit(1)
         
     # 10. SCORING
     calculate_score(results, config)
@@ -94,7 +99,7 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", map
     
     # 11. DEBUG VISUALIZATION
     if visualizer:
-        visualizer.draw_results(warped, results, config, mapped_questions=mapped_questions)
+        visualizer.draw_results(warped, results, config)
         
     return final_json
 

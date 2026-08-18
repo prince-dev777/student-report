@@ -205,7 +205,7 @@ T6_TEMPLATE = TemplateConfig(
 )
 
 # --- T3 (NEET 180) ---
-t3_y_coords = [405, 426, 448, 470, 492, 514, 535, 557, 579, 601, 623, 644, 666, 688, 710, 732, 753, 775, 797, 819, 841, 862, 884, 906, 928, 950, 971, 993, 1015, 1037, 1059, 1080, 1102, 1124, 1146, 1168, 1189, 1211, 1233, 1255, 1277, 1298, 1320, 1342, 1364]
+t3_y_coords = [int(round(398.5 + i * 21.2727)) for i in range(45)]
 
 T3_TEMPLATE = TemplateConfig(
     name="T3",
@@ -227,7 +227,7 @@ T3_TEMPLATE = TemplateConfig(
             "start_q": 1,
             "num_q": 45,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [102, 122, 142, 162],
+            "x_coords": [100, 120, 140, 160],
             "y_coords": t3_y_coords
         },
         {
@@ -236,7 +236,7 @@ T3_TEMPLATE = TemplateConfig(
             "start_q": 46,
             "num_q": 45,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [315, 335, 355, 375],
+            "x_coords": [314, 334, 354, 374],
             "y_coords": t3_y_coords
         },
         {
@@ -245,7 +245,7 @@ T3_TEMPLATE = TemplateConfig(
             "start_q": 91,
             "num_q": 45,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [528, 548, 568, 588],
+            "x_coords": [527, 547, 567, 587],
             "y_coords": t3_y_coords
         },
         {
@@ -254,7 +254,7 @@ T3_TEMPLATE = TemplateConfig(
             "start_q": 136,
             "num_q": 45,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [741, 761, 781, 801],
+            "x_coords": [740, 761, 780, 800],
             "y_coords": t3_y_coords
         }
     ]
@@ -362,7 +362,7 @@ T5_TEMPLATE = TemplateConfig(
 )
 
 # --- T7 (OMR 50) ---
-t7_y_coords = [435, 462, 489, 516, 543, 587, 614, 641, 668, 695, 739, 766, 793, 820, 847, 891, 918, 945, 972, 999, 1043, 1070, 1097, 1124, 1151]
+t7_y_coords = [405, 433, 460, 487, 514, 559, 586, 613, 640, 667, 711, 738, 765, 793, 820, 864, 891, 918, 945, 973, 1017, 1044, 1071, 1098, 1125]
 
 T7_TEMPLATE = TemplateConfig(
     name="T7",
@@ -384,7 +384,7 @@ T7_TEMPLATE = TemplateConfig(
             "start_q": 1,
             "num_q": 25,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [206, 232, 258, 284],
+            "x_coords": [197, 223, 250, 276],
             "y_coords": t7_y_coords
         },
         {
@@ -393,7 +393,7 @@ T7_TEMPLATE = TemplateConfig(
             "start_q": 26,
             "num_q": 25,
             "options": ["A", "B", "C", "D"],
-            "x_coords": [618, 644, 670, 696],
+            "x_coords": [623, 649, 676, 702],
             "y_coords": t7_y_coords
         }
     ]

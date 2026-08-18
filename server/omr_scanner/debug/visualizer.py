@@ -12,7 +12,7 @@ class Visualizer:
     def save_step(self, filename: str, image: np.ndarray):
         cv2.imwrite(os.path.join(self.output_dir, filename), image)
         
-    def draw_results(self, original_warped: np.ndarray, results: Dict[str, Any], config: TemplateConfig, mapped_questions: list = None):
+    def draw_results(self, original_warped: np.ndarray, results: Dict[str, Any], config: TemplateConfig):
         debug_img = original_warped.copy()
         roi_half = config.roi_size // 2
         
@@ -27,7 +27,7 @@ class Visualizer:
                 status = digit_res["status"]
                 char = digit_res["digit"]
                 conf = digit_res.get("confidence", 0.0)
-                if status in ("DETECTED", "UNCERTAIN") and char is not None:
+                if status == "DETECTED" and char is not None:
                     try:
                         idx = int(char)
                         sel_x, sel_y = digit_res["coordinates"][idx]
@@ -38,15 +38,6 @@ class Visualizer:
         # 2. Draw Answers
         if "answers" in results:
             for q_num, data in results["answers"].items():
-                try:
-                    q_num_int = int(q_num)
-                except ValueError:
-                    q_num_int = -1
-                
-                # If mapped_questions is provided and this question is not in it, skip drawing completely
-                if mapped_questions and q_num_int not in mapped_questions:
-                    continue
-                    
                 coords = data["coordinates"]
                 status = data["status"]
                 ans = data["answer"]

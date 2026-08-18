@@ -22,7 +22,7 @@ def calculate_dynamic_alignment(thresh_image: np.ndarray, x_coords: list, y_coor
     height = thresh_image.shape[0]
     
     # 1. Extract the column signal by summing across the width of the bubbles
-    x_min, x_max = int(min(x_coords)) - 10, int(max(x_coords)) + 10
+    x_min, x_max = min(x_coords) - 10, max(x_coords) + 10
     x_min = max(0, x_min)
     x_max = min(thresh_image.shape[1], x_max)
     
