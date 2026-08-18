@@ -1,0 +1,274 @@
+{
+    "success": true,
+    "document": {
+        "filename": "media_1787034478303.jpg"
+    },
+    "student": {
+        "name": null,
+        "roll_number": "?????"
+    },
+    "answers": {
+        "1": {
+            "answer": "ABC",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "2": {
+            "answer": "ABC",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "3": {
+            "answer": "ABC",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "4": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "5": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "6": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "7": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "8": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "9": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "10": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "11": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "12": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "13": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "14": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "15": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "16": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "17": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "18": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "19": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "20": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "21": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "22": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "23": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "24": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "25": {
+            "answer": "ABCD",
+            "status": "MULTIPLE",
+            "confidence": 1.0
+        },
+        "26": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "27": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "28": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "29": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "30": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "31": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "32": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "33": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "34": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "35": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "36": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "37": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "38": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "39": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "40": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "41": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "42": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "43": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "44": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "45": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "46": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "47": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "48": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "49": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        },
+        "50": {
+            "answer": null,
+            "status": "BLANK",
+            "confidence": 1.0
+        }
+    },
+    "summary": {
+        "total_questions": 50,
+        "answered": 0,
+        "blank": 25,
+        "multiple": 25,
+        "uncertain": 0
+    },
+    "quality": {
+        "image_quality": 1.0,
+        "page_detection_confidence": 1.0,
+        "overall_confidence": 1.0
+    }
+}
