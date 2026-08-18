@@ -1846,6 +1846,21 @@ app.delete('/api/inquiries/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Helper to look up a test by either string id or Mongo _id, optionally scoped to institute
+function buildTestLookup(rawId, instituteId) {
+  if (!rawId) return { _id: new mongoose.Types.ObjectId() };
+  const query = {
+    $or: [
+      { id: String(rawId) },
+      ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
+    ]
+  };
+  if (instituteId) {
+    query.instituteId = instituteId;
+  }
+  return query;
+}
+
 // ---- 📝 Tests API ----
 app.get('/api/tests', authenticateToken, async (req, res) => {
   try {
@@ -2273,7 +2288,7 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
     const testId = req.body.testId;
 
     // Fetch test details for notification
-    const test = await Test.findOne(buildTestLookup(testId, req.user.instituteId));
+    const test = await Test.findOne(buildTestLookup(testId, req.user?.instituteId));
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
     if (!req.files || req.files.length === 0) {

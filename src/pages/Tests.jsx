@@ -575,7 +575,10 @@ export default function Tests() {
     try {
       const res = await api.uploadOMRImages(formData);
       if (!res.results || res.results.length === 0) {
-        throw new Error('No OMR results returned from server.');
+        const errorDetail = (res.errors && res.errors.length > 0 && res.errors[0].error)
+          ? res.errors[0].error
+          : (res.error || 'No OMR results returned from server.');
+        throw new Error(errorDetail);
       }
       
       const r = res.results[0];
