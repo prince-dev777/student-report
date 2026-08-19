@@ -5,6 +5,7 @@
     "tag": "Current Version",
     "isLatest": true,
     "highlights": [
+      "🕒 Attendance History Custom Date Range selection (From Date to To Date, Today, 7 Days, 1 Month, Heatmap) & All Students Excel (.xlsx) Download",
       "📊 Inquiries Date Filters (Today, 7 Days, 1 Month, Custom Date Range) & One-Click Excel (.xlsx) Download report",
       "✨ Added full Test Editing capabilities (Edit Name, Target Course/Class, OMR Layout, Subject Mappings & Marking rules)",
       "📜 Root update note.txt live changelog viewer in sidebar",

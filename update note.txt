@@ -5,6 +5,7 @@
 
 [v1.0.41] - 19 Aug 2026
 --------------------------------------------------------------------------------
+- 🕒 Attendance History: Custom Date Range selection (From Date to To Date, Today, 7 Days, 1 Month, Heatmap) aur All Students Excel (.xlsx) Download feature.
 - 📊 Inquiries: Date-based range filtering (Today, 7 Days, 1 Month, Custom Date Range) aur One-Click Excel (.xlsx) Download feature.
 - ✨ Feature: Create kiye gaye Tests ko Edit karne ka full option add kiya gaya (Name, Batch, Class, OMR Template, Subject Mapping, Marks & Negatives).
 - 📜 Release Notes: Root `update note.txt` aur UI What's New modal live changelog integration.

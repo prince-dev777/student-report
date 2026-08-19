@@ -18,10 +18,15 @@ import {
   MessageSquare,
   Scan,
   Download,
+  FileSpreadsheet,
+  Filter
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import {
   formatTime,
+  formatDate,
   getTodayStr,
   getTodayAttendanceStats,
   getDaysInMonth,
@@ -40,8 +45,14 @@ export default function Attendance() {
 
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calYear, setCalYear] = useState(new Date().getFullYear());
-  const [calStudent, setCalStudent] = useState('');
+  const [calStudent, setCalStudent] = useState('all');
   const [attendanceFilter, setAttendanceFilter] = useState('present'); // 'present', 'late', 'absent', 'all'
+  
+  // History Date Range States
+  const [historyRangeType, setHistoryRangeType] = useState('custom'); // 'today' | '7days' | '30days' | 'custom' | 'heatmap'
+  const [historyStartDate, setHistoryStartDate] = useState(getTodayStr());
+  const [historyEndDate, setHistoryEndDate] = useState(getTodayStr());
+  const [historyStatusFilter, setHistoryStatusFilter] = useState('all'); // 'all' | 'present' | 'late' | 'absent'
   
   // ADMS setup state
   const [localIp, setLocalIp] = useState('127.0.0.1');
@@ -254,22 +265,119 @@ export default function Attendance() {
     document.body.removeChild(link);
   };
 
+  // History Date Range Records
+  const historyRangeRecords = useMemo(() => {
+    let start = null;
+    let end = null;
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+
+    if (historyRangeType === 'today') {
+      start = new Date(todayDate);
+      end = new Date(todayDate);
+      end.setHours(23, 59, 59, 999);
+    } else if (historyRangeType === '7days') {
+      start = new Date(todayDate);
+      start.setDate(start.getDate() - 7);
+      end = new Date(todayDate);
+      end.setHours(23, 59, 59, 999);
+    } else if (historyRangeType === '30days') {
+      start = new Date(todayDate);
+      start.setDate(start.getDate() - 30);
+      end = new Date(todayDate);
+      end.setHours(23, 59, 59, 999);
+    } else if (historyRangeType === 'custom') {
+      if (historyStartDate) {
+        start = new Date(historyStartDate);
+        start.setHours(0, 0, 0, 0);
+      }
+      if (historyEndDate) {
+        end = new Date(historyEndDate);
+        end.setHours(23, 59, 59, 999);
+      }
+    } else if (historyRangeType === 'heatmap') {
+      start = new Date(calYear, calMonth, 1);
+      end = new Date(calYear, calMonth + 1, 0, 23, 59, 59, 999);
+    }
+
+    const studentMap = {};
+    students.forEach((s) => {
+      studentMap[s.id] = s;
+    });
+
+    return attendance
+      .filter((a) => {
+        if (calStudent && calStudent !== 'all' && a.studentId !== calStudent) return false;
+        if (historyStatusFilter !== 'all' && a.status !== historyStatusFilter) return false;
+        if (!a.date) return false;
+
+        const d = new Date(a.date);
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return true;
+      })
+      .map((a) => ({
+        ...a,
+        student: studentMap[a.studentId] || { name: 'Unknown', rollNo: '—' },
+      }))
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [attendance, calStudent, historyRangeType, historyStartDate, historyEndDate, historyStatusFilter, calYear, calMonth, students]);
+
+  // History Range Stats
+  const historyRangeStats = useMemo(() => {
+    const present = historyRangeRecords.filter((r) => r.status === 'present').length;
+    const late = historyRangeRecords.filter((r) => r.status === 'late').length;
+    const absent = historyRangeRecords.filter((r) => r.status === 'absent').length;
+    const total = present + late + absent;
+    const percentage = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
+    return { total, present, late, absent, percentage };
+  }, [historyRangeRecords]);
+
   const exportHistoryAttendance = () => {
-    if (!calStudent) return;
-    const student = activeStudents.find(s => s.id === calStudent);
-    const headers = ['Date,Status'];
-    const rows = calendarDays.map(cell => {
-      if (!cell.day) return null;
-      return `${cell.dateStr},${cell.status}`;
-    }).filter(Boolean);
-    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `attendance_history_${student?.name || 'student'}_${monthNames[calMonth]}_${calYear}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (historyRangeRecords.length === 0) {
+      toast.error('No attendance records found for selected date range to export!');
+      return;
+    }
+
+    const rows = historyRangeRecords.map((r, idx) => ({
+      'Sr No.': idx + 1,
+      'Date': r.date ? formatDate(r.date) : 'N/A',
+      'Roll No': r.student?.rollNo || '—',
+      'Student Name': r.student?.name || 'Unknown',
+      'Course / Batch': r.student?.batch || r.student?.targetClass || '—',
+      'Status': (r.status || 'absent').toUpperCase(),
+      'Entry Time': r.entryTime ? formatTime(r.entryTime) : '—',
+      'Exit Time': r.exitTime ? formatTime(r.exitTime) : '—',
+      'Duration': calcDuration(r.entryTime, r.exitTime),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet['!cols'] = [
+      { wch: 8 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 25 },
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 14 },
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
+
+    let rangeLabel = historyRangeType;
+    if (historyRangeType === 'custom' && historyStartDate && historyEndDate) {
+      rangeLabel = `${historyStartDate}_to_${historyEndDate}`;
+    } else if (historyRangeType === 'heatmap') {
+      rangeLabel = `${monthNames[calMonth]}_${calYear}`;
+    }
+
+    const studentName = calStudent && calStudent !== 'all' ? (activeStudents.find((s) => s.id === calStudent)?.name || 'Student') : 'All_Students';
+    const filename = `Attendance_${studentName.replace(/\s+/g, '_')}_${rangeLabel}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+    toast.success(`✅ Exported ${historyRangeRecords.length} records to Excel!`);
   };
 
   return (
@@ -711,150 +819,355 @@ export default function Attendance() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
+              style={{ borderRadius: '16px', padding: '24px', border: '1px solid var(--border-color-light)' }}
             >
-              <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {/* Header */}
+              <div className="card-header flex justify-between items-center flex-wrap gap-4 mb-20" style={{ borderBottom: '1px solid var(--border-color-light)', paddingBottom: '16px' }}>
                 <div>
-                  <div className="card-title flex items-center gap-8">
-                    <Calendar size={18} />
-                    Attendance History
+                  <div className="card-title flex items-center gap-8" style={{ fontSize: '1.3rem', fontWeight: 700 }}>
+                    <Calendar size={20} color="#3b82f6" />
+                    Attendance History & Reports
                   </div>
-                  <div className="card-subtitle">Calendar heat-map view</div>
+                  <div className="card-subtitle" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    Select custom date range (From Date to To Date) or calendar view to analyze and export records.
+                  </div>
                 </div>
-                <button onClick={exportHistoryAttendance} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 12px', fontSize: '0.85rem' }}>
-                  <Download size={14} /> Download Excel
+                <button 
+                  onClick={exportHistoryAttendance} 
+                  className="btn btn-secondary" 
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontWeight: 600 }}
+                  title="Download Attendance Report in Excel format"
+                >
+                  <Download size={16} color="#10b981" /> Download Excel
                 </button>
               </div>
 
-              {/* Student + Month Controls */}
-              <div className="flex items-center gap-16 mb-24 flex-wrap">
-                <div style={{ minWidth: 220 }}>
-                  <label className="form-label">Select Student</label>
-                  <select
-                    className="form-select"
-                    value={calStudent}
-                    onChange={(e) => setCalStudent(e.target.value)}
-                  >
-                    {activeStudents.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.rollNo})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-8" style={{ marginTop: 20 }}>
-                  <button className="btn btn-ghost btn-icon" onClick={() => navMonth('prev')}>
-                    <ChevronLeft size={18} />
-                  </button>
-                  <div className="flex items-center gap-4">
+              {/* Filter Controls Bar */}
+              <div className="card mb-20" style={{ background: 'var(--surface-color, #f8fafc)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color-light)' }}>
+                <div className="flex items-center justify-between flex-wrap gap-12">
+                  {/* Select Student Dropdown */}
+                  <div style={{ minWidth: '220px', flex: '1 1 220px' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                      Select Student:
+                    </label>
                     <select
-                      className="form-select"
-                      value={calMonth}
-                      onChange={(e) => setCalMonth(Number(e.target.value))}
-                      style={{ padding: '6px 12px', fontSize: '0.9rem', minWidth: '110px' }}
+                      className="form-select w-full"
+                      value={calStudent}
+                      onChange={(e) => setCalStudent(e.target.value)}
+                      style={{ height: '38px', borderRadius: '8px', fontSize: '0.85rem' }}
                     >
-                      {monthNames.map((m, idx) => (
-                        <option key={idx} value={idx}>{m}</option>
-                      ))}
-                    </select>
-                    <select
-                      className="form-select"
-                      value={calYear}
-                      onChange={(e) => setCalYear(Number(e.target.value))}
-                      style={{ padding: '6px 12px', fontSize: '0.9rem', minWidth: '90px' }}
-                    >
-                      {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
-                        <option key={y} value={y}>{y}</option>
+                      <option value="all">🌟 All Students (Combined)</option>
+                      {activeStudents.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.rollNo})
+                        </option>
                       ))}
                     </select>
                   </div>
-                  <button className="btn btn-ghost btn-icon" onClick={() => navMonth('next')}>
-                    <ChevronRight size={18} />
-                  </button>
+
+                  {/* Date Range Selection Pills */}
+                  <div style={{ flex: '2 1 320px' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                      Date Selection Mode:
+                    </label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {[
+                        { id: 'custom', label: 'Custom Range' },
+                        { id: 'today', label: 'Today' },
+                        { id: '7days', label: '7 Days' },
+                        { id: '30days', label: '1 Month' },
+                        { id: 'heatmap', label: 'Monthly Heatmap' },
+                      ].map((pill) => (
+                        <button
+                          key={pill.id}
+                          type="button"
+                          className={`btn btn-sm ${historyRangeType === pill.id ? 'btn-primary' : 'btn-secondary'}`}
+                          onClick={() => setHistoryRangeType(pill.id)}
+                          style={{ borderRadius: '20px', padding: '5px 12px', fontSize: '0.8rem', fontWeight: historyRangeType === pill.id ? 700 : 500 }}
+                        >
+                          {pill.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div style={{ minWidth: '140px' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                      Status:
+                    </label>
+                    <select
+                      className="form-select w-full"
+                      value={historyStatusFilter}
+                      onChange={(e) => setHistoryStatusFilter(e.target.value)}
+                      style={{ height: '38px', borderRadius: '8px', fontSize: '0.85rem' }}
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="present">Present</option>
+                      <option value="late">Late</option>
+                      <option value="absent">Absent</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              {/* Calendar Grid */}
-              <div className="attendance-calendar" style={{ maxWidth: 480 }}>
-                {/* Day headers */}
-                {dayNames.map((d) => (
-                  <div key={d} className="calendar-day-header">{d}</div>
-                ))}
-
-                {/* Days */}
-                {calendarDays.map((cell, idx) => (
-                  <motion.div
-                    key={idx}
-                    className={`calendar-day ${cell.status}${cell.isToday ? ' today' : ''}`}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: cell.status === 'empty' ? 0 : 1, scale: 1 }}
-                    transition={{ delay: idx * 0.01 }}
-                    title={cell.dateStr ? `${cell.dateStr}: ${cell.status}` : ''}
+                {/* Custom Date Range Row */}
+                {historyRangeType === 'custom' && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }} 
+                    className="flex items-center gap-12 mt-12 pt-12 flex-wrap"
+                    style={{ borderTop: '1px dashed var(--border-color-light)' }}
                   >
-                    {cell.day}
+                    <div className="flex items-center gap-2">
+                      <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>From Date:</span>
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={historyStartDate}
+                        onChange={(e) => setHistoryStartDate(e.target.value)}
+                        style={{ height: '36px', borderRadius: '8px', fontSize: '0.85rem' }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>To Date:</span>
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={historyEndDate}
+                        onChange={(e) => setHistoryEndDate(e.target.value)}
+                        style={{ height: '36px', borderRadius: '8px', fontSize: '0.85rem' }}
+                      />
+                    </div>
+                    <span style={{ fontSize: '0.82rem', color: '#10b981', fontWeight: 600, marginLeft: 'auto' }}>
+                      Found {historyRangeRecords.length} record(s)
+                    </span>
                   </motion.div>
-                ))}
+                )}
+
+                {/* Heatmap Month Picker Controls */}
+                {historyRangeType === 'heatmap' && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }} 
+                    className="flex items-center gap-8 mt-12 pt-12"
+                    style={{ borderTop: '1px dashed var(--border-color-light)' }}
+                  >
+                    <button className="btn btn-ghost btn-icon" onClick={() => navMonth('prev')}>
+                      <ChevronLeft size={18} />
+                    </button>
+                    <div className="flex items-center gap-4">
+                      <select
+                        className="form-select"
+                        value={calMonth}
+                        onChange={(e) => setCalMonth(Number(e.target.value))}
+                        style={{ padding: '6px 12px', fontSize: '0.9rem', minWidth: '110px' }}
+                      >
+                        {monthNames.map((m, idx) => (
+                          <option key={idx} value={idx}>{m}</option>
+                        ))}
+                      </select>
+                      <select
+                        className="form-select"
+                        value={calYear}
+                        onChange={(e) => setCalYear(Number(e.target.value))}
+                        style={{ padding: '6px 12px', fontSize: '0.9rem', minWidth: '90px' }}
+                      >
+                        {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button className="btn btn-ghost btn-icon" onClick={() => navMonth('next')}>
+                      <ChevronRight size={18} />
+                    </button>
+                  </motion.div>
+                )}
               </div>
 
-              {/* Legend */}
-              <div className="flex items-center gap-20 mt-24" style={{ fontSize: '0.8rem' }}>
-                <div className="flex items-center gap-4">
-                  <div style={{ width: 12, height: 12, borderRadius: 4, background: 'rgba(16, 185, 129, 0.5)' }} />
-                  <span style={{ color: 'var(--text-secondary)' }}>Present</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div style={{ width: 12, height: 12, borderRadius: 4, background: 'rgba(239, 68, 68, 0.5)' }} />
-                  <span style={{ color: 'var(--text-secondary)' }}>Absent</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div style={{ width: 12, height: 12, borderRadius: 4, background: 'rgba(245, 158, 11, 0.5)' }} />
-                  <span style={{ color: 'var(--text-secondary)' }}>Late</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div style={{ width: 12, height: 12, borderRadius: 4, border: '2px solid var(--accent-blue)', background: 'transparent' }} />
-                  <span style={{ color: 'var(--text-secondary)' }}>Today</span>
-                </div>
-              </div>
-
-              {/* Month Stats */}
-              <div className="stat-cards-grid mt-24" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+              {/* Summary Stats Cards for active range */}
+              <div className="stat-cards-grid mb-24" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
                 <motion.div
-                  className="stat-card blue"
+                  className="card"
+                  style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color-light)' }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Total Records</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '6px', color: 'var(--text-primary)' }}>
+                    {historyRangeType === 'heatmap' ? monthStats.total : historyRangeStats.total}
+                  </div>
+                </motion.div>
+                <motion.div
+                  className="card"
+                  style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color-light)' }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                >
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Present</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '6px', color: '#10b981' }}>
+                    {historyRangeType === 'heatmap' ? monthStats.present : historyRangeStats.present}
+                  </div>
+                </motion.div>
+                <motion.div
+                  className="card"
+                  style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color-light)' }}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <div className="stat-card-value">{monthStats.total}</div>
-                  <div className="stat-card-label">Total Days</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Late / Partial</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '6px', color: '#f59e0b' }}>
+                    {historyRangeType === 'heatmap' ? monthStats.late : historyRangeStats.late}
+                  </div>
                 </motion.div>
                 <motion.div
-                  className="stat-card green"
+                  className="card"
+                  style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color-light)' }}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.25 }}
                 >
-                  <div className="stat-card-value">{monthStats.present}</div>
-                  <div className="stat-card-label">Present</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Absent</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '6px', color: '#ef4444' }}>
+                    {historyRangeType === 'heatmap' ? monthStats.absent : historyRangeStats.absent}
+                  </div>
                 </motion.div>
                 <motion.div
-                  className="stat-card"
+                  className="card"
+                  style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color-light)' }}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <div className="stat-card-value">{monthStats.absent}</div>
-                  <div className="stat-card-label">Absent</div>
-                </motion.div>
-                <motion.div
-                  className="stat-card purple"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35 }}
-                >
-                  <div className="stat-card-value">{monthStats.percentage}%</div>
-                  <div className="stat-card-label">Percentage</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Attendance %</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '6px', color: '#8b5cf6' }}>
+                    {historyRangeType === 'heatmap' ? monthStats.percentage : historyRangeStats.percentage}%
+                  </div>
                 </motion.div>
               </div>
+
+              {/* View Rendering: Heatmap Grid vs Detailed Records Table */}
+              {historyRangeType === 'heatmap' ? (
+                <div>
+                  {calStudent === 'all' ? (
+                    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)', background: 'var(--surface-color)', borderRadius: '12px' }}>
+                      <Calendar size={32} style={{ opacity: 0.4, margin: '0 auto 8px' }} />
+                      <p style={{ margin: 0, fontWeight: 600 }}>Please select an individual student from dropdown to view their monthly calendar heat-map.</p>
+                    </div>
+                  ) : (
+                    <div>
+                      {/* Calendar Grid */}
+                      <div className="attendance-calendar" style={{ maxWidth: 480, margin: '0 auto' }}>
+                        {dayNames.map((d) => (
+                          <div key={d} className="calendar-day-header">{d}</div>
+                        ))}
+                        {calendarDays.map((cell, idx) => (
+                          <motion.div
+                            key={idx}
+                            className={`calendar-day ${cell.status}${cell.isToday ? ' today' : ''}`}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: cell.status === 'empty' ? 0 : 1, scale: 1 }}
+                            transition={{ delay: idx * 0.01 }}
+                            title={cell.dateStr ? `${cell.dateStr}: ${cell.status}` : ''}
+                          >
+                            {cell.day}
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {/* Legend */}
+                      <div className="flex items-center justify-center gap-20 mt-24" style={{ fontSize: '0.8rem' }}>
+                        <div className="flex items-center gap-4">
+                          <div style={{ width: 12, height: 12, borderRadius: 4, background: 'rgba(16, 185, 129, 0.5)' }} />
+                          <span style={{ color: 'var(--text-secondary)' }}>Present</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div style={{ width: 12, height: 12, borderRadius: 4, background: 'rgba(239, 68, 68, 0.5)' }} />
+                          <span style={{ color: 'var(--text-secondary)' }}>Absent</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div style={{ width: 12, height: 12, borderRadius: 4, background: 'rgba(245, 158, 11, 0.5)' }} />
+                          <span style={{ color: 'var(--text-secondary)' }}>Late</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div style={{ width: 12, height: 12, borderRadius: 4, border: '2px solid var(--accent-blue)', background: 'transparent' }} />
+                          <span style={{ color: 'var(--text-secondary)' }}>Today</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Detailed Table of Range Records */
+                <div className="table-container" style={{ borderRadius: '12px', border: '1px solid var(--border-color-light)', overflow: 'hidden' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '130px', minWidth: '120px', whiteSpace: 'nowrap' }}>Date</th>
+                        <th style={{ width: '90px', whiteSpace: 'nowrap' }}>Roll No</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Student Name</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Status</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Entry Time</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Exit Time</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historyRangeRecords.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="text-center py-8" style={{ color: 'var(--text-muted)' }}>
+                            <div className="flex flex-col items-center justify-center gap-2">
+                              <Calendar size={28} style={{ opacity: 0.5 }} />
+                              <p style={{ margin: 0, fontWeight: 500 }}>No attendance records found for selected date range.</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        historyRangeRecords.map((r, idx) => (
+                          <tr key={idx}>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              <div className="flex items-center gap-2" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                                <Calendar size={14} className="text-muted" style={{ flexShrink: 0 }} />
+                                <span>{r.date ? formatDate(r.date) : '—'}</span>
+                              </div>
+                            </td>
+                            <td style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{r.student?.rollNo || '—'}</td>
+                            <td className="font-medium" style={{ fontWeight: 600 }}>{r.student?.name || 'Unknown'}</td>
+                            <td>
+                              {r.status === 'present' && (
+                                <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600, padding: '2px 8px', borderRadius: '12px' }}>
+                                  Present
+                                </span>
+                              )}
+                              {r.status === 'late' && (
+                                <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.3)', fontWeight: 600, padding: '2px 8px', borderRadius: '12px' }}>
+                                  Late
+                                </span>
+                              )}
+                              {r.status === 'absent' && (
+                                <span className="badge" style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 600, padding: '2px 8px', borderRadius: '12px' }}>
+                                  Absent
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
+                              {r.entryTime ? formatTime(r.entryTime) : '—'}
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
+                              {r.exitTime ? formatTime(r.exitTime) : '—'}
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', color: 'var(--accent-blue)', fontWeight: 500 }}>
+                              {calcDuration(r.entryTime, r.exitTime)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
