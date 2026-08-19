@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Search, Bell, LogOut, MessageSquare, UserPlus, ClipboardCheck, X, Sparkles } from 'lucide-react';
+import { Menu, Bell, LogOut, MessageSquare, UserPlus, ClipboardCheck, X, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -10,7 +10,6 @@ import SettingsModal from './SettingsModal';
 export default function Topbar() {
   const { setSidebarOpen, smsHistory, students } = useApp();
   const { logout, user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [updateState, setUpdateState] = useState({ status: 'idle', version: '', releaseDate: '', currentVersion: '', progress: 0 });
@@ -111,16 +110,6 @@ export default function Topbar() {
           >
             <Menu size={22} />
           </button>
-
-          <div className="topbar-search">
-            <Search className="topbar-search-icon" size={16} />
-            <input
-              type="text"
-              placeholder="Search students, IDs, tests..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
         </div>
 
         {/* Right side */}
