@@ -4,7 +4,7 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
-  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2, ZoomIn, ZoomOut, AlertTriangle, Eye
+  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2, ZoomIn, ZoomOut, AlertTriangle, Eye, Edit2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
@@ -13,11 +13,12 @@ import { formatDate, calcTestAverage, getMarksCategory, getRankBadgeClass } from
 import toast from 'react-hot-toast';
 import { api, getMediaUrl } from '../utils/api';
 import omrTemplatePdf from '../assets/OMR_Templates.pdf';
+import EditTestModal from '../components/EditTestModal';
 
 export default function Tests() {
   const { 
     tests, testResults, students, batches, 
-    addTest, updateTestAnswerKey, deleteTest, submitTestResults 
+    addTest, updateTest, updateTestAnswerKey, deleteTest, submitTestResults 
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('all-tests');
@@ -26,6 +27,7 @@ export default function Tests() {
   const [selectedStudentResult, setSelectedStudentResult] = useState(null);
   const [omrScanErrors, setOmrScanErrors] = useState([]);
   const [testToDelete, setTestToDelete] = useState(null);
+  const [editingTest, setEditingTest] = useState(null);
 
   // For Create Test form (Answer Key input removed as it is now moved to Enter Marks page)
   const [testForm, setTestForm] = useState({
@@ -1434,6 +1436,14 @@ export default function Tests() {
                         </button>
                         <button 
                           className="btn btn-sm justify-center"
+                          onClick={() => setEditingTest(test)}
+                          style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '6px 10px' }}
+                          title="Edit Test Details"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button 
+                          className="btn btn-sm justify-center"
                           onClick={() => setTestToDelete(test)}
                           style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 10px' }}
                           title="Delete Test"
@@ -1454,6 +1464,14 @@ export default function Tests() {
                       >
                         <FileSpreadsheet size={14} />
                         Enter Marks
+                      </button>
+                      <button 
+                        className="btn btn-sm mt-8 justify-center"
+                        onClick={() => setEditingTest(test)}
+                        style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '6px 10px' }}
+                        title="Edit Test Details"
+                      >
+                        <Edit2 size={14} />
                       </button>
                       <button 
                         className="btn btn-sm mt-8 justify-center"
@@ -2585,6 +2603,17 @@ export default function Tests() {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Edit Test Modal */}
+      {editingTest && (
+        <EditTestModal
+          test={editingTest}
+          onClose={() => setEditingTest(null)}
+          onSave={async (updatedData) => {
+            await updateTest(editingTest.id || editingTest._id, updatedData);
+          }}
+        />
       )}
     </motion.div>
   );

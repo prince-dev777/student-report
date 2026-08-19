@@ -1917,14 +1917,36 @@ app.post('/api/tests', authenticateToken, async (req, res) => {
 
 app.put('/api/tests/:id', authenticateToken, async (req, res) => {
   try {
+    const testLookup = buildTestLookup(req.params.id, req.user.instituteId);
+    const existingTest = await Test.findOne(testLookup);
+    if (!existingTest) return res.status(404).json({ error: 'Test not found' });
+
+    const updateData = { ...req.body };
+    delete updateData._id;
+    delete updateData.__v;
+    delete updateData.id;
+    delete updateData.createdAt;
+    delete updateData.updatedAt;
+    delete updateData.instituteId;
+
     const test = await Test.findOneAndUpdate(
-      buildTestLookup(req.params.id, req.user.instituteId),
-      { $set: req.body },
+      { _id: existingTest._id },
+      { $set: updateData },
       { new: true }
     );
-    if (!test) return res.status(404).json({ error: 'Test not found' });
+
+    // Trigger immediate background Cloud Sync
+    try {
+      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: 'ignore'
+      });
+      syncProc.on('error', (e) => console.warn('Test update sync fork error:', e.message));
+    } catch(syncErr) {}
+
     res.json(test);
   } catch (err) {
+    console.error('Error updating test:', err);
     res.status(400).json({ error: err.message });
   }
 });

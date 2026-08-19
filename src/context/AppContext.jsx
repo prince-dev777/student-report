@@ -344,6 +344,26 @@ export function AppProvider({ children }) {
     return newTest;
   }, [backendOnline]);
 
+  const updateTest = useCallback(async (testId, updates) => {
+    if (backendOnline) {
+      try {
+        const updatedTest = await api.updateTest(testId, updates);
+        setTests((prev) => prev.map((t) => (t.id === testId || t._id === testId ? updatedTest : t)));
+        toast.success('✅ Test updated successfully!');
+        return updatedTest;
+      } catch (err) {
+        toast.error(err.message || 'Failed to update test');
+        throw err;
+      }
+    } else {
+      setTests((prev) =>
+        prev.map((t) => (t.id === testId || t._id === testId ? { ...t, ...updates } : t))
+      );
+      toast.success('Test updated locally!');
+      return { id: testId, ...updates };
+    }
+  }, [backendOnline]);
+
   const updateTestAnswerKey = useCallback(async (testId, answerKey) => {
     if (backendOnline) {
       try {
@@ -567,6 +587,7 @@ export function AppProvider({ children }) {
     regenerateParentCredentials,
     markAttendance,
     addTest,
+    updateTest,
     updateTestAnswerKey,
     deleteTest,
     submitTestResults,
