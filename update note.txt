@@ -5,7 +5,9 @@
 
 [v1.0.41] - 19 Aug 2026
 --------------------------------------------------------------------------------
+- 📊 Inquiries: Date-based range filtering (Today, 7 Days, 1 Month, Custom Date Range) aur One-Click Excel (.xlsx) Download feature.
 - ✨ Feature: Create kiye gaye Tests ko Edit karne ka full option add kiya gaya (Name, Batch, Class, OMR Template, Subject Mapping, Marks & Negatives).
+- 📜 Release Notes: Root `update note.txt` aur UI What's New modal live changelog integration.
 - 🛠️ Bug Fix: Single Student Add & Edit me immutable `_id` and Bcrypt payload crashes ko completely fix kiya gaya.
 - 🎯 Calibration: T1 (JEE 75) aur T7 (OMR 50) ke physical print bubbles offset (+2px) calibrate kiye gaye.
 - ⚡ Focus Fix: Electron app me Test/Student delete confirmation ke baad input focus freeze issue resolve kiya gaya.

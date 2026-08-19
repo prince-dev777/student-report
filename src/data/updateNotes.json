@@ -5,7 +5,9 @@
     "tag": "Current Version",
     "isLatest": true,
     "highlights": [
+      "📊 Inquiries Date Filters (Today, 7 Days, 1 Month, Custom Date Range) & One-Click Excel (.xlsx) Download report",
       "✨ Added full Test Editing capabilities (Edit Name, Target Course/Class, OMR Layout, Subject Mappings & Marking rules)",
+      "📜 Root update note.txt live changelog viewer in sidebar",
       "🛠️ Fixed Student Add & Edit crashes caused by MongoDB immutable _id payloads and Bcrypt typing",
       "🎯 Calibrated OMR Scanner bubble coordinates for T1 (JEE 75) and T7 (OMR 50) with +2px offset",
       "⚡ Resolved Electron input focus detachment when dismissing confirmation dialogues",
