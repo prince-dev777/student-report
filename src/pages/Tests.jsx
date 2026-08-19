@@ -4,13 +4,14 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
-  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2, ZoomIn, ZoomOut, AlertTriangle, Eye, Edit2
+  UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2, ZoomIn, ZoomOut, AlertTriangle, Eye, Edit2,
+  Search, Sparkles, ArrowRight, CheckCircle2, ChevronRight, Layers, FileCheck, RefreshCw, Filter, Calendar, Users
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { useApp } from '../context/AppContext';
 import { subjects } from '../data/sampleData';
-import { formatDate, calcTestAverage, getMarksCategory, getRankBadgeClass } from '../utils/helpers';
+import { formatDate, calcTestAverage, getMarksCategory, getRankBadgeClass, formatBatchName, getCourseName } from '../utils/helpers';
 import toast from 'react-hot-toast';
 import { api, getMediaUrl } from '../utils/api';
 import omrTemplatePdf from '../assets/OMR_Templates.pdf';
@@ -132,6 +133,8 @@ export default function Tests() {
 
   // For Marks Entry
   const [entryTestId, setEntryTestId] = useState('');
+  const [entryMarksBatchFilter, setEntryMarksBatchFilter] = useState('ALL');
+  const [entryMarksSearch, setEntryMarksSearch] = useState('');
   const [marksData, setMarksData] = useState({}); // studentId: marks
   const [omrStats, setOmrStats] = useState({}); // studentId: { correct, wrong }
   const [scannedAnswersData, setScannedAnswersData] = useState({}); // studentId: [selectedOption1, selectedOption2, ...]
@@ -154,6 +157,28 @@ export default function Tests() {
   const selectedEntryTest = React.useMemo(() => {
     return tests.find(t => t.id === entryTestId) || null;
   }, [tests, entryTestId]);
+
+  // Filter tests list for the Enter Marks selector view
+  const filteredEntryTests = React.useMemo(() => {
+    return (tests || []).filter(t => {
+      if (entryMarksBatchFilter !== 'ALL') {
+        const batchName = formatBatchName(t.batch).toLowerCase();
+        const courseName = getCourseName(t.batch).toLowerCase();
+        const target = entryMarksBatchFilter.toLowerCase();
+        if (!batchName.includes(target) && !courseName.includes(target) && t.batch !== entryMarksBatchFilter) {
+          return false;
+        }
+      }
+      if (entryMarksSearch.trim()) {
+        const q = entryMarksSearch.toLowerCase();
+        const nameMatch = (t.name || '').toLowerCase().includes(q);
+        const subMatch = (t.subject || '').toLowerCase().includes(q);
+        const batchMatch = formatBatchName(t.batch || '').toLowerCase().includes(q);
+        return nameMatch || subMatch || batchMatch;
+      }
+      return true;
+    });
+  }, [tests, entryMarksBatchFilter, entryMarksSearch]);
 
   // Dynamically compute the physical question numbers mapped for the entry test
   const questionNumbers = React.useMemo(() => {
@@ -893,7 +918,7 @@ export default function Tests() {
       const subjectOrder = []; // to keep track of the order of subjects in the file
       
       parsedLines.forEach(cols => {
-        if (cols.length || cols[0] === '') return;
+        if (!cols.length || cols[0] === '') return;
         
         const firstColUpper = cols[0].toUpperCase();
         
@@ -1474,8 +1499,9 @@ export default function Tests() {
       const res = await api.publishTestResults(selectedTestResults.test.id, sendSMS);
       toast.success(res.message || 'Results published successfully', { id: toastId });
       setShowResultsModal(false);
-      // Wait for 1s then reload to see changes
-      setTimeout(() => window.location.reload(), 1000);
+      if (updateTest) {
+        updateTest(selectedTestResults.test.id, { isPublished: true });
+      }
     } catch (err) {
       toast.error(err.message || 'Failed to publish results', { id: toastId });
     }
@@ -2226,23 +2252,462 @@ export default function Tests() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <div className="card mb-24">
-              <div className="form-group mb-0" style={{ maxWidth: '400px' }}>
-                <label className="form-label">Select Scheduled Test</label>
-                <select
-                  className="form-select"
-                  value={entryTestId}
-                  onChange={e => handleEntryTestChange(e.target.value)}
-                >
-                  <option value="">-- Select Test to Enter Marks --</option>
-                  {tests.map(t => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({getCourseName(t.batch)}{t.targetClass ? ` - ${t.targetClass}` : ''}) - {t.subject}
-                    </option>
-                  ))}
-                </select>
+            {/* Top Selector Header Card */}
+            <div className="card mb-20" style={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%)',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '20px 24px',
+              boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.05)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ flex: '1', minWidth: '280px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <div style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <FileSpreadsheet size={15} />
+                    </div>
+                    <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>
+                      Select Scheduled Test
+                    </span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <select
+                      className="form-select"
+                      value={entryTestId}
+                      onChange={e => handleEntryTestChange(e.target.value)}
+                      style={{
+                        minWidth: '280px',
+                        maxWidth: '460px',
+                        fontWeight: 600,
+                        fontSize: '0.9rem',
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        border: '1.5px solid #cbd5e1'
+                      }}
+                    >
+                      <option value="">-- Click to Select Test from List --</option>
+                      {tests.map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({getCourseName(t.batch)}{t.targetClass ? ` - ${t.targetClass}` : ''}) • {t.subject}
+                        </option>
+                      ))}
+                    </select>
+
+                    {entryTestId && (
+                      <button
+                        type="button"
+                        onClick={() => setEntryTestId('')}
+                        className="btn btn-outline-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px' }}
+                      >
+                        <RefreshCw size={14} /> Switch / Change Test
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right side: Search when picking tests */}
+                {!entryTestId && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative' }}>
+                      <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                      <input
+                        type="text"
+                        placeholder="Search test name or subject..."
+                        value={entryMarksSearch}
+                        onChange={(e) => setEntryMarksSearch(e.target.value)}
+                        style={{
+                          padding: '9px 12px 9px 36px',
+                          borderRadius: '10px',
+                          border: '1.5px solid #cbd5e1',
+                          fontSize: '0.85rem',
+                          width: '240px',
+                          outline: 'none',
+                          background: '#ffffff'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Batch Filter Pills (when choosing a test) */}
+              {!entryTestId && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginTop: '16px',
+                  paddingTop: '14px',
+                  borderTop: '1px solid #f1f5f9',
+                  flexWrap: 'wrap'
+                }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Filter size={13} /> Filter Course:
+                  </span>
+                  {['ALL', 'JEE Mains', 'NEET', 'JEE Advanced', 'MHCET'].map(course => (
+                    <button
+                      key={course}
+                      type="button"
+                      onClick={() => setEntryMarksBatchFilter(course)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        border: entryMarksBatchFilter === course ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
+                        background: entryMarksBatchFilter === course ? '#2563eb' : '#ffffff',
+                        color: entryMarksBatchFilter === course ? '#ffffff' : '#475569',
+                        boxShadow: entryMarksBatchFilter === course ? '0 2px 8px rgba(37, 99, 235, 0.25)' : 'none'
+                      }}
+                    >
+                      {course === 'ALL' ? '🎓 All Courses' : course}
+                    </button>
+                  ))}
+                  {(entryMarksBatchFilter !== 'ALL' || entryMarksSearch) && (
+                    <button
+                      type="button"
+                      onClick={() => { setEntryMarksBatchFilter('ALL'); setEntryMarksSearch(''); }}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        background: '#f1f5f9',
+                        color: '#64748b',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <X size={12} /> Clear
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* When NO test is selected: Show Visual Test Picker Cards + 3-Step Guided Workflow */}
+            {!entryTestId && (
+              <div>
+                {/* Active Scheduled Tests Grid */}
+                <div style={{ marginBottom: '32px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>📋 Pick a Test to Enter Marks & Scan OMR</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
+                          {filteredEntryTests.length} Tests Available
+                        </span>
+                      </h3>
+                      <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '4px 0 0' }}>
+                        Click on any test card to open its live marksheet, upload answer keys, or start scanning OMR sheets.
+                      </p>
+                    </div>
+                  </div>
+
+                  {filteredEntryTests.length === 0 ? (
+                    <div style={{
+                      background: '#ffffff',
+                      borderRadius: '16px',
+                      padding: '48px 24px',
+                      textAlign: 'center',
+                      border: '1.5px dashed #cbd5e1'
+                    }}>
+                      <div style={{
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '16px',
+                        background: '#f1f5f9',
+                        color: '#94a3b8',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 16px'
+                      }}>
+                        <FileSpreadsheet size={28} />
+                      </div>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', margin: '0 0 6px' }}>
+                        No Scheduled Tests Found
+                      </h4>
+                      <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 20px', maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto' }}>
+                        {entryMarksSearch || entryMarksBatchFilter !== 'ALL'
+                          ? 'No tests matched your current filter criteria. Try clearing filters.'
+                          : 'Create your first test to start recording marks and evaluating OMR sheets.'}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('create-test')}
+                        className="btn btn-primary"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                      >
+                        <Plus size={16} /> Schedule New Test
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
+                      gap: '16px'
+                    }}>
+                      {filteredEntryTests.map(test => {
+                        const appeared = getAppearedCount(test.id);
+                        const totalStudentsInBatch = (students || []).filter(s => 
+                          s.batch === test.batch && (!test.targetClass || s.class === test.targetClass) && s.status === 'active'
+                        ).length || 0;
+                        const hasAnswerKey = test.answerKey && test.answerKey.length > 0;
+                        const isFullyEvaluated = totalStudentsInBatch > 0 && appeared >= totalStudentsInBatch;
+
+                        return (
+                          <div
+                            key={test.id}
+                            onClick={() => handleEntryTestChange(test.id)}
+                            style={{
+                              background: '#ffffff',
+                              borderRadius: '16px',
+                              border: '1.5px solid #e2e8f0',
+                              padding: '20px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              position: 'relative',
+                              overflow: 'hidden'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#3b82f6';
+                              e.currentTarget.style.transform = 'translateY(-3px)';
+                              e.currentTarget.style.boxShadow = '0 12px 24px -6px rgba(37, 99, 235, 0.12)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#e2e8f0';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
+                            }}
+                          >
+                            <div>
+                              {/* Top Bar: Subject tags & Date */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                  {(test.subject || '').split(',').map((sub, i) => (
+                                    <span key={i} style={{
+                                      fontSize: '0.7rem',
+                                      fontWeight: 700,
+                                      background: '#f1f5f9',
+                                      color: '#334155',
+                                      padding: '2px 8px',
+                                      borderRadius: '6px',
+                                      border: '1px solid #e2e8f0'
+                                    }}>
+                                      {sub.trim()}
+                                    </span>
+                                  ))}
+                                </div>
+                                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Calendar size={12} /> {test.date ? formatDate(test.date) : 'N/A'}
+                                </span>
+                              </div>
+
+                              {/* Test Title */}
+                              <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: '0 0 10px', lineHeight: 1.3 }}>
+                                {test.name}
+                              </h4>
+
+                              {/* Course & Class Badges */}
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                                  color: '#1d4ed8',
+                                  padding: '3px 10px',
+                                  borderRadius: '20px',
+                                  border: '1px solid #bfdbfe'
+                                }}>
+                                  🎓 {getCourseName(test.batch)}
+                                </span>
+                                {test.targetClass && (
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    background: '#f8fafc',
+                                    color: '#475569',
+                                    padding: '3px 8px',
+                                    borderRadius: '20px',
+                                    border: '1px solid #e2e8f0'
+                                  }}>
+                                    Class: {test.targetClass}
+                                  </span>
+                                )}
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  background: '#f0fdf4',
+                                  color: '#15803d',
+                                  padding: '3px 8px',
+                                  borderRadius: '20px',
+                                  border: '1px solid #bbf7d0'
+                                }}>
+                                  🎯 {test.totalMarks} Marks
+                                </span>
+                              </div>
+
+                              {/* Evaluation Progress & Key Status */}
+                              <div style={{
+                                background: '#f8fafc',
+                                borderRadius: '10px',
+                                padding: '10px 12px',
+                                marginBottom: '16px',
+                                border: '1px solid #f1f5f9'
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                  <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Users size={12} /> Evaluation Status:
+                                  </span>
+                                  <span style={{
+                                    fontSize: '0.74rem',
+                                    fontWeight: 800,
+                                    color: isFullyEvaluated ? '#15803d' : appeared > 0 ? '#2563eb' : '#94a3b8'
+                                  }}>
+                                    {appeared} / {totalStudentsInBatch || '–'} Evaluated
+                                  </span>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                    Answer Key:
+                                  </span>
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    color: hasAnswerKey ? '#16a34a' : '#d97706',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '3px'
+                                  }}>
+                                    {hasAnswerKey ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
+                                    {hasAnswerKey ? `${test.answerKey.length} Qs Configured` : 'Key Not Set'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              style={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                padding: '9px',
+                                borderRadius: '10px',
+                                fontWeight: 700,
+                                fontSize: '0.82rem'
+                              }}
+                            >
+                              <FileSpreadsheet size={15} />
+                              Open Marksheet & Scan OMR ➔
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 3-Step Guided Evaluation Workflow Banner */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                  borderRadius: '18px',
+                  padding: '24px 28px',
+                  color: '#ffffff',
+                  boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.25)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <Sparkles size={18} color="#60a5fa" />
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
+                      Fast-Track Evaluation & OMR Scanning Workflow
+                    </h4>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                    gap: '16px'
+                  }}>
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#60a5fa', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        STEP 1
+                      </div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
+                        📝 Select or Create Test
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                        Choose your scheduled test or create a new test with custom subjects and marking schemes.
+                      </div>
+                    </div>
+
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#34d399', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        STEP 2
+                      </div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
+                        📸 Upload Key & Scan OMR
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                        Paste or upload CSV Answer Key, then select 100+ OMR sheet photos for instant AI evaluation.
+                      </div>
+                    </div>
+
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fbbf24', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        STEP 3
+                      </div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
+                        🚀 Auto Rank & Notify
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                        Save drafts, preview leaderboard rankings, and 1-click publish scores to Parents via WhatsApp/SMS.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {entryTestId && (
               <motion.div

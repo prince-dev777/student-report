@@ -16,7 +16,14 @@ import { useApp } from '../context/AppContext';
 import { QRCodeSVG } from 'qrcode.react';
 import idLogo from '../assets/id-logo.png';
 
-export default function StudentProfileModal({ student: initialStudent, onClose, attendance, testResults, tests, smsHistory }) {
+export default function StudentProfileModal({ 
+  student: initialStudent, 
+  onClose, 
+  attendance = [], 
+  testResults = [], 
+  tests = [], 
+  smsHistory = [] 
+}) {
   const { students, batches, regenerateParentCredentials } = useApp();
   const [regenPassword, setRegenPassword] = useState('');
 

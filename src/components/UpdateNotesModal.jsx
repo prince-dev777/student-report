@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, FileText, CheckCircle2, History, Copy, Check } from 'lucide-react';
 import fallbackNotes from '../data/updateNotes.json';
 import toast from 'react-hot-toast';
+import { API_BASE } from '../utils/api';
 
 export default function UpdateNotesModal({ isOpen, onClose, currentVersion = '1.0.41' }) {
   const [activeTab, setActiveTab] = useState('formatted'); // 'formatted' | 'raw'
@@ -15,7 +15,7 @@ export default function UpdateNotesModal({ isOpen, onClose, currentVersion = '1.
     if (!isOpen) return;
 
     // Fetch dynamic notes from backend if available
-    fetch('/api/system/update-notes')
+    fetch(`${API_BASE}/system/update-notes`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.notes) {

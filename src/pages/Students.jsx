@@ -29,7 +29,7 @@ const AnimatedCounter = ({ to }) => {
 };
 
 export default function Students() {
-  const { batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent } = useApp();
+  const { students, batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent } = useApp();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('all');
@@ -85,9 +85,11 @@ export default function Students() {
       return rollA.localeCompare(rollB, undefined, { numeric: true });
     });
 
-  // Derived stats (Approximate for active since we don't fetch all, but we can do our best with local page or total stats)
-  const activeCount = Math.round(totalCount * 0.95); // Approximation if backend doesn't provide it
-  const inactiveCount = totalCount - activeCount;
+  // Accurate Active / Inactive stats from real database
+  const activeCount = (students && students.length > 0)
+    ? students.filter(s => s.status === 'active').length
+    : paginatedStudents.filter(s => s.status === 'active').length;
+  const inactiveCount = Math.max(0, (totalCount > 0 ? totalCount : (students || []).length) - activeCount);
 
   const handleAddClick = () => {
     setEditingStudent(null);

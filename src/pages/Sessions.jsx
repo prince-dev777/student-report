@@ -11,7 +11,7 @@ export default function Sessions() {
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(null);
   
-  const uniqueClasses = [...new Set(students.map((s) => s.class).filter(Boolean))].sort();
+  const uniqueClasses = [...new Set((students || []).map((s) => s.class).filter(Boolean))].sort();
 
   const [formData, setFormData] = useState({
     name: '',

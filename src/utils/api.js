@@ -82,6 +82,7 @@ export const api = {
   // Auth
   login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   register: (data) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+  getSettings: () => apiRequest('/settings'),
   updateSettings: (data) => apiRequest('/settings', { method: 'PUT', body: JSON.stringify(data) }),
   parentLogin: (data) => apiRequest('/parent/login', { method: 'POST', body: JSON.stringify(data) }),
   regenerateParentCredentials: (id) => apiRequest(`/students/${id}/regenerate-parent`, { method: 'POST' }),
@@ -144,8 +145,10 @@ export const api = {
   saveTestResultsBulk: (results) => apiRequest('/test-results/bulk', { method: 'POST', body: JSON.stringify(results) }),
   publishTestResults: (testId, sendSMS) => apiRequest(`/test-results/${testId}/publish`, { method: 'PUT', body: JSON.stringify({ sendSMS }) }),
 
-  // Teacher Portal
+  // Teacher, Staff & Inquiry Portal
   teacherLogin: (data) => apiRequest('/auth/teacher-login', { method: 'POST', body: JSON.stringify(data) }),
+  staffLogin: (data) => apiRequest('/auth/staff-login', { method: 'POST', body: JSON.stringify(data) }),
+  inquiryLogin: (data) => apiRequest('/auth/inquiry-login', { method: 'POST', body: JSON.stringify(data) }),
   getTeacherData: () => apiRequest('/teacher/data'),
 
   // SMS Logs

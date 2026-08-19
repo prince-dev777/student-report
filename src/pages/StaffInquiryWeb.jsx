@@ -3,7 +3,7 @@ import {
   FileText, Plus, Search, Filter, Phone, MessageCircle,
   Calendar, CheckCircle2, Clock, UserCheck, AlertCircle,
   X, LogOut, RefreshCw, Sparkles, User, BookOpen, Layers,
-  ChevronRight, ArrowRight, ShieldCheck
+  ChevronRight, ArrowRight, ShieldCheck, Edit3, Trash2
 } from 'lucide-react';
 import { api } from '../utils/api';
 import toast, { Toaster } from 'react-hot-toast';
@@ -78,7 +78,12 @@ export default function StaffInquiryWeb() {
 
     setLoading(true);
     try {
-      const res = await api.staffLogin({ passcode: passcode.trim() });
+      let res;
+      try {
+        res = await api.inquiryLogin({ passcode: passcode.trim() });
+      } catch (e) {
+        res = await api.staffLogin({ passcode: passcode.trim() });
+      }
       if (res && res.token) {
         localStorage.setItem('staffToken', res.token);
         sessionStorage.setItem('inquiryStaffSession', JSON.stringify(res));
@@ -87,16 +92,7 @@ export default function StaffInquiryWeb() {
         toast.success(`Welcome to ${res.instituteName || 'Career Xone'} Inquiry Desk! 📋`);
         await fetchInquiries();
       } else {
-        if (passcode.trim() === '1234') {
-          const defaultSession = { instituteName: 'Career Xone', token: 'demo' };
-          sessionStorage.setItem('inquiryStaffSession', JSON.stringify(defaultSession));
-          setStaffInfo(defaultSession);
-          setIsLoggedIn(true);
-          toast.success('Welcome to Inquiry Desk! 📋');
-          await fetchInquiries();
-        } else {
-          toast.error('Invalid Staff Passcode');
-        }
+        toast.error('Invalid Access Passcode');
       }
     } catch (err) {
       if (passcode.trim() === '1234') {
@@ -178,6 +174,23 @@ export default function StaffInquiryWeb() {
     }
   };
 
+  // Delete Inquiry
+  const handleDeleteInquiry = async (iq) => {
+    if (!window.confirm(`Are you sure you want to delete inquiry for "${iq.visitorName}"?`)) {
+      return;
+    }
+
+    const targetId = iq._id || iq.id;
+    try {
+      await api.deleteInquiry(targetId);
+      setInquiries(prev => prev.filter(item => (item._id !== targetId && item.id !== targetId)));
+      toast.success('Inquiry deleted successfully');
+    } catch (err) {
+      setInquiries(prev => prev.filter(item => (item._id !== targetId && item.id !== targetId)));
+      toast.success('Inquiry removed locally');
+    }
+  };
+
   // Quick Status Update
   const handleQuickStatusChange = async (iq, newStatus) => {
     try {
@@ -198,40 +211,33 @@ export default function StaffInquiryWeb() {
     return inquiries.filter((iq) => {
       // 1. Search Query
       const q = searchTerm.toLowerCase().trim();
-      const matchesSearch = !q ||
-        (iq.visitorName || '').toLowerCase().includes(q) ||
-        (iq.studentName || '').toLowerCase().includes(q) ||
-        (iq.contactNumber || '').includes(q) ||
-        (iq.discussionDetails || '').toLowerCase().includes(q);
-
-      if (!matchesSearch) return false;
+      if (q) {
+        const vMatch = (iq.visitorName || '').toLowerCase().includes(q);
+        const sMatch = (iq.studentName || '').toLowerCase().includes(q);
+        const pMatch = (iq.contactNumber || '').toLowerCase().includes(q);
+        const dMatch = (iq.discussionDetails || '').toLowerCase().includes(q);
+        if (!vMatch && !sMatch && !pMatch && !dMatch) return false;
+      }
 
       // 2. Status Filter
-      if (statusFilter !== 'ALL' && iq.status !== statusFilter) return false;
+      if (statusFilter !== 'ALL') {
+        if ((iq.status || 'Pending') !== statusFilter) return false;
+      }
 
       // 3. Date Filter
-      if (dateFilter === 'all') return true;
-      if (!iq.date) return false;
+      if (dateFilter !== 'all') {
+        const inqDate = new Date(iq.date || iq.createdAt || Date.now());
+        inqDate.setHours(0, 0, 0, 0);
 
-      const iqDate = new Date(iq.date);
-      iqDate.setHours(0, 0, 0, 0);
-
-      if (dateFilter === 'today') {
-        return iq.date === getTodayDateStr();
-      }
-
-      if (dateFilter === '7days') {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(today.getDate() - 7);
-        sevenDaysAgo.setHours(0, 0, 0, 0);
-        return iqDate >= sevenDaysAgo && iqDate <= today;
-      }
-
-      if (dateFilter === '30days') {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(today.getDate() - 30);
-        thirtyDaysAgo.setHours(0, 0, 0, 0);
-        return iqDate >= thirtyDaysAgo && iqDate <= today;
+        if (dateFilter === 'today') {
+          if (inqDate.getTime() !== today.getTime()) return false;
+        } else if (dateFilter === '7days') {
+          const diffDays = (today - inqDate) / (1000 * 60 * 60 * 24);
+          if (diffDays < 0 || diffDays > 7) return false;
+        } else if (dateFilter === '30days') {
+          const diffDays = (today - inqDate) / (1000 * 60 * 60 * 24);
+          if (diffDays < 0 || diffDays > 30) return false;
+        }
       }
 
       return true;
@@ -241,95 +247,113 @@ export default function StaffInquiryWeb() {
   // Status Metrics
   const metrics = useMemo(() => {
     const total = inquiries.length;
-    const pending = inquiries.filter((i) => i.status === 'Pending').length;
+    const pending = inquiries.filter((i) => (i.status || 'Pending') === 'Pending' || i.status === 'Follow-up').length;
     const admitted = inquiries.filter((i) => i.status === 'Admitted').length;
-    const resolved = inquiries.filter((i) => i.status === 'Resolved' || i.status === 'Follow-up').length;
+    const resolved = inquiries.filter((i) => i.status === 'Resolved').length;
     return { total, pending, admitted, resolved };
   }, [inquiries]);
 
-  // Login View
+  // ----------------------------------------------------
+  // LOGIN VIEW (Light & Clean Theme matching Parent/Teacher App)
+  // ----------------------------------------------------
   if (!isLoggedIn) {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #0f172a 100%)',
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px',
-        fontFamily: 'Inter, system-ui, sans-serif'
+        padding: '16px',
+        fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif"
       }}>
         <Toaster position="top-center" />
-        <PWAInstallPrompt appName="Inquiry App" />
+        
+        {/* Centered PWA Install Prompt */}
+        <div style={{ width: '100%', maxWidth: '380px', marginBottom: '12px' }}>
+          <PWAInstallPrompt appName="Inquiry App" />
+        </div>
+
         <div style={{
           width: '100%',
-          maxWidth: '420px',
-          background: 'rgba(30, 41, 59, 0.8)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '24px',
-          padding: '36px 28px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          maxWidth: '380px',
+          background: '#ffffff',
+          borderRadius: '20px',
+          padding: '28px 22px',
+          boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.35)',
           textAlign: 'center',
-          color: '#ffffff'
+          color: '#0f172a'
         }}>
           <div style={{
-            width: '72px',
-            height: '72px',
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, #10b981, #059669)',
+            width: '64px',
+            height: '64px',
+            borderRadius: '16px',
+            background: '#ffffff',
+            border: '2px solid #e2e8f0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 18px',
-            boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.4)'
+            margin: '0 auto 12px',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
+            overflow: 'hidden',
+            padding: '4px'
           }}>
-            <FileText size={40} color="#ffffff" />
+            <img
+              src="/logo.png"
+              alt="Career Xone Logo"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
           </div>
 
           <span style={{
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            letterSpacing: '2px',
+            fontSize: '0.68rem',
+            fontWeight: 800,
+            letterSpacing: '1px',
             textTransform: 'uppercase',
-            color: '#6ee7b7',
-            background: 'rgba(16, 185, 129, 0.15)',
-            padding: '4px 12px',
+            color: '#059669',
+            background: '#dcfce7',
+            padding: '3px 10px',
             borderRadius: '20px',
             display: 'inline-block',
-            marginBottom: '10px'
+            marginBottom: '8px'
           }}>
-            FRONT-DESK INQUIRY PORTAL
+            FRONT-DESK INQUIRY DESK
           </span>
 
-          <h1 style={{ fontSize: '1.65rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff' }}>
+          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 4px', color: '#0f172a' }}>
             {instituteName}
           </h1>
-          <p style={{ fontSize: '0.88rem', color: '#94a3b8', margin: '0 0 28px' }}>
-            Quick Student & Visitor Inquiry Entry
+          <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 20px' }}>
+            Student & Parent Inquiry Entry
           </p>
 
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ textAlign: 'left' }}>
-              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px', display: 'block' }}>
-                Staff Passcode
+              <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', marginBottom: '6px', display: 'block' }}>
+                STAFF ACCESS PASSCODE:
               </label>
               <input
                 type="password"
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
-                placeholder="Enter Staff Passcode (e.g. 1234)"
+                placeholder="Enter access passcode"
                 autoFocus
                 style={{
                   width: '100%',
-                  padding: '14px 18px',
-                  borderRadius: '12px',
-                  background: 'rgba(15, 23, 42, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  color: '#ffffff',
-                  fontSize: '1.05rem',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #cbd5e1',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
                   outline: 'none',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  background: '#f8fafc',
+                  textAlign: 'center',
+                  letterSpacing: '2px'
                 }}
               />
             </div>
@@ -339,102 +363,127 @@ export default function StaffInquiryWeb() {
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '14px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
+                padding: '11px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #059669, #047857)',
                 color: '#ffffff',
-                fontSize: '1rem',
-                fontWeight: 700,
+                fontSize: '0.88rem',
+                fontWeight: 800,
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
-                boxShadow: '0 10px 20px -5px rgba(16, 185, 129, 0.4)',
-                marginTop: '6px'
+                gap: '6px',
+                boxShadow: '0 6px 16px -4px rgba(5, 150, 105, 0.4)',
+                marginTop: '2px',
+                transition: 'all 0.2s ease'
               }}
             >
-              {loading ? <RefreshCw size={20} className="spin" /> : <Sparkles size={20} />}
-              {loading ? 'Logging in...' : 'Access Inquiry Desk'}
+              {loading ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              {loading ? 'Verifying...' : 'Access Inquiry Desk ➔'}
             </button>
           </form>
 
-          <div style={{ marginTop: '24px', fontSize: '0.78rem', color: '#64748b' }}>
-            ⚡ Real-time Cloud Sync Enabled • {instituteName}
+          <div style={{ marginTop: '16px', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>
+            ⚡ Real-time Cloud Sync • {instituteName}
           </div>
         </div>
       </div>
     );
   }
 
+  // ----------------------------------------------------
+  // MAIN DASHBOARD (Ultra Compact & Sleek for Mobile)
+  // ----------------------------------------------------
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg-primary, #0f172a)',
-      color: 'var(--text-primary, #f8fafc)',
-      fontFamily: 'Inter, system-ui, sans-serif',
+      background: '#f8fafc',
+      color: '#0f172a',
+      fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif",
       paddingBottom: '60px'
     }}>
       <Toaster position="top-center" />
       <PWAInstallPrompt appName="Inquiry App" />
 
-      {/* Header */}
+      {/* Top Header (Compact & Mobile-Optimized) */}
       <header style={{
-        background: 'rgba(15, 23, 42, 0.85)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        background: '#ffffff',
+        borderBottom: '1px solid #e2e8f0',
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        padding: '12px 20px'
+        padding: '8px 12px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)'
       }}>
         <div style={{
-          maxWidth: '1280px',
+          maxWidth: '1200px',
           margin: '0 auto',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px'
+          gap: '8px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Left: Branding */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
             <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #10b981, #059669)',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+              overflow: 'hidden',
+              flexShrink: 0,
+              padding: '2px'
             }}>
-              <FileText size={22} color="#ffffff" />
+              <img
+                src="/logo.png"
+                alt="Career Xone Logo"
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <h2 style={{
+                  fontSize: '0.92rem',
+                  fontWeight: 800,
+                  margin: 0,
+                  color: '#0f172a',
+                  lineHeight: 1.15,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
                   {instituteName}
                 </h2>
                 <span style={{
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  background: 'rgba(16, 185, 129, 0.2)',
-                  color: '#6ee7b7',
-                  border: '1px solid rgba(16, 185, 129, 0.4)',
-                  padding: '2px 8px',
-                  borderRadius: '12px'
+                  fontSize: '0.58rem',
+                  fontWeight: 800,
+                  background: '#dcfce7',
+                  color: '#15803d',
+                  border: '1px solid #bbf7d0',
+                  padding: '1px 6px',
+                  borderRadius: '8px',
+                  flexShrink: 0
                 }}>
-                  STAFF INQUIRY
+                  INQUIRY
                 </span>
               </div>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>
-                Front-Desk Student Inquiry Desk
+              <p style={{ margin: 0, fontSize: '0.65rem', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                Front-Desk Student Log
               </p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Right: Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             <button
               onClick={() => {
                 setEditingInquiry(null);
@@ -449,361 +498,508 @@ export default function StaffInquiryWeb() {
                 setIsAddModalOpen(true);
               }}
               style={{
-                background: 'linear-gradient(135deg, #10b981, #059669)',
+                background: 'linear-gradient(135deg, #059669, #047857)',
                 border: 'none',
                 color: '#ffffff',
-                padding: '8px 16px',
-                borderRadius: '10px',
-                fontSize: '0.88rem',
-                fontWeight: 700,
+                padding: '6px 10px',
+                borderRadius: '8px',
+                fontSize: '0.74rem',
+                fontWeight: 800,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                gap: '4px',
+                boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)'
               }}
             >
-              <Plus size={16} />
-              <span>New Inquiry</span>
+              <Plus size={14} />
+              <span>New</span>
             </button>
 
             <button
               onClick={fetchInquiries}
               disabled={loading}
               style={{
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#cbd5e1',
-                padding: '8px 12px',
-                borderRadius: '10px',
-                cursor: 'pointer'
+                background: '#f1f5f9',
+                border: '1px solid #e2e8f0',
+                color: '#334155',
+                width: '30px',
+                height: '30px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
-              title="Refresh"
+              title="Refresh / Sync"
             >
-              <RefreshCw size={15} className={loading ? 'spin' : ''} />
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             </button>
 
             <button
               onClick={handleLogout}
               style={{
-                background: 'rgba(239, 68, 68, 0.12)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#f87171',
-                padding: '8px 12px',
-                borderRadius: '10px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
+                background: '#fff1f2',
+                border: '1px solid #fecdd3',
+                color: '#e11d48',
+                width: '30px',
+                height: '30px',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                justifyContent: 'center'
               }}
+              title="Log Out"
             >
-              <LogOut size={15} />
+              <LogOut size={13} />
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Container */}
-      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '20px' }}>
-        {/* KPI Cards */}
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '10px 10px' }}>
+        
+        {/* 4 Compact Stat Tiles (Single-Row / 4-Col Grid) */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '12px',
-          marginBottom: '20px'
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '8px',
+          marginBottom: '12px'
         }}>
+          {/* Total */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9))',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '16px'
+            background: '#ffffff',
+            border: '1px solid #bfdbfe',
+            borderRadius: '12px',
+            padding: '8px 10px',
+            boxShadow: '0 1px 4px rgba(37, 99, 235, 0.04)',
+            textAlign: 'center'
           }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8' }}>Total Inquiries</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>{metrics.total}</div>
+            <div style={{ fontSize: '0.64rem', fontWeight: 700, color: '#2563eb', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Total
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', lineHeight: 1.1, marginTop: '2px' }}>
+              {metrics.total}
+            </div>
           </div>
 
+          {/* Pending */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9))',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '16px'
+            background: '#ffffff',
+            border: '1px solid #fed7aa',
+            borderRadius: '12px',
+            padding: '8px 10px',
+            boxShadow: '0 1px 4px rgba(217, 119, 6, 0.04)',
+            textAlign: 'center'
           }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8' }}>Pending Follow-up</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fbbf24', marginTop: '4px' }}>{metrics.pending}</div>
+            <div style={{ fontSize: '0.64rem', fontWeight: 700, color: '#d97706', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Pending
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#d97706', lineHeight: 1.1, marginTop: '2px' }}>
+              {metrics.pending}
+            </div>
           </div>
 
+          {/* Admitted */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9))',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '16px'
+            background: '#ffffff',
+            border: '1px solid #bbf7d0',
+            borderRadius: '12px',
+            padding: '8px 10px',
+            boxShadow: '0 1px 4px rgba(5, 150, 105, 0.04)',
+            textAlign: 'center'
           }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8' }}>Admitted Students</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#34d399', marginTop: '4px' }}>{metrics.admitted}</div>
+            <div style={{ fontSize: '0.64rem', fontWeight: 700, color: '#059669', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Admitted
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#059669', lineHeight: 1.1, marginTop: '2px' }}>
+              {metrics.admitted}
+            </div>
           </div>
 
+          {/* Resolved */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9))',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '16px'
+            background: '#ffffff',
+            border: '1px solid #e9d5ff',
+            borderRadius: '12px',
+            padding: '8px 10px',
+            boxShadow: '0 1px 4px rgba(124, 58, 237, 0.04)',
+            textAlign: 'center'
           }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8' }}>Resolved</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#60a5fa', marginTop: '4px' }}>{metrics.resolved}</div>
+            <div style={{ fontSize: '0.64rem', fontWeight: 700, color: '#7c3aed', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Resolved
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.1, marginTop: '2px' }}>
+              {metrics.resolved}
+            </div>
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Compact Filter Bar */}
         <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '8px 10px',
+          border: '1px solid #e2e8f0',
+          marginBottom: '12px',
           display: 'flex',
-          gap: '10px',
-          marginBottom: '20px',
+          gap: '6px',
           flexWrap: 'wrap',
-          alignItems: 'center'
+          alignItems: 'center',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
         }}>
-          <div style={{ position: 'relative', flex: '1', minWidth: '240px', maxWidth: '400px' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+          <div style={{ position: 'relative', flex: '1', minWidth: '150px' }}>
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
               type="text"
-              placeholder="Search visitor, student, phone..."
+              placeholder="Search visitor, phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
                 width: '100%',
-                padding: '10px 14px 10px 38px',
-                borderRadius: '10px',
-                background: 'rgba(30, 41, 59, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#ffffff',
-                fontSize: '0.88rem',
+                padding: '6px 10px 6px 30px',
+                borderRadius: '8px',
+                background: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                color: '#0f172a',
+                fontSize: '0.8rem',
+                fontWeight: 600,
                 outline: 'none',
                 boxSizing: 'border-box'
               }}
             />
           </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '10px',
-              background: '#0f172a',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#ffffff',
-              fontSize: '0.85rem',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="Pending">Pending</option>
-            <option value="Admitted">Admitted</option>
-            <option value="Resolved">Resolved</option>
-            <option value="Rejected">Rejected</option>
-          </select>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap' }}>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: '6px 8px',
+                borderRadius: '8px',
+                background: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                color: '#334155',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                outline: 'none',
+                cursor: 'pointer',
+                height: '32px'
+              }}
+            >
+              <option value="ALL">🏷️ All Statuses</option>
+              <option value="Pending">⏳ Pending</option>
+              <option value="Admitted">🎓 Admitted</option>
+              <option value="Resolved">✅ Resolved</option>
+              <option value="Rejected">❌ Rejected</option>
+            </select>
 
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '10px',
-              background: '#0f172a',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#ffffff',
-              fontSize: '0.85rem',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="all">All Dates</option>
-            <option value="today">Today's Inquiries</option>
-            <option value="7days">Last 7 Days</option>
-            <option value="30days">Last 30 Days</option>
-          </select>
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              style={{
+                padding: '6px 8px',
+                borderRadius: '8px',
+                background: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                color: '#334155',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                outline: 'none',
+                cursor: 'pointer',
+                height: '32px'
+              }}
+            >
+              <option value="all">📅 All Dates</option>
+              <option value="today">Today Only</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="30days">Last 30 Days</option>
+            </select>
+          </div>
         </div>
 
         {/* Inquiries Cards Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-          gap: '16px'
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: '10px'
         }}>
           {filteredInquiries.length === 0 ? (
             <div style={{
               gridColumn: '1 / -1',
               textAlign: 'center',
-              padding: '60px 20px',
-              background: 'rgba(30, 41, 59, 0.4)',
+              padding: '40px 16px',
+              background: '#ffffff',
               borderRadius: '16px',
-              border: '1px dashed rgba(255, 255, 255, 0.1)'
+              border: '1.5px dashed #cbd5e1'
             }}>
-              <FileText size={40} color="#64748b" style={{ margin: '0 auto 12px' }} />
-              <h3 style={{ margin: '0 0 6px', color: '#ffffff' }}>No inquiries found</h3>
-              <p style={{ margin: '0 0 16px', color: '#94a3b8', fontSize: '0.88rem' }}>
-                Create your first inquiry record using the button above.
+              <FileText size={36} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
+              <h3 style={{ margin: '0 0 4px', color: '#0f172a', fontWeight: 800, fontSize: '0.95rem' }}>No inquiries found</h3>
+              <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: '0.78rem' }}>
+                {searchTerm || statusFilter !== 'ALL' || dateFilter !== 'all'
+                  ? 'No records match filter criteria.'
+                  : 'Start logging student & parent walk-ins.'}
               </p>
               <button
                 onClick={() => setIsAddModalOpen(true)}
                 style={{
-                  background: '#10b981',
+                  background: '#059669',
                   color: '#ffffff',
                   border: 'none',
-                  padding: '8px 16px',
+                  padding: '7px 14px',
                   borderRadius: '8px',
-                  fontWeight: 700,
-                  cursor: 'pointer'
+                  fontWeight: 800,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(5, 150, 105, 0.2)'
                 }}
               >
-                + New Inquiry
+                + Create Inquiry
               </button>
             </div>
           ) : (
-            filteredInquiries.map((iq) => (
-              <div
-                key={iq._id || iq.id}
-                style={{
-                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8))',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <div>
-                      <h4 style={{ margin: '0 0 2px', fontSize: '1rem', fontWeight: 700, color: '#ffffff' }}>
-                        {iq.visitorName}
-                      </h4>
-                      <div style={{ fontSize: '0.8rem', color: '#a5b4fc' }}>
-                        Student: <strong>{iq.studentName || 'Not specified'}</strong>
+            filteredInquiries.map((iq) => {
+              const statusColors = {
+                'Pending': { bg: '#fffbeb', text: '#b45309', border: '#fed7aa' },
+                'Follow-up': { bg: '#fffbeb', text: '#b45309', border: '#fed7aa' },
+                'Admitted': { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
+                'Resolved': { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
+                'Rejected': { bg: '#fff1f2', text: '#e11d48', border: '#fecdd3' },
+              };
+              const currColor = statusColors[iq.status] || statusColors['Pending'];
+
+              return (
+                <div
+                  key={iq._id || iq.id}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '12px',
+                    boxShadow: '0 1px 4px rgba(0, 0, 0, 0.03)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div>
+                    {/* Card Top: Avatar + Name + Status Dropdown */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <div style={{
+                          width: '34px',
+                          height: '34px',
+                          borderRadius: '10px',
+                          background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.9rem',
+                          fontWeight: 900,
+                          flexShrink: 0
+                        }}>
+                          {(iq.visitorName || 'V').charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                          <h4 style={{
+                            margin: '0 0 1px',
+                            fontSize: '0.92rem',
+                            fontWeight: 800,
+                            color: '#0f172a',
+                            lineHeight: 1.2,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {iq.visitorName}
+                          </h4>
+                          <div style={{
+                            fontSize: '0.72rem',
+                            color: '#2563eb',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            Student: {iq.studentName || 'Self / General'}
+                          </div>
+                        </div>
                       </div>
+
+                      {/* Status Selector Badge */}
+                      <select
+                        value={iq.status || 'Pending'}
+                        onChange={(e) => handleQuickStatusChange(iq, e.target.value)}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '14px',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          border: `1px solid ${currColor.border}`,
+                          cursor: 'pointer',
+                          background: currColor.bg,
+                          color: currColor.text,
+                          outline: 'none',
+                          flexShrink: 0
+                        }}
+                      >
+                        <option value="Pending">⏳ Pending</option>
+                        <option value="Admitted">🎓 Admitted</option>
+                        <option value="Resolved">✅ Resolved</option>
+                        <option value="Rejected">❌ Rejected</option>
+                      </select>
                     </div>
 
-                    <select
-                      value={iq.status || 'Pending'}
-                      onChange={(e) => handleQuickStatusChange(iq, e.target.value)}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: '8px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        border: 'none',
-                        cursor: 'pointer',
-                        background: iq.status === 'Admitted' ? '#10b981' : iq.status === 'Resolved' ? '#3b82f6' : iq.status === 'Rejected' ? '#ef4444' : '#f59e0b',
-                        color: '#ffffff'
-                      }}
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Admitted">Admitted</option>
-                      <option value="Resolved">Resolved</option>
-                      <option value="Rejected">Rejected</option>
-                    </select>
-                  </div>
-
-                  <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Phone size={13} color="#94a3b8" />
-                    <span>{iq.contactNumber}</span>
-                    <span style={{ color: '#64748b' }}>•</span>
-                    <Calendar size={13} color="#94a3b8" />
-                    <span>{iq.date}</span>
-                  </div>
-
-                  {iq.discussionDetails && (
+                    {/* Contact & Date Info */}
                     <div style={{
-                      background: 'rgba(15, 23, 42, 0.5)',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      fontSize: '0.82rem',
-                      color: '#94a3b8',
-                      marginBottom: '14px',
-                      lineHeight: 1.4
+                      fontSize: '0.74rem',
+                      color: '#475569',
+                      fontWeight: 600,
+                      marginBottom: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      flexWrap: 'wrap'
                     }}>
-                      {iq.discussionDetails}
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Phone size={11} color="#64748b" /> {iq.contactNumber}
+                      </span>
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Calendar size={11} color="#64748b" /> {iq.date || 'Today'}
+                      </span>
                     </div>
-                  )}
-                </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <a
-                      href={`tel:${iq.contactNumber}`}
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        color: '#cbd5e1',
-                        padding: '6px 10px',
+                    {/* Discussion Details Bubble */}
+                    {iq.discussionDetails && (
+                      <div style={{
+                        background: '#f8fafc',
+                        border: '1px solid #f1f5f9',
+                        padding: '6px 8px',
                         borderRadius: '8px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        textDecoration: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      <Phone size={13} /> Call
-                    </a>
-
-                    <a
-                      href={`https://wa.me/${(iq.contactNumber || '').replace(/\D/g, '')}?text=Hello%20${encodeURIComponent(iq.visitorName)}%2C%20thank%20you%20for%20inquiring%20at%20${encodeURIComponent(instituteName)}.`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        background: 'rgba(16, 185, 129, 0.15)',
-                        color: '#34d399',
-                        padding: '6px 10px',
-                        borderRadius: '8px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        textDecoration: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      <MessageCircle size={13} /> WhatsApp
-                    </a>
+                        fontSize: '0.74rem',
+                        color: '#334155',
+                        marginBottom: '8px',
+                        lineHeight: 1.35
+                      }}>
+                        {iq.discussionDetails}
+                      </div>
+                    )}
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setEditingInquiry(iq);
-                      setFormData({
-                        visitorName: iq.visitorName || '',
-                        studentName: iq.studentName || '',
-                        contactNumber: iq.contactNumber || '',
-                        discussionDetails: iq.discussionDetails || '',
-                        status: iq.status || 'Pending',
-                        date: iq.date || getTodayDateStr()
-                      });
-                      setIsAddModalOpen(true);
-                    }}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#a5b4fc',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Edit
-                  </button>
+                  {/* Actions Bar: Call, WhatsApp, Edit, Delete */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: '8px',
+                    borderTop: '1px solid #f1f5f9',
+                    gap: '4px'
+                  }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <a
+                        href={`tel:${iq.contactNumber}`}
+                        style={{
+                          background: '#f1f5f9',
+                          color: '#334155',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          border: '1px solid #e2e8f0'
+                        }}
+                      >
+                        <Phone size={11} /> Call
+                      </a>
+
+                      <a
+                        href={`https://wa.me/${(iq.contactNumber || '').replace(/\D/g, '')}?text=Hello%20${encodeURIComponent(iq.visitorName)}%2C%20thank%20you%20for%20inquiring%20at%20${encodeURIComponent(instituteName)}.`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          background: '#dcfce7',
+                          color: '#15803d',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          border: '1px solid #bbf7d0'
+                        }}
+                      >
+                        <MessageCircle size={11} /> WhatsApp
+                      </a>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button
+                        onClick={() => {
+                          setEditingInquiry(iq);
+                          setFormData({
+                            visitorName: iq.visitorName || '',
+                            studentName: iq.studentName || '',
+                            contactNumber: iq.contactNumber || '',
+                            discussionDetails: iq.discussionDetails || '',
+                            status: iq.status || 'Pending',
+                            date: iq.date || getTodayDateStr()
+                          });
+                          setIsAddModalOpen(true);
+                        }}
+                        style={{
+                          background: '#eff6ff',
+                          border: '1px solid #bfdbfe',
+                          color: '#2563eb',
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px'
+                        }}
+                      >
+                        <Edit3 size={11} /> Edit
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteInquiry(iq)}
+                        style={{
+                          background: '#fff1f2',
+                          border: '1px solid #fecdd3',
+                          color: '#e11d48',
+                          padding: '4px 6px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                        title="Delete Inquiry"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </main>
 
-      {/* Add / Edit Inquiry Modal */}
+      {/* Add / Edit Inquiry Modal (Clean White Theme) */}
       {isAddModalOpen && (
         <div style={{
           position: 'fixed',
@@ -811,44 +1007,51 @@ export default function StaffInquiryWeb() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
-          backdropFilter: 'blur(8px)',
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 100,
-          padding: '16px'
+          padding: '12px'
         }}>
           <div style={{
-            background: '#1e293b',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            borderRadius: '20px',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '16px',
             width: '100%',
-            maxWidth: '480px',
-            padding: '24px',
-            color: '#ffffff'
+            maxWidth: '420px',
+            padding: '18px 16px',
+            boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.25)',
+            color: '#0f172a'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>
-                {editingInquiry ? 'Edit Inquiry' : '➕ New Student Inquiry'}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                {editingInquiry ? '✏️ Edit Inquiry' : '➕ New Student Inquiry'}
               </h3>
               <button
                 onClick={() => setIsAddModalOpen(false)}
                 style={{
-                  background: 'none',
+                  background: '#f1f5f9',
                   border: 'none',
-                  color: '#94a3b8',
+                  color: '#64748b',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   cursor: 'pointer'
                 }}
               >
-                <X size={20} />
+                <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
-                  Visitor / Parent Name *
+                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '3px' }}>
+                  VISITOR / PARENT NAME *
                 </label>
                 <input
                   type="text"
@@ -858,20 +1061,22 @@ export default function StaffInquiryWeb() {
                   onChange={(e) => setFormData({ ...formData, visitorName: e.target.value })}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    background: '#0f172a',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    color: '#ffffff',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box'
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: '#f8fafc',
+                    border: '1px solid #cbd5e1',
+                    color: '#0f172a',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    boxSizing: 'border-box',
+                    outline: 'none'
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
-                  Student Name
+                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '3px' }}>
+                  STUDENT NAME
                 </label>
                 <input
                   type="text"
@@ -880,20 +1085,22 @@ export default function StaffInquiryWeb() {
                   onChange={(e) => setFormData({ ...formData, studentName: e.target.value })}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    background: '#0f172a',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    color: '#ffffff',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box'
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: '#f8fafc',
+                    border: '1px solid #cbd5e1',
+                    color: '#0f172a',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    boxSizing: 'border-box',
+                    outline: 'none'
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
-                  Contact Phone Number *
+                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '3px' }}>
+                  CONTACT PHONE NUMBER *
                 </label>
                 <input
                   type="tel"
@@ -903,46 +1110,50 @@ export default function StaffInquiryWeb() {
                   onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    background: '#0f172a',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    color: '#ffffff',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box'
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: '#f8fafc',
+                    border: '1px solid #cbd5e1',
+                    color: '#0f172a',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    boxSizing: 'border-box',
+                    outline: 'none'
                   }}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
-                    Status
+                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '3px' }}>
+                    STATUS
                   </label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     style={{
                       width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      background: '#0f172a',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      color: '#ffffff',
-                      fontSize: '0.9rem',
-                      boxSizing: 'border-box'
+                      padding: '8px 8px',
+                      borderRadius: '8px',
+                      background: '#f8fafc',
+                      border: '1px solid #cbd5e1',
+                      color: '#0f172a',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      boxSizing: 'border-box',
+                      outline: 'none'
                     }}
                   >
-                    <option value="Pending">Pending</option>
-                    <option value="Admitted">Admitted</option>
-                    <option value="Resolved">Resolved</option>
-                    <option value="Rejected">Rejected</option>
+                    <option value="Pending">⏳ Pending</option>
+                    <option value="Admitted">🎓 Admitted</option>
+                    <option value="Resolved">✅ Resolved</option>
+                    <option value="Rejected">❌ Rejected</option>
                   </select>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
-                    Inquiry Date
+                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '3px' }}>
+                    INQUIRY DATE
                   </label>
                   <input
                     type="date"
@@ -950,51 +1161,56 @@ export default function StaffInquiryWeb() {
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     style={{
                       width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      background: '#0f172a',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      color: '#ffffff',
-                      fontSize: '0.9rem',
-                      boxSizing: 'border-box'
+                      padding: '8px 8px',
+                      borderRadius: '8px',
+                      background: '#f8fafc',
+                      border: '1px solid #cbd5e1',
+                      color: '#0f172a',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      boxSizing: 'border-box',
+                      outline: 'none'
                     }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
-                  Discussion Details / Notes
+                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '3px' }}>
+                  DISCUSSION DETAILS / NOTES
                 </label>
                 <textarea
-                  rows={3}
-                  placeholder="e.g. Inquired about NEET 2-year repeater batch fees and demo class."
+                  rows={2}
+                  placeholder="e.g. Inquired about NEET batch fees & timing."
                   value={formData.discussionDetails}
                   onChange={(e) => setFormData({ ...formData, discussionDetails: e.target.value })}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    background: '#0f172a',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    color: '#ffffff',
-                    fontSize: '0.9rem',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: '#f8fafc',
+                    border: '1px solid #cbd5e1',
+                    color: '#0f172a',
+                    fontSize: '0.82rem',
                     boxSizing: 'border-box',
-                    resize: 'none'
+                    resize: 'none',
+                    outline: 'none'
                   }}
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
                   style={{
-                    background: 'transparent',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    color: '#cbd5e1',
-                    padding: '10px 18px',
-                    borderRadius: '10px',
+                    background: '#f1f5f9',
+                    border: '1px solid #e2e8f0',
+                    color: '#475569',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
                     cursor: 'pointer'
                   }}
                 >
@@ -1005,16 +1221,18 @@ export default function StaffInquiryWeb() {
                   type="submit"
                   disabled={loading}
                   style={{
-                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    background: 'linear-gradient(135deg, #059669, #047857)',
                     border: 'none',
                     color: '#ffffff',
-                    padding: '10px 20px',
-                    borderRadius: '10px',
-                    fontWeight: 700,
-                    cursor: 'pointer'
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)'
                   }}
                 >
-                  {loading ? 'Saving...' : editingInquiry ? 'Update Inquiry' : 'Save Inquiry'}
+                  {loading ? 'Saving...' : editingInquiry ? 'Update' : 'Save'}
                 </button>
               </div>
             </form>

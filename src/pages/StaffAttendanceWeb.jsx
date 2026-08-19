@@ -224,7 +224,7 @@ export default function StaffAttendanceWeb() {
           <form onSubmit={handleLogin}>
             <input
               type="password"
-              placeholder="Enter Passcode (e.g. 1234)"
+              placeholder="Enter access passcode"
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
               autoFocus
@@ -470,17 +470,14 @@ const getCourseName = (batch) => {
       {/* Top Header */}
       <header style={styles.header}>
         <div style={styles.headerLeft}>
-          {instituteLogo ? (
-            <img 
-              src={instituteLogo} 
-              alt="Institute Logo" 
-              style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover', border: '1px solid #cbd5e1' }}
-            />
-          ) : (
-            <div style={styles.logoBadge}>
-              <UserCheck size={20} color="#2563eb" />
-            </div>
-          )}
+          <img 
+            src={instituteLogo || '/logo.png'} 
+            alt="Career Xone Logo" 
+            style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'contain', border: '1px solid #cbd5e1', background: '#ffffff', padding: '2px' }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
           <div>
             <h1 style={styles.headerTitle}>{instituteName} — Staff Portal</h1>
             <p style={styles.headerSubtitle}>Manual Attendance Management</p>

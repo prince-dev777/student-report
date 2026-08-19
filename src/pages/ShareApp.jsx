@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
@@ -7,6 +7,7 @@ import {
   Smartphone, Link as LinkIcon, MessageSquare, Copy, CheckCircle2, 
   Download, Send, Sparkles, UserCheck, Key, User, Users, Search, X 
 } from 'lucide-react';
+import { api } from '../utils/api';
 import toast from 'react-hot-toast';
 
 export default function ShareApp() {
@@ -14,6 +15,8 @@ export default function ShareApp() {
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
   const [staffCopied, setStaffCopied] = useState(false);
+  const [teacherCopied, setTeacherCopied] = useState(false);
+  const [inquiryCopied, setInquiryCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
   // WhatsApp Mode: 'BULK' or 'SINGLE'
@@ -37,10 +40,42 @@ export default function ShareApp() {
     );
   }, [students, studentSearchQuery]);
 
-  // Staff Passcode (Stored in localStorage or default '1234')
+  // Independent Passcodes
   const [staffPasscode, setStaffPasscode] = useState(
     localStorage.getItem('staff_passcode') || '1234'
   );
+  const [teacherPasscode, setTeacherPasscode] = useState(
+    localStorage.getItem('teacher_passcode') || '1234'
+  );
+  const [inquiryPasscode, setInquiryPasscode] = useState(
+    localStorage.getItem('inquiry_passcode') || '1234'
+  );
+
+  // Fetch from server settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await api.getSettings();
+        if (settings) {
+          if (settings.staffPasscode) {
+            setStaffPasscode(settings.staffPasscode);
+            localStorage.setItem('staff_passcode', settings.staffPasscode);
+          }
+          if (settings.teacherPasscode) {
+            setTeacherPasscode(settings.teacherPasscode);
+            localStorage.setItem('teacher_passcode', settings.teacherPasscode);
+          }
+          if (settings.inquiryPasscode) {
+            setInquiryPasscode(settings.inquiryPasscode);
+            localStorage.setItem('inquiry_passcode', settings.inquiryPasscode);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load remote settings, using local passcodes:', err);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const parentAppLink = "https://studentreport.cxjeeneet.com/#/parent";
   const staffWebLink = "https://studentreport.cxjeeneet.com/#/staff";
@@ -64,42 +99,54 @@ export default function ShareApp() {
   };
 
   const handleCopyStaffInvite = () => {
-    const inviteText = `Career Xone Staff Portal Access:\n🔗 Link: ${staffWebLink}\n🔑 Access Passcode: ${staffPasscode}`;
+    const inviteText = `Career Xone Staff Attendance Portal Access:\n🔗 Link: ${staffWebLink}\n🔑 Access Passcode: ${staffPasscode}`;
     navigator.clipboard.writeText(inviteText);
     setStaffCopied(true);
     toast.success("Staff Portal Invite copied to clipboard!");
     setTimeout(() => setStaffCopied(false), 2000);
   };
 
-  const handleSaveStaffPasscode = (newCode) => {
+  const handleCopyTeacherInvite = () => {
+    const inviteText = `Career Xone Teacher & Faculty Portal Access:\n🔗 Link: ${teacherWebLink}\n🔑 Access Passcode: ${teacherPasscode}`;
+    navigator.clipboard.writeText(inviteText);
+    setTeacherCopied(true);
+    toast.success("Teacher Portal Invite copied to clipboard!");
+    setTimeout(() => setTeacherCopied(false), 2000);
+  };
+
+  const handleCopyInquiryInvite = () => {
+    const inviteText = `Career Xone Front-Desk Inquiry Desk Access:\n🔗 Link: ${inquiryWebLink}\n🔑 Access Passcode: ${inquiryPasscode}`;
+    navigator.clipboard.writeText(inviteText);
+    setInquiryCopied(true);
+    toast.success("Inquiry Desk Invite copied to clipboard!");
+    setTimeout(() => setInquiryCopied(false), 2000);
+  };
+
+  const handleSaveStaffPasscode = async (newCode) => {
     setStaffPasscode(newCode);
     localStorage.setItem('staff_passcode', newCode);
+    try {
+      await api.updateSettings({ staffPasscode: newCode });
+    } catch (e) {}
     toast.success("Staff Passcode updated!");
   };
 
-  const handleDownloadQR = () => {
-    const svg = document.getElementById("parent-app-qr");
-    if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    img.onload = () => {
-      canvas.width = img.width + 40;
-      canvas.height = img.height + 40;
-      if (ctx) {
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 20, 20);
-        const pngFile = canvas.toDataURL("image/png");
-        const downloadLink = document.createElement("a");
-        downloadLink.download = "Parents_App_QR_CareerXone.png";
-        downloadLink.href = pngFile;
-        downloadLink.click();
-        toast.success("QR Code downloaded!");
-      }
-    };
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  const handleSaveTeacherPasscode = async (newCode) => {
+    setTeacherPasscode(newCode);
+    localStorage.setItem('teacher_passcode', newCode);
+    try {
+      await api.updateSettings({ teacherPasscode: newCode });
+    } catch (e) {}
+    toast.success("Teacher Passcode updated!");
+  };
+
+  const handleSaveInquiryPasscode = async (newCode) => {
+    setInquiryPasscode(newCode);
+    localStorage.setItem('inquiry_passcode', newCode);
+    try {
+      await api.updateSettings({ inquiryPasscode: newCode });
+    } catch (e) {}
+    toast.success("Inquiry Passcode updated!");
   };
 
   // Handle Bulk Send
@@ -142,7 +189,7 @@ export default function ShareApp() {
       const instName = user?.instituteName || 'Career Xone Pro';
       const message = `Dear Parent (${student.name}), please download our Institute's official Parents App to track your child's Attendance and Marks.\n\n📱 Download Link: ${parentAppLink}\n\nUser ID: ${student.parentPhone}\nPassword: ${student.parentPasswordPlain || '123456'}\n- ${instName}`;
       
-      await sendManualSMS(student.id, message, 'custom');
+      await sendManualSMS(student.id, message);
       toast.success(`App link sent to ${student.name}'s parent via WhatsApp!`);
     } catch (error) {
       toast.error("Failed to send SMS.");
@@ -157,11 +204,11 @@ export default function ShareApp() {
       <motion.div
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{ marginBottom: '28px' }}
+        style={{ marginBottom: '24px' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            Share & Distribute Apps
+            Share & Distribute Portals
           </h1>
           <span style={{
             background: 'linear-gradient(135deg, #2563eb15, #7c3aed15)',
@@ -172,11 +219,11 @@ export default function ShareApp() {
             fontSize: '0.75rem',
             fontWeight: 600
           }}>
-            Parents & Staff Portals
+            Parents, Teachers & Staff
           </span>
         </div>
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>
-          Share Parents Mobile App with parents or give Staff Attendance Web Portal access to your staff.
+          Distribute web portals and customize independent security passcodes for your staff and faculty.
         </p>
       </motion.div>
 
@@ -184,17 +231,17 @@ export default function ShareApp() {
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-        gap: '24px'
+        gap: '20px'
       }}>
 
-        {/* Card 2: WhatsApp Share (Bulk vs Separate Mode) */}
+        {/* Card 1: Parents App Share (Bulk vs Separate Mode) */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
           className="glass-card"
           style={{
-            padding: '28px',
+            padding: '24px',
             borderRadius: 'var(--radius-xl)',
             background: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
@@ -205,7 +252,7 @@ export default function ShareApp() {
           }}
         >
           {/* Direct Link */}
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
               <div style={{
                 width: '36px', height: '36px', borderRadius: '10px',
@@ -446,14 +493,14 @@ export default function ShareApp() {
           </div>
         </motion.div>
 
-        {/* Card 3: Staff Web App Access Portal */}
+        {/* Card 2: Staff Attendance Web App */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.2 }}
           className="glass-card"
           style={{
-            padding: '28px',
+            padding: '24px',
             borderRadius: 'var(--radius-xl)',
             background: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
@@ -484,7 +531,7 @@ export default function ShareApp() {
             </div>
 
             {/* Staff Link */}
-            <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '14px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', display: 'block', marginBottom: '4px' }}>
                 STAFF WEB APP URL:
               </label>
@@ -507,7 +554,6 @@ export default function ShareApp() {
                     toast.success('Staff Web App URL copied!');
                     setTimeout(() => setCopiedStaffUrl(false), 2000);
                   }}
-                  className="btn btn-primary"
                   style={{
                     padding: '8px 16px', fontSize: '0.82rem', fontWeight: 600,
                     background: copiedStaffUrl ? 'var(--accent-green)' : 'linear-gradient(135deg, #7c3aed, #6366f1)',
@@ -522,30 +568,30 @@ export default function ShareApp() {
               </div>
             </div>
 
-            {/* Staff Passcode */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', display: 'block', marginBottom: '4px' }}>
+            {/* Staff Passcode Input */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>
                 STAFF ACCESS PASSCODE:
               </label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
-                  <Key size={14} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                  <Key size={14} color="#7c3aed" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
                     value={staffPasscode}
                     onChange={(e) => handleSaveStaffPasscode(e.target.value)}
-                    placeholder="Enter 4-digit passcode"
+                    placeholder="Set Staff Passcode"
                     maxLength={10}
                     style={{
                       width: '100%', padding: '9px 12px 9px 32px',
-                      background: '#ffffff', border: '1px solid var(--border-color)',
-                      borderRadius: 'var(--radius-md)', fontSize: '0.85rem',
+                      background: '#ffffff', border: '1.5px solid var(--border-color)',
+                      borderRadius: 'var(--radius-md)', fontSize: '0.88rem',
                       fontWeight: 700, color: 'var(--accent-purple)', outline: 'none',
                       letterSpacing: '1px'
                     }}
                   />
                 </div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Editable</span>
+                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Auto-Saved</span>
               </div>
             </div>
 
@@ -554,13 +600,13 @@ export default function ShareApp() {
               background: 'rgba(124, 58, 237, 0.04)',
               border: '1px solid rgba(124, 58, 237, 0.15)',
               borderRadius: 'var(--radius-md)',
-              padding: '12px',
-              marginBottom: '16px'
+              padding: '10px 12px',
+              marginBottom: '14px'
             }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-purple)', display: 'block', marginBottom: '2px' }}>
-                STAFF INVITE MESSAGE PREVIEW:
+                STAFF INVITE PREVIEW:
               </span>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontFamily: 'monospace' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontFamily: 'monospace', margin: 0 }}>
                 Link: {staffWebLink}<br />
                 Passcode: {staffPasscode}
               </p>
@@ -579,18 +625,18 @@ export default function ShareApp() {
             }}
           >
             {staffCopied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-            <span>{staffCopied ? 'Invite Copied!' : 'Copy Staff App Invite & Passcode'}</span>
+            <span>{staffCopied ? 'Invite Copied!' : 'Copy Staff Invite & Passcode'}</span>
           </button>
         </motion.div>
 
-        {/* Card 4: Teacher & Faculty Portal Web App */}
+        {/* Card 3: Teacher & Faculty Portal Web App */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.3 }}
           className="glass-card"
           style={{
-            padding: '28px',
+            padding: '24px',
             borderRadius: 'var(--radius-xl)',
             background: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
@@ -605,7 +651,7 @@ export default function ShareApp() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <div style={{
                 width: '36px', height: '36px', borderRadius: '10px',
-                background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1',
+                background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 <Sparkles size={20} />
@@ -615,13 +661,13 @@ export default function ShareApp() {
                   Teacher & Faculty Portal Web App
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
-                  360° Student Dossier, Test Series Analytics, Rank Trajectory & Daily Hours.
+                  360° Student Dossier, Test Series Analytics, Rank Trajectory & Attendance.
                 </p>
               </div>
             </div>
 
             {/* Teacher Link */}
-            <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '14px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', display: 'block', marginBottom: '4px' }}>
                 TEACHER PORTAL URL:
               </label>
@@ -644,10 +690,9 @@ export default function ShareApp() {
                     toast.success('Teacher Portal URL copied!');
                     setTimeout(() => setCopiedTeacherUrl(false), 2000);
                   }}
-                  className="btn btn-primary"
                   style={{
                     padding: '8px 16px', fontSize: '0.82rem', fontWeight: 600,
-                    background: copiedTeacherUrl ? 'var(--accent-green)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                    background: copiedTeacherUrl ? 'var(--accent-green)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                     border: 'none', borderRadius: 'var(--radius-md)', color: '#fff', cursor: 'pointer',
                     display: 'inline-flex', alignItems: 'center', gap: '6px'
                   }}
@@ -659,52 +704,75 @@ export default function ShareApp() {
               </div>
             </div>
 
-            {/* Teacher Passcode Info */}
+            {/* Dedicated Teacher Passcode Input */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>
+                TEACHER ACCESS PASSCODE:
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <Key size={14} color="#2563eb" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    type="text"
+                    value={teacherPasscode}
+                    onChange={(e) => handleSaveTeacherPasscode(e.target.value)}
+                    placeholder="Set Teacher Passcode"
+                    maxLength={10}
+                    style={{
+                      width: '100%', padding: '9px 12px 9px 32px',
+                      background: '#ffffff', border: '1.5px solid var(--border-color)',
+                      borderRadius: 'var(--radius-md)', fontSize: '0.88rem',
+                      fontWeight: 700, color: '#2563eb', outline: 'none',
+                      letterSpacing: '1px'
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Auto-Saved</span>
+              </div>
+            </div>
+
+            {/* Teacher Invite Box Preview */}
             <div style={{
-              background: 'rgba(99, 102, 241, 0.04)',
-              border: '1px solid rgba(99, 102, 241, 0.15)',
+              background: 'rgba(37, 99, 235, 0.04)',
+              border: '1px solid rgba(37, 99, 235, 0.15)',
               borderRadius: 'var(--radius-md)',
-              padding: '12px',
-              marginBottom: '16px'
+              padding: '10px 12px',
+              marginBottom: '14px'
             }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6366f1', display: 'block', marginBottom: '2px' }}>
-                TEACHER ACCESS DETAILS:
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2563eb', display: 'block', marginBottom: '2px' }}>
+                TEACHER INVITE PREVIEW:
               </span>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontFamily: 'monospace' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontFamily: 'monospace', margin: 0 }}>
                 Link: {teacherWebLink}<br />
-                Passcode: {staffPasscode} (or default: 1234)
+                Passcode: {teacherPasscode}
               </p>
             </div>
           </div>
 
           <button
-            onClick={() => {
-              const invite = `Career Xone Teacher & Faculty Portal Access:\n🔗 Link: ${teacherWebLink}\n🔑 Passcode: ${staffPasscode}`;
-              navigator.clipboard.writeText(invite);
-              toast.success('Teacher Portal Invite copied!');
-            }}
+            onClick={handleCopyTeacherInvite}
             style={{
               width: '100%', padding: '11px 18px',
-              background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+              background: teacherCopied ? 'var(--accent-green)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
               color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)',
               fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)'
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
             }}
           >
-            <Copy size={16} />
-            <span>Copy Teacher Portal Invite & Passcode</span>
+            {teacherCopied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+            <span>{teacherCopied ? 'Invite Copied!' : 'Copy Teacher Invite & Passcode'}</span>
           </button>
         </motion.div>
 
-        {/* Card 5: Staff Inquiry Web App */}
+        {/* Card 4: Front-Desk Inquiry Web App */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.4 }}
           className="glass-card"
           style={{
-            padding: '28px',
+            padding: '24px',
             borderRadius: 'var(--radius-xl)',
             background: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
@@ -719,7 +787,7 @@ export default function ShareApp() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <div style={{
                 width: '36px', height: '36px', borderRadius: '10px',
-                background: 'rgba(16, 185, 129, 0.1)', color: '#10b981',
+                background: 'rgba(5, 150, 105, 0.1)', color: '#059669',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 <MessageSquare size={20} />
@@ -735,7 +803,7 @@ export default function ShareApp() {
             </div>
 
             {/* Inquiry Link */}
-            <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '14px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', display: 'block', marginBottom: '4px' }}>
                 INQUIRY WEB APP URL:
               </label>
@@ -758,10 +826,9 @@ export default function ShareApp() {
                     toast.success('Inquiry Web App URL copied!');
                     setTimeout(() => setCopiedInquiryUrl(false), 2000);
                   }}
-                  className="btn btn-primary"
                   style={{
                     padding: '8px 16px', fontSize: '0.82rem', fontWeight: 600,
-                    background: copiedInquiryUrl ? 'var(--accent-green)' : 'linear-gradient(135deg, #10b981, #059669)',
+                    background: copiedInquiryUrl ? 'var(--accent-green)' : 'linear-gradient(135deg, #059669, #047857)',
                     border: 'none', borderRadius: 'var(--radius-md)', color: '#fff', cursor: 'pointer',
                     display: 'inline-flex', alignItems: 'center', gap: '6px'
                   }}
@@ -773,45 +840,67 @@ export default function ShareApp() {
               </div>
             </div>
 
+            {/* Dedicated Inquiry Passcode Input */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>
+                INQUIRY ACCESS PASSCODE:
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <Key size={14} color="#059669" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    type="text"
+                    value={inquiryPasscode}
+                    onChange={(e) => handleSaveInquiryPasscode(e.target.value)}
+                    placeholder="Set Inquiry Passcode"
+                    maxLength={10}
+                    style={{
+                      width: '100%', padding: '9px 12px 9px 32px',
+                      background: '#ffffff', border: '1.5px solid var(--border-color)',
+                      borderRadius: 'var(--radius-md)', fontSize: '0.88rem',
+                      fontWeight: 700, color: '#059669', outline: 'none',
+                      letterSpacing: '1px'
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Auto-Saved</span>
+              </div>
+            </div>
+
+            {/* Inquiry Invite Box Preview */}
             <div style={{
-              background: 'rgba(16, 185, 129, 0.04)',
-              border: '1px solid rgba(16, 185, 129, 0.15)',
+              background: 'rgba(5, 150, 105, 0.04)',
+              border: '1px solid rgba(5, 150, 105, 0.15)',
               borderRadius: 'var(--radius-md)',
-              padding: '12px',
-              marginBottom: '16px'
+              padding: '10px 12px',
+              marginBottom: '14px'
             }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#10b981', display: 'block', marginBottom: '2px' }}>
-                INQUIRY DESK DETAILS:
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', display: 'block', marginBottom: '2px' }}>
+                INQUIRY INVITE PREVIEW:
               </span>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontFamily: 'monospace' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontFamily: 'monospace', margin: 0 }}>
                 Link: {inquiryWebLink}<br />
-                Passcode: {staffPasscode} (or default: 1234)
+                Passcode: {inquiryPasscode}
               </p>
             </div>
           </div>
 
           <button
-            onClick={() => {
-              const invite = `Career Xone Front-Desk Inquiry Portal Access:\n🔗 Link: ${inquiryWebLink}\n🔑 Passcode: ${staffPasscode}`;
-              navigator.clipboard.writeText(invite);
-              toast.success('Inquiry Portal Invite copied!');
-            }}
+            onClick={handleCopyInquiryInvite}
             style={{
               width: '100%', padding: '11px 18px',
-              background: 'linear-gradient(135deg, #10b981, #059669)',
+              background: inquiryCopied ? 'var(--accent-green)' : 'linear-gradient(135deg, #059669, #047857)',
               color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)',
               fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+              boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)'
             }}
           >
-            <Copy size={16} />
-            <span>Copy Inquiry Portal Invite & Passcode</span>
+            {inquiryCopied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+            <span>{inquiryCopied ? 'Invite Copied!' : 'Copy Inquiry Invite & Passcode'}</span>
           </button>
         </motion.div>
       </div>
     </div>
   );
 }
-
-

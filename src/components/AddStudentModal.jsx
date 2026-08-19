@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Loader2, Camera } from 'lucide-react';
-import { batches } from '../data/sampleData';
 import { useApp } from '../context/AppContext';
+import { batches as fallbackBatches } from '../data/sampleData';
 
 export default function AddStudentModal({ isEdit, studentData, onClose, onSave }) {
-  const { students } = useApp();
+  const { students, batches = fallbackBatches } = useApp();
   const [form, setForm] = useState({
     name: '',
     rollNo: '',

@@ -6,6 +6,8 @@ const instituteSchema = new mongoose.Schema({
   phone: { type: String },
   logo: { type: String }, // Base64 or URL
   staffPasscode: { type: String, default: '1234' },
+  teacherPasscode: { type: String, default: '1234' },
+  inquiryPasscode: { type: String, default: '1234' },
   subscriptionStatus: { type: String, default: 'active', enum: ['active', 'inactive', 'trial'] },
   whatsappSessionData: { type: String, default: null }, // To store Base64 credentials for Baileys
   isDeleted: { type: Boolean, default: false },

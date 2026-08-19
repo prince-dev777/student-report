@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Smartphone, Download, X, Share, PlusSquare, Check } from 'lucide-react';
 
 export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState(() => window.deferredPrompt || null);
   const [showBanner, setShowBanner] = useState(true);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
@@ -22,15 +22,41 @@ export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
     const ios = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(ios);
 
-    // Listen for beforeinstallprompt event (Android / Desktop Chrome / Edge)
-    const handler = (e) => {
+    if (window.deferredPrompt) {
+      setDeferredPrompt(window.deferredPrompt);
+    }
+
+    const handlePromptReady = (e) => {
+      if (e && e.detail) {
+        setDeferredPrompt(e.detail);
+        window.deferredPrompt = e.detail;
+      }
+    };
+
+    const handleBeforeInstall = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      window.deferredPrompt = e;
       setShowBanner(true);
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    const handleAppInstalled = () => {
+      setIsStandalone(true);
+      setShowBanner(false);
+      setShowIOSModal(false);
+      setDeferredPrompt(null);
+      window.deferredPrompt = null;
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('pwa-prompt-ready', handlePromptReady);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('pwa-prompt-ready', handlePromptReady);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
   const handleInstallClick = async () => {
@@ -39,13 +65,21 @@ export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
       return;
     }
 
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setShowBanner(false);
+    const promptEvent = deferredPrompt || window.deferredPrompt;
+    if (promptEvent) {
+      try {
+        await promptEvent.prompt();
+        const choiceResult = await promptEvent.userChoice;
+        if (choiceResult && choiceResult.outcome === 'accepted') {
+          setShowBanner(false);
+          setIsStandalone(true);
+        }
+        setDeferredPrompt(null);
+        window.deferredPrompt = null;
+      } catch (err) {
+        console.warn('PWA install error:', err);
+        setShowIOSModal(true);
       }
-      setDeferredPrompt(null);
     } else {
       // Fallback instructions modal
       setShowIOSModal(true);

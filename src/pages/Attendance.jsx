@@ -36,6 +36,8 @@ import {
 } from '../utils/helpers';
 import { getInitials, getAvatarClass } from '../data/sampleData';
 
+import { api, API_BASE } from '../utils/api';
+
 export default function Attendance() {
   const { students, attendance, markAttendance } = useApp();
   const [activeTab, setActiveTab] = useState('mark');
@@ -58,9 +60,9 @@ export default function Attendance() {
   const [localIp, setLocalIp] = useState('127.0.0.1');
   
   useEffect(() => {
-    fetch('/api/system/local-ip')
+    fetch(`${API_BASE}/system/local-ip`)
       .then(res => res.json())
-      .then(data => setLocalIp(data.ip))
+      .then(data => setLocalIp(data.ip || '127.0.0.1'))
       .catch(err => console.error('Failed to get local IP:', err));
   }, []);
 

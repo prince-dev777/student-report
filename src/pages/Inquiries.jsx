@@ -39,7 +39,7 @@ export default function Inquiries() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    return inquiries.filter((iq) => {
+    return (inquiries || []).filter((iq) => {
       // 1. Search Query
       const q = searchTerm.toLowerCase().trim();
       const matchesSearch = !q || 

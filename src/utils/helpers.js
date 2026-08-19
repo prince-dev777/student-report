@@ -258,3 +258,40 @@ export function getAttendanceTrend(attendance, students, days = 14) {
 
   return trend;
 }
+
+// Map batch ID or raw string to human-readable course name (e.g. batch-4 -> JEE Mains)
+export const DEFAULT_BATCH_MAP = {
+  'batch-4': 'JEE Mains',
+  'batch-1': 'JEE Advanced',
+  'batch-2': 'NEET',
+  'batch-3': 'MHCET',
+  'batch-5': 'Foundation',
+};
+
+export function formatBatchName(batchIdOrName, customBatches = []) {
+  if (!batchIdOrName) return 'General';
+  const val = String(batchIdOrName).trim();
+  
+  if (Array.isArray(customBatches) && customBatches.length > 0) {
+    const found = customBatches.find(b => b.id === val || (b.name && b.name.toLowerCase() === val.toLowerCase()));
+    if (found && found.name) return found.name;
+  }
+
+  const lower = val.toLowerCase();
+  if (DEFAULT_BATCH_MAP[lower]) {
+    return DEFAULT_BATCH_MAP[lower];
+  }
+
+  if (lower === 'batch 4' || lower === '4') return 'JEE Mains';
+  if (lower === 'batch 1' || lower === '1') return 'JEE Advanced';
+  if (lower === 'batch 2' || lower === '2') return 'NEET';
+  if (lower === 'batch 3' || lower === '3') return 'MHCET';
+
+  if (val.toLowerCase().startsWith('batch-')) {
+    return val.replace(/^batch-?/i, 'Batch ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  return val;
+}
+
+export const getCourseName = formatBatchName;

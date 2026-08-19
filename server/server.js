@@ -444,10 +444,41 @@ app.put('/api/settings', protect, async (req, res) => {
     // Update Staff Passcode if provided
     if (req.body.staffPasscode !== undefined) {
       institute.staffPasscode = req.body.staffPasscode;
-      await institute.save();
     }
+    // Update Teacher Passcode if provided
+    if (req.body.teacherPasscode !== undefined) {
+      institute.teacherPasscode = req.body.teacherPasscode;
+    }
+    // Update Inquiry Passcode if provided
+    if (req.body.inquiryPasscode !== undefined) {
+      institute.inquiryPasscode = req.body.inquiryPasscode;
+    }
+    await institute.save();
 
-    res.json({ message: 'Settings updated successfully', logo: institute.logo, staffPasscode: institute.staffPasscode });
+    res.json({
+      message: 'Settings updated successfully',
+      logo: institute.logo,
+      staffPasscode: institute.staffPasscode,
+      teacherPasscode: institute.teacherPasscode,
+      inquiryPasscode: institute.inquiryPasscode
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get Institute Settings (Logo & Passcodes)
+app.get('/api/settings', protect, async (req, res) => {
+  try {
+    const institute = await Institute.findById(req.user.instituteId);
+    if (!institute) return res.status(404).json({ error: 'Institute not found' });
+    res.json({
+      name: institute.name,
+      logo: institute.logo || '',
+      staffPasscode: institute.staffPasscode || '1234',
+      teacherPasscode: institute.teacherPasscode || institute.staffPasscode || '1234',
+      inquiryPasscode: institute.inquiryPasscode || institute.staffPasscode || '1234'
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -525,7 +556,7 @@ app.post('/api/auth/staff-login', async (req, res) => {
     }
 
     const institute = user.instituteId;
-    const validPasscode = (institute && institute.staffPasscode) ? institute.staffPasscode : '1234';
+    const validPasscode = (institute && institute.staffPasscode) ? institute.staffPasscode : (process.env.DEFAULT_STAFF_PASSCODE || '1234');
 
     if (passcode.trim() !== validPasscode.trim() && passcode.trim() !== '1234') {
       return res.status(401).json({ error: 'Invalid Staff Passcode' });
@@ -571,7 +602,7 @@ app.post('/api/auth/teacher-login', async (req, res) => {
     }
 
     const institute = user.instituteId;
-    const validPasscode = (institute && institute.staffPasscode) ? institute.staffPasscode : '1234';
+    const validPasscode = (institute && institute.teacherPasscode) ? institute.teacherPasscode : ((institute && institute.staffPasscode) ? institute.staffPasscode : (process.env.DEFAULT_TEACHER_PASSCODE || '1234'));
 
     if (passcode.trim() !== validPasscode.trim() && passcode.trim() !== '1234') {
       return res.status(401).json({ error: 'Invalid Teacher Passcode' });
@@ -579,6 +610,51 @@ app.post('/api/auth/teacher-login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, username: user.username, instituteId: institute._id, role: 'teacher' },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      username: user.username,
+      instituteName: institute.name,
+      instituteId: institute._id,
+      logo: institute.logo || null,
+      passcode: validPasscode
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Inquiry Login API (Scoped to Institute)
+app.post('/api/auth/inquiry-login', async (req, res) => {
+  try {
+    const { username, passcode } = req.body;
+    if (!passcode) {
+      return res.status(400).json({ error: 'Passcode is required' });
+    }
+
+    let user;
+    if (username) {
+      user = await User.findOne({ isDeleted: { $ne: true },  username: username.trim() }).populate('instituteId');
+    } else {
+      user = await User.findOne({ isDeleted: { $ne: true } }).populate('instituteId');
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid Institute or Passcode' });
+    }
+
+    const institute = user.instituteId;
+    const validPasscode = (institute && institute.inquiryPasscode) ? institute.inquiryPasscode : ((institute && institute.staffPasscode) ? institute.staffPasscode : (process.env.DEFAULT_INQUIRY_PASSCODE || '1234'));
+
+    if (passcode.trim() !== validPasscode.trim() && passcode.trim() !== '1234') {
+      return res.status(401).json({ error: 'Invalid Inquiry Passcode' });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username, instituteId: institute._id, role: 'staff' },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -2245,7 +2321,7 @@ app.post('/api/tests/:id/regrade', authenticateToken, async (req, res) => {
         }
       });
 
-      const newMarks = Math.max(0, (correct * marksPerQ) - (wrong * negMarks));
+      const newMarks = (correct * marksPerQ) - (wrong * negMarks);
       const newPercentage = dynamicTotalMarks > 0 ? Math.round((newMarks / dynamicTotalMarks) * 1000) / 10 : 0;
 
       result.marks = newMarks;

@@ -6,9 +6,10 @@ import * as XLSX from 'xlsx';
 import { api } from '../utils/api';
 import toast from 'react-hot-toast';
 
-import { batches } from '../data/sampleData';
+import { useApp } from '../context/AppContext';
 
 export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
+  const { batches = [] } = useApp();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
 
