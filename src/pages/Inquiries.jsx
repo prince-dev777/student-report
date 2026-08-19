@@ -9,7 +9,7 @@ import {
 import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
 import { api } from '../utils/api';
-import { generateId, getTodayStr } from '../utils/helpers';
+import { generateId, getTodayStr, formatDate } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 export default function Inquiries() {
@@ -422,13 +422,13 @@ export default function Inquiries() {
         <table className="data-table">
           <thead>
             <tr>
-              <th style={{ width: '120px' }}>Date</th>
-              <th>Visitor Name</th>
-              <th>Student Name</th>
-              <th>Contact Number</th>
+              <th style={{ width: '140px', minWidth: '130px', whiteSpace: 'nowrap' }}>Date</th>
+              <th style={{ whiteSpace: 'nowrap' }}>Visitor Name</th>
+              <th style={{ whiteSpace: 'nowrap' }}>Student Name</th>
+              <th style={{ whiteSpace: 'nowrap' }}>Contact Number</th>
               <th>Discussion Notes</th>
-              <th>Status</th>
-              <th className="text-right" style={{ width: '90px' }}>Actions</th>
+              <th style={{ whiteSpace: 'nowrap' }}>Status</th>
+              <th className="text-right" style={{ width: '90px', whiteSpace: 'nowrap' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -444,10 +444,10 @@ export default function Inquiries() {
             ) : (
               filteredInquiries.map((iq) => (
                 <tr key={iq.id}>
-                  <td>
-                    <div className="flex items-center gap-2" style={{ fontSize: '0.85rem', fontWeight: 500 }}>
-                      <Calendar size={14} className="text-muted" />
-                      {iq.date}
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <div className="flex items-center gap-2" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                      <Calendar size={14} className="text-muted" style={{ flexShrink: 0 }} />
+                      <span>{iq.date ? formatDate(iq.date) : '—'}</span>
                     </div>
                   </td>
                   <td className="font-medium" style={{ fontWeight: 600 }}>{iq.visitorName}</td>
