@@ -25,6 +25,8 @@ import TestSeries from './pages/TestSeries';
 import StaffAttendanceWeb from './pages/StaffAttendanceWeb';
 import SaaSShowcaseLandingPage from './pages/SaaSShowcaseLandingPage';
 import ParentPortalWeb from './pages/ParentPortalWeb';
+import TeacherPortalWeb from './pages/TeacherPortalWeb';
+import StaffInquiryWeb from './pages/StaffInquiryWeb';
 
 import { useApp } from './context/AppContext';
 
@@ -48,6 +50,8 @@ function AppLayout() {
             <Route path="/inquiries" element={<Inquiries />} />
             <Route path="/sms" element={<SMSCenter />} />
             <Route path="/share-app" element={<ShareApp />} />
+            <Route path="/teacher" element={<TeacherPortalWeb />} />
+            <Route path="/inquiry" element={<StaffInquiryWeb />} />
           </Routes>
         </div>
       </div>
@@ -68,6 +72,8 @@ export default function App() {
         <Routes>
           <Route path="/staff" element={<StaffAttendanceWeb />} />
           <Route path="/parent" element={<ParentPortalWeb />} />
+          <Route path="/teacher" element={<TeacherPortalWeb />} />
+          <Route path="/inquiry" element={<StaffInquiryWeb />} />
           <Route path="/superadmin" element={<SuperAdminLogin />} />
           <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/*" element={<SaaSShowcaseLandingPage />} />
@@ -83,6 +89,10 @@ export default function App() {
         <Routes>
           <Route path="/superadmin" element={<SuperAdminLogin />} />
           <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
+          <Route path="/teacher" element={<TeacherPortalWeb />} />
+          <Route path="/inquiry" element={<StaffInquiryWeb />} />
+          <Route path="/parent" element={<ParentPortalWeb />} />
+          <Route path="/staff" element={<StaffAttendanceWeb />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/*" element={

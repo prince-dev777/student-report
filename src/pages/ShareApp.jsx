@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { 
   Smartphone, Link as LinkIcon, MessageSquare, Copy, CheckCircle2, 
-  Download, Send, Sparkles, UserCheck, Key, User, Users 
+  Download, Send, Sparkles, UserCheck, Key, User, Users, Search, X 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -19,6 +19,23 @@ export default function ShareApp() {
   // WhatsApp Mode: 'BULK' or 'SINGLE'
   const [sendMode, setSendMode] = useState('BULK');
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+
+  const selectedStudent = React.useMemo(() => {
+    return (students || []).find(s => s.id === selectedStudentId) || null;
+  }, [students, selectedStudentId]);
+
+  const filteredStudents = React.useMemo(() => {
+    if (!students) return [];
+    const q = studentSearchQuery.toLowerCase().trim();
+    if (!q) return students;
+    return students.filter(s => 
+      (s.name || '').toLowerCase().includes(q) ||
+      String(s.rollNo || '').toLowerCase().includes(q) ||
+      String(s.parentPhone || '').includes(q) ||
+      String(s.batch || '').toLowerCase().includes(q)
+    );
+  }, [students, studentSearchQuery]);
 
   // Staff Passcode (Stored in localStorage or default '1234')
   const [staffPasscode, setStaffPasscode] = useState(
@@ -27,12 +44,23 @@ export default function ShareApp() {
 
   const parentAppLink = "https://studentreport.cxjeeneet.com/#/parent";
   const staffWebLink = "https://studentreport.cxjeeneet.com/#/staff";
+  const teacherWebLink = "https://studentreport.cxjeeneet.com/#/teacher";
+  const inquiryWebLink = "https://studentreport.cxjeeneet.com/#/inquiry";
+
+  const [copiedParentUrl, setCopiedParentUrl] = useState(false);
+  const [copiedStaffUrl, setCopiedStaffUrl] = useState(false);
+  const [copiedTeacherUrl, setCopiedTeacherUrl] = useState(false);
+  const [copiedInquiryUrl, setCopiedInquiryUrl] = useState(false);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(parentAppLink);
     setCopied(true);
+    setCopiedParentUrl(true);
     toast.success("Parents App link copied!");
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => {
+      setCopied(false);
+      setCopiedParentUrl(false);
+    }, 2000);
   };
 
   const handleCopyStaffInvite = () => {
@@ -122,8 +150,6 @@ export default function ShareApp() {
       setIsSending(false);
     }
   };
-
-  const selectedStudent = students.find(s => s.id === selectedStudentId);
 
   return (
     <div style={{ paddingBottom: '40px' }}>
@@ -323,9 +349,44 @@ export default function ShareApp() {
             ) : (
               /* SEPARATE MODE */
               <div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginBottom: '10px' }}>
-                  Select a student to send their parent a personalized App link via WhatsApp.
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
+                  Search and select a student to send their parent a personalized App link via WhatsApp.
                 </p>
+
+                {/* Search Student Input */}
+                <div style={{ position: 'relative', marginBottom: '8px' }}>
+                  <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search student by Name, Roll No, Phone..."
+                    value={studentSearchQuery}
+                    onChange={(e) => setStudentSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 28px 8px 32px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-primary)',
+                      fontSize: '0.82rem',
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  {studentSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setStudentSearchQuery('')}
+                      style={{
+                        position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                        background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px', display: 'flex'
+                      }}
+                      title="Clear Search"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
 
                 <select
                   value={selectedStudentId}
@@ -337,10 +398,12 @@ export default function ShareApp() {
                     color: 'var(--text-primary)', outline: 'none', marginBottom: '12px'
                   }}
                 >
-                  <option value="">-- Select Student --</option>
-                  {(students || []).map(s => (
+                  <option value="">
+                    {filteredStudents.length === 0 ? '-- No students match search --' : `-- Select Student (${filteredStudents.length} available) --`}
+                  </option>
+                  {filteredStudents.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.name} (Roll: {s.rollNo || 'N/A'}) — Parent: {s.parentPhone}
+                      {s.name} (Roll: {s.rollNo || 'N/A'}) — 📞 {s.parentPhone}
                     </option>
                   ))}
                 </select>
@@ -436,6 +499,26 @@ export default function ShareApp() {
                     fontSize: '0.8rem', color: 'var(--text-secondary)', outline: 'none', fontFamily: 'monospace'
                   }}
                 />
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(staffWebLink);
+                    setCopiedStaffUrl(true);
+                    toast.success('Staff Web App URL copied!');
+                    setTimeout(() => setCopiedStaffUrl(false), 2000);
+                  }}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '8px 16px', fontSize: '0.82rem', fontWeight: 600,
+                    background: copiedStaffUrl ? 'var(--accent-green)' : 'linear-gradient(135deg, #7c3aed, #6366f1)',
+                    border: 'none', borderRadius: 'var(--radius-md)', color: '#fff', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: '6px'
+                  }}
+                  title="Copy Staff App URL"
+                >
+                  {copiedStaffUrl ? <CheckCircle2 size={15} /> : <Copy size={15} />}
+                  <span>{copiedStaffUrl ? 'Copied' : 'Copy'}</span>
+                </button>
               </div>
             </div>
 
@@ -497,6 +580,233 @@ export default function ShareApp() {
           >
             {staffCopied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
             <span>{staffCopied ? 'Invite Copied!' : 'Copy Staff App Invite & Passcode'}</span>
+          </button>
+        </motion.div>
+
+        {/* Card 4: Teacher & Faculty Portal Web App */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+          className="glass-card"
+          style={{
+            padding: '28px',
+            borderRadius: 'var(--radius-xl)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--shadow-md)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gridColumn: 'span 1'
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Teacher & Faculty Portal Web App
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+                  360° Student Dossier, Test Series Analytics, Rank Trajectory & Daily Hours.
+                </p>
+              </div>
+            </div>
+
+            {/* Teacher Link */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', display: 'block', marginBottom: '4px' }}>
+                TEACHER PORTAL URL:
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={teacherWebLink}
+                  style={{
+                    flex: 1, padding: '9px 12px', background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)',
+                    fontSize: '0.8rem', color: 'var(--text-secondary)', outline: 'none', fontFamily: 'monospace'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(teacherWebLink);
+                    setCopiedTeacherUrl(true);
+                    toast.success('Teacher Portal URL copied!');
+                    setTimeout(() => setCopiedTeacherUrl(false), 2000);
+                  }}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '8px 16px', fontSize: '0.82rem', fontWeight: 600,
+                    background: copiedTeacherUrl ? 'var(--accent-green)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                    border: 'none', borderRadius: 'var(--radius-md)', color: '#fff', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: '6px'
+                  }}
+                  title="Copy Teacher Portal URL"
+                >
+                  {copiedTeacherUrl ? <CheckCircle2 size={15} /> : <Copy size={15} />}
+                  <span>{copiedTeacherUrl ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Teacher Passcode Info */}
+            <div style={{
+              background: 'rgba(99, 102, 241, 0.04)',
+              border: '1px solid rgba(99, 102, 241, 0.15)',
+              borderRadius: 'var(--radius-md)',
+              padding: '12px',
+              marginBottom: '16px'
+            }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6366f1', display: 'block', marginBottom: '2px' }}>
+                TEACHER ACCESS DETAILS:
+              </span>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontFamily: 'monospace' }}>
+                Link: {teacherWebLink}<br />
+                Passcode: {staffPasscode} (or default: 1234)
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              const invite = `Career Xone Teacher & Faculty Portal Access:\n🔗 Link: ${teacherWebLink}\n🔑 Passcode: ${staffPasscode}`;
+              navigator.clipboard.writeText(invite);
+              toast.success('Teacher Portal Invite copied!');
+            }}
+            style={{
+              width: '100%', padding: '11px 18px',
+              background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+              color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)',
+              fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)'
+            }}
+          >
+            <Copy size={16} />
+            <span>Copy Teacher Portal Invite & Passcode</span>
+          </button>
+        </motion.div>
+
+        {/* Card 5: Staff Inquiry Web App */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.4 }}
+          className="glass-card"
+          style={{
+            padding: '28px',
+            borderRadius: 'var(--radius-xl)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--shadow-md)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gridColumn: 'span 1'
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: 'rgba(16, 185, 129, 0.1)', color: '#10b981',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <MessageSquare size={20} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Front-Desk Inquiry Web App
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+                  Fast mobile inquiry entry for staff with real-time cloud-to-desktop sync.
+                </p>
+              </div>
+            </div>
+
+            {/* Inquiry Link */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', display: 'block', marginBottom: '4px' }}>
+                INQUIRY WEB APP URL:
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={inquiryWebLink}
+                  style={{
+                    flex: 1, padding: '9px 12px', background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)',
+                    fontSize: '0.8rem', color: 'var(--text-secondary)', outline: 'none', fontFamily: 'monospace'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(inquiryWebLink);
+                    setCopiedInquiryUrl(true);
+                    toast.success('Inquiry Web App URL copied!');
+                    setTimeout(() => setCopiedInquiryUrl(false), 2000);
+                  }}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '8px 16px', fontSize: '0.82rem', fontWeight: 600,
+                    background: copiedInquiryUrl ? 'var(--accent-green)' : 'linear-gradient(135deg, #10b981, #059669)',
+                    border: 'none', borderRadius: 'var(--radius-md)', color: '#fff', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: '6px'
+                  }}
+                  title="Copy Inquiry Portal URL"
+                >
+                  {copiedInquiryUrl ? <CheckCircle2 size={15} /> : <Copy size={15} />}
+                  <span>{copiedInquiryUrl ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'rgba(16, 185, 129, 0.04)',
+              border: '1px solid rgba(16, 185, 129, 0.15)',
+              borderRadius: 'var(--radius-md)',
+              padding: '12px',
+              marginBottom: '16px'
+            }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#10b981', display: 'block', marginBottom: '2px' }}>
+                INQUIRY DESK DETAILS:
+              </span>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontFamily: 'monospace' }}>
+                Link: {inquiryWebLink}<br />
+                Passcode: {staffPasscode} (or default: 1234)
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              const invite = `Career Xone Front-Desk Inquiry Portal Access:\n🔗 Link: ${inquiryWebLink}\n🔑 Passcode: ${staffPasscode}`;
+              navigator.clipboard.writeText(invite);
+              toast.success('Inquiry Portal Invite copied!');
+            }}
+            style={{
+              width: '100%', padding: '11px 18px',
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)',
+              fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+            }}
+          >
+            <Copy size={16} />
+            <span>Copy Inquiry Portal Invite & Passcode</span>
           </button>
         </motion.div>
       </div>

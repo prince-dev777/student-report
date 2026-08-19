@@ -537,6 +537,87 @@ export function AppProvider({ children }) {
     }
   }, [backendOnline]);
 
+  const deleteBulkSMS = useCallback(async (ids) => {
+    if (!ids || ids.length === 0) return;
+    const targetIds = new Set(ids.map(id => String(id)));
+    // ⚡ Optimistic UI Update: Instantly remove all selected SMS logs
+    setSMSHistory((prev) => prev.filter((sms) => !targetIds.has(String(sms._id)) && !targetIds.has(String(sms.id))));
+
+    if (backendOnline) {
+      try {
+        await api.deleteSMSLogsBulk(Array.from(targetIds));
+        toast.success(`Deleted ${ids.length} SMS logs successfully! 🗑️`);
+      } catch (err) {
+        console.error('Failed to bulk delete SMS logs from backend:', err);
+        toast.error('Failed to delete SMS logs from server');
+      }
+    } else {
+      toast.success(`${ids.length} SMS logs removed locally!`);
+    }
+  }, [backendOnline]);
+
+  const deleteAllSMS = useCallback(async () => {
+    const totalCount = smsHistory.length;
+    setSMSHistory([]);
+
+    if (backendOnline) {
+      try {
+        await api.deleteAllSMSLogs();
+        toast.success(`All ${totalCount} SMS logs deleted successfully! 🧹`);
+      } catch (err) {
+        console.error('Failed to clear all SMS logs from backend:', err);
+        toast.error('Failed to clear SMS logs from server');
+      }
+    } else {
+      toast.success('All SMS logs cleared locally!');
+    }
+  }, [backendOnline, smsHistory.length]);
+
+  // Periodic and Online Auto-Sync for Inquiries and Cloud updates
+  useEffect(() => {
+    if (!backendOnline) return;
+
+    const triggerAutoCloudSync = async () => {
+      try {
+        await api.syncDataToCloud();
+      } catch (e) {}
+    };
+
+    const syncInquiriesFromCloud = async () => {
+      try {
+        const serverInquiries = await api.getInquiries();
+        if (Array.isArray(serverInquiries)) {
+          setInquiries(serverInquiries);
+        }
+      } catch (e) {}
+    };
+
+    const handleOnline = () => {
+      console.log('🌐 Network reconnected. Triggering instant background cloud sync...');
+      toast.success('🌐 Internet connected! Syncing data to Cloud...', { id: 'online-sync', duration: 3000 });
+      triggerAutoCloudSync();
+      syncInquiriesFromCloud();
+    };
+
+    // Initial background sync
+    triggerAutoCloudSync();
+    syncInquiriesFromCloud();
+
+    // Trigger on network reconnect
+    window.addEventListener('online', handleOnline);
+    
+    // Periodic background sync: every 3 minutes
+    const syncInterval = setInterval(() => {
+      triggerAutoCloudSync();
+      syncInquiriesFromCloud();
+    }, 180000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      clearInterval(syncInterval);
+    };
+  }, [backendOnline]);
+
   // ---- Reset Data ----
   const resetData = useCallback(async () => {
     if (backendOnline) {
@@ -594,6 +675,8 @@ export function AppProvider({ children }) {
     sendManualSMS,
     sendBulkManualSMS,
     deleteSMS,
+    deleteBulkSMS,
+    deleteAllSMS,
     resetData,
   };
 

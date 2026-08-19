@@ -554,10 +554,12 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
                             STUDENT ID: {student.id}
                           </div>
                         </div>
-                      </div>                      {/* BACK SIDE */}
+                      </div>
+
+                      {/* BACK SIDE */}
                       <div>
                         <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textAlign: 'center' }}>
-                          📜 BACK SIDE (Rules & Terms)
+                          📜 BACK SIDE (Terms & Conditions)
                         </div>
                         <div className="print-id-card" style={{ 
                           width: '240px', 
@@ -568,38 +570,100 @@ export default function StudentProfileModal({ student: initialStudent, onClose, 
                           boxShadow: '0 8px 24px rgba(0,0,0,0.15)', 
                           overflow: 'hidden', 
                           display: 'flex', 
-                          flexDirection: 'column',
+                          flexDirection: 'column', 
                           justifyContent: 'space-between',
                           border: '1px solid #bfdbfe',
                           position: 'relative',
                           fontFamily: "'Montserrat', sans-serif"
                         }}>
                           {/* Header */}
-                          <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', padding: '6px 8px', textAlign: 'center', color: '#fff' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.5px' }}>TERMS & INSTRUCTIONS</h4>
-                            <span style={{ fontSize: '0.56rem', opacity: 0.9 }}>नियम एवं महत्वपूर्ण निर्देश</span>
+                          <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', padding: '6px 8px', textAlign: 'center', color: '#fff' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.76rem', fontWeight: 800, letterSpacing: '0.5px' }}>Terms & Conditions</h4>
+                            <span style={{ fontSize: '0.50rem', opacity: 0.9 }}>Career Xone Rules & Regulations</span>
                           </div>
 
                           {/* Rules Body */}
-                          <div style={{ padding: '8px 10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '0.60rem', color: '#334155', lineHeight: '1.4', display: 'flex', flexDirection: 'column', gap: '5px', textAlign: 'left' }}>
-                              <li><strong>Mandatory:</strong> Student must carry this ID card daily for biometric punch & entry verification.</li>
-                              <li><strong>Non-Transferable:</strong> This card is strictly non-transferable & valid for active academic session.</li>
-                              <li><strong>Loss / Duplicate:</strong> Report loss immediately to the office for duplicate reissuance.</li>
-                              <li><strong>Discipline:</strong> Misuse of ID card or proxy attendance will lead to strict disciplinary action.</li>
+                          <div style={{ padding: '6px 8px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <ul style={{ 
+                              margin: 0, 
+                              paddingLeft: 0, 
+                              listStyle: 'none', 
+                              fontSize: '0.49rem', 
+                              color: '#1e293b', 
+                              lineHeight: '1.24', 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              gap: '3px', 
+                              textAlign: 'left' 
+                            }}>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>Student should carry the ID card and produce it on demand.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>Be ensured to update the Entry card before the Expiry date.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>Reach class before time; parent's permission needed to leave early.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>All students should wear proper uniform with shoes.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>Student should maintain decency and decorum of institute.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>Student found guilty of any misbehaviour will be rusticated.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>Use or carry of Mobile Phone is strictly prohibited inside campus.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>To issue a New ID Card in case of Lost/Damage ₹200/- will be charged.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>If found outside premises, please deposit at Reception Counter.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>Unhealthy culture affecting academic reputation will be strictly dealt with.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>All immoral, antisocial, communal activities of student are prohibited.</span>
+                              </li>
+                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
+                                <span>To change Course / Batch allotted at admission charges will apply.</span>
+                              </li>
                             </ul>
 
                             {/* Emergency & Address Box */}
-                            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '6px 8px', fontSize: '0.58rem', color: '#1e293b', textAlign: 'left', lineHeight: '1.4' }}>
-                              <div style={{ fontWeight: 800, color: '#0369a1', marginBottom: '2px', fontSize: '0.64rem' }}>📍 Campus & Helpline:</div>
-                              <div>📞 <strong>Helpline:</strong> 9673383561 / 91454 81323</div>
-                              <div>🌐 <strong>Website:</strong> www.cxjeeneet.com</div>
-                              <div style={{ marginTop: '2px', color: '#64748b' }}>Career Xone Campus, Gondia (MH)</div>
+                            <div style={{ 
+                              background: '#f0f9ff', 
+                              border: '1px solid #bae6fd', 
+                              borderRadius: '6px', 
+                              padding: '3px 6px', 
+                              fontSize: '0.48rem', 
+                              color: '#0369a1', 
+                              textAlign: 'center', 
+                              lineHeight: '1.2',
+                              marginTop: '2px'
+                            }}>
+                              <strong>Reception:</strong> 9673383561 / 9145481323 | Gondia (MH)
                             </div>
                           </div>
 
                           {/* Footer */}
-                          <div style={{ background: '#1e3a8a', padding: '5px', textAlign: 'center', fontSize: '0.58rem', color: '#fff', fontWeight: 700, letterSpacing: '0.5px' }}>
+                          <div style={{ background: '#1e3a8a', padding: '4px', textAlign: 'center', fontSize: '0.52rem', color: '#fff', fontWeight: 700, letterSpacing: '0.5px' }}>
                             CAREER XONE • ACADEMIC EXCELLENCE
                           </div>
                         </div>

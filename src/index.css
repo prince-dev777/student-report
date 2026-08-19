@@ -512,23 +512,28 @@ h4 { font-size: 1.1rem; }
   margin-top: 2px;
 }
 
-/* Stat Cards */
+/* /* Stat Cards */
 .stat-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
+  width: 100%;
 }
 
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 18px 20px;
   position: relative;
   overflow: hidden;
-  transition: all var(--transition-normal);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, background 0.2s ease;
   box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
 }
 
 .stat-card::before {
@@ -537,7 +542,7 @@ h4 { font-size: 1.1rem; }
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
+  height: 3.5px;
 }
 
 .stat-card.blue::before { background: var(--gradient-blue); }
@@ -545,9 +550,38 @@ h4 { font-size: 1.1rem; }
 .stat-card.orange::before { background: var(--gradient-orange); }
 .stat-card.purple::before { background: var(--gradient-purple); }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+.stat-card.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.stat-card.clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card.clickable.blue:hover {
+  border-color: rgba(37, 99, 235, 0.4);
+  background: linear-gradient(180deg, var(--bg-card) 0%, rgba(37, 99, 235, 0.04) 100%);
+}
+
+.stat-card.clickable.green:hover {
+  border-color: rgba(5, 150, 105, 0.4);
+  background: linear-gradient(180deg, var(--bg-card) 0%, rgba(5, 150, 105, 0.04) 100%);
+}
+
+.stat-card.clickable.purple:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+  background: linear-gradient(180deg, var(--bg-card) 0%, rgba(124, 58, 237, 0.04) 100%);
+}
+
+.stat-card.clickable.orange:hover {
+  border-color: rgba(217, 119, 6, 0.4);
+  background: linear-gradient(180deg, var(--bg-card) 0%, rgba(217, 119, 6, 0.04) 100%);
+}
+
+.stat-card.clickable:active {
+  transform: scale(0.985);
 }
 
 .stat-card-top {
@@ -564,12 +598,48 @@ h4 { font-size: 1.1rem; }
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.stat-card.clickable:hover .stat-card-icon {
+  transform: scale(1.08);
 }
 
 .stat-card-icon.blue { background: rgba(37, 99, 235, 0.08); color: var(--accent-blue-light); }
 .stat-card-icon.green { background: rgba(5, 150, 105, 0.08); color: var(--accent-green-light); }
 .stat-card-icon.orange { background: rgba(217, 119, 6, 0.08); color: var(--accent-orange-light); }
 .stat-card-icon.purple { background: rgba(124, 58, 237, 0.08); color: var(--accent-purple-light); }
+
+.stat-card-arrow {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.4;
+  transition: all 0.2s ease;
+}
+
+.stat-card.clickable:hover .stat-card-arrow {
+  opacity: 1;
+  background: var(--accent-blue);
+  color: #ffffff;
+  transform: translate(2px, -2px);
+}
+
+.stat-card.clickable.green:hover .stat-card-arrow {
+  background: var(--accent-green);
+}
+
+.stat-card.clickable.purple:hover .stat-card-arrow {
+  background: var(--accent-purple);
+}
+
+.stat-card.clickable.orange:hover .stat-card-arrow {
+  background: var(--accent-orange);
+}
 
 .stat-card-trend {
   display: flex;
@@ -593,14 +663,23 @@ h4 { font-size: 1.1rem; }
 
 .stat-card-value {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.8rem;
+  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
   font-weight: 800;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  line-height: 1.2;
 }
 
 .stat-card-label {
   font-size: 0.82rem;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
 }
 
 /* ============================================

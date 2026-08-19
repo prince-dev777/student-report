@@ -39,6 +39,7 @@ export default function ParentPortalWeb() {
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
   const [deferredPrompt, setDeferredPrompt] = useState(() => window.deferredPrompt || null);
   const [showForceInstallModal, setShowForceInstallModal] = useState(false);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [showReportCardModal, setShowReportCardModal] = useState(false);
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
   const [noticeFilter, setNoticeFilter] = useState('ALL');

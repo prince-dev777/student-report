@@ -7,6 +7,7 @@ import {
   UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2, ZoomIn, ZoomOut, AlertTriangle, Eye, Edit2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { useApp } from '../context/AppContext';
 import { subjects } from '../data/sampleData';
 import { formatDate, calcTestAverage, getMarksCategory, getRankBadgeClass } from '../utils/helpers';
@@ -136,7 +137,7 @@ export default function Tests() {
   const [scannedAnswersData, setScannedAnswersData] = useState({}); // studentId: [selectedOption1, selectedOption2, ...]
   const [omrUploading, setOmrUploading] = useState(false);
   const [omrTemplate, setOmrTemplate] = useState('T1');
-  const [lastOmrScanDir, setLastOmrScanDir] = useState('');
+  const [lastOmrScanDir, setLastOmrScanDir] = useState(() => localStorage.getItem('last_omr_scan_dir') || '');
   const [lastScannedImages, setLastScannedImages] = useState([]);
   const [isDownloadingOmrs, setIsDownloadingOmrs] = useState(false);
   const [submittingAction, setSubmittingAction] = useState(null);
@@ -371,8 +372,21 @@ export default function Tests() {
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
     if (imageFiles.length === 0) return toast.error('Please select valid image files (.jpg, .png)');
 
-    if (imageFiles[0] && imageFiles[0].path) {
-      setLastOmrScanDir(imageFiles[0].path.replace(/[^\\/]+$/, ''));
+    // Extract exact source directory path from the uploaded image files
+    let detectedPath = '';
+    if (window.electronAPI && typeof window.electronAPI.getPathForFile === 'function') {
+      try {
+        detectedPath = window.electronAPI.getPathForFile(imageFiles[0]);
+      } catch (e) {}
+    }
+    if (!detectedPath && imageFiles[0] && imageFiles[0].path) {
+      detectedPath = imageFiles[0].path;
+    }
+    if (detectedPath) {
+      const sourceDir = detectedPath.replace(/[/\\][^/\\]+$/, '');
+      setLastOmrScanDir(sourceDir);
+      localStorage.setItem('last_omr_scan_dir', sourceDir);
+      console.log('📁 Detected OMR Source Folder:', sourceDir);
     }
 
     setOmrUploading(true);
@@ -429,16 +443,24 @@ export default function Tests() {
         }
 
         // Map rollNo to studentId using the students list
-        // Convert both to Number to handle leading zeros (e.g. '0340' vs '340')
+        // Strip ? and compare exact, numeric, or digit-only matching
         const matchedStudent = students.find(s => {
           if (s.rollNo == null || r.rollNo == null) return false;
-          // If they contain letters, compare as string, otherwise as numbers
           const sRollStr = String(s.rollNo).trim();
-          const rRollStr = String(r.rollNo).trim();
-          if (!isNaN(sRollStr) && !isNaN(rRollStr)) {
-            return Number(sRollStr) === Number(rRollStr);
+          const rRollRaw = String(r.rollNo).trim();
+          const rRollClean = rRollRaw.replace(/^\?+|\?+$/g, '').trim();
+          const rDigits = rRollRaw.replace(/[^0-9]/g, '');
+
+          if (sRollStr.toLowerCase() === rRollRaw.toLowerCase() || sRollStr.toLowerCase() === rRollClean.toLowerCase()) {
+            return true;
           }
-          return sRollStr.toLowerCase() === rRollStr.toLowerCase();
+          if (!isNaN(sRollStr) && !isNaN(rRollClean) && rRollClean !== '') {
+            return Number(sRollStr) === Number(rRollClean);
+          }
+          if (!isNaN(sRollStr) && rDigits !== '' && !isNaN(rDigits)) {
+            return Number(sRollStr) === Number(rDigits);
+          }
+          return false;
         });
         if (!matchedStudent || isDuplicate) {
           currentErrors.push({
@@ -555,6 +577,22 @@ export default function Tests() {
 
     if (!file.type.startsWith('image/')) return toast.error('Please select a valid image file (.jpg, .png)');
 
+    // Extract exact source directory path from single image
+    let detectedPath = '';
+    if (window.electronAPI && typeof window.electronAPI.getPathForFile === 'function') {
+      try {
+        detectedPath = window.electronAPI.getPathForFile(file);
+      } catch (e) {}
+    }
+    if (!detectedPath && file && file.path) {
+      detectedPath = file.path;
+    }
+    if (detectedPath) {
+      const sourceDir = detectedPath.replace(/[/\\][^/\\]+$/, '');
+      setLastOmrScanDir(sourceDir);
+      localStorage.setItem('last_omr_scan_dir', sourceDir);
+    }
+
     setSingleOmrUploadingId(studentId);
     const formData = new FormData();
     formData.append('testId', entryTestId);
@@ -595,6 +633,7 @@ export default function Tests() {
       newMarksData[sId] = r.marks || 0;
       if (r.omrSheetImage) {
         newOmrImagesData[sId] = r.omrSheetImage;
+        setLastScannedImages(prev => [...prev.filter(x => x.rollNo !== String(r.rollNo)), { url: r.omrSheetImage, rollNo: String(r.rollNo || sId) }]);
       }
       
       let rawAnswers = [];
@@ -667,24 +706,174 @@ export default function Tests() {
   };
 
   const handleDownloadOMRs = async () => {
-    if (lastScannedImages.length === 0) {
+    // Collect ALL scanned OMR images from:
+    // 1. Current marks entry state (omrImagesData)
+    // 2. Saved test results for this test in database
+    // 3. Last scanned images list
+    // 4. Any OMR scan errors / unmatched sheets
+    const imagesMap = new Map();
+
+    // 1. Current marks entry state
+    if (omrImagesData && Object.keys(omrImagesData).length > 0) {
+      Object.entries(omrImagesData).forEach(([studentId, url]) => {
+        if (!url) return;
+        const stu = students.find(s => s.id === studentId || s._id === studentId);
+        const cleanRoll = stu?.rollNo ? String(stu.rollNo).replace(/^\?+|\?+$/g, '').trim() : '';
+        const name = stu?.name || '';
+        imagesMap.set(url, { url, rollNo: cleanRoll, name, studentId });
+      });
+    }
+
+    // 2. Saved test results for this test
+    if (testResults && testResults.length > 0 && (entryTestId || selectedEntryTest)) {
+      const tId = entryTestId || selectedEntryTest?.id || selectedEntryTest?._id;
+      const savedForThisTest = testResults.filter(r => 
+        (r.testId === tId || (selectedEntryTest && (r.testId === selectedEntryTest.id || r.testId === selectedEntryTest._id))) && r.omrSheetImage
+      );
+      savedForThisTest.forEach(r => {
+        if (r.omrSheetImage && !imagesMap.has(r.omrSheetImage)) {
+          const stu = students.find(s => s.id === r.studentId || s._id === r.studentId || (r.rollNo && String(s.rollNo) === String(r.rollNo)));
+          const cleanRoll = (r.rollNo || stu?.rollNo) ? String(r.rollNo || stu.rollNo).replace(/^\?+|\?+$/g, '').trim() : '';
+          const name = stu?.name || r.studentName || '';
+          imagesMap.set(r.omrSheetImage, { url: r.omrSheetImage, rollNo: cleanRoll, name, studentId: r.studentId });
+        }
+      });
+    }
+
+    // 3. Last scanned images list
+    if (lastScannedImages && lastScannedImages.length > 0) {
+      lastScannedImages.forEach((item, idx) => {
+        if (item.url && !imagesMap.has(item.url)) {
+          let rawRoll = item.rollNo ? String(item.rollNo).replace(/^\?+|\?+$/g, '').trim() : '';
+          const stu = students.find(s => {
+            if (!rawRoll) return false;
+            const sRoll = String(s.rollNo).replace(/^\?+|\?+$/g, '').trim();
+            return sRoll === rawRoll || (!isNaN(sRoll) && !isNaN(rawRoll) && Number(sRoll) === Number(rawRoll));
+          });
+          const rollNo = rawRoll || (stu?.rollNo ? String(stu.rollNo) : `Sheet_${idx + 1}`);
+          const name = stu?.name || '';
+          imagesMap.set(item.url, { url: item.url, rollNo, name });
+        }
+      });
+    }
+
+    // 4. Any OMR scan errors / unmatched sheets
+    if (omrScanErrors && omrScanErrors.length > 0) {
+      omrScanErrors.forEach((err, idx) => {
+        if (err.omrSheetImage && !imagesMap.has(err.omrSheetImage)) {
+          imagesMap.set(err.omrSheetImage, {
+            url: err.omrSheetImage,
+            rollNo: err.rollNumber && !err.rollNumber.includes('?') ? err.rollNumber : `Unmatched_${idx + 1}`,
+            name: 'Scanned_Sheet'
+          });
+        }
+      });
+    }
+
+    const imagesToDownload = Array.from(imagesMap.values());
+
+    if (!imagesToDownload || imagesToDownload.length === 0) {
       return toast.error('No scanned OMR images available to download.');
+    }
+
+    let targetDir = lastOmrScanDir || localStorage.getItem('last_omr_scan_dir') || '';
+
+    // If source directory is not automatically detected, open folder picker in Electron
+    if (!targetDir && window.electronAPI && typeof window.electronAPI.selectDirectory === 'function') {
+      try {
+        const dialogResult = await window.electronAPI.selectDirectory({
+          title: 'Select Destination Folder to Save Scanned OMR Images',
+          properties: ['openDirectory', 'createDirectory']
+        });
+        if (dialogResult && !dialogResult.canceled && dialogResult.filePaths && dialogResult.filePaths.length > 0) {
+          targetDir = dialogResult.filePaths[0];
+          setLastOmrScanDir(targetDir);
+          localStorage.setItem('last_omr_scan_dir', targetDir);
+        } else {
+          return toast.error('Download cancelled — No folder selected');
+        }
+      } catch (e) {
+        console.warn('Folder picker error:', e);
+      }
+    }
+
+    // In web browser mode without local folder picker:
+    if (!window.electronAPI && (!targetDir || targetDir === '')) {
+      const toastId = toast.loading(`Downloading ${imagesToDownload.length} OMR images...`);
+      let successCount = 0;
+      for (const item of imagesToDownload) {
+        const fullUrl = getMediaUrl(item.url);
+        const fileName = `OMR_${item.rollNo || 'Roll'}_${(item.name || '').replace(/\s+/g, '_')}.jpg`;
+        try {
+          const resp = await fetch(fullUrl);
+          const blob = await resp.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+          successCount++;
+          await new Promise(r => setTimeout(r, 200));
+        } catch (e) {
+          console.warn('Direct download error:', e);
+        }
+      }
+      toast.dismiss(toastId);
+      return toast.success(`🎉 Downloaded ${successCount} OMR sheets!`);
+    }
+
+    if (!targetDir) {
+      return toast.error('Source directory could not be determined. Please select a destination folder.');
     }
 
     setIsDownloadingOmrs(true);
     try {
-      let targetDir = lastOmrScanDir;
-
       const res = await api.downloadOMRImages({
         targetDir: targetDir,
-        images: lastScannedImages
+        images: imagesToDownload
       });
-      toast.success(`Successfully saved ${res.copiedCount} OMR images to ${res.outputDir}`);
+      toast.success(`🎉 Saved ${res.copiedCount} OMR images to:\n${res.outputDir}`, { duration: 5000 });
     } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Failed to download OMR images');
+      toast.error(err.message || 'Failed to save OMR images');
     } finally {
       setIsDownloadingOmrs(false);
+    }
+  };
+
+  const handleDownloadSingleStudentOMR = async (student, rawUrl) => {
+    if (!rawUrl) return toast.error('No scanned OMR available for this student');
+    try {
+      const fullUrl = getMediaUrl(rawUrl);
+      const safeName = (student.name || student.studentName || 'Student').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeRoll = (student.rollNo || 'Roll').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const fileName = `OMR_${safeRoll}_${safeName}.jpg`;
+
+      const response = await fetch(fullUrl);
+      if (!response.ok) throw new Error('Could not fetch image file');
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+
+      toast.success(`Downloaded OMR for ${student.name || student.studentName || safeRoll}`);
+    } catch (err) {
+      console.warn('Blob download fallback:', err);
+      const link = document.createElement('a');
+      link.href = getMediaUrl(rawUrl);
+      link.download = `OMR_${student.rollNo || student.id || 'Student'}.jpg`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -1128,19 +1317,60 @@ export default function Tests() {
     setShowManualAnswerKeyModal(false);
   };
 
-  // View Test Results Details
+  // View Test Results Details / Full Leaderboard
   const handleViewResults = (test) => {
     const results = testResults.filter(r => r.testId === test.id);
+    const scannedMap = new Map();
+
+    const mappedScannedResults = results.map(r => {
+      const student = students.find(s => s.id === r.studentId || s._id === r.studentId);
+      if (student) scannedMap.set(student.id, true);
+      return {
+        ...r,
+        studentName: student ? student.name : 'Unknown Student',
+        rollNo: student ? student.rollNo : 'N/A',
+        isNotScanned: false
+      };
+    }).sort((a, b) => (Number(a.rank) || 999999) - (Number(b.rank) || 999999));
+
+    // Include all active students belonging to this test course/batch
+    const batchStudents = students.filter(s => 
+      s.batch === test.batch && 
+      (!test.targetClass || s.class === test.targetClass) && 
+      s.status === 'active'
+    );
+
+    const unscannedStudents = [];
+    batchStudents.forEach(s => {
+      if (!scannedMap.has(s.id)) {
+        unscannedStudents.push({
+          id: `unscanned_${s.id}`,
+          testId: test.id,
+          studentId: s.id,
+          studentName: s.name,
+          rollNo: s.rollNo,
+          marks: 0,
+          totalMarks: test.totalMarks,
+          percentage: 0,
+          rank: '-',
+          isNotScanned: true,
+          studentAnswers: [],
+          omrSheetImage: null
+        });
+      }
+    });
+
+    // Sort unscanned students by Roll No
+    unscannedStudents.sort((a, b) => {
+      const numA = Number(a.rollNo);
+      const numB = Number(b.rollNo);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return String(a.rollNo || '').localeCompare(String(b.rollNo || ''));
+    });
+
     setSelectedTestResults({
       test,
-      results: results.map(r => {
-        const student = students.find(s => s.id === r.studentId);
-        return {
-          ...r,
-          studentName: student ? student.name : 'Unknown Student',
-          rollNo: student ? student.rollNo : 'N/A'
-        };
-      }).sort((a, b) => a.rank - b.rank)
+      results: [...mappedScannedResults, ...unscannedStudents]
     });
     setShowResultsModal(true);
   };
@@ -1251,57 +1481,281 @@ export default function Tests() {
     }
   };
 
-  const handleDownloadExcel = () => {
+  const handleDownloadExcel = async () => {
     if (!selectedTestResults || !selectedTestResults.results) return;
     
     const test = selectedTestResults.test;
-    const worksheetData = selectedTestResults.results.map(res => {
-      const baseData = {
-        'Rank': res.rank !== undefined ? res.rank : 'N/A',
-        'Roll No': res.rollNo,
-        'Student Name': res.studentName
-      };
+    const toastId = toast.loading('Generating Excel Leaderboard with Logo...');
 
-      const subjectStats = calculateSubjectStats(res, test);
-      subjectStats.forEach(stat => {
-        baseData[`${stat.subject} Marks`] = stat.marks;
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Career Xone';
+      workbook.lastModifiedBy = 'Career Xone';
+      workbook.created = new Date();
+      workbook.modified = new Date();
+
+      const worksheet = workbook.addWorksheet('Leaderboard', {
+        views: [{ showGridLines: true }]
       });
 
-      baseData['Total Marks'] = `${res.marks}/${res.totalMarks}`;
-      baseData['Percentage'] = res.percentage !== undefined ? res.percentage : 'N/A';
-
-      return baseData;
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-    
-    // Auto-size columns
-    const colWidths = [
-      { wch: 8 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 12 }
-    ];
-    
-    if (worksheetData.length > 0) {
-      const extraCols = Object.keys(worksheetData[0]).length - 5;
-      for (let i = 0; i < extraCols; i++) {
-        colWidths.push({ wch: 15 });
+      // 1. Try to load and embed Career Xone Logo
+      try {
+        const logoResp = await fetch('/logo.png');
+        if (logoResp.ok) {
+          const logoBuffer = await logoResp.arrayBuffer();
+          const imageId = workbook.addImage({
+            buffer: logoBuffer,
+            extension: 'png',
+          });
+          worksheet.addImage(imageId, {
+            tl: { col: 0.15, row: 0.2 },
+            ext: { width: 130, height: 55 },
+            editAs: 'oneCell'
+          });
+        }
+      } catch (logoErr) {
+        console.warn('Could not load logo for Excel export:', logoErr);
       }
+
+      // Set header row heights
+      worksheet.getRow(1).height = 24;
+      worksheet.getRow(2).height = 28;
+      worksheet.getRow(3).height = 20;
+      worksheet.getRow(4).height = 20;
+      worksheet.getRow(5).height = 10; // spacer row
+
+      // Top Title Block
+      // Institute Heading
+      worksheet.mergeCells('C1:H1');
+      const instCell = worksheet.getCell('C1');
+      instCell.value = 'CAREER XONE - INSTITUTE OF EXCELLENCE';
+      instCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FF1E293B' } };
+      instCell.alignment = { vertical: 'middle', horizontal: 'left' };
+
+      // Test Name
+      worksheet.mergeCells('C2:H2');
+      const testNameCell = worksheet.getCell('C2');
+      testNameCell.value = `TEST: ${test.name}`.toUpperCase();
+      testNameCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1E3A8A' } };
+      testNameCell.alignment = { vertical: 'middle', horizontal: 'left' };
+
+      // Test Details Line 1
+      worksheet.mergeCells('C3:H3');
+      const metaCell1 = worksheet.getCell('C3');
+      metaCell1.value = `Subject: ${test.subject}   |   Date: ${formatDate(test.date)}   |   Total Marks: ${test.totalMarks}`;
+      metaCell1.font = { name: 'Calibri', size: 11, bold: false, color: { argb: 'FF475569' } };
+      metaCell1.alignment = { vertical: 'middle', horizontal: 'left' };
+
+      // Test Details Line 2
+      worksheet.mergeCells('C4:H4');
+      const metaCell2 = worksheet.getCell('C4');
+      const appearedCount = selectedTestResults.results.filter(r => !r.isNotScanned).length;
+      metaCell2.value = `Batch: ${getCourseName(test.batch)}   |   Total Students: ${selectedTestResults.results.length}   |   Appeared / Scanned: ${appearedCount}`;
+      metaCell2.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF64748B' } };
+      metaCell2.alignment = { vertical: 'middle', horizontal: 'left' };
+
+      // Columns Definition
+      const columns = [
+        { header: 'Rank', key: 'rank', width: 10 },
+        { header: 'Roll No', key: 'rollNo', width: 16 },
+        { header: 'Student Name', key: 'name', width: 30 }
+      ];
+
+      if (test.subjectMapping && test.subjectMapping.length > 0) {
+        test.subjectMapping.forEach(m => {
+          columns.push({
+            header: `${m.subject} Marks`,
+            key: `subj_${m.subject}`,
+            width: 16
+          });
+        });
+      }
+
+      columns.push(
+        { header: 'Total Marks', key: 'marks', width: 18 },
+        { header: 'Percentage', key: 'percentage', width: 16 },
+        { header: 'Status', key: 'status', width: 22 }
+      );
+
+      const headerRowIndex = 6;
+      const headerRow = worksheet.getRow(headerRowIndex);
+      headerRow.height = 26;
+
+      columns.forEach((col, idx) => {
+        const cell = headerRow.getCell(idx + 1);
+        cell.value = col.header;
+        cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF1E3A8A' } // Deep Navy Blue
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF0F172A' } },
+          left: { style: 'thin', color: { argb: 'FF0F172A' } },
+          bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+          right: { style: 'thin', color: { argb: 'FF0F172A' } }
+        };
+        worksheet.getColumn(idx + 1).width = col.width;
+      });
+
+      // Populate Data Rows
+      selectedTestResults.results.forEach((res, index) => {
+        const rowIndex = headerRowIndex + 1 + index;
+        const row = worksheet.getRow(rowIndex);
+        row.height = 22;
+
+        const isEven = index % 2 === 0;
+        const rowBgColor = isEven ? 'FFFFFFFF' : 'FFF8FAFC';
+
+        if (res.isNotScanned) {
+          let colIdx = 1;
+          // Rank
+          const rankCell = row.getCell(colIdx++);
+          rankCell.value = '-';
+          rankCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+          // Roll No
+          const rollCell = row.getCell(colIdx++);
+          rollCell.value = res.rollNo || '-';
+          rollCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+          // Student Name
+          const nameCell = row.getCell(colIdx++);
+          nameCell.value = res.studentName || 'Student';
+          nameCell.alignment = { vertical: 'middle', horizontal: 'left' };
+          nameCell.font = { name: 'Calibri', size: 11, bold: false, color: { argb: 'FF64748B' } };
+
+          // Subject Mapping
+          if (test.subjectMapping && test.subjectMapping.length > 0) {
+            test.subjectMapping.forEach(() => {
+              const sc = row.getCell(colIdx++);
+              sc.value = '-';
+              sc.alignment = { vertical: 'middle', horizontal: 'center' };
+              sc.font = { color: { argb: 'FF94A3B8' } };
+            });
+          }
+
+          // Total Marks
+          const marksCell = row.getCell(colIdx++);
+          marksCell.value = '-';
+          marksCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          marksCell.font = { color: { argb: 'FF94A3B8' } };
+
+          // Percentage
+          const pctCell = row.getCell(colIdx++);
+          pctCell.value = '-';
+          pctCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          pctCell.font = { color: { argb: 'FF94A3B8' } };
+
+          // Status
+          const statusCell = row.getCell(colIdx++);
+          statusCell.value = 'OMR Not Scanned';
+          statusCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          statusCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFD97706' } };
+          statusCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFBEB' }
+          };
+        } else {
+          let colIdx = 1;
+          // Rank
+          const rankCell = row.getCell(colIdx++);
+          rankCell.value = res.rank !== undefined ? res.rank : index + 1;
+          rankCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          rankCell.font = { name: 'Calibri', size: 11, bold: true };
+
+          // Highlight Top 3 ranks
+          if (res.rank === 1) {
+            rankCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF08A' } }; // Gold
+          } else if (res.rank === 2) {
+            rankCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } }; // Silver
+          } else if (res.rank === 3) {
+            rankCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFED7AA' } }; // Bronze
+          }
+
+          // Roll No
+          const rollCell = row.getCell(colIdx++);
+          rollCell.value = res.rollNo || '-';
+          rollCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          rollCell.font = { name: 'Calibri', size: 11 };
+
+          // Student Name
+          const nameCell = row.getCell(colIdx++);
+          nameCell.value = res.studentName;
+          nameCell.alignment = { vertical: 'middle', horizontal: 'left' };
+          nameCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+
+          // Subject Mapping
+          const subjectStats = calculateSubjectStats(res, test);
+          if (test.subjectMapping && test.subjectMapping.length > 0) {
+            subjectStats.forEach(stat => {
+              const sc = row.getCell(colIdx++);
+              sc.value = typeof stat.marks === 'number' ? stat.marks : Number(stat.marks) || 0;
+              sc.alignment = { vertical: 'middle', horizontal: 'center' };
+              sc.font = { name: 'Calibri', size: 11 };
+            });
+          }
+
+          // Total Marks
+          const marksCell = row.getCell(colIdx++);
+          marksCell.value = `${res.marks} / ${res.totalMarks}`;
+          marksCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          marksCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF1E293B' } };
+
+          // Percentage
+          const pctCell = row.getCell(colIdx++);
+          pctCell.value = res.percentage !== undefined ? `${res.percentage}%` : 'N/A';
+          pctCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          pctCell.font = { name: 'Calibri', size: 11, bold: true, color: (res.percentage >= 60 ? { argb: 'FF16A34A' } : { argb: 'FFDC2626' }) };
+
+          // Status
+          const statusCell = row.getCell(colIdx++);
+          statusCell.value = 'Evaluated';
+          statusCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          statusCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF16A34A' } };
+        }
+
+        // Apply borders & background to cells if not custom-filled
+        for (let c = 1; c <= columns.length; c++) {
+          const cell = row.getCell(c);
+          if (!cell.fill) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: rowBgColor }
+            };
+          }
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+        }
+      });
+
+      // Generate buffer and trigger download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${test.name}_${test.subject}_Leaderboard.xlsx`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+
+      toast.dismiss(toastId);
+      toast.success('🎉 Excel Leaderboard with Logo downloaded successfully!');
+    } catch (err) {
+      console.error('ExcelJS Export Error:', err);
+      toast.dismiss(toastId);
+      toast.error('Failed to export Excel with logo: ' + err.message);
     }
-    worksheet['!cols'] = colWidths;
-
-    const workbook = XLSX.utils.book_new();
-
-    // Make header bold
-    const range = XLSX.utils.decode_range(worksheet['!ref']);
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const address = XLSX.utils.encode_col(C) + '1';
-      if (!worksheet[address]) continue;
-      worksheet[address].s = { font: { bold: true } };
-    }
-
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Leaderboard");
-    
-    const fileName = `${test.name}_${test.subject}_Leaderboard.xlsx`.replace(/[^a-zA-Z0-9_.-]/g, '_');
-    XLSX.writeFile(workbook, fileName);
   };
 
   const getCourseName = (batchId) => {
@@ -1880,7 +2334,7 @@ export default function Tests() {
                         className="btn btn-secondary btn-sm"
                         style={{ display: 'inline-flex', gap: '6px', marginLeft: '6px' }}
                         onClick={handleDownloadOMRs}
-                        disabled={lastScannedImages.length === 0 || isDownloadingOmrs || omrUploading}
+                        disabled={(lastScannedImages.length === 0 && Object.keys(omrImagesData).length === 0) || isDownloadingOmrs || omrUploading}
                         title="Save scanned OMRs with green bubbles to the original folder"
                       >
                         {isDownloadingOmrs ? (
@@ -2054,21 +2508,36 @@ export default function Tests() {
                                       </div>
                                     )}
                                   </div>
-                                  <div className="flex flex-col gap-2 items-end">
+                                  <div className="flex flex-wrap gap-2 items-center justify-end">
                                     {omrImagesData[student.id] && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setSelectedOmrImage(getMediaUrl(omrImagesData[student.id]))}
-                                        className="btn btn-ghost btn-xs text-accent flex-shrink-0"
-                                        style={{ padding: '4px 8px', fontSize: '0.75rem', marginTop: '-2px' }}
-                                      >
-                                        View OMR
-                                      </button>
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedOmrImage(getMediaUrl(omrImagesData[student.id]))}
+                                          className="btn btn-ghost btn-xs text-accent flex-shrink-0"
+                                          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                                          title="Preview scanned OMR Sheet"
+                                        >
+                                          View OMR
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDownloadSingleStudentOMR(student, omrImagesData[student.id])}
+                                          className="btn btn-outline-primary btn-xs flex-shrink-0"
+                                          style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                          title="Download scanned OMR Sheet"
+                                        >
+                                          <Download size={12} />
+                                          Download OMR
+                                        </button>
+                                      </>
                                     )}
                                     <label 
                                       className={`btn btn-outline-secondary btn-xs flex-shrink-0 ${singleOmrUploadingId === student.id ? 'opacity-50 pointer-events-none' : ''}`} 
-                                      style={{ padding: '4px 8px', fontSize: '0.75rem', marginTop: '-2px', cursor: 'pointer', display: 'inline-block' }}
+                                      style={{ padding: '4px 8px', fontSize: '0.75rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                      title="Upload and scan OMR for this student"
                                     >
+                                      <Upload size={12} />
                                       {singleOmrUploadingId === student.id ? 'Uploading...' : 'Upload OMR'}
                                       <input 
                                         type="file" 
@@ -2146,6 +2615,49 @@ export default function Tests() {
                                (res.rollNo && String(res.rollNo).toLowerCase().includes(query));
                       })
                       .map((res) => {
+                      if (res.isNotScanned) {
+                        return (
+                          <tr key={res.id} style={{ opacity: 0.85, background: 'rgba(241, 245, 249, 0.4)' }}>
+                            <td>
+                              <span className="badge badge-secondary" style={{ fontSize: '0.75rem', opacity: 0.7, padding: '2px 8px' }}>
+                                -
+                              </span>
+                            </td>
+                            <td>{res.rollNo}</td>
+                            <td>
+                              <strong>{res.studentName}</strong>
+                            </td>
+                            {selectedTestResults.test.subjectMapping?.length > 0 && 
+                              selectedTestResults.test.subjectMapping.map((m, i) => (
+                                <td key={i} style={{ color: 'var(--text-tertiary)' }}>-</td>
+                              ))
+                            }
+                            <td style={{ color: 'var(--text-tertiary)' }}>- / {res.totalMarks}</td>
+                            <td>
+                              <span 
+                                style={{ 
+                                  fontSize: '0.75rem', 
+                                  fontWeight: 600, 
+                                  padding: '4px 8px', 
+                                  borderRadius: '6px', 
+                                  background: 'rgba(234, 179, 8, 0.12)', 
+                                  color: '#b45309', 
+                                  border: '1px solid rgba(234, 179, 8, 0.3)',
+                                  display: 'inline-block'
+                                }}
+                              >
+                                OMR Not Scanned
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
+                                OMR Not Scanned
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      }
+
                       const rankClass = res.rank !== undefined ? getRankBadgeClass(res.rank) : 'rank-badge-default';
                       const marksCategory = res.percentage !== undefined ? getMarksCategory(res.percentage) : 'badge-default';
 
@@ -2172,7 +2684,7 @@ export default function Tests() {
                             </span>
                           </td>
                           <td>
-                            <div className="flex gap-4">
+                            <div className="flex gap-2 items-center">
                               <button 
                                 onClick={() => setSelectedStudentResult(res)}
                                 className="btn btn-ghost btn-xs text-primary"
@@ -2181,13 +2693,24 @@ export default function Tests() {
                                 View Results
                               </button>
                               {res.omrSheetImage && (
-                                <button 
-                                  onClick={() => setSelectedOmrImage(getMediaUrl(res.omrSheetImage))}
-                                  className="btn btn-ghost btn-xs text-accent"
-                                  style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
-                                >
-                                  View OMR
-                                </button>
+                                <>
+                                  <button 
+                                    onClick={() => setSelectedOmrImage(getMediaUrl(res.omrSheetImage))}
+                                    className="btn btn-ghost btn-xs text-accent"
+                                    style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
+                                  >
+                                    View OMR
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDownloadSingleStudentOMR({ name: res.studentName, rollNo: res.rollNo }, res.omrSheetImage)}
+                                    className="btn btn-outline-primary btn-xs"
+                                    style={{ padding: '2px 6px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                    title="Download scanned OMR"
+                                  >
+                                    <Download size={11} />
+                                    Download OMR
+                                  </button>
+                                </>
                               )}
                               {!res.omrSheetImage && <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', padding: '2px 6px' }}>No OMR</span>}
                             </div>

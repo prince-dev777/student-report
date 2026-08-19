@@ -243,6 +243,15 @@ export default function Inquiries() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <a
+            href="#/share-app"
+            className="btn btn-secondary"
+            title="Open Staff Inquiry Mobile Web App share & credentials"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', fontWeight: 600, textDecoration: 'none' }}
+          >
+            <Phone size={16} color="#3b82f6" />
+            Staff Web Portal
+          </a>
           <button 
             className="btn btn-secondary" 
             onClick={handleExportExcel}

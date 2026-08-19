@@ -49,7 +49,10 @@ export function getMediaUrl(path) {
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
   
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token') || 
+                localStorage.getItem('teacherToken') || 
+                localStorage.getItem('staffToken') || 
+                localStorage.getItem('parentToken');
   const headers = {
     ...options.headers,
   };
@@ -141,10 +144,20 @@ export const api = {
   saveTestResultsBulk: (results) => apiRequest('/test-results/bulk', { method: 'POST', body: JSON.stringify(results) }),
   publishTestResults: (testId, sendSMS) => apiRequest(`/test-results/${testId}/publish`, { method: 'PUT', body: JSON.stringify({ sendSMS }) }),
 
+  // Teacher Portal
+  teacherLogin: (data) => apiRequest('/auth/teacher-login', { method: 'POST', body: JSON.stringify(data) }),
+  getTeacherData: () => apiRequest('/teacher/data'),
+
   // SMS Logs
   getSMSLogs: () => apiRequest('/sms-logs'),
   createSMSLog: (log) => apiRequest('/sms-logs', { method: 'POST', body: JSON.stringify(log) }),
   deleteSMSLog: (id) => apiRequest(`/sms-logs/${id}`, { method: 'DELETE' }),
+  deleteSMSLogsBulk: (ids) => apiRequest('/sms-logs/bulk', { method: 'DELETE', body: JSON.stringify({ ids }) }),
+  deleteAllSMSLogs: () => apiRequest('/sms-logs/all', { method: 'DELETE' }),
+
+  // Sync
+  pullCloudData: () => apiRequest('/sync/pull-cloud', { method: 'POST' }),
+  bidirectionalSync: () => apiRequest('/sync/bidirectional', { method: 'POST' }),
 
   // Sessions
   getSessions: () => apiRequest('/sessions'),

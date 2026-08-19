@@ -22,12 +22,13 @@ import {
   Trash2,
   Paperclip,
   Image as ImageIcon,
-  Info
+  Info,
+  ArrowUpRight,
+  Download
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api, API_BASE } from '../utils/api';
 import * as XLSX from 'xlsx';
-import { Download } from 'lucide-react';
 import { getRelativeTime } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
@@ -49,7 +50,7 @@ const typeFilterOptions = [
 ];
 
 export default function SMSCenter() {
-  const { students, smsHistory, setSMSHistory, sendManualSMS, sendBulkManualSMS, deleteSMS } = useApp();
+  const { students = [], smsHistory = [], setSMSHistory, sendManualSMS, sendBulkManualSMS, deleteSMS, deleteBulkSMS, deleteAllSMS } = useApp();
 
   // WhatsApp Local Client State
   const [whatsappStatus, setWhatsappStatus] = useState('offline');
@@ -57,6 +58,30 @@ export default function SMSCenter() {
   const [qrCode, setQrCode] = useState(null);
   const [loadingAction, setLoadingAction] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
+
+  // Multi-select & Bulk Delete State
+  const [selectedSmsIds, setSelectedSmsIds] = useState(new Set());
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState(null); // { type: 'single'|'bulk'|'all', id?: string, count: number }
+
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState('all');
+  const [message, setMessage] = useState('');
+  const [attachment, setAttachment] = useState(null);
+  const [sending, setSending] = useState(false);
+
+  // Filter / search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // SMS Export State
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportDateRange, setExportDateRange] = useState({
+    from: new Date().toISOString().split('T')[0],
+    to: new Date().toISOString().split('T')[0]
+  });
 
   // ⚡ Live Real-time Polling for SMS Logs & Status
   useEffect(() => {
@@ -149,14 +174,6 @@ export default function SMSCenter() {
     }
   };
 
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
-  const [showQrModal, setShowQrModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState('all');
-  const [message, setMessage] = useState('');
-  const [attachment, setAttachment] = useState(null);
-  const [sending, setSending] = useState(false);
-
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -178,18 +195,6 @@ export default function SMSCenter() {
     reader.readAsDataURL(file);
   };
 
-  // Filter / search state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // SMS Export State
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exportDateRange, setExportDateRange] = useState({
-    from: new Date().toISOString().split('T')[0],
-    to: new Date().toISOString().split('T')[0]
-  });
-
   const handleExportSMS = () => {
     try {
       const fromD = new Date(exportDateRange.from);
@@ -197,7 +202,7 @@ export default function SMSCenter() {
       const toD = new Date(exportDateRange.to);
       toD.setHours(23, 59, 59, 999);
 
-      const filteredData = smsHistory.filter(sms => {
+      const filteredData = (smsHistory || []).filter(sms => {
         let smsD = new Date(sms.timestamp);
         if (isNaN(smsD.getTime())) {
           smsD = sms.createdAt ? new Date(sms.createdAt) : new Date();
@@ -290,6 +295,53 @@ export default function SMSCenter() {
     currentPage * PAGE_SIZE
   );
 
+  // Multi-select helpers
+  const isAllPageSelected = useMemo(() => {
+    if (paginatedHistory.length === 0) return false;
+    return paginatedHistory.every((sms) => selectedSmsIds.has(sms._id || sms.id));
+  }, [paginatedHistory, selectedSmsIds]);
+
+  const toggleSelectAll = () => {
+    const next = new Set(selectedSmsIds);
+    if (isAllPageSelected) {
+      paginatedHistory.forEach((sms) => next.delete(sms._id || sms.id));
+    } else {
+      paginatedHistory.forEach((sms) => next.add(sms._id || sms.id));
+    }
+    setSelectedSmsIds(next);
+  };
+
+  const toggleSelectRow = (smsId, e) => {
+    e.stopPropagation();
+    const next = new Set(selectedSmsIds);
+    if (next.has(smsId)) {
+      next.delete(smsId);
+    } else {
+      next.add(smsId);
+    }
+    setSelectedSmsIds(next);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmModal) return;
+    const { type, id } = deleteConfirmModal;
+    try {
+      if (type === 'single' && id) {
+        await deleteSMS(id);
+      } else if (type === 'bulk' && selectedSmsIds.size > 0) {
+        await deleteBulkSMS(Array.from(selectedSmsIds));
+        setSelectedSmsIds(new Set());
+      } else if (type === 'all') {
+        await deleteAllSMS();
+        setSelectedSmsIds(new Set());
+      }
+    } catch (err) {
+      toast.error('Failed to delete SMS: ' + (err.message || 'Server error'));
+    } finally {
+      setDeleteConfirmModal(null);
+    }
+  };
+
   // Reset to page 1 on filter change
   const handleTypeFilter = (val) => {
     setTypeFilter(val);
@@ -302,7 +354,7 @@ export default function SMSCenter() {
 
   // Get student name by id
   const getStudentName = (studentId) => {
-    const student = students.find((s) => s.id === studentId);
+    const student = (students || []).find((s) => s.id === studentId);
     return student ? student.name : 'Unknown';
   };
 
@@ -316,7 +368,7 @@ export default function SMSCenter() {
     setSending(true);
     try {
       if (selectedStudent === 'all') {
-        const activeIds = students
+        const activeIds = (students || [])
           .filter((s) => s.status === 'active')
           .map((s) => s.id);
         await sendBulkManualSMS(activeIds, message, attachment);
@@ -422,7 +474,7 @@ export default function SMSCenter() {
           </div>
         </div>
 
-        <div className="flex items-center gap-12">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {whatsappStatus === 'ready' && (
             <button className="btn btn-outline" onClick={disconnectWhatsApp} disabled={loadingAction} style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}>
               <WifiOff size={16} /> Disconnect
@@ -457,50 +509,110 @@ export default function SMSCenter() {
         initial="hidden"
         animate="visible"
       >
-        <motion.div className="stat-card blue" variants={itemVariants}>
+        <motion.div 
+          className="stat-card blue clickable" 
+          variants={itemVariants}
+          onClick={() => setTypeFilter('all')}
+          whileHover={{ y: -3 }}
+          whileTap={{ scale: 0.98 }}
+          role="button"
+          tabIndex={0}
+          title="Click to view all SMS"
+        >
           <div className="stat-card-top">
             <div className="stat-card-icon blue">
               <MessageSquare size={20} />
             </div>
+            <div className="stat-card-arrow">
+              <ArrowUpRight size={15} />
+            </div>
           </div>
           <div className="stat-card-value">{stats.total}</div>
-          <div className="stat-card-label">Total SMS Sent</div>
+          <div className="stat-card-label">
+            <span>Total SMS Sent</span>
+            <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>All</span>
+          </div>
         </motion.div>
 
-        <motion.div className="stat-card green" variants={itemVariants}>
+        <motion.div 
+          className="stat-card green clickable" 
+          variants={itemVariants}
+          onClick={() => setTypeFilter('all')}
+          whileHover={{ y: -3 }}
+          whileTap={{ scale: 0.98 }}
+          role="button"
+          tabIndex={0}
+          title="Click to view delivered SMS"
+        >
           <div className="stat-card-top">
             <div className="stat-card-icon green">
               <CheckCircle2 size={20} />
             </div>
+            <div className="stat-card-arrow">
+              <ArrowUpRight size={15} />
+            </div>
           </div>
           <div className="stat-card-value">{stats.delivered}</div>
-          <div className="stat-card-label">Delivered</div>
+          <div className="stat-card-label">
+            <span>Delivered</span>
+            <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>Status</span>
+          </div>
         </motion.div>
 
-        <motion.div className="stat-card orange" variants={itemVariants}>
+        <motion.div 
+          className="stat-card orange clickable" 
+          variants={itemVariants}
+          onClick={() => setTypeFilter('attendance-entry')}
+          whileHover={{ y: -3 }}
+          whileTap={{ scale: 0.98 }}
+          role="button"
+          tabIndex={0}
+          title="Click to filter Attendance SMS"
+        >
           <div className="stat-card-top">
             <div className="stat-card-icon orange">
               <Clock size={20} />
             </div>
+            <div className="stat-card-arrow">
+              <ArrowUpRight size={15} />
+            </div>
           </div>
           <div className="stat-card-value">{stats.attendanceSMS}</div>
-          <div className="stat-card-label">Attendance SMS</div>
+          <div className="stat-card-label">
+            <span>Attendance SMS</span>
+            <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>Filter</span>
+          </div>
         </motion.div>
 
-        <motion.div className="stat-card purple" variants={itemVariants}>
+        <motion.div 
+          className="stat-card purple clickable" 
+          variants={itemVariants}
+          onClick={() => setTypeFilter('test-result')}
+          whileHover={{ y: -3 }}
+          whileTap={{ scale: 0.98 }}
+          role="button"
+          tabIndex={0}
+          title="Click to filter Test Result SMS"
+        >
           <div className="stat-card-top">
             <div className="stat-card-icon purple">
               <FileText size={20} />
             </div>
+            <div className="stat-card-arrow">
+              <ArrowUpRight size={15} />
+            </div>
           </div>
           <div className="stat-card-value">{stats.testResultSMS}</div>
-          <div className="stat-card-label">Test Result SMS</div>
+          <div className="stat-card-label">
+            <span>Test Result SMS</span>
+            <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>Filter</span>
+          </div>
         </motion.div>
       </motion.div>
 
-      {/* Filters */}
+      {/* Filters & Bulk Action Bar */}
       <motion.div
-        className="flex items-center gap-12 mb-16"
+        className="flex items-center gap-12 mb-16 flex-wrap"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
@@ -522,7 +634,7 @@ export default function SMSCenter() {
             placeholder="Search by student, phone, or message..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            style={{ paddingLeft: '36px', maxWidth: '360px' }}
+            style={{ paddingLeft: '36px', maxWidth: '320px' }}
           />
         </div>
 
@@ -532,7 +644,7 @@ export default function SMSCenter() {
             className="form-select"
             value={typeFilter}
             onChange={(e) => handleTypeFilter(e.target.value)}
-            style={{ minWidth: '160px' }}
+            style={{ minWidth: '150px' }}
           >
             {typeFilterOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -545,11 +657,53 @@ export default function SMSCenter() {
         <div className="flex items-center gap-8">
           <button 
             className="btn btn-outline" 
-            style={{ padding: '0.4rem 1rem', height: 'auto', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid var(--border-color)' }}
+            style={{ padding: '0.4rem 0.9rem', height: 'auto', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid var(--border-color)' }}
             onClick={() => setShowExportModal(true)}
           >
-            <Download size={16} /> Download SMS
+            <Download size={15} /> Download SMS
           </button>
+        </div>
+
+        {/* 🗑️ Bulk & All Delete Controls */}
+        <div className="flex items-center gap-8">
+          {selectedSmsIds.size > 0 && (
+            <button
+              className="btn btn-primary"
+              style={{
+                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                borderColor: '#dc2626',
+                padding: '0.4rem 1rem',
+                height: 'auto',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)'
+              }}
+              onClick={() => setDeleteConfirmModal({ type: 'bulk', count: selectedSmsIds.size })}
+            >
+              <Trash2 size={15} /> Delete Selected ({selectedSmsIds.size})
+            </button>
+          )}
+
+          {smsHistory.length > 0 && (
+            <button
+              className="btn btn-outline"
+              style={{
+                color: '#ef4444',
+                borderColor: 'rgba(239, 68, 68, 0.3)',
+                background: 'rgba(239, 68, 68, 0.04)',
+                padding: '0.4rem 0.9rem',
+                height: 'auto',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onClick={() => setDeleteConfirmModal({ type: 'all', count: smsHistory.length })}
+              title="Delete all SMS logs for this institute"
+            >
+              <Trash2 size={15} /> Delete All SMS ({smsHistory.length})
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-12" style={{ marginLeft: 'auto' }}>
@@ -573,6 +727,15 @@ export default function SMSCenter() {
           <table className="data-table">
             <thead>
               <tr>
+                <th style={{ width: '40px', textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={isAllPageSelected}
+                    onChange={toggleSelectAll}
+                    style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--accent-blue)' }}
+                    title="Select all on this page"
+                  />
+                </th>
                 <th>Type</th>
                 <th>Student</th>
                 <th>Parent Phone</th>
@@ -585,7 +748,7 @@ export default function SMSCenter() {
             <tbody>
               {paginatedHistory.length === 0 ? (
                 <tr>
-                  <td colSpan="7">
+                  <td colSpan="8">
                     <div className="empty-state">
                       <div className="empty-state-icon">
                         <MessageCircle size={28} />
@@ -597,6 +760,8 @@ export default function SMSCenter() {
                 </tr>
               ) : (
                 paginatedHistory.map((sms, idx) => {
+                  const smsId = sms._id || sms.id;
+                  const isSelected = selectedSmsIds.has(smsId);
                   const badge = typeBadgeMap[sms.type] || {
                     className: 'badge badge-info',
                     label: sms.type ? sms.type.toUpperCase() : 'SMS',
@@ -604,15 +769,26 @@ export default function SMSCenter() {
 
                   return (
                     <motion.tr
-                      key={sms._id || sms.id || idx}
+                      key={smsId || idx}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: idx * 0.02 }}
                       onClick={() => setSelectedMessage(sms)}
-                      style={{ cursor: 'pointer' }}
+                      style={{
+                        cursor: 'pointer',
+                        background: isSelected ? 'rgba(59, 130, 246, 0.08)' : undefined
+                      }}
                       title="Click to view full message"
                       className="hover-row"
                     >
+                      <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => toggleSelectRow(smsId, e)}
+                          style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--accent-blue)' }}
+                        />
+                      </td>
                       <td>
                         <span className={badge.className}>{badge.label}</span>
                       </td>
@@ -668,9 +844,7 @@ export default function SMSCenter() {
                           title="Delete SMS Log"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (window.confirm('Are you sure you want to delete this SMS log?')) {
-                              deleteSMS(sms._id || sms.id);
-                            }
+                            setDeleteConfirmModal({ type: 'single', id: smsId, count: 1 });
                           }}
                         >
                           <Trash2 size={14} />
@@ -1014,6 +1188,67 @@ export default function SMSCenter() {
               <div className="modal-footer" style={{ display: 'flex', justifyContent: 'center' }}>
                 <button className="btn btn-primary" onClick={() => setShowQrModal(false)}>
                   Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmModal && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setDeleteConfirmModal(null)}
+          >
+            <motion.div
+              className="modal-content"
+              style={{ maxWidth: '440px' }}
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                <h3 style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <Trash2 size={20} />
+                  {deleteConfirmModal.type === 'all'
+                    ? 'Clear All SMS Logs?'
+                    : deleteConfirmModal.type === 'bulk'
+                    ? `Delete ${deleteConfirmModal.count} Selected Logs?`
+                    : 'Delete SMS Log?'}
+                </h3>
+                <button className="modal-close" onClick={() => setDeleteConfirmModal(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="modal-body" style={{ padding: '20px 0', lineHeight: 1.5 }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', margin: 0 }}>
+                  {deleteConfirmModal.type === 'all'
+                    ? `Are you sure you want to permanently delete ALL ${deleteConfirmModal.count} SMS logs? This will clean up all message records from both local database and cloud storage.`
+                    : deleteConfirmModal.type === 'bulk'
+                    ? `Are you sure you want to permanently delete the ${deleteConfirmModal.count} selected SMS logs?`
+                    : 'Are you sure you want to permanently delete this SMS log?'}
+                </p>
+                <div style={{ marginTop: '14px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                  <span>This action cannot be undone.</span>
+                </div>
+              </div>
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button className="btn btn-ghost" onClick={() => setDeleteConfirmModal(null)}>
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary"
+                  style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', borderColor: '#dc2626' }}
+                  onClick={handleConfirmDelete}
+                >
+                  <Trash2 size={16} /> Yes, Delete
                 </button>
               </div>
             </motion.div>

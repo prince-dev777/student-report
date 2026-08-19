@@ -87,7 +87,13 @@ def main():
                 scan_data = json.load(f)
                 
             questions = scan_data.get('answers', {})
-            roll_number = scan_data.get('student', {}).get('roll_number', '')
+            raw_roll = scan_data.get('student', {}).get('roll_number', '')
+            roll_number = ''
+            if isinstance(raw_roll, str):
+                cleaned_roll = raw_roll.strip('? ')
+                roll_number = cleaned_roll if cleaned_roll else raw_roll
+            else:
+                roll_number = str(raw_roll or '')
             
             # Format answers and calculate score
             correct_count = 0

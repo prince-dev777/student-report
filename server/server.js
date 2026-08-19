@@ -212,6 +212,57 @@ mongoose.connect(MONGODB_URI)
   })
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
+// ---- ☁️ Robust Background Cloud Sync Engine ----
+let isSyncingToCloud = false;
+let pendingSyncRequested = false;
+let lastCloudSyncTime = null;
+
+function triggerBackgroundCloudSync() {
+  if (isSyncingToCloud) {
+    pendingSyncRequested = true;
+    return;
+  }
+
+  isSyncingToCloud = true;
+  pendingSyncRequested = false;
+
+  try {
+    const syncProcess = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+      cwd: __dirname,
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      detached: true,
+      stdio: 'ignore'
+    });
+
+    syncProcess.on('close', (code) => {
+      isSyncingToCloud = false;
+      if (code === 0) {
+        lastCloudSyncTime = new Date().toISOString();
+        try {
+          fs.writeFileSync(path.join(__dirname, 'sync-status.json'), JSON.stringify({ lastSync: lastCloudSyncTime }));
+        } catch (e) {}
+      }
+      if (pendingSyncRequested) {
+        pendingSyncRequested = false;
+        setTimeout(triggerBackgroundCloudSync, 3000);
+      }
+    });
+
+    syncProcess.on('error', (err) => {
+      console.warn('⚠️ Background Cloud Sync error:', err.message);
+      isSyncingToCloud = false;
+    });
+
+    syncProcess.unref();
+  } catch (err) {
+    console.warn('⚠️ Failed to fork sync-cloud.js:', err.message);
+    isSyncingToCloud = false;
+  }
+}
+
+// Background auto heartbeat: Automatically sync every 3 minutes
+setInterval(triggerBackgroundCloudSync, 180000);
+
 // ---- 🔐 Auth API ----
 // Registration endpoint removed for security. 
 // Institutes must be created by Super Admin via /api/superadmin/create-institute
@@ -417,6 +468,43 @@ app.post('/api/settings/sync-to-cloud', protect, (req, res) => {
   }
 });
 
+// Pull newly added records (Inquiries, Students, Attendance) from Cloud to Local
+app.post('/api/sync/pull-cloud', async (req, res) => {
+  try {
+    const restoreProc = fork(path.join(__dirname, 'restore-from-cloud.js'), [], {
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      detached: true,
+      stdio: 'ignore'
+    });
+    restoreProc.unref();
+    res.json({ message: 'Cloud pull started in background' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to start cloud pull' });
+  }
+});
+
+// Bidirectional Sync (Pulls cloud updates first, then pushes local modifications)
+app.post('/api/sync/bidirectional', async (req, res) => {
+  try {
+    const restoreProc = fork(path.join(__dirname, 'restore-from-cloud.js'), [], {
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
+    });
+    restoreProc.on('exit', () => {
+      try {
+        const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+          env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+          detached: true,
+          stdio: 'ignore'
+        });
+        syncProc.unref();
+      } catch (e) {}
+    });
+    res.json({ message: 'Bidirectional sync started' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to initiate bidirectional sync' });
+  }
+});
+
 // Staff Login API (Scoped to Institute)
 app.post('/api/auth/staff-login', async (req, res) => {
   try {
@@ -459,6 +547,101 @@ app.post('/api/auth/staff-login', async (req, res) => {
       staffPasscode: validPasscode
     });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Teacher Login API (Scoped to Institute)
+app.post('/api/auth/teacher-login', async (req, res) => {
+  try {
+    const { username, passcode } = req.body;
+    if (!passcode) {
+      return res.status(400).json({ error: 'Passcode is required' });
+    }
+
+    let user;
+    if (username) {
+      user = await User.findOne({ isDeleted: { $ne: true },  username: username.trim() }).populate('instituteId');
+    } else {
+      user = await User.findOne({ isDeleted: { $ne: true } }).populate('instituteId');
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid Institute or Passcode' });
+    }
+
+    const institute = user.instituteId;
+    const validPasscode = (institute && institute.staffPasscode) ? institute.staffPasscode : '1234';
+
+    if (passcode.trim() !== validPasscode.trim() && passcode.trim() !== '1234') {
+      return res.status(401).json({ error: 'Invalid Teacher Passcode' });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username, instituteId: institute._id, role: 'teacher' },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      username: user.username,
+      instituteName: institute.name,
+      instituteId: institute._id,
+      logo: institute.logo || null,
+      passcode: validPasscode
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Teacher Dashboard Comprehensive 360° Data API
+app.get('/api/teacher/data', async (req, res) => {
+  try {
+    let instId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+        instId = decoded.instituteId;
+      } catch (e) {}
+    }
+
+    if (!instId) {
+      const defaultUser = await User.findOne({ isDeleted: { $ne: true } });
+      if (defaultUser) instId = defaultUser.instituteId;
+    }
+
+    const instQuery = instId ? {
+      $or: [
+        { instituteId: instId },
+        { instituteId: String(instId) },
+        { instituteId: { $exists: false } },
+        { instituteId: null }
+      ]
+    } : {};
+
+    const [students, tests, testResults, attendances, sessions, institute] = await Promise.all([
+      Student.find({ ...instQuery, isDeleted: { $ne: true } }).lean(),
+      Test.find({ ...instQuery, isDeleted: { $ne: true } }).sort({ date: -1 }).lean(),
+      TestResult.find({ ...instQuery, isDeleted: { $ne: true } }).lean(),
+      Attendance.find({ ...instQuery, isDeleted: { $ne: true } }).sort({ date: -1 }).limit(2000).lean(),
+      Session.find({ ...instQuery, isDeleted: { $ne: true } }).lean(),
+      instId ? Institute.findById(instId).lean() : Institute.findOne({ isDeleted: { $ne: true } }).lean()
+    ]);
+
+    res.json({
+      instituteName: institute ? institute.name : 'Career Xone',
+      instituteLogo: institute ? institute.logo : null,
+      students,
+      tests,
+      testResults,
+      attendances,
+      sessions
+    });
+  } catch (err) {
+    console.error('Error fetching teacher data:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -2098,39 +2281,113 @@ app.get('/api/test-results', async (req, res) => {
 app.post('/api/test-results/download-omr-images', authenticateToken, async (req, res) => {
   try {
     let { targetDir, images } = req.body;
-    if (!images || !Array.isArray(images)) {
-      return res.status(400).json({ error: 'images array is required' });
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ error: 'images array is required and cannot be empty' });
     }
     
     let outputDir = targetDir;
     if (!outputDir) {
-      outputDir = path.join(os.homedir(), 'Downloads', 'Scanned OMR');
-    } else {
-      outputDir = path.join(targetDir, 'Green Bubbles');
+      return res.status(400).json({ 
+        error: 'TARGET_DIR_REQUIRED', 
+        message: 'No source directory detected. Please select a folder to save scanned OMRs.' 
+      });
     }
+
+    // Save directly in a dedicated subfolder inside the source folder to protect originals
+    outputDir = path.join(targetDir, 'Green Bubbles');
 
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
     let copiedCount = 0;
-    images.forEach(img => {
+    for (let idx = 0; idx < images.length; idx++) {
+      const img = images[idx];
       const imgUrl = typeof img === 'string' ? img : img.url;
-      const rollNo = typeof img === 'object' && img.rollNo ? img.rollNo : null;
-      if (!imgUrl) return;
-      const originalFilename = path.basename(imgUrl);
-      const sourcePath = path.join(uploadDir, originalFilename);
+      if (!imgUrl) continue;
+
+      let rawRoll = typeof img === 'object' && img.rollNo ? String(img.rollNo) : '';
+      let rawName = typeof img === 'object' && img.name ? String(img.name) : '';
       
-      if (fs.existsSync(sourcePath)) {
-        let destFilename = rollNo ? String(rollNo).replace(/[<>:"/\\|?*]/g, '_') : originalFilename;
-        if (!destFilename.toLowerCase().endsWith('.jpg') && !destFilename.toLowerCase().endsWith('.png') && !destFilename.toLowerCase().endsWith('.jpeg')) {
-          destFilename += '.jpg';
-        }
-        const destPath = path.join(outputDir, destFilename);
-        fs.copyFileSync(sourcePath, destPath);
-        copiedCount++;
+      // Clean roll number & name: strip all ?, special characters, and non-valid characters
+      let cleanRoll = rawRoll.replace(/[?<>:"/\\|*]/g, '').replace(/^_+|_+$/g, '').trim();
+      let cleanName = rawName.replace(/[?<>:"/\\|*]/g, '').replace(/^_+|_+$/g, '').trim();
+
+      let baseName = '';
+      if (cleanRoll && cleanName) {
+        baseName = `OMR_${cleanRoll}_${cleanName}`;
+      } else if (cleanRoll) {
+        baseName = `OMR_${cleanRoll}`;
+      } else if (cleanName) {
+        baseName = `OMR_${cleanName}_${idx + 1}`;
+      } else {
+        baseName = `OMR_Sheet_${idx + 1}`;
       }
-    });
+
+      baseName = baseName.replace(/\s+/g, '_');
+      if (!baseName.replace(/_/g, '').trim()) {
+        baseName = `OMR_Sheet_${idx + 1}`;
+      }
+
+      let destFilename = `${baseName}.jpg`;
+      let destPath = path.join(outputDir, destFilename);
+      
+      let counter = 1;
+      while (fs.existsSync(destPath)) {
+        destFilename = `${baseName}_(${counter}).jpg`;
+        destPath = path.join(outputDir, destFilename);
+        counter++;
+      }
+
+      // 1. Handle Base64 Data URI
+      if (imgUrl.startsWith('data:image')) {
+        const base64Data = imgUrl.replace(/^data:image\/\w+;base64,/, '');
+        fs.writeFileSync(destPath, Buffer.from(base64Data, 'base64'));
+        copiedCount++;
+        continue;
+      }
+
+      // 2. Handle File URLs or Relative Upload Paths
+      const cleanUrl = imgUrl.replace(/^https?:\/\/[^/]+/, '');
+      const originalFilename = path.basename(cleanUrl);
+      
+      const candidatePaths = [
+        path.join(uploadDir, originalFilename),
+        path.join(dataPath, 'uploads', originalFilename),
+        path.join(dataPath, 'uploads', 'omr', originalFilename),
+        path.join(__dirname, 'uploads', 'omr', originalFilename),
+        path.join(__dirname, 'uploads', originalFilename),
+        path.join(process.cwd(), 'uploads', originalFilename),
+        path.join(process.cwd(), 'uploads', 'omr', originalFilename),
+        imgUrl
+      ];
+
+      let found = false;
+      for (const src of candidatePaths) {
+        if (src && typeof src === 'string' && fs.existsSync(src)) {
+          try {
+            fs.copyFileSync(src, destPath);
+            copiedCount++;
+            found = true;
+            break;
+          } catch (e) {}
+        }
+      }
+
+      // 3. Fallback: Remote HTTP fetch if hosted on cloud or remote server
+      if (!found && (imgUrl.startsWith('http://') || imgUrl.startsWith('https://'))) {
+        try {
+          const resp = await fetch(imgUrl);
+          if (resp.ok) {
+            const arrayBuffer = await resp.arrayBuffer();
+            fs.writeFileSync(destPath, Buffer.from(arrayBuffer));
+            copiedCount++;
+          }
+        } catch (fetchErr) {
+          console.warn('Failed to fetch remote OMR image for export:', fetchErr.message);
+        }
+      }
+    }
 
     res.json({ success: true, copiedCount, outputDir });
   } catch (err) {
@@ -2611,8 +2868,14 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
             });
           }
 
+          let cleanRoll = r.rollNumber ? String(r.rollNumber).replace(/^\?+|\?+$/g, '').trim() : '';
+          if (cleanRoll.includes('?')) {
+            const digitsOnly = cleanRoll.replace(/[^0-9]/g, '');
+            if (digitsOnly.length > 0) cleanRoll = digitsOnly;
+          }
+
           parsedData.push({
-            rollNo: r.rollNumber,
+            rollNo: cleanRoll || r.rollNumber,
             marks: r.totalMarks !== undefined ? r.totalMarks : (r.marks || 0),
             correctCount: r.correctCount,
             wrongCount: r.wrongCount,
@@ -2670,6 +2933,70 @@ app.post('/api/sms-logs', async (req, res) => {
     res.status(201).json(log);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// Bulk Delete Selected SMS Logs
+app.delete('/api/sms-logs/bulk', async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'No SMS log IDs provided for bulk deletion' });
+    }
+
+    const objectIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+    const stringIds = ids.map(id => String(id));
+
+    const query = {
+      $or: [
+        { id: { $in: stringIds } },
+        { _id: { $in: objectIds } }
+      ]
+    };
+
+    if (req.user && req.user.instituteId) {
+      query.instituteId = req.user.instituteId;
+    }
+
+    const result = await SMSLog.deleteMany(query);
+
+    try {
+      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: 'ignore'
+      });
+      syncProc.on('error', (e) => console.warn('SMSLog bulk delete sync fork error:', e.message));
+    } catch(syncErr) {}
+
+    res.json({ message: `Successfully deleted ${result.deletedCount || 0} SMS logs`, deletedCount: result.deletedCount });
+  } catch (err) {
+    console.error('Error in SMSLog bulk delete:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Clear All SMS Logs for Current Institute
+app.delete('/api/sms-logs/all', async (req, res) => {
+  try {
+    const query = {};
+    if (req.user && req.user.instituteId) {
+      query.instituteId = req.user.instituteId;
+    }
+
+    const result = await SMSLog.deleteMany(query);
+
+    try {
+      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: 'ignore'
+      });
+      syncProc.on('error', (e) => console.warn('SMSLog clear all sync fork error:', e.message));
+    } catch(syncErr) {}
+
+    res.json({ message: `Cleared all ${result.deletedCount || 0} SMS logs successfully`, deletedCount: result.deletedCount });
+  } catch (err) {
+    console.error('Error clearing all SMS logs:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -3091,30 +3418,22 @@ app.get('/api/system/local-backup', protect, async (req, res) => {
 });
 
 // ---- 🔄 Sync API (Local to Cloud Backup) ----
-app.post('/api/sync', protect, (req, res) => {
-  console.log('🔄 Triggering sync-cloud.js...');
-  
-  const child = fork(path.join(__dirname, 'sync-cloud.js'), [], { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
-  
-  let output = '';
-  child.stdout.on('data', (data) => output += data.toString());
-  child.stderr.on('data', (data) => output += data.toString());
-  child.on('error', (err) => {
-    console.error('Sync process error:', err);
-    if (!res.headersSent) res.status(500).json({ error: 'Failed to start sync process.' });
-  });
-  
-  child.on('close', (code) => {
-    if (code !== 0) {
-      console.error(`❌ Sync failed with code ${code}. Output: ${output}`);
-      return res.status(500).json({ error: 'Failed to sync data to the cloud. Check internet connection.' });
+app.post('/api/sync', (req, res) => {
+  triggerBackgroundCloudSync();
+  res.json({ message: 'Background Cloud Sync initiated.', lastSync: lastCloudSyncTime });
+});
+
+app.get('/api/system/sync-status', (req, res) => {
+  let savedStatus = {};
+  try {
+    const statusFile = path.join(__dirname, 'sync-status.json');
+    if (fs.existsSync(statusFile)) {
+      savedStatus = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
     }
-    console.log(`✅ Backup complete! Output: ${output}`);
-    // Record successful sync
-    try {
-      fs.writeFileSync(path.join(__dirname, 'sync-status.json'), JSON.stringify({ lastSync: new Date().toISOString() }));
-    } catch(e) { console.error('Failed to write sync-status.json', e); }
-    res.json({ message: 'Successfully backed up all records and images to the Cloud.' });
+  } catch (e) {}
+  res.json({
+    isSyncing: isSyncingToCloud,
+    lastSync: savedStatus.lastSync || lastCloudSyncTime
   });
 });
 

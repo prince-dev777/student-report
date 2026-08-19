@@ -92,16 +92,25 @@ export default function OMRScanner() {
       const localErrors = res.errors || [];
       
       for (const r of rawResults) {
-        const rollRaw = String(r.rollNo);
-        const rollIntStr = String(parseInt(rollRaw, 10));
+        const rollRaw = String(r.rollNo || '').trim();
+        const rollClean = rollRaw.replace(/^\?+|\?+$/g, '').trim();
+        const rollDigits = rollRaw.replace(/[^0-9]/g, '');
         
-        const student = students.find(s => String(s.rollNo) === rollRaw || String(s.rollNo) === rollIntStr);
+        const student = students.find(s => {
+          const sRoll = String(s.rollNo || '').trim();
+          if (sRoll === rollRaw || sRoll === rollClean) return true;
+          if (rollDigits && sRoll === rollDigits) return true;
+          if (!isNaN(sRoll) && !isNaN(rollClean) && rollClean !== '') {
+            return Number(sRoll) === Number(rollClean);
+          }
+          return false;
+        });
         if (student) {
           mappedResults.push({
             studentId: student.id,
             mongoStudentId: student._id,
             studentName: student.name,
-            rollNo: r.rollNo,
+            rollNo: rollClean || r.rollNo,
             marks: r.marks,
             correctCount: r.correctCount,
             wrongCount: r.wrongCount,

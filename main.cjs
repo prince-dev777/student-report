@@ -246,9 +246,11 @@ async function startServer() {
 }
 
 app.whenReady().then(async () => {
-  ipcMain.handle('dialog:showOpenDialog', async () => {
+  ipcMain.handle('dialog:showOpenDialog', async (event, options = {}) => {
     const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openDirectory']
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Select Folder to Save Scanned OMR Images',
+      ...options
     });
     return result;
   });

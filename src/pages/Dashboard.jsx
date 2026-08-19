@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users,
@@ -142,6 +143,7 @@ function getSMSLabel(type) {
 //  DASHBOARD COMPONENT
 // ══════════════════════════════════════════════════
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { students, attendance, testResults, smsHistory } = useApp();
 
   // ── Derived data ──────────────────────────────
@@ -231,6 +233,8 @@ export default function Dashboard() {
       subValue: '',
       theme: 'blue',
       icon: <Users size={20} />,
+      link: '/students',
+      hint: 'Students'
     },
     {
       label: "Today's Attendance",
@@ -238,6 +242,8 @@ export default function Dashboard() {
       subValue: `(${todayStats.present + todayStats.late}/${todayStats.total} present)`,
       theme: 'green',
       icon: <UserCheck size={20} />,
+      link: '/attendance',
+      hint: 'Attendance'
     },
     {
       label: 'Average Score',
@@ -245,6 +251,8 @@ export default function Dashboard() {
       subValue: testResults.length > 0 ? `(${avgMarksData.obtained}/${avgMarksData.possible} marks)` : '(No tests)',
       theme: 'purple',
       icon: <TrendingUp size={20} />,
+      link: '/tests',
+      hint: 'Tests & Marks'
     },
     {
       label: 'SMS Sent Today',
@@ -252,6 +260,8 @@ export default function Dashboard() {
       subValue: '',
       theme: 'orange',
       icon: <MessageSquare size={20} />,
+      link: '/sms',
+      hint: 'SMS Center'
     },
   ];
 
@@ -318,21 +328,35 @@ export default function Dashboard() {
         {statCards.map((card, i) => (
           <motion.div
             key={card.label}
-            className={`stat-card ${card.theme}`}
+            className={`stat-card ${card.theme} clickable`}
             variants={staggerItem}
+            onClick={() => card.link && navigate(card.link)}
+            whileHover={{ y: -4, transition: { duration: 0.15 } }}
+            whileTap={{ scale: 0.98 }}
+            role="button"
+            tabIndex={0}
+            title={`Click to open ${card.hint || card.label}`}
           >
             <div className="stat-card-top">
               <div className={`stat-card-icon ${card.theme}`}>{card.icon}</div>
+              <div className="stat-card-arrow">
+                <ArrowUpRight size={15} />
+              </div>
             </div>
             <div className="stat-card-value">
-              {card.value}
+              <span>{card.value}</span>
               {card.subValue && (
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-tertiary)', marginLeft: '8px', fontWeight: '500' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-tertiary)', fontWeight: '500', marginLeft: '4px' }}>
                   {card.subValue}
                 </span>
               )}
             </div>
-            <div className="stat-card-label">{card.label}</div>
+            <div className="stat-card-label">
+              <span>{card.label}</span>
+              <span style={{ fontSize: '0.72rem', opacity: 0.8, fontWeight: 600 }}>
+                {card.hint} →
+              </span>
+            </div>
           </motion.div>
         ))}
       </motion.div>
@@ -417,6 +441,9 @@ export default function Dashboard() {
                 key={performer.studentId}
                 className="activity-item"
                 variants={staggerItem}
+                onClick={() => navigate('/students')}
+                style={{ cursor: 'pointer' }}
+                title={`Click to view ${performer.name} in Students directory`}
               >
                 <div className={`rank-badge ${getRankBadgeClass(performer.rank)}`}>
                   {performer.rank}
@@ -468,8 +495,14 @@ export default function Dashboard() {
       >
         {/* Recent Activity Feed */}
         <motion.div className="card" variants={staggerItem} style={{ gridColumn: '1 / -1' }}>
-          <div className="card-header">
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="card-title">Recent Activity</div>
+            <button
+              onClick={() => navigate('/sms')}
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+            >
+              View all SMS logs →
+            </button>
           </div>
           <div className="activity-feed">
             {recentSMS.length === 0 && (
@@ -484,6 +517,9 @@ export default function Dashboard() {
                   key={sms.id}
                   className="activity-item"
                   variants={staggerItem}
+                  onClick={() => navigate('/sms')}
+                  style={{ cursor: 'pointer' }}
+                  title="Click to open in SMS Center"
                 >
                   <div className={`activity-icon ${getSMSColor(sms.type)}`}>
                     {getSMSIcon(sms.type)}

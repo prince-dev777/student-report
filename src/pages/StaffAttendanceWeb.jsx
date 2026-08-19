@@ -488,6 +488,25 @@ const getCourseName = (batch) => {
         </div>
 
         <div style={styles.headerRight}>
+          <a
+            href="#/inquiry"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#059669',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              textDecoration: 'none'
+            }}
+          >
+            📋 Inquiries
+          </a>
+
           <div style={styles.datePickerWrapper}>
             <Calendar size={16} color="#64748b" />
             <input 

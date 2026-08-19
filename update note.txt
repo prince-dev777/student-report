@@ -5,6 +5,16 @@
 
 [v1.0.41] - 19 Aug 2026
 --------------------------------------------------------------------------------
+- 📱 PWA Download First & Clean Teacher Portal: Teacher Portal UI ko fully clean, distraction-free aur mobile-first banaya gaya hai jaha teacher kisi bhi student ko search karke uska pura Test History aur Attendance Record dekh sakte hain. Sath hi sabhi web apps me 1-Tap "Install / Download App on Mobile" PWA banner add kiya gaya.
+- 🔗 1-Click Copy Buttons on All Portal Links: "Share & Distribute Apps" me Parents App, Staff Web App, Teacher Portal, aur Inquiry App ke sabhi URL input boxes ke sath direct 1-tap "Copy" buttons add kar diye gaye hain.
+- 🪪 ID Card Terms & Conditions: Student ID Card ke Back Side par Career Xone ke sabhi official Terms & Conditions (Rules, Uniform, Mobile Policy, Lost Card ₹200 fee, Reception helpline) ko perfectly format aur add kiya gaya.
+- 📊 Dashboard Interactive & Responsive Cards: Sabhi Stat Cards (Total Students, Attendance, Avg Score, SMS Sent) ko responsive, fluid-width aur 1-tap clickable banaya gaya hai jisse direct respective sections me navigate ho sake.
+- 🔍 Share App Student Search: "Share & Distribute Apps" me Separate (Single) send mode ke andar real-time student search bar add kiya gaya (Name, Roll No, Phone, Batch se instant filter).
+- 📥 OMR Download Location: "Download OMRs" button ab OMR images ko direct usi original source folder me (`/Green Bubbles`) save karta hai jaha se OMR images scan ki gayi thi (Downloads folder me dump nahi hota).
+- 👨‍🏫 Teacher Portal Web App: Complete faculty web app with Student 360° Dossier, Test Result Analytics, Rank Trajectory, Daily In-Institute Hours tracker, and one-tap parent contact (`/#/teacher`).
+- 📋 Staff Inquiry Web App: Mobile-first front-desk student inquiry entry portal with instant WhatsApp follow-up and status updates (`/#/inquiry`).
+- ⚡ Bidirectional Real-time Cloud Sync: Automatic sync on internet connection, inquiry pull mechanism, and 512MB MongoDB cloud storage optimization.
+- 🗑️ SMS Center Bulk Delete: Row selection, Select All, Batch Delete, and 1-click "Delete All SMS" feature with confirmation modal.
 - 🕒 Attendance History: Custom Date Range selection (From Date to To Date, Today, 7 Days, 1 Month, Heatmap) aur All Students Excel (.xlsx) Download feature.
 - 📊 Inquiries: Date-based range filtering (Today, 7 Days, 1 Month, Custom Date Range) aur One-Click Excel (.xlsx) Download feature.
 - ✨ Feature: Create kiye gaye Tests ko Edit karne ka full option add kiya gaya (Name, Batch, Class, OMR Template, Subject Mapping, Marks & Negatives).

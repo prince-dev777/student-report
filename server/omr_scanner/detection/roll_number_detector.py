@@ -58,15 +58,13 @@ def detect_roll_number(thresh_image: np.ndarray, config: TemplateConfig) -> Dict
         
         final_str += char
 
-    # Handle trailing '?'
-    final_str = final_str.rstrip("?")
-    if not final_str:
+    # Strip unbubbled '?' from both left and right sides (e.g. ?102 -> 102, 102? -> 102)
+    cleaned_str = final_str.strip("?")
+    if cleaned_str:
+        final_str = cleaned_str
+    else:
         final_str = "?" * len(x_coords)
         
-    for d in digits_result[:len(final_str)]:
-        if d["status"] != "DETECTED":
-            overall_status = "UNCERTAIN"
-            
     return {
         "value": final_str,
         "status": "DETECTED" if "?" not in final_str else "UNCERTAIN",

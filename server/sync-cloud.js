@@ -100,23 +100,19 @@ async function syncToCloud() {
 
       const result = await cloudColl.bulkWrite(bulkOps);
       
-      // Cleanup orphaned documents on the cloud (docs that exist in cloud for this institute but not locally)
-      if (collName !== 'institutes' && docs.length > 0) {
-        // Find the institute ID from the first document (assuming all docs belong to the local institute)
-        const instId = docs[0].instituteId;
-        if (instId) {
-          const localIds = docs.map(doc => doc._id);
-          const delResult = await cloudColl.deleteMany({
-            instituteId: instId,
-            _id: { $nin: localIds }
-          });
-          if (delResult.deletedCount > 0) {
-            console.log(`   - 🗑️ Deleted ${delResult.deletedCount} orphaned cloud documents.`);
-          }
+      // Cleanup orphaned documents on the cloud (docs that exist in cloud but no longer exist locally)
+      // Exclude inquiries so web entries made by staff are not deleted before being pulled to desktop
+      if (collName !== 'institutes' && collName !== 'inquiries') {
+        const localActiveIds = activeDocs.map(doc => doc._id);
+        const delResult = await cloudColl.deleteMany({
+          _id: { $nin: localActiveIds }
+        });
+        if (delResult.deletedCount > 0) {
+          console.log(`   - 🗑️ Purged ${delResult.deletedCount} deleted/orphaned cloud documents from '${collName}'.`);
         }
       }
 
-      console.log(`   - Synced ${docs.length} documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
+      console.log(`   - Synced ${activeDocs.length} active documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
     }
 
     console.log('✅ Cloud Sync Completed Successfully!');
