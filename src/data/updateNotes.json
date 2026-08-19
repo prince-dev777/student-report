@@ -1,0 +1,37 @@
+[
+  {
+    "version": "1.0.41",
+    "date": "19 Aug 2026",
+    "tag": "Current Version",
+    "isLatest": true,
+    "highlights": [
+      "✨ Added full Test Editing capabilities (Edit Name, Target Course/Class, OMR Layout, Subject Mappings & Marking rules)",
+      "🛠️ Fixed Student Add & Edit crashes caused by MongoDB immutable _id payloads and Bcrypt typing",
+      "🎯 Calibrated OMR Scanner bubble coordinates for T1 (JEE 75) and T7 (OMR 50) with +2px offset",
+      "⚡ Resolved Electron input focus detachment when dismissing confirmation dialogues",
+      "📡 Synchronized biometric ADMS connection port with Express backend"
+    ]
+  },
+  {
+    "version": "1.0.40",
+    "date": "18 Aug 2026",
+    "tag": "Update",
+    "isLatest": false,
+    "highlights": [
+      "☁️ Automatic Cloud Sync & Local MongoDB two-way restoration engine",
+      "📱 Parents App instant credential generation & bcrypt security",
+      "📊 OMR Engine multi-template calibration & processing stability"
+    ]
+  },
+  {
+    "version": "1.0.39",
+    "date": "17 Aug 2026",
+    "tag": "Update",
+    "isLatest": false,
+    "highlights": [
+      "📝 Advanced Subject-to-Question mapping interface with dynamic question counts",
+      "📲 Automated WhatsApp & SMS instant notification system for attendance & admission",
+      "🔐 Local MongoDB data backup and one-click restore functionality"
+    ]
+  }
+]

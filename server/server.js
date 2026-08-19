@@ -3007,6 +3007,29 @@ app.get('/api/system/update-status', (req, res) => {
   res.json(updateState);
 });
 
+app.get('/api/system/update-notes', (req, res) => {
+  try {
+    const notePaths = [
+      path.join(__dirname, '..', 'update note.txt'),
+      path.join(__dirname, 'update note.txt'),
+      path.join(dataPath, 'update note.txt'),
+      path.join(process.resourcesPath || '', 'update note.txt')
+    ];
+
+    let content = '';
+    for (const p of notePaths) {
+      if (fs.existsSync(p)) {
+        content = fs.readFileSync(p, 'utf-8');
+        break;
+      }
+    }
+
+    res.json({ success: true, notes: content });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/system/start-download', (req, res) => {
   if (process.send) {
     try { process.send({ type: 'START_DOWNLOAD' }); } catch (e) { }

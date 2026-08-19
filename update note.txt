@@ -1,0 +1,24 @@
+# ==============================================================================
+# 🚀 CAREER XONE PRO - OFFICIAL RELEASE & UPDATE NOTES
+# ==============================================================================
+# Is file me sabhi version updates ke changelogs track honge aur UI par display honge.
+
+[v1.0.41] - 19 Aug 2026
+--------------------------------------------------------------------------------
+- ✨ Feature: Create kiye gaye Tests ko Edit karne ka full option add kiya gaya (Name, Batch, Class, OMR Template, Subject Mapping, Marks & Negatives).
+- 🛠️ Bug Fix: Single Student Add & Edit me immutable `_id` and Bcrypt payload crashes ko completely fix kiya gaya.
+- 🎯 Calibration: T1 (JEE 75) aur T7 (OMR 50) ke physical print bubbles offset (+2px) calibrate kiye gaye.
+- ⚡ Focus Fix: Electron app me Test/Student delete confirmation ke baad input focus freeze issue resolve kiya gaya.
+- 📡 Biometric: ADMS display port ko Express PORT 5000 ke sath synchronize kiya gaya.
+
+[v1.0.40] - 18 Aug 2026
+--------------------------------------------------------------------------------
+- ☁️ Cloud Sync: Cloud database aur Local MongoDB ke beech seamless automatic restore & sync mechanism.
+- 📱 Parents Portal: Parent app auto-login credentials generator & secure password hashing integration.
+- 📊 OMR Engine: High-precision template alignment aur multi-page processing optimization.
+
+[v1.0.39] - 17 Aug 2026
+--------------------------------------------------------------------------------
+- 📝 Tests Management: Custom Subject-to-Question mapping interface with dynamic question counts.
+- 📲 SMS Alerts: Automated WhatsApp & SMS instant notification system for student attendance & admission.
+- 🔐 Security: Local database encryption & backup recovery routines.

@@ -18,8 +18,10 @@ import {
   Archive,
   PhoneCall,
   Clock,
-  Library
+  Library,
+  Sparkles
 } from 'lucide-react';
+import UpdateNotesModal from './UpdateNotesModal';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { api, API_BASE } from '../utils/api';
@@ -46,6 +48,7 @@ export default function Sidebar() {
   const location = useLocation();
   const [lastSeenSmsCount, setLastSeenSmsCount] = useState(0);
   const [appVersion, setAppVersion] = useState('');
+  const [showNotesModal, setShowNotesModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [backupInfo, setBackupInfo] = useState(null);
@@ -320,20 +323,48 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Version Info */}
-        {!sidebarCollapsed && appVersion && (
+        {/* Version Info & What's New */}
+        {!sidebarCollapsed && (
           <div style={{
-            padding: '12px 20px',
+            padding: '10px 16px',
             borderTop: '1px solid var(--border-color)',
-            fontSize: '0.7rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.72rem',
             color: 'var(--text-muted)',
-            opacity: 0.6,
             letterSpacing: '0.5px'
           }}>
-            Version: {appVersion}
+            <span>Version: {appVersion || '1.0.41'}</span>
+            <button
+              type="button"
+              onClick={() => setShowNotesModal(true)}
+              style={{
+                background: 'rgba(59, 130, 246, 0.12)',
+                color: '#3b82f6',
+                border: '1px solid rgba(59, 130, 246, 0.25)',
+                borderRadius: '12px',
+                padding: '2px 8px',
+                fontSize: '0.68rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title="View Release & Update Notes"
+            >
+              <Sparkles size={11} /> What&apos;s New
+            </button>
           </div>
         )}
       </motion.aside>
+
+      <UpdateNotesModal
+        isOpen={showNotesModal}
+        onClose={() => setShowNotesModal(false)}
+        currentVersion={appVersion || '1.0.41'}
+      />
     </>
   );
 }
