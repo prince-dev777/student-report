@@ -3177,8 +3177,12 @@ app.post('/api/reset', async (req, res) => {
 
 
 // Explicit PWA Endpoints with strict Cache-Control for Cloudflare/PWA reliability
-app.get('/manifest.json', (req, res) => {
+app.get(['/manifest.json', '/manifest-parent.json', '/manifest-teacher.json', '/manifest-staff.json', '/manifest-inquiry.json'], (req, res) => {
+  const reqPath = req.path.replace('/', '') || 'manifest.json';
   const manifestLocations = [
+    path.join(__dirname, '../dist', reqPath),
+    path.join(__dirname, '../public', reqPath),
+    path.join(__dirname, 'public', reqPath),
     path.join(__dirname, '../dist/manifest.json'),
     path.join(__dirname, '../public/manifest.json'),
     path.join(__dirname, 'public/manifest.json')

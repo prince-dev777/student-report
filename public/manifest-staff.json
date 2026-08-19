@@ -1,0 +1,32 @@
+{
+  "short_name": "Staff App",
+  "name": "Career Xone - Staff Attendance",
+  "description": "Career Xone Staff Manual Attendance Management App",
+  "start_url": "/?app=staff#/staff",
+  "scope": "/",
+  "id": "/staff-pwa-app",
+  "icons": [
+    {
+      "src": "/logo-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "background_color": "#ffffff",
+  "theme_color": "#7c3aed",
+  "display": "standalone",
+  "orientation": "portrait"
+}

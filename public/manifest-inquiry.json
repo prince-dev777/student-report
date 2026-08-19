@@ -1,0 +1,32 @@
+{
+  "short_name": "Inquiry Desk",
+  "name": "Career Xone - Inquiry Desk",
+  "description": "Career Xone Front-Desk Student & Parent Inquiry Management App",
+  "start_url": "/?app=inquiry#/inquiry",
+  "scope": "/",
+  "id": "/inquiry-pwa-app",
+  "icons": [
+    {
+      "src": "/logo-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "background_color": "#ffffff",
+  "theme_color": "#059669",
+  "display": "standalone",
+  "orientation": "portrait"
+}

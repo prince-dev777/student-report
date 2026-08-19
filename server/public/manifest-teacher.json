@@ -1,0 +1,32 @@
+{
+  "short_name": "Teacher Portal",
+  "name": "Career Xone - Teacher Portal",
+  "description": "Career Xone Teacher & Faculty 360 Student Dossier and Test Analytics App",
+  "start_url": "/?app=teacher#/teacher",
+  "scope": "/",
+  "id": "/teacher-pwa-app",
+  "icons": [
+    {
+      "src": "/logo-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "display": "standalone",
+  "orientation": "portrait"
+}

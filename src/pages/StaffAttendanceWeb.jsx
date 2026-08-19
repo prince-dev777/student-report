@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
+import PWAInstallPrompt from '../components/PWAInstallPrompt';
 
 export default function StaffAttendanceWeb() {
   const [students, setStudents] = useState([]);
@@ -430,42 +431,7 @@ const getCourseName = (batch) => {
   return (
     <div style={styles.container}>
       {/* PWA Home Screen Install Banner */}
-      {!isStandalone && showInstallBanner && (
-        <div style={{
-          background: 'linear-gradient(135deg, #1e293b, #0f172a)',
-          color: '#f8fafc', padding: '10px 14px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: '12px', fontSize: '0.82rem', borderBottom: '1px solid rgba(255,255,255,0.1)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.2rem' }}>💻📱</span>
-            <div>
-              <strong style={{ display: 'block', lineHeight: '1.2' }}>Install Staff App (Laptop & Mobile)</strong>
-              <span style={{ color: '#94a3b8', fontSize: '0.73rem' }}>
-                Create Desktop / Home Screen Shortcut App Icon for 1-tap launch!
-              </span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <button
-              onClick={handleInstallApp}
-              style={{
-                background: '#2563eb', color: '#fff', border: 'none',
-                padding: '6px 12px', borderRadius: '8px', fontWeight: 600,
-                fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap'
-              }}
-            >
-              Add to Home Screen
-            </button>
-            <button
-              onClick={() => setShowInstallBanner(false)}
-              style={{ background: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '4px' }}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
+      <PWAInstallPrompt appName="Staff Attendance" />
 
       {/* Top Header */}
       <header style={styles.header}>

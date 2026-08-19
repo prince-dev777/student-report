@@ -63,8 +63,20 @@ const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 
 export default function App() {
   if (!isElectron) {
-    if (typeof window !== 'undefined' && window.location.search.includes('source=pwa') && (!window.location.hash || window.location.hash === '#/')) {
-      window.location.hash = '/parent';
+    if (typeof window !== 'undefined') {
+      const search = window.location.search || '';
+      const hash = window.location.hash || '';
+      if (!hash || hash === '#/' || hash === '#') {
+        if (search.includes('app=teacher')) {
+          window.location.hash = '/teacher';
+        } else if (search.includes('app=staff')) {
+          window.location.hash = '/staff';
+        } else if (search.includes('app=inquiry')) {
+          window.location.hash = '/inquiry';
+        } else if (search.includes('app=parent') || search.includes('source=pwa')) {
+          window.location.hash = '/parent';
+        }
+      }
     }
 
     return (
