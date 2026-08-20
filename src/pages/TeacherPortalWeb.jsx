@@ -9,8 +9,10 @@ import { api } from '../utils/api';
 import { formatBatchName } from '../utils/helpers';
 import toast, { Toaster } from 'react-hot-toast';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
+import AppInstallGate from '../components/AppInstallGate';
 
 export default function TeacherPortalWeb() {
+  const [proceedToWeb, setProceedToWeb] = useState(() => !!sessionStorage.getItem('skip_teacher_install_gate'));
   const [passcode, setPasscode] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!sessionStorage.getItem('teacherSession'));
@@ -283,6 +285,34 @@ export default function TeacherPortalWeb() {
       if (refreshed) setSelectedStudent(refreshed);
     }
   }, [enrichedStudents]);
+
+  // PRE-LOGIN APP INSTALL GATEWAY
+  const isStandaloneApp = (typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches || 
+    window.navigator.standalone === true || 
+    window.location.search.includes('source=pwa') || 
+    window.location.search.includes('app=teacher')
+  ));
+
+  if (!isLoggedIn && !isStandaloneApp) {
+    return (
+      <AppInstallGate
+        appName="Teacher & Faculty Official App"
+        appSubtitle="360° Student Dossier, Attendance & Analytics App"
+        appType="teacher"
+        themeGradient="linear-gradient(135deg, #1e3a8a 0%, #1e40af 40%, #0f172a 100%)"
+        themeColor="#2563eb"
+        badgeText="Official Faculty App"
+        badgeBg="rgba(37, 99, 235, 0.15)"
+        badgeColor="#2563eb"
+        features={[
+          { title: "Instant Student Search", desc: "Access full multi-year academic trajectory and test analysis in seconds." },
+          { title: "Complete Attendance Log", desc: "Inspect daily biometric punch in/out and monthly consistency." },
+          { title: "1-Tap Direct Launch", desc: "Add to home screen for fast one-tap access during classroom sessions." }
+        ]}
+      />
+    );
+  }
 
   // ----------------------------------------------------
   // LOGIN SCREEN (Compact & Mobile Friendly)

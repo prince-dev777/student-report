@@ -1,10 +1,13 @@
-// Progressive Web App (PWA) Service Worker for Career Xone Parent Portal
-const CACHE_NAME = 'career-xone-v4';
+// Progressive Web App (PWA) Service Worker for Career Xone Apps
+const CACHE_NAME = 'career-xone-v5';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
-  '/?source=pwa',
   '/manifest.json',
+  '/manifest-parent.json',
+  '/manifest-teacher.json',
+  '/manifest-staff.json',
+  '/manifest-inquiry.json',
   '/logo-192.png',
   '/logo-512.png',
   '/logo.png'

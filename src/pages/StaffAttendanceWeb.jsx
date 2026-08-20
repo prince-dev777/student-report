@@ -7,8 +7,10 @@ import {
 import toast from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
+import AppInstallGate from '../components/AppInstallGate';
 
 export default function StaffAttendanceWeb() {
+  const [proceedToWeb, setProceedToWeb] = useState(() => !!sessionStorage.getItem('skip_staff_install_gate'));
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -184,6 +186,34 @@ export default function StaffAttendanceWeb() {
       fetchData();
     }
   }, [isAuthenticated]);
+
+  // PRE-LOGIN APP INSTALL GATEWAY
+  const isStandaloneApp = (typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches || 
+    window.navigator.standalone === true || 
+    window.location.search.includes('source=pwa') || 
+    window.location.search.includes('app=staff')
+  ));
+
+  if (!isAuthenticated && !isStandaloneApp) {
+    return (
+      <AppInstallGate
+        appName="Staff Attendance Official App"
+        appSubtitle="Manual Attendance Management & Batch Punch App"
+        appType="staff"
+        themeGradient="linear-gradient(135deg, #4c1d95 0%, #6d28d9 40%, #0f172a 100%)"
+        themeColor="#7c3aed"
+        badgeText="Staff Attendance App"
+        badgeBg="rgba(124, 58, 237, 0.15)"
+        badgeColor="#7c3aed"
+        features={[
+          { title: "Quick Roll-Call & Punch", desc: "Mark IN, OUT, LATE, or ABSENT for students across all batches." },
+          { title: "Automated WhatsApp & SMS", desc: "Auto-dispatches arrival and departure alerts to registered parents." },
+          { title: "1-Tap Direct Launch", desc: "Add to home screen for fast daily punch access." }
+        ]}
+      />
+    );
+  }
 
   if (!isAuthenticated) {
     return (

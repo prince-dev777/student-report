@@ -11,8 +11,10 @@ import toast, { Toaster } from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { getMediaUrl } from '../utils/api';
+import AppInstallGate from '../components/AppInstallGate';
 
 export default function ParentPortalWeb() {
+  const [proceedToWeb, setProceedToWeb] = useState(() => !!sessionStorage.getItem('skip_parent_install_gate'));
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -342,6 +344,27 @@ export default function ParentPortalWeb() {
       time: 'Recent'
     })))
   ];
+
+  // PRE-LOGIN APP INSTALL GATEWAY (Enforce Mobile App Installation)
+  if (!isLoggedIn && !isAppInstalled) {
+    return (
+      <AppInstallGate
+        appName="Parents Official Mobile App"
+        appSubtitle="Live Biometric Attendance & Exam Report Cards"
+        appType="parent"
+        themeGradient="linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #0f172a 100%)"
+        themeColor="#0284c7"
+        badgeText="Official Parents App"
+        badgeBg="rgba(2, 132, 199, 0.15)"
+        badgeColor="#0284c7"
+        features={[
+          { title: "Real-time Attendance Alerts", desc: "Live Biometric In/Out punch notifications delivered directly to your phone." },
+          { title: "OMR Exam Marksheets & Ranks", desc: "Instant test scores, subject-wise analytics, and printable PDF progress cards." },
+          { title: "1-Tap Quick Launch", desc: "Opens full-screen from phone home screen without opening mobile browser tabs." }
+        ]}
+      />
+    );
+  }
 
   // LOGIN SCREEN
   if (!isLoggedIn) {

@@ -8,8 +8,10 @@ import {
 import { api } from '../utils/api';
 import toast, { Toaster } from 'react-hot-toast';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
+import AppInstallGate from '../components/AppInstallGate';
 
 export default function StaffInquiryWeb() {
+  const [proceedToWeb, setProceedToWeb] = useState(() => !!sessionStorage.getItem('skip_inquiry_install_gate'));
   const [passcode, setPasscode] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!sessionStorage.getItem('inquiryStaffSession'));
@@ -252,6 +254,34 @@ export default function StaffInquiryWeb() {
     const resolved = inquiries.filter((i) => i.status === 'Resolved').length;
     return { total, pending, admitted, resolved };
   }, [inquiries]);
+
+  // PRE-LOGIN APP INSTALL GATEWAY
+  const isStandaloneApp = (typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches || 
+    window.navigator.standalone === true || 
+    window.location.search.includes('source=pwa') || 
+    window.location.search.includes('app=inquiry')
+  ));
+
+  if (!isLoggedIn && !isStandaloneApp) {
+    return (
+      <AppInstallGate
+        appName="Front-Desk Inquiry Official App"
+        appSubtitle="Visitor & Admission Follow-up Management App"
+        appType="inquiry"
+        themeGradient="linear-gradient(135deg, #064e3b 0%, #047857 40%, #0f172a 100%)"
+        themeColor="#059669"
+        badgeText="Official Inquiry Desk App"
+        badgeBg="rgba(5, 150, 105, 0.15)"
+        badgeColor="#059669"
+        features={[
+          { title: "Instant Inquiry Logging", desc: "Quick-add visiting parents, contact info, and admission discussions." },
+          { title: "Follow-up Reminders", desc: "Track pending calls, scheduled visits, and admission conversions." },
+          { title: "1-Tap Direct Launch", desc: "Add to home screen for instant reception and front-desk access." }
+        ]}
+      />
+    );
+  }
 
   // ----------------------------------------------------
   // LOGIN VIEW (Light & Clean Theme matching Parent/Teacher App)

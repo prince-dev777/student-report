@@ -3178,7 +3178,12 @@ app.post('/api/reset', async (req, res) => {
 
 // Explicit PWA Endpoints with strict Cache-Control for Cloudflare/PWA reliability
 app.get(['/manifest.json', '/manifest-parent.json', '/manifest-teacher.json', '/manifest-staff.json', '/manifest-inquiry.json'], (req, res) => {
-  const reqPath = req.path.replace('/', '') || 'manifest.json';
+  let reqPath = req.path.replace('/', '') || 'manifest.json';
+  const appParam = req.query.app || '';
+  if (reqPath === 'manifest.json' && appParam) {
+    reqPath = `manifest-${appParam}.json`;
+  }
+
   const manifestLocations = [
     path.join(__dirname, '../dist', reqPath),
     path.join(__dirname, '../public', reqPath),
@@ -3190,8 +3195,9 @@ app.get(['/manifest.json', '/manifest-parent.json', '/manifest-teacher.json', '/
   for (const loc of manifestLocations) {
     if (fs.existsSync(loc)) {
       res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
       res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
       return res.sendFile(loc);
     }
   }
