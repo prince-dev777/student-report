@@ -902,51 +902,59 @@ app.post('/api/parent/login', async (req, res) => {
 // NOTE: Biometric webhook endpoint moved to line ~853 (before protect middleware)
 // to avoid duplicate route registration.
 
-// ---- 📡 Biometric ADMS API (Direct Machine Connection) ----
+// ---- 📡 Biometric ADMS API (Direct Machine Connection for ZKTeco / eSSL / Realtime) ----
 
-// 1. Initialization Request
+// 1. Initialization / Handshake Request
 app.get('/iclock/cdata', (req, res) => {
-  res.send('OK');
+  const sn = req.query.SN || req.query.sn || 'BIOMETRIC_DEV';
+  console.log(`[ADMS] Handshake request from device SN: ${sn}`);
+  res.setHeader('Content-Type', 'text/plain');
+  res.send(`GET OPTION FROM: ${sn}\nStamp=9999\nOpStamp=9999\nErrorDelay=60\nDelay=30\nResStamp=9999\nTransTimes=00:00;14:05\nTransInterval=1\nTransFlag=1111000000\nTimeZone=330\nRealtime=1\nEncrypt=0\n`);
 });
 
-// 2. Command Request
+// 2. Command Request Polling
 app.get('/iclock/getrequest', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain');
   res.send('OK');
 });
 
-// 3. Data Push Request (Raw Text)
+// 3. Data Push Request (ATTLOG, OPERLOG, USERINFO)
 app.post('/iclock/cdata', async (req, res) => {
   try {
-    const rawData = req.body; // text/plain
-    if (!rawData || typeof rawData !== 'string') return res.send('OK');
+    const sn = req.query.SN || req.query.sn || '';
+    const table = (req.query.table || req.query.tablename || 'ATTLOG').toUpperCase();
+    let rawData = req.body;
+    if (!rawData) {
+      return res.setHeader('Content-Type', 'text/plain').send('OK');
+    }
+    if (typeof rawData !== 'string') rawData = rawData.toString();
 
-    const lines = rawData.split('\\n');
+    console.log(`[ADMS] Received data push from SN: ${sn}, Table: ${table}, Body size: ${rawData.length} bytes`);
+
+    const lines = rawData.split(/\r?\n/);
     let successCount = 0;
 
     for (let line of lines) {
       line = line.trim();
       if (!line) continue;
 
-      // Format: "user_id	YYYY-MM-DD HH:MM:SS	status	verify_type	work_code"
-      const parts = line.split(/\\s+/);
-      if (parts.length < 3) continue;
+      // Format: "user_id\tYYYY-MM-DD HH:MM:SS\tstatus\tverify_type\twork_code"
+      const parts = line.split(/[\t\s]+/);
+      if (parts.length < 2) continue;
 
-      const rollNumber = parts[0];
-      const dateStr = parts[1]; // YYYY-MM-DD
-      const timeStr = parts[2]; // HH:MM:SS
+      const rollNumber = parts[0].trim();
+      const dateStr = parts[1].trim(); // YYYY-MM-DD
+      const timeStr = parts[2] ? parts[2].trim() : ''; // HH:MM:SS
+      const statusVal = parts[3] ? parts[3].trim() : '0'; // 0=IN, 1=OUT
 
-      let type = 'IN';
-      // Usually status is at index 3. 0=IN, 1=OUT
-      if (parts.length > 3 && parts[3] === '1') {
-        type = 'OUT';
-      }
+      let type = (statusVal === '1' || statusVal.toLowerCase() === 'out') ? 'OUT' : 'IN';
 
       // Convert HH:MM:SS to HH:MM AM/PM
       let formattedTime = timeStr;
       if (timeStr.includes(':')) {
         const tParts = timeStr.split(':');
         let hours = parseInt(tParts[0], 10);
-        const minutes = tParts[1];
+        const minutes = tParts[1] || '00';
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
         hours = hours ? hours : 12;
@@ -954,17 +962,17 @@ app.post('/iclock/cdata', async (req, res) => {
       }
 
       // Find Student to get Institute ID
-      const student = await Student.findOne({ isDeleted: { $ne: true },  rollNo: String(rollNumber) });
+      const student = await Student.findOne({ isDeleted: { $ne: true }, rollNo: String(rollNumber) });
       if (!student) {
         console.warn(`[ADMS] Unrecognized Roll Number: ${rollNumber}`);
         continue;
       }
 
       const instituteId = student.instituteId;
-      const today = dateStr;
+      const today = dateStr || new Date().toISOString().split('T')[0];
 
       // Find or create attendance record
-      let record = await Attendance.findOne({ isDeleted: { $ne: true },  studentId: student.id, date: today, instituteId });
+      let record = await Attendance.findOne({ isDeleted: { $ne: true }, studentId: student.id, date: today, instituteId });
 
       let isNewPunch = false;
       if (!record) {
@@ -974,7 +982,8 @@ app.post('/iclock/cdata', async (req, res) => {
           date: today,
           status: 'present',
           entryTime: type === 'IN' ? formattedTime : '',
-          exitTime: type === 'OUT' ? formattedTime : ''
+          exitTime: type === 'OUT' ? formattedTime : '',
+          smsSent: false
         });
         isNewPunch = true;
       } else {
@@ -1020,11 +1029,19 @@ app.post('/iclock/cdata', async (req, res) => {
     }
 
     console.log(`[ADMS] Successfully processed ${successCount} new attendance logs.`);
+    res.setHeader('Content-Type', 'text/plain');
     res.send('OK');
   } catch (err) {
     console.error('[ADMS] Processing Error:', err);
+    res.setHeader('Content-Type', 'text/plain');
     res.send('OK');
   }
+});
+
+// 4. Catch-all for other machine commands / queries
+app.all('/iclock/*', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain');
+  res.send('OK');
 });
 
 // ---- 📞 Cloud WhatsApp Queue Endpoints (Token Authenticated) ----
@@ -3565,7 +3582,7 @@ app.get('/api/system/backup-info', protect, (req, res) => {
       lastSync = data.lastSync;
     } catch(e) {}
   }
-  res.json({ autoBackupTime: '4:00 PM', lastSync });
+  res.json({ autoBackupTime: 'Every 3 min (Auto)', lastSync });
 });
 
 app.get('*', (req, res) => {

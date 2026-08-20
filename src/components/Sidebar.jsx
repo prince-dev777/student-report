@@ -72,7 +72,7 @@ export default function Sidebar() {
       } catch(e) {}
     };
     fetchBackup();
-    const backupTimer = setInterval(fetchBackup, 60000); // refresh every min
+    const backupTimer = setInterval(fetchBackup, 30000); // refresh every 30s
 
     return () => {
       clearTimeout(timer);
