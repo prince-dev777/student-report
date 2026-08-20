@@ -4,14 +4,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { v2 as cloudinary } from 'cloudinary';
+import { logInfo, logError, logWarn } from './utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config({ path: path.join(__dirname, '..', '.env') }); // Load root .env for Cloudinary keys if running locally
 
-const CLOUD_URI = 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
-const LOCAL_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27018/student-report';
+const CLOUD_URI = process.env.CLOUD_MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 const dataPath = process.env.USER_DATA_PATH || __dirname;
 
 cloudinary.config({
@@ -20,26 +20,53 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+async function getLocalConnection() {
+  const possibleUris = [
+    process.env.MONGODB_URI,
+    'mongodb://127.0.0.1:27018/student-report?directConnection=true',
+    'mongodb://127.0.0.1:27017/student-report?directConnection=true',
+    'mongodb://localhost:27018/student-report?directConnection=true',
+    'mongodb://localhost:27017/student-report?directConnection=true',
+    'mongodb://127.0.0.1:27018/student-report',
+    'mongodb://127.0.0.1:27017/student-report'
+  ].filter(Boolean);
+
+  for (const uri of possibleUris) {
+    try {
+      const conn = await mongoose.createConnection(uri, {
+        serverSelectionTimeoutMS: 2000,
+        connectTimeoutMS: 2000,
+        directConnection: true
+      }).asPromise();
+      return conn;
+    } catch (e) {
+      // Try next port
+    }
+  }
+  throw new Error('Could not connect to local MongoDB on port 27018 or 27017.');
+}
+
 async function syncToCloud() {
-  console.log('🔄 Starting Cloud Sync...');
+  logInfo('SYNC', 'Starting Cloud Sync...');
   let localConn, cloudConn;
   try {
-    console.log(`🔌 Connecting to local DB: ${LOCAL_URI}`);
-    localConn = await mongoose.createConnection(LOCAL_URI).asPromise();
+    localConn = await getLocalConnection();
+    logInfo('SYNC', 'Connected to local DB.');
     
-    console.log(`☁️ Connecting to cloud DB: ${CLOUD_URI}`);
-    cloudConn = await mongoose.createConnection(CLOUD_URI).asPromise();
+    cloudConn = await mongoose.createConnection(CLOUD_URI, {
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000
+    }).asPromise();
+    logInfo('SYNC', 'Connected to cloud DB.');
 
     const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries'];
 
     for (const collName of collections) {
-      console.log(`📦 Syncing collection: ${collName}...`);
       const localColl = localConn.collection(collName);
       const cloudColl = cloudConn.collection(collName);
 
       const docs = await localColl.find({}).toArray();
       if (docs.length === 0) {
-        console.log(`   - 0 documents found. Skipping.`);
         continue;
       }
 
@@ -62,13 +89,31 @@ async function syncToCloud() {
 
       // Process specific collections for local file uploads (OMR images)
       if (collName === 'testresults') {
+        // Fetch all published tests to make sure we ONLY upload OMRs of published tests to Cloudinary!
+        let publishedTestIds = new Set();
+        try {
+          const testsColl = localDb.collection('tests');
+          const publishedTests = await testsColl.find({
+            isDeleted: { $ne: true },
+            $or: [{ isPublished: true }, { status: 'published' }]
+          }).project({ id: 1, _id: 1 }).toArray();
+          publishedTestIds = new Set(publishedTests.map(t => String(t.id || t._id)));
+        } catch (e) {}
+
         for (let i = 0; i < activeDocs.length; i++) {
           const doc = activeDocs[i];
+          // Check if this test result belongs to a published test
+          const testIdStr = String(doc.testId || '');
+          if (!publishedTestIds.has(testIdStr)) {
+            // Test is not published yet - skip Cloudinary upload to save quota
+            continue;
+          }
+
           // If the OMR image is a local path (starts with /uploads/omr/)
           if (doc.omrSheetImage && doc.omrSheetImage.startsWith('/uploads/omr/')) {
             const localFilePath = path.join(dataPath, doc.omrSheetImage);
             if (fs.existsSync(localFilePath)) {
-              console.log(`   - 📤 Uploading local OMR image to Cloudinary: ${doc.omrSheetImage}`);
+              console.log(`   - 📤 Uploading published OMR image to Cloudinary: ${doc.omrSheetImage}`);
               try {
                 const uploadRes = await cloudinary.uploader.upload(localFilePath, {
                   folder: 'student_report_omr',
@@ -115,9 +160,14 @@ async function syncToCloud() {
       console.log(`   - Synced ${activeDocs.length} active documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
     }
 
-    console.log('✅ Cloud Sync Completed Successfully!');
+    const syncTime = new Date().toISOString();
+    try {
+      fs.writeFileSync(path.join(__dirname, 'sync-status.json'), JSON.stringify({ lastSync: syncTime }));
+    } catch (e) {}
+
+    logInfo('SYNC', `✅ Cloud Sync Completed Successfully at ${syncTime}`);
   } catch (err) {
-    console.error('❌ Cloud Sync Failed:', err);
+    logError('SYNC', '❌ Cloud Sync Failed', err);
   } finally {
     if (localConn) await localConn.close();
     if (cloudConn) await cloudConn.close();

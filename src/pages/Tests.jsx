@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { useApp } from '../context/AppContext';
 import { subjects } from '../data/sampleData';
-import { formatDate, calcTestAverage, getMarksCategory, getRankBadgeClass, formatBatchName, getCourseName } from '../utils/helpers';
+import { formatDate, calcTestAverage, getMarksCategory, getRankBadgeClass, formatBatchName } from '../utils/helpers';
 import toast from 'react-hot-toast';
 import { api, getMediaUrl } from '../utils/api';
 import omrTemplatePdf from '../assets/OMR_Templates.pdf';
@@ -22,6 +22,10 @@ export default function Tests() {
     tests, testResults, students, batches, 
     addTest, updateTest, updateTestAnswerKey, deleteTest, submitTestResults 
   } = useApp();
+
+  const getCourseName = (batchId) => {
+    return formatBatchName(batchId, batches);
+  };
 
   const [activeTab, setActiveTab] = useState('all-tests');
   const [selectedTestResults, setSelectedTestResults] = useState(null);
@@ -1784,11 +1788,6 @@ export default function Tests() {
     }
   };
 
-  const getCourseName = (batchId) => {
-    const batch = batches.find((b) => b.id === batchId);
-    return batch ? batch.name : 'Unknown';
-  };
-
   const uniqueClasses = Array.from(new Set(students.map(s => s.class))).filter(Boolean);
 
   // Helper to count how many students took a test
@@ -2632,79 +2631,6 @@ export default function Tests() {
                       })}
                     </div>
                   )}
-                </div>
-
-                {/* 3-Step Guided Evaluation Workflow Banner */}
-                <div style={{
-                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                  borderRadius: '18px',
-                  padding: '24px 28px',
-                  color: '#ffffff',
-                  boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.25)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                    <Sparkles size={18} color="#60a5fa" />
-                    <h4 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
-                      Fast-Track Evaluation & OMR Scanning Workflow
-                    </h4>
-                  </div>
-
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    gap: '16px'
-                  }}>
-                    <div style={{
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      borderRadius: '12px',
-                      padding: '14px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#60a5fa', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        STEP 1
-                      </div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
-                        📝 Select or Create Test
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.4 }}>
-                        Choose your scheduled test or create a new test with custom subjects and marking schemes.
-                      </div>
-                    </div>
-
-                    <div style={{
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      borderRadius: '12px',
-                      padding: '14px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#34d399', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        STEP 2
-                      </div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
-                        📸 Upload Key & Scan OMR
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.4 }}>
-                        Paste or upload CSV Answer Key, then select 100+ OMR sheet photos for instant AI evaluation.
-                      </div>
-                    </div>
-
-                    <div style={{
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      borderRadius: '12px',
-                      padding: '14px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fbbf24', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        STEP 3
-                      </div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
-                        🚀 Auto Rank & Notify
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.4 }}>
-                        Save drafts, preview leaderboard rankings, and 1-click publish scores to Parents via WhatsApp/SMS.
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}

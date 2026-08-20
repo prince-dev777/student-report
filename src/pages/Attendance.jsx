@@ -19,11 +19,14 @@ import {
   Scan,
   Download,
   FileSpreadsheet,
-  Filter
+  Filter,
+  Search,
+  X
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
+import SearchableStudentSelect from '../components/SearchableStudentSelect';
 import {
   formatTime,
   formatDate,
@@ -42,13 +45,14 @@ export default function Attendance() {
   const { students, attendance, markAttendance } = useApp();
   const [activeTab, setActiveTab] = useState('mark');
   const [selectedStudent, setSelectedStudent] = useState('');
+  const [todaySearch, setTodaySearch] = useState('');
   const [scannerState, setScannerState] = useState('default'); // 'default' | 'scanning' | 'success'
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calStudent, setCalStudent] = useState('all');
-  const [attendanceFilter, setAttendanceFilter] = useState('present'); // 'present', 'late', 'absent', 'all'
+  const [attendanceFilter, setAttendanceFilter] = useState('all'); // 'all' | 'present' | 'late' | 'absent'
   
   // History Date Range States
   const [historyRangeType, setHistoryRangeType] = useState('custom'); // 'today' | '7days' | '30days' | 'custom' | 'heatmap'
@@ -83,7 +87,7 @@ export default function Attendance() {
       setSelectedStudent(activeStudents[0].id);
     }
     if (activeStudents.length > 0 && !calStudent) {
-      setCalStudent(activeStudents[0].id);
+      setCalStudent('all');
     }
   }, [activeStudents, selectedStudent, calStudent]);
 
@@ -140,21 +144,35 @@ export default function Attendance() {
         status: record ? record.status : 'absent',
         entryTime: record?.entryTime || null,
         exitTime: record?.exitTime || null,
+        sessionName: record?.sessionName || null,
         smsSent: record?.smsSent || false,
       };
     });
   }, [activeStudents, todayRecords]);
 
-  // Filter today's list based on selected badge
+  // Filter today's list based on selected badge and search input
   const filteredTodayStudents = useMemo(() => {
+    const query = todaySearch.toLowerCase().trim();
     return todayTableData.filter(item => {
-      if (attendanceFilter === 'all') return true;
-      if (attendanceFilter === 'present') return item.status === 'present' || item.status === 'late';
-      if (attendanceFilter === 'late') return item.status === 'late';
-      if (attendanceFilter === 'absent') return item.status === 'absent';
+      // 1. Status badge filter
+      if (attendanceFilter === 'present' && !(item.status === 'present' || item.status === 'late')) return false;
+      if (attendanceFilter === 'late' && item.status !== 'late') return false;
+      if (attendanceFilter === 'absent' && item.status !== 'absent') return false;
+
+      // 2. Search query filter
+      if (query) {
+        const name = (item.student?.name || '').toLowerCase();
+        const roll = String(item.student?.rollNo || '').toLowerCase();
+        const phone = String(item.student?.phone || item.student?.parentPhone || '').toLowerCase();
+        const batch = String(item.student?.batch || item.student?.targetClass || '').toLowerCase();
+        const session = String(item.sessionName || '').toLowerCase();
+        const match = name.includes(query) || roll.includes(query) || phone.includes(query) || batch.includes(query) || session.includes(query);
+        if (!match) return false;
+      }
+
       return true;
     });
-  }, [todayTableData, attendanceFilter]);
+  }, [todayTableData, attendanceFilter, todaySearch]);
 
   // Calculate duration between entry and exit
   const calcDuration = (entry, exit) => {
@@ -481,20 +499,17 @@ export default function Attendance() {
                   </div>
 
                   {/* Student Selector */}
-                  <div className="w-full mt-24">
-                    <label className="form-label">Select Student</label>
-                    <select
-                      className="form-select"
+                  <div className="w-full mt-24" style={{ position: 'relative', zIndex: 50 }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', marginBottom: '6px', display: 'block' }}>
+                      Select Student
+                    </label>
+                    <SearchableStudentSelect
                       value={selectedStudent}
-                      onChange={(e) => setSelectedStudent(e.target.value)}
-                    >
-                      <option value="">-- Choose Student --</option>
-                      {activeStudents.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.rollNo})
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setSelectedStudent}
+                      students={activeStudents}
+                      includeAllOption={false}
+                      placeholder="🔍 Search student by name / roll number..."
+                    />
                   </div>
 
                   {/* Action Buttons */}
@@ -691,25 +706,144 @@ export default function Attendance() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <div className="card-header">
+              <div className="card-header flex justify-between items-center flex-wrap gap-12">
                 <div>
                   <div className="card-title flex items-center gap-8">
                     <Calendar size={18} />
                     Today's Attendance Record
                   </div>
                   <div className="card-subtitle">
-                    {dateStr} • {stats.present + stats.late} of {activeStudents.length} present
+                    {dateStr} • {stats.present + stats.late} of {activeStudents.length} present ({stats.percentage}% rate)
                   </div>
                 </div>
-                <div className="flex gap-12 items-center">
-                  <button onClick={exportTodayAttendance} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 12px', fontSize: '0.85rem' }}>
-                    <Download size={14} /> Download Excel
+                <div className="flex gap-12 items-center flex-wrap">
+                  <button onClick={exportTodayAttendance} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '36px', padding: '0 14px', fontSize: '0.85rem', fontWeight: 600 }}>
+                    <Download size={15} /> Download Excel
                   </button>
-                  <div className="flex gap-8">
-                    <span className="badge badge-present">Present: {stats.present}</span>
-                    <span className="badge badge-late">Late: {stats.late}</span>
-                    <span className="badge badge-absent">Absent: {stats.absent}</span>
-                  </div>
+                </div>
+              </div>
+
+              {/* Filter & Search Bar */}
+              <div style={{
+                padding: '12px 16px',
+                background: 'var(--surface-color, #f8fafc)',
+                borderBottom: '1px solid var(--border-color, #e2e8f0)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}>
+                {/* Status Badges Filter */}
+                <div className="flex gap-8 items-center flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceFilter('all')}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: attendanceFilter === 'all' ? '#3b82f6' : '#e2e8f0',
+                      color: attendanceFilter === 'all' ? '#ffffff' : '#475569',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    All ({todayTableData.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceFilter('present')}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: attendanceFilter === 'present' ? '#10b981' : '#dcfce7',
+                      color: attendanceFilter === 'present' ? '#ffffff' : '#15803d',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Present ({stats.present})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceFilter('late')}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: attendanceFilter === 'late' ? '#f59e0b' : '#fef3c7',
+                      color: attendanceFilter === 'late' ? '#ffffff' : '#b45309',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Late ({stats.late})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceFilter('absent')}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: attendanceFilter === 'absent' ? '#ef4444' : '#fee2e2',
+                      color: attendanceFilter === 'absent' ? '#ffffff' : '#b91c1c',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Absent ({stats.absent})
+                  </button>
+                </div>
+
+                {/* Search Input */}
+                <div style={{ position: 'relative', width: '300px', minWidth: '240px' }}>
+                  <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <input
+                    type="text"
+                    placeholder="Search by student name, roll no..."
+                    value={todaySearch}
+                    onChange={(e) => setTodaySearch(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '7px 32px 7px 32px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color, #cbd5e1)',
+                      fontSize: '0.82rem',
+                      outline: 'none',
+                      background: '#ffffff'
+                    }}
+                  />
+                  {todaySearch && (
+                    <button
+                      type="button"
+                      onClick={() => setTodaySearch('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                        padding: '2px'
+                      }}
+                      title="Clear search"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -726,79 +860,100 @@ export default function Attendance() {
                     </tr>
                   </thead>
                   <tbody>
-                    {todayTableData.map((row, idx) => (
-                      <motion.tr
-                        key={row.student.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.03 }}
-                      >
-                        <td>
-                          <div className="flex items-center gap-12">
-                            {row.student.photo ? (
-                              <img 
-                                src={row.student.photo} 
-                                alt={row.student.name} 
-                                className="student-avatar" 
-                                style={{ objectFit: 'cover', border: '1px solid var(--border-color)' }} 
-                              />
-                            ) : (
-                              <div className={`student-avatar ${getAvatarClass(row.idx)}`}>
-                                {getInitials(row.student.name)}
-                              </div>
-                            )}
-                            <div>
-                              <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.87rem' }}>
-                                {row.student.name}
-                              </div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                Roll: {row.student.rollNo}
+                    {filteredTodayStudents.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
+                          <Search size={32} style={{ opacity: 0.3, margin: '0 auto 8px' }} />
+                          <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                            No students found matching your filters
+                          </div>
+                          {todaySearch && (
+                            <button
+                              type="button"
+                              onClick={() => { setTodaySearch(''); setAttendanceFilter('all'); }}
+                              className="btn btn-secondary btn-sm"
+                              style={{ marginTop: '10px', fontSize: '0.78rem' }}
+                            >
+                              Clear Search & Filters
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredTodayStudents.map((row, idx) => (
+                        <motion.tr
+                          key={row.student.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.02 }}
+                        >
+                          <td>
+                            <div className="flex items-center gap-12">
+                              {row.student.photo ? (
+                                <img 
+                                  src={row.student.photo} 
+                                  alt={row.student.name} 
+                                  className="student-avatar" 
+                                  style={{ objectFit: 'cover', border: '1px solid var(--border-color)' }} 
+                                />
+                              ) : (
+                                <div className={`student-avatar ${getAvatarClass(row.idx)}`}>
+                                  {getInitials(row.student.name)}
+                                </div>
+                              )}
+                              <div>
+                                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.87rem' }}>
+                                  {row.student.name}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                  Roll: {row.student.rollNo} {row.student.batch ? `• ${row.student.batch}` : ''}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`badge ${
-                            row.status === 'present'
-                              ? 'badge-present'
-                              : row.status === 'late'
-                              ? 'badge-late'
-                              : 'badge-absent'
-                          }`}>
-                            {row.status === 'present' && <CheckCircle2 size={11} />}
-                            {row.status === 'late' && <AlertTriangle size={11} />}
-                            {row.status === 'absent' && <XCircle size={11} />}
-                            {row.status}
-                          </span>
-                        </td>
-                        <td style={{ color: row.entryTime ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                          {formatTime(row.entryTime)}
-                        </td>
-                        <td style={{ color: row.exitTime ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                          {row.exitTime ? formatTime(row.exitTime) : row.entryTime ? 'Still in' : '-'}
-                        </td>
-                        <td>
-                          <span className="flex items-center gap-4" style={{ color: 'var(--text-secondary)' }}>
-                            <Timer size={13} />
-                            {calcDuration(row.entryTime, row.exitTime)}
-                          </span>
-                          {row.sessionName && (
-                            <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--accent-blue)', marginTop: '2px' }}>
-                              Session: {row.sessionName}
+                          </td>
+                          <td>
+                            <span className={`badge ${
+                              row.status === 'present'
+                                ? 'badge-present'
+                                : row.status === 'late'
+                                ? 'badge-late'
+                                : 'badge-absent'
+                            }`}>
+                              {row.status === 'present' && <CheckCircle2 size={11} />}
+                              {row.status === 'late' && <AlertTriangle size={11} />}
+                              {row.status === 'absent' && <XCircle size={11} />}
+                              {row.status}
                             </span>
-                          )}
-                        </td>
-                        <td>
-                          {row.smsSent ? (
-                            <span className="sms-status delivered">
-                              <MessageSquare size={12} /> Sent
+                          </td>
+                          <td style={{ color: row.entryTime ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                            {formatTime(row.entryTime)}
+                          </td>
+                          <td style={{ color: row.exitTime ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                            {row.exitTime ? formatTime(row.exitTime) : row.entryTime ? 'Still in' : '-'}
+                          </td>
+                          <td>
+                            <span className="flex items-center gap-4" style={{ color: 'var(--text-secondary)' }}>
+                              <Timer size={13} />
+                              {calcDuration(row.entryTime, row.exitTime)}
                             </span>
-                          ) : (
-                            <span className="sms-status" style={{ color: 'var(--text-muted)' }}>—</span>
-                          )}
-                        </td>
-                      </motion.tr>
-                    ))}
+                            {row.sessionName && (
+                              <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--accent-blue)', marginTop: '2px' }}>
+                                Session: {row.sessionName}
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            {row.smsSent ? (
+                              <span className="sms-status delivered">
+                                <MessageSquare size={12} /> Sent
+                              </span>
+                            ) : (
+                              <span className="sms-status" style={{ color: 'var(--text-muted)' }}>—</span>
+                            )}
+                          </td>
+                        </motion.tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -845,26 +1000,21 @@ export default function Attendance() {
               </div>
 
               {/* Filter Controls Bar */}
-              <div className="card mb-20" style={{ background: 'var(--surface-color, #f8fafc)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color-light)' }}>
+              <div className="card mb-20" style={{ background: 'var(--surface-color, #f8fafc)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color-light)', position: 'relative', zIndex: 100 }}>
                 <div className="flex items-center justify-between flex-wrap gap-12">
                   {/* Select Student Dropdown */}
-                  <div style={{ minWidth: '220px', flex: '1 1 220px' }}>
+                  <div style={{ minWidth: '260px', flex: '1 1 260px', position: 'relative', zIndex: 100 }}>
                     <label className="form-label" style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
                       Select Student:
                     </label>
-                    <select
-                      className="form-select w-full"
+                    <SearchableStudentSelect
                       value={calStudent}
-                      onChange={(e) => setCalStudent(e.target.value)}
-                      style={{ height: '38px', borderRadius: '8px', fontSize: '0.85rem' }}
-                    >
-                      <option value="all">🌟 All Students (Combined)</option>
-                      {activeStudents.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.rollNo})
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setCalStudent}
+                      students={activeStudents}
+                      includeAllOption={true}
+                      allLabel="🌟 All Students (Combined)"
+                      placeholder="🔍 Search student by name / roll no..."
+                    />
                   </div>
 
                   {/* Date Range Selection Pills */}

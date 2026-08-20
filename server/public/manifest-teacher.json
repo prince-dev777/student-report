@@ -1,10 +1,10 @@
 {
-  "short_name": "Teacher App",
-  "name": "Career Xone - Teacher Portal",
+  "short_name": "CX Teacher",
+  "name": "Career Xone Teacher",
   "description": "Career Xone Teacher & Faculty 360 Student Dossier and Test Analytics App",
   "start_url": "/?app=teacher#/teacher",
   "scope": "/?app=teacher",
-  "id": "/teacher-portal-pwa",
+  "id": "/?app=teacher",
   "icons": [
     {
       "src": "/logo-192.png",

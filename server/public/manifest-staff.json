@@ -1,10 +1,10 @@
 {
-  "short_name": "Staff App",
-  "name": "Career Xone - Staff Attendance",
+  "short_name": "CX Staff",
+  "name": "Career Xone Staff",
   "description": "Career Xone Staff Manual Attendance Management App",
   "start_url": "/?app=staff#/staff",
   "scope": "/?app=staff",
-  "id": "/staff-portal-pwa",
+  "id": "/?app=staff",
   "icons": [
     {
       "src": "/logo-192.png",

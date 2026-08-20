@@ -21,6 +21,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Tests from './pages/Tests';
 import TestSeries from './pages/TestSeries';
+import Settings from './pages/Settings';
 
 import StaffAttendanceWeb from './pages/StaffAttendanceWeb';
 import SaaSShowcaseLandingPage from './pages/SaaSShowcaseLandingPage';
@@ -50,6 +51,7 @@ function AppLayout() {
             <Route path="/inquiries" element={<Inquiries />} />
             <Route path="/sms" element={<SMSCenter />} />
             <Route path="/share-app" element={<ShareApp />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/teacher" element={<TeacherPortalWeb />} />
             <Route path="/inquiry" element={<StaffInquiryWeb />} />
           </Routes>

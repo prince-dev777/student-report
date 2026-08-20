@@ -38,13 +38,62 @@ import {
   sendWhatsAppMessageWeb,
   resetRetryCount
 } from './services/whatsappClient.js';
+import { logInfo, logError, logWarn, getRecentLogs, getLogsDir } from './utils/logger.js';
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config({ path: path.join(__dirname, '.env.production') });
 if (!process.env.WHATSAPP_PROVIDER) dotenv.config({ path: path.join(__dirname, '.env.backup') });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27018/student-report';
+const CLOUD_MONGODB_URI = process.env.CLOUD_MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 const JWT_SECRET = process.env.JWT_SECRET || '8f5b8a6d4e2c9a1f3c7e6b5d4a9f8e2d1c3b5a4f7e6d8c9b0a1f2e3d4c5b6a7f';
+
+export async function performRestoreFromCloud() {
+  logInfo('RESTORE', 'Starting Cloud Data Restoration...');
+  let cloudConn;
+  try {
+    cloudConn = await mongoose.createConnection(CLOUD_MONGODB_URI, {
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000
+    }).asPromise();
+    
+    logInfo('RESTORE', 'Successfully connected to MongoDB Atlas Cloud.');
+
+    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries'];
+    let totalRestored = 0;
+
+    for (const collName of collections) {
+      const cloudColl = cloudConn.collection(collName);
+      const localColl = mongoose.connection.collection(collName);
+
+      const docs = await cloudColl.find({}).toArray();
+      if (!docs || docs.length === 0) {
+        logInfo('RESTORE', `Collection [${collName}]: 0 documents found in cloud. Skipping.`);
+        continue;
+      }
+
+      const bulkOps = docs.map(doc => ({
+        replaceOne: {
+          filter: { _id: doc._id },
+          replacement: doc,
+          upsert: true
+        }
+      }));
+
+      const result = await localColl.bulkWrite(bulkOps);
+      totalRestored += docs.length;
+      logInfo('RESTORE', `Collection [${collName}]: Restored ${docs.length} records (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
+    }
+
+    logInfo('RESTORE', `✅ Data Restoration Completed Successfully! Total records restored: ${totalRestored}`);
+    return { success: true, totalRestored };
+  } catch (err) {
+    logError('RESTORE', 'Data Restoration Failed', err);
+    throw err;
+  } finally {
+    if (cloudConn) await cloudConn.close().catch(() => {});
+  }
+}
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -216,6 +265,7 @@ mongoose.connect(MONGODB_URI)
 let isSyncingToCloud = false;
 let pendingSyncRequested = false;
 let lastCloudSyncTime = null;
+let syncTimeoutTimer = null;
 
 function triggerBackgroundCloudSync() {
   if (isSyncingToCloud) {
@@ -226,36 +276,53 @@ function triggerBackgroundCloudSync() {
   isSyncingToCloud = true;
   pendingSyncRequested = false;
 
+  // Safeguard: auto-reset sync lock after 45 seconds so it NEVER gets stuck
+  if (syncTimeoutTimer) clearTimeout(syncTimeoutTimer);
+  syncTimeoutTimer = setTimeout(() => {
+    if (isSyncingToCloud) {
+      console.warn('⚠️ Cloud Sync timeout safeguard triggered (45s elapsed). Resetting sync lock.');
+      isSyncingToCloud = false;
+    }
+  }, 45000);
+
   try {
     const syncProcess = fork(path.join(__dirname, 'sync-cloud.js'), [], {
       cwd: __dirname,
       env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-      detached: true,
       stdio: 'ignore'
     });
 
-    syncProcess.on('close', (code) => {
+    let hasHandledExit = false;
+    const handleSyncComplete = (code) => {
+      if (hasHandledExit) return;
+      hasHandledExit = true;
+      if (syncTimeoutTimer) clearTimeout(syncTimeoutTimer);
       isSyncingToCloud = false;
+
       if (code === 0) {
         lastCloudSyncTime = new Date().toISOString();
         try {
           fs.writeFileSync(path.join(__dirname, 'sync-status.json'), JSON.stringify({ lastSync: lastCloudSyncTime }));
         } catch (e) {}
       }
+
       if (pendingSyncRequested) {
         pendingSyncRequested = false;
         setTimeout(triggerBackgroundCloudSync, 3000);
       }
-    });
+    };
+
+    syncProcess.once('exit', handleSyncComplete);
+    syncProcess.once('close', handleSyncComplete);
 
     syncProcess.on('error', (err) => {
       console.warn('⚠️ Background Cloud Sync error:', err.message);
+      if (syncTimeoutTimer) clearTimeout(syncTimeoutTimer);
       isSyncingToCloud = false;
     });
-
-    syncProcess.unref();
   } catch (err) {
     console.warn('⚠️ Failed to fork sync-cloud.js:', err.message);
+    if (syncTimeoutTimer) clearTimeout(syncTimeoutTimer);
     isSyncingToCloud = false;
   }
 }
@@ -502,12 +569,9 @@ app.post('/api/settings/sync-to-cloud', protect, (req, res) => {
 // Pull newly added records (Inquiries, Students, Attendance) from Cloud to Local
 app.post('/api/sync/pull-cloud', async (req, res) => {
   try {
-    const restoreProc = fork(path.join(__dirname, 'restore-from-cloud.js'), [], {
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-      detached: true,
-      stdio: 'ignore'
+    performRestoreFromCloud().catch(err => {
+      logError('RESTORE', 'Background pull-cloud error:', err);
     });
-    restoreProc.unref();
     res.json({ message: 'Cloud pull started in background' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to start cloud pull' });
@@ -902,24 +966,24 @@ app.post('/api/parent/login', async (req, res) => {
 // NOTE: Biometric webhook endpoint moved to line ~853 (before protect middleware)
 // to avoid duplicate route registration.
 
-// ---- 📡 Biometric ADMS API (Direct Machine Connection for ZKTeco / eSSL / Realtime) ----
+// ---- 📡 Biometric ADMS API (Direct Machine Connection for ZKTeco / eSSL / Realtime / FK) ----
 
 // 1. Initialization / Handshake Request
-app.get('/iclock/cdata', (req, res) => {
+app.get(['/iclock/cdata', '/cdata'], (req, res) => {
   const sn = req.query.SN || req.query.sn || 'BIOMETRIC_DEV';
   console.log(`[ADMS] Handshake request from device SN: ${sn}`);
   res.setHeader('Content-Type', 'text/plain');
   res.send(`GET OPTION FROM: ${sn}\nStamp=9999\nOpStamp=9999\nErrorDelay=60\nDelay=30\nResStamp=9999\nTransTimes=00:00;14:05\nTransInterval=1\nTransFlag=1111000000\nTimeZone=330\nRealtime=1\nEncrypt=0\n`);
 });
 
-// 2. Command Request Polling
-app.get('/iclock/getrequest', (req, res) => {
+// 2. Command Request Polling & Registry
+app.get(['/iclock/getrequest', '/getrequest', '/iclock/registry', '/registry', '/iclock/push', '/push', '/iclock/ping', '/ping'], (req, res) => {
   res.setHeader('Content-Type', 'text/plain');
   res.send('OK');
 });
 
 // 3. Data Push Request (ATTLOG, OPERLOG, USERINFO)
-app.post('/iclock/cdata', async (req, res) => {
+app.post(['/iclock/cdata', '/cdata'], async (req, res) => {
   try {
     const sn = req.query.SN || req.query.sn || '';
     const table = (req.query.table || req.query.tablename || 'ATTLOG').toUpperCase();
@@ -987,13 +1051,20 @@ app.post('/iclock/cdata', async (req, res) => {
 
       // Robust Student Matching: rollNo string, rollNo number, or id
       const cleanRoll = rollNumber.replace(/^0+/, '') || rollNumber;
+      const rollNumVal = parseInt(rollNumber, 10);
+      const queryList = [
+        { rollNo: String(rollNumber) },
+        { rollNo: String(cleanRoll) },
+        { id: String(rollNumber) },
+        { id: String(cleanRoll) }
+      ];
+      if (!isNaN(rollNumVal)) {
+        queryList.push({ rollNo: rollNumVal });
+      }
+
       const student = await Student.findOne({
         isDeleted: { $ne: true },
-        $or: [
-          { rollNo: String(rollNumber) },
-          { rollNo: String(cleanRoll) },
-          { id: String(rollNumber) }
-        ]
+        $or: queryList
       });
 
       if (!student) {
@@ -1063,6 +1134,9 @@ app.post('/iclock/cdata', async (req, res) => {
       }
 
       if (isNewPunch) {
+        if (student.parentPhone) {
+          record.smsSent = true;
+        }
         await record.save();
 
         // Create Notification
@@ -1078,7 +1152,7 @@ app.post('/iclock/cdata', async (req, res) => {
         });
         await notification.save();
 
-        // Trigger WhatsApp
+        // Trigger WhatsApp & Log to SMSLog
         if (student.parentPhone) {
           const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
           const durationStr = record.durationMinutes ? ` (Duration: ${record.durationMinutes} mins)` : '';
@@ -1092,6 +1166,9 @@ app.post('/iclock/cdata', async (req, res) => {
             detail: `${formattedTime}${type === 'IN' ? sessionCtx : durationStr}`
           }).catch(err => console.error('Failed to send ADMS WhatsApp alert:', err.message));
         }
+
+        // Real-time Background Cloud Sync (Pushes to cloud immediately)
+        triggerBackgroundCloudSync();
         successCount++;
       }
     }
@@ -1107,7 +1184,7 @@ app.post('/iclock/cdata', async (req, res) => {
 });
 
 // 4. Catch-all for other machine commands / queries
-app.all('/iclock/*', (req, res) => {
+app.all(['/iclock/*', '/iclock', '/devicecmd', '/fdata', '/rtlog', '/registry'], (req, res) => {
   res.setHeader('Content-Type', 'text/plain');
   res.send('OK');
 });
@@ -3547,27 +3624,46 @@ app.get('/api/system/sync-status', (req, res) => {
 });
 
 // ---- 🔄 Restore API (Cloud to Local) ----
-app.post('/api/system/restore-cloud', protect, (req, res) => {
-  console.log('🔄 Triggering restore-from-cloud.js...');
-  
-  const child = fork(path.join(__dirname, 'restore-from-cloud.js'), [], { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
-  
-  let output = '';
-  child.stdout.on('data', (data) => output += data.toString());
-  child.stderr.on('data', (data) => output += data.toString());
-  child.on('error', (err) => {
-    console.error('Restore process error:', err);
-    if (!res.headersSent) res.status(500).json({ error: 'Failed to start restore process.' });
-  });
-  
-  child.on('close', (code) => {
-    if (code !== 0) {
-      console.error(`❌ Restore failed with code ${code}. Output: ${output}`);
-      return res.status(500).json({ error: 'Failed to restore data from the cloud. Check internet connection.' });
+app.post('/api/system/restore-cloud', protect, async (req, res) => {
+  logInfo('RESTORE', 'Triggering in-process restore from Express API...');
+  try {
+    const result = await performRestoreFromCloud();
+    res.json({ message: `Successfully restored ${result.totalRestored} records from Cloud to Local PC.` });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to restore data from cloud.' });
+  }
+});
+
+// ---- 📋 System & Sync Debug Logs API ----
+app.get('/api/system/logs', protect, (req, res) => {
+  try {
+    const logs = getRecentLogs(200);
+    res.json({ logs });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/system/download-logs', protect, (req, res) => {
+  try {
+    const logsDir = getLogsDir();
+    const errorLogPath = path.join(logsDir, 'system-error.log');
+    const syncLogPath = path.join(logsDir, 'sync-activity.log');
+    
+    let combinedLogs = `=== CAREER XONE SYSTEM LOGS EXPORT (${new Date().toISOString()}) ===\n\n`;
+    if (fs.existsSync(syncLogPath)) {
+      combinedLogs += `--- SYNC ACTIVITY LOG ---\n` + fs.readFileSync(syncLogPath, 'utf8') + '\n\n';
     }
-    console.log(`✅ Restore complete! Output: ${output}`);
-    res.json({ message: 'Successfully restored all data from the Cloud to Local PC.' });
-  });
+    if (fs.existsSync(errorLogPath)) {
+      combinedLogs += `--- SYSTEM ERROR LOG ---\n` + fs.readFileSync(errorLogPath, 'utf8') + '\n\n';
+    }
+
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename=CareerXone_Logs_${new Date().toISOString().split('T')[0]}.txt`);
+    res.send(combinedLogs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/system/backup-info', protect, (req, res) => {
@@ -3580,6 +3676,448 @@ app.get('/api/system/backup-info', protect, (req, res) => {
     } catch(e) {}
   }
   res.json({ autoBackupTime: 'Every 3 min (Auto)', lastSync });
+});
+
+// ---- 🗄️ Local Database & Storage Manager APIs ----
+
+// Helper to calculate folder size and list files
+function getFolderMediaDetails(folderPath) {
+  if (!fs.existsSync(folderPath)) {
+    return { count: 0, sizeBytes: 0, sizeFormatted: '0 KB', files: [] };
+  }
+  try {
+    const fileNames = fs.readdirSync(folderPath);
+    let totalSize = 0;
+    const files = [];
+
+    for (const name of fileNames) {
+      const fullPath = path.join(folderPath, name);
+      try {
+        const stats = fs.statSync(fullPath);
+        if (stats.isFile()) {
+          totalSize += stats.size;
+          files.push({
+            name,
+            sizeBytes: stats.size,
+            sizeFormatted: (stats.size / 1024).toFixed(1) + ' KB',
+            createdAt: stats.birthtime || stats.mtime,
+            url: `/uploads/${path.basename(folderPath)}/${name}`
+          });
+        }
+      } catch (e) {}
+    }
+
+    const formatBytes = (bytes) => {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    };
+
+    return {
+      count: files.length,
+      sizeBytes: totalSize,
+      sizeFormatted: formatBytes(totalSize),
+      files: files.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    };
+  } catch (err) {
+    return { count: 0, sizeBytes: 0, sizeFormatted: '0 KB', files: [] };
+  }
+}
+
+// 1. Overview stats
+app.get('/api/database/overview', protect, async (req, res) => {
+  try {
+    const instId = req.user.instituteId;
+
+    // Collection stats (active vs deleted)
+    const [
+      studentsActive, studentsDeleted, studentsWithPhoto,
+      testsActive, testsDeleted,
+      resultsActive, resultsDeleted, resultsWithOmr,
+      attendanceActive, attendanceDeleted,
+      sessionsActive, sessionsDeleted,
+      inquiriesActive, inquiriesDeleted,
+      smslogsActive, smslogsDeleted,
+      notificationsActive
+    ] = await Promise.all([
+      Student.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
+      Student.countDocuments({ instituteId: instId, isDeleted: true }),
+      Student.countDocuments({ instituteId: instId, isDeleted: { $ne: true }, photo: { $exists: true, $ne: '' } }),
+
+      Test.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
+      Test.countDocuments({ instituteId: instId, isDeleted: true }),
+
+      TestResult.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
+      TestResult.countDocuments({ instituteId: instId, isDeleted: true }),
+      TestResult.countDocuments({ instituteId: instId, isDeleted: { $ne: true }, omrSheetImage: { $exists: true, $ne: '' } }),
+
+      Attendance.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
+      Attendance.countDocuments({ instituteId: instId, isDeleted: true }),
+
+      Session.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
+      Session.countDocuments({ instituteId: instId, isDeleted: true }),
+
+      Inquiry.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
+      Inquiry.countDocuments({ instituteId: instId, isDeleted: true }),
+
+      SMSLog.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
+      SMSLog.countDocuments({ instituteId: instId, isDeleted: true }),
+
+      Notification.countDocuments({ instituteId: instId })
+    ]);
+
+    // Local Disk Media stats
+    const omrFolder = path.join(dataPath, 'uploads', 'omr');
+    const photosFolder = path.join(dataPath, 'uploads', 'photos');
+    const avatarsFolder = path.join(dataPath, 'uploads', 'avatars');
+
+    const omrMedia = getFolderMediaDetails(omrFolder);
+    const photoMedia = getFolderMediaDetails(photosFolder);
+    const avatarMedia = getFolderMediaDetails(avatarsFolder);
+
+    const totalMediaBytes = omrMedia.sizeBytes + photoMedia.sizeBytes + avatarMedia.sizeBytes;
+    const formatBytes = (bytes) => {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    };
+
+    res.json({
+      collections: [
+        { key: 'students', name: 'Students Directory', active: studentsActive, deleted: studentsDeleted, total: studentsActive + studentsDeleted, extra: `${studentsWithPhoto} with photo` },
+        { key: 'tests', name: 'Tests & Exams', active: testsActive, deleted: testsDeleted, total: testsActive + testsDeleted },
+        { key: 'testresults', name: 'OMR Test Results', active: resultsActive, deleted: resultsDeleted, total: resultsActive + resultsDeleted, extra: `${resultsWithOmr} OMR images` },
+        { key: 'attendances', name: 'Attendance Records', active: attendanceActive, deleted: attendanceDeleted, total: attendanceActive + attendanceDeleted },
+        { key: 'sessions', name: 'Class Sessions & Batches', active: sessionsActive, deleted: sessionsDeleted, total: sessionsActive + sessionsDeleted },
+        { key: 'inquiries', name: 'Front Desk Inquiries', active: inquiriesActive, deleted: inquiriesDeleted, total: inquiriesActive + inquiriesDeleted },
+        { key: 'smslogs', name: 'SMS & WhatsApp Logs', active: smslogsActive, deleted: smslogsDeleted, total: smslogsActive + smslogsDeleted },
+        { key: 'notifications', name: 'System Notifications', active: notificationsActive, deleted: 0, total: notificationsActive }
+      ],
+      media: {
+        omr: omrMedia,
+        photos: photoMedia,
+        avatars: avatarMedia,
+        totalFiles: omrMedia.count + photoMedia.count + avatarMedia.count,
+        totalSizeBytes: totalMediaBytes,
+        totalSizeFormatted: formatBytes(totalMediaBytes)
+      }
+    });
+  } catch (err) {
+    console.error('Database overview error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Explore / List documents in a collection
+app.get('/api/database/items/:collection', protect, async (req, res) => {
+  try {
+    const instId = req.user.instituteId;
+    const { collection } = req.params;
+    const filterType = req.query.filter || 'all'; // 'all' | 'active' | 'deleted'
+    const search = (req.query.search || '').trim();
+
+    let Model;
+    switch (collection) {
+      case 'students': Model = Student; break;
+      case 'tests': Model = Test; break;
+      case 'testresults': Model = TestResult; break;
+      case 'attendances': Model = Attendance; break;
+      case 'sessions': Model = Session; break;
+      case 'inquiries': Model = Inquiry; break;
+      case 'smslogs': Model = SMSLog; break;
+      case 'notifications': Model = Notification; break;
+      default: return res.status(400).json({ error: 'Invalid collection name' });
+    }
+
+    const query = { instituteId: instId };
+    if (filterType === 'active') query.isDeleted = { $ne: true };
+    else if (filterType === 'deleted') query.isDeleted = true;
+
+    if (search) {
+      const regex = new RegExp(search, 'i');
+      if (collection === 'students') query.$or = [{ name: regex }, { rollNo: regex }, { phone: regex }, { parentPhone: regex }];
+      else if (collection === 'tests') query.$or = [{ testName: regex }, { code: regex }, { subject: regex }];
+      else if (collection === 'inquiries') query.$or = [{ studentName: regex }, { phone: regex }, { parentName: regex }];
+      else if (collection === 'smslogs') query.$or = [{ recipient: regex }, { message: regex }];
+    }
+
+    const items = await Model.find(query).sort({ createdAt: -1, date: -1, _id: -1 }).limit(100);
+    const totalCount = await Model.countDocuments(query);
+
+    res.json({ collection, filterType, count: items.length, totalCount, items });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Permanently hard-delete a single document
+app.delete('/api/database/item/:collection/:id', protect, async (req, res) => {
+  try {
+    const instId = req.user.instituteId;
+    const { collection, id } = req.params;
+
+    let Model;
+    switch (collection) {
+      case 'students': Model = Student; break;
+      case 'tests': Model = Test; break;
+      case 'testresults': Model = TestResult; break;
+      case 'attendances': Model = Attendance; break;
+      case 'sessions': Model = Session; break;
+      case 'inquiries': Model = Inquiry; break;
+      case 'smslogs': Model = SMSLog; break;
+      case 'notifications': Model = Notification; break;
+      default: return res.status(400).json({ error: 'Invalid collection name' });
+    }
+
+    const query = { instituteId: instId, $or: [{ _id: id }, { id }] };
+    const doc = await Model.findOneAndDelete(query);
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+    // Trigger cloud sync to propagate hard delete
+    triggerBackgroundCloudSync();
+
+    res.json({ message: 'Record permanently deleted successfully from local database and queued for cloud purge.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Purge soft-deleted trash records across DB or per collection
+app.post('/api/database/purge-deleted', protect, async (req, res) => {
+  try {
+    const instId = req.user.instituteId;
+    const { collection } = req.body;
+
+    let deletedStats = {};
+
+    if (!collection || collection === 'all' || collection === 'students') {
+      const r = await Student.deleteMany({ instituteId: instId, isDeleted: true });
+      deletedStats.students = r.deletedCount;
+    }
+    if (!collection || collection === 'all' || collection === 'tests') {
+      const r = await Test.deleteMany({ instituteId: instId, isDeleted: true });
+      deletedStats.tests = r.deletedCount;
+    }
+    if (!collection || collection === 'all' || collection === 'testresults') {
+      const r = await TestResult.deleteMany({ instituteId: instId, isDeleted: true });
+      deletedStats.testresults = r.deletedCount;
+    }
+    if (!collection || collection === 'all' || collection === 'attendances') {
+      const r = await Attendance.deleteMany({ instituteId: instId, isDeleted: true });
+      deletedStats.attendances = r.deletedCount;
+    }
+    if (!collection || collection === 'all' || collection === 'sessions') {
+      const r = await Session.deleteMany({ instituteId: instId, isDeleted: true });
+      deletedStats.sessions = r.deletedCount;
+    }
+    if (!collection || collection === 'all' || collection === 'inquiries') {
+      const r = await Inquiry.deleteMany({ instituteId: instId, isDeleted: true });
+      deletedStats.inquiries = r.deletedCount;
+    }
+    if (!collection || collection === 'all' || collection === 'smslogs') {
+      const r = await SMSLog.deleteMany({ instituteId: instId, isDeleted: true });
+      deletedStats.smslogs = r.deletedCount;
+    }
+
+    triggerBackgroundCloudSync();
+    res.json({ message: 'Soft-deleted trash permanently purged from local database.', deletedStats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Wipe an entire collection
+app.post('/api/database/wipe-collection', protect, async (req, res) => {
+  try {
+    const instId = req.user.instituteId;
+    const { collection, confirmation } = req.body;
+
+    if (confirmation !== 'WIPE') {
+      return res.status(400).json({ error: 'Invalid confirmation token' });
+    }
+
+    let Model;
+    switch (collection) {
+      case 'students': Model = Student; break;
+      case 'tests': Model = Test; break;
+      case 'testresults': Model = TestResult; break;
+      case 'attendances': Model = Attendance; break;
+      case 'sessions': Model = Session; break;
+      case 'inquiries': Model = Inquiry; break;
+      case 'smslogs': Model = SMSLog; break;
+      case 'notifications': Model = Notification; break;
+      default: return res.status(400).json({ error: 'Invalid collection name' });
+    }
+
+    const r = await Model.deleteMany({ instituteId: instId });
+    triggerBackgroundCloudSync();
+
+    res.json({ message: `Successfully wiped ${r.deletedCount} records from '${collection}'.`, deletedCount: r.deletedCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. Purge orphaned physical media files (OMR scans & photos not referenced in active DB)
+app.post('/api/database/purge-orphaned-files', protect, async (req, res) => {
+  try {
+    const instId = req.user.instituteId;
+
+    // Get all active image paths from DB
+    const activeTestResults = await TestResult.find({ instituteId: instId, isDeleted: { $ne: true } }).select('omrSheetImage');
+    const activeStudents = await Student.find({ instituteId: instId, isDeleted: { $ne: true } }).select('photo avatar');
+
+    const referencedFiles = new Set();
+    for (const r of activeTestResults) {
+      if (r.omrSheetImage) referencedFiles.add(path.basename(r.omrSheetImage));
+    }
+    for (const s of activeStudents) {
+      if (s.photo) referencedFiles.add(path.basename(s.photo));
+      if (s.avatar) referencedFiles.add(path.basename(s.avatar));
+    }
+
+    let purgedCount = 0;
+    let purgedBytes = 0;
+
+    const folders = [
+      path.join(dataPath, 'uploads', 'omr'),
+      path.join(dataPath, 'uploads', 'photos'),
+      path.join(dataPath, 'uploads', 'avatars')
+    ];
+
+    for (const folder of folders) {
+      if (fs.existsSync(folder)) {
+        const files = fs.readdirSync(folder);
+        for (const file of files) {
+          if (!referencedFiles.has(file)) {
+            const filePath = path.join(folder, file);
+            try {
+              const stats = fs.statSync(filePath);
+              purgedBytes += stats.size;
+              fs.unlinkSync(filePath);
+              purgedCount++;
+            } catch (e) {}
+          }
+        }
+      }
+    }
+
+    const formatBytes = (bytes) => {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    };
+
+    res.json({
+      message: `Cleaned ${purgedCount} orphaned files (${formatBytes(purgedBytes)} freed).`,
+      purgedCount,
+      freedBytes: purgedBytes,
+      freedFormatted: formatBytes(purgedBytes)
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. Delete individual physical media file
+app.delete('/api/database/media-file', protect, async (req, res) => {
+  try {
+    const { folder, filename } = req.query;
+    if (!folder || !filename) return res.status(400).json({ error: 'Folder and filename are required' });
+
+    // Prevent directory traversal
+    const safeFilename = path.basename(filename);
+    const safeFolder = path.basename(folder);
+
+    const filePath = path.join(dataPath, 'uploads', safeFolder, safeFilename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      return res.json({ message: 'Media file deleted successfully from local storage.' });
+    }
+    res.status(404).json({ error: 'File not found on local disk' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 8. Cloudinary OMR images inspection and stats
+app.get('/api/database/cloudinary-stats', protect, async (req, res) => {
+  try {
+    const instId = req.user.instituteId;
+    const allResults = await TestResult.find({ instituteId: instId, isDeleted: { $ne: true } });
+    const tests = await Test.find({ instituteId: instId, isDeleted: { $ne: true } });
+    const publishedTestIds = new Set(tests.filter(t => t.isPublished || t.status === 'published').map(t => String(t.id)));
+
+    let cloudinaryImagesCount = 0;
+    let publishedCloudinaryCount = 0;
+    let unwantedOrphanCount = 0;
+    const cloudinaryRecords = [];
+
+    for (const r of allResults) {
+      if (r.omrSheetImage && (r.omrSheetImage.includes('cloudinary.com') || r.omrSheetPublicId)) {
+        cloudinaryImagesCount++;
+        const isPublished = publishedTestIds.has(String(r.testId));
+        if (isPublished) {
+          publishedCloudinaryCount++;
+        } else {
+          unwantedOrphanCount++;
+        }
+        cloudinaryRecords.push({
+          id: r._id,
+          testId: r.testId,
+          studentId: r.studentId,
+          url: r.omrSheetImage,
+          publicId: r.omrSheetPublicId,
+          isPublished
+        });
+      }
+    }
+
+    res.json({
+      configured: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET),
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME || 'Not Configured',
+      totalCloudinaryImages: cloudinaryImagesCount,
+      publishedImages: publishedCloudinaryCount,
+      unwantedOrphanImages: unwantedOrphanCount,
+      records: cloudinaryRecords.slice(0, 50)
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 9. Purge unwanted / unpublished Cloudinary OMR images
+app.post('/api/database/purge-cloudinary-unwanted', protect, async (req, res) => {
+  try {
+    const instId = req.user.instituteId;
+    const tests = await Test.find({ instituteId: instId, isDeleted: { $ne: true } });
+    const publishedTestIds = new Set(tests.filter(t => t.isPublished || t.status === 'published').map(t => String(t.id)));
+
+    const results = await TestResult.find({ instituteId: instId, isDeleted: { $ne: true } });
+    let deletedCount = 0;
+
+    for (const r of results) {
+      const isPublished = publishedTestIds.has(String(r.testId));
+      if (!isPublished && r.omrSheetPublicId) {
+        try {
+          if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+            await cloudinary.uploader.destroy(r.omrSheetPublicId);
+          }
+          r.omrSheetImage = null;
+          r.omrSheetPublicId = null;
+          await r.save();
+          deletedCount++;
+        } catch (e) {
+          console.error(`Error deleting Cloudinary image ${r.omrSheetPublicId}:`, e.message);
+        }
+      }
+    }
+
+    triggerBackgroundCloudSync();
+    res.json({ message: `Successfully removed ${deletedCount} unpublished OMR images from Cloudinary.`, deletedCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('*', (req, res) => {

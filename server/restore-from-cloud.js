@@ -3,41 +3,70 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { logInfo, logError, logWarn } from './utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config({ path: path.join(__dirname, '..', '.env') }); // Load root .env
 
-const CLOUD_URI = 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
-const LOCAL_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27018/student-report';
+const CLOUD_URI = process.env.CLOUD_MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
+
+async function getLocalConnection() {
+  const possibleUris = [
+    process.env.MONGODB_URI,
+    'mongodb://127.0.0.1:27018/student-report?directConnection=true',
+    'mongodb://127.0.0.1:27017/student-report?directConnection=true',
+    'mongodb://localhost:27018/student-report?directConnection=true',
+    'mongodb://localhost:27017/student-report?directConnection=true',
+    'mongodb://127.0.0.1:27018/student-report',
+    'mongodb://127.0.0.1:27017/student-report'
+  ].filter(Boolean);
+
+  for (const uri of possibleUris) {
+    try {
+      const conn = await mongoose.createConnection(uri, {
+        serverSelectionTimeoutMS: 2000,
+        connectTimeoutMS: 2000,
+        directConnection: true
+      }).asPromise();
+      logInfo('RESTORE', `Successfully connected to local MongoDB at: ${uri}`);
+      return conn;
+    } catch (e) {
+      // Try next port
+    }
+  }
+  throw new Error('Could not connect to local MongoDB on port 27018 or 27017. Please ensure MongoDB is running.');
+}
 
 async function restoreFromCloud() {
-  console.log('🔄 Starting Data Restoration from Cloud...');
+  logInfo('RESTORE', 'Starting Data Restoration from Cloud...');
   let localConn, cloudConn;
   try {
-    console.log(`☁️ Connecting to cloud DB: ${CLOUD_URI}`);
-    cloudConn = await mongoose.createConnection(CLOUD_URI).asPromise();
+    logInfo('RESTORE', `Connecting to cloud DB: ${CLOUD_URI.replace(/:[^:@]+@/, ':****@')}`);
+    cloudConn = await mongoose.createConnection(CLOUD_URI, {
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000
+    }).asPromise();
+    logInfo('RESTORE', 'Successfully connected to MongoDB Atlas Cloud.');
     
-    console.log(`🔌 Connecting to local DB: ${LOCAL_URI}`);
-    localConn = await mongoose.createConnection(LOCAL_URI).asPromise();
+    localConn = await getLocalConnection();
 
     const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries'];
+    let totalRestored = 0;
 
     for (const collName of collections) {
-      console.log(`📦 Restoring collection: ${collName}...`);
       const cloudColl = cloudConn.collection(collName);
       const localColl = localConn.collection(collName);
 
       // Fetch all documents from Cloud
       const docs = await cloudColl.find({}).toArray();
       if (docs.length === 0) {
-        console.log(`   - 0 documents found in Cloud. Skipping.`);
+        logInfo('RESTORE', `Collection [${collName}]: 0 documents found in Cloud. Skipping.`);
         continue;
       }
 
-      // Upsert to Local (Download data from Cloud to Local)
-      // We use upsert so we don't duplicate existing local data, but overwrite with cloud versions if they exist
+      // Upsert to Local
       const bulkOps = docs.map(doc => ({
         replaceOne: {
           filter: { _id: doc._id },
@@ -47,12 +76,13 @@ async function restoreFromCloud() {
       }));
 
       const result = await localColl.bulkWrite(bulkOps);
-      console.log(`   - Restored ${docs.length} documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
+      totalRestored += docs.length;
+      logInfo('RESTORE', `Collection [${collName}]: Restored ${docs.length} documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
     }
 
-    console.log('✅ Data Restoration from Cloud Completed Successfully!');
+    logInfo('RESTORE', `✅ Data Restoration Completed Successfully! Total records restored: ${totalRestored}`);
   } catch (err) {
-    console.error('❌ Data Restoration Failed:', err);
+    logError('RESTORE', 'Data Restoration Failed', err);
     process.exit(1);
   } finally {
     if (localConn) await localConn.close();

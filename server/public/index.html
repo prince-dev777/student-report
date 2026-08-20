@@ -18,24 +18,37 @@
       function updatePWAManifest() {
         const hash = window.location.hash || '';
         const search = window.location.search || '';
+        const isElectron = navigator.userAgent.toLowerCase().includes('electron') || !!window.electronAPI;
+
         let appParam = 'parent';
-        let appTitle = 'Career Xone - Parents App';
+        let appTitle = 'Career Xone Pro';
+        let appleTitle = 'CX Parents';
 
         if (hash.includes('/teacher') || search.includes('app=teacher')) {
           appParam = 'teacher';
-          appTitle = 'Teacher Portal';
+          appTitle = 'Career Xone - Teacher Portal';
+          appleTitle = 'CX Teacher';
         } else if (hash.includes('/staff') || search.includes('app=staff')) {
           appParam = 'staff';
-          appTitle = 'Staff Attendance';
+          appTitle = 'Career Xone - Staff Attendance';
+          appleTitle = 'CX Staff';
         } else if (hash.includes('/inquiry') || search.includes('app=inquiry')) {
           appParam = 'inquiry';
-          appTitle = 'Inquiry Desk';
+          appTitle = 'Career Xone - Inquiry Desk';
+          appleTitle = 'CX Inquiry';
         } else if (hash.includes('/parent') || search.includes('app=parent')) {
           appParam = 'parent';
-          appTitle = 'Parents App';
+          appTitle = 'Career Xone - Parents Portal';
+          appleTitle = 'CX Parents';
+        } else {
+          appParam = 'parent';
+          appTitle = isElectron ? 'Career Xone Pro' : 'Career Xone Pro';
+          appleTitle = 'CX Parents';
         }
 
-        document.title = appTitle + ' - Career Xone';
+        document.title = appTitle;
+        const appleTitleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+        if (appleTitleMeta) appleTitleMeta.setAttribute('content', appleTitle);
 
         let link = document.getElementById('app-manifest');
         if (!link) {
@@ -44,7 +57,7 @@
           link.rel = 'manifest';
           document.head.appendChild(link);
         }
-        const targetHref = '/manifest.json?app=' + appParam;
+        const targetHref = '/manifest-' + appParam + '.json';
         if (link.getAttribute('href') !== targetHref) {
           link.href = targetHref;
         }
@@ -72,7 +85,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="./assets/index-EaGy8FQR.js"></script>
+    <script type="module" crossorigin src="./assets/index-DJ12N2WE.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-D58_1uDB.css">
   </head>
   <body>

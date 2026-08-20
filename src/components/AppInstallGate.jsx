@@ -27,7 +27,8 @@ export default function AppInstallGate({
     const isApp = window.matchMedia('(display-mode: standalone)').matches || 
                   window.navigator.standalone === true ||
                   window.location.search.includes('source=pwa') ||
-                  window.location.search.includes('app=');
+                  window.location.search.includes('standalone=1') ||
+                  window.location.search.includes('installed=1');
     return isApp;
   });
   const [showIOSModal, setShowIOSModal] = useState(false);

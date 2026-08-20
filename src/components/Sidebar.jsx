@@ -19,7 +19,9 @@ import {
   PhoneCall,
   Clock,
   Library,
-  Sparkles
+  Sparkles,
+  Settings as SettingsIcon,
+  ChevronDown
 } from 'lucide-react';
 import UpdateNotesModal from './UpdateNotesModal';
 import { useApp } from '../context/AppContext';
@@ -42,6 +44,10 @@ const commMenuItems = [
   { to: '/share-app', icon: Smartphone, label: 'Share App', hasBadge: false },
 ];
 
+const systemMenuItems = [
+  { to: '/settings', icon: SettingsIcon, label: 'Settings', hasBadge: false },
+];
+
 export default function Sidebar() {
   const { sidebarOpen, setSidebarOpen, smsHistory, sidebarCollapsed, setSidebarCollapsed, loading } = useApp();
   const { user } = useAuth();
@@ -51,6 +57,7 @@ export default function Sidebar() {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [backupMenuOpen, setBackupMenuOpen] = useState(false);
   const [backupInfo, setBackupInfo] = useState(null);
 
   useEffect(() => {
@@ -278,50 +285,148 @@ export default function Sidebar() {
               )}
             </NavLink>
           ))}
+
+          {/* System & Database Section */}
+          <div className="sidebar-section-title">System</div>
+          {systemMenuItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={linkClass}
+              onClick={handleNavClick}
+            >
+              <item.icon className="sidebar-link-icon" size={20} />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+
+          {/* Collapsible Cloud & Backup Button */}
+          <div style={{ position: 'relative', marginTop: '2px' }}>
+            <button
+              type="button"
+              className="sidebar-link"
+              onClick={() => setBackupMenuOpen(!backupMenuOpen)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+                border: 'none',
+                background: backupMenuOpen ? 'rgba(59, 130, 246, 0.12)' : 'transparent',
+                color: backupMenuOpen ? '#3b82f6' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                padding: sidebarCollapsed ? '10px 0' : '10px 14px',
+                borderRadius: '10px',
+                transition: 'all 0.2s ease'
+              }}
+              title="Cloud & Backup Manager"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Cloud className="sidebar-link-icon" size={20} color={backupMenuOpen ? '#3b82f6' : 'currentColor'} />
+                {!sidebarCollapsed && <span style={{ fontWeight: 600 }}>Cloud & Backup</span>}
+              </div>
+              {!sidebarCollapsed && (
+                <ChevronDown
+                  size={16}
+                  style={{
+                    transform: backupMenuOpen ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.2s ease',
+                    color: 'var(--text-muted)'
+                  }}
+                />
+              )}
+            </button>
+
+            {/* Submenu Options */}
+            <AnimatePresence>
+              {backupMenuOpen && !sidebarCollapsed && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{
+                    overflow: 'hidden',
+                    padding: '8px 10px 12px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    background: 'var(--surface-color, rgba(0, 0, 0, 0.03))',
+                    borderRadius: '10px',
+                    margin: '4px 6px 8px'
+                  }}
+                >
+                  <button
+                    className="btn btn-primary"
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      opacity: isSyncing ? 0.7 : 1
+                    }}
+                    onClick={handleSync}
+                    disabled={isSyncing}
+                  >
+                    <Cloud size={16} />
+                    <span>{isSyncing ? 'Syncing...' : 'Cloud Backup'}</span>
+                  </button>
+
+                  <button
+                    className="btn btn-outline"
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '7px 12px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      opacity: isRestoring ? 0.7 : 1
+                    }}
+                    onClick={handleRestoreCloud}
+                    disabled={isRestoring}
+                  >
+                    <DownloadCloud size={15} />
+                    <span>{isRestoring ? 'Restoring...' : 'Restore from Cloud'}</span>
+                  </button>
+
+                  <button
+                    className="btn btn-outline"
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '7px 12px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600
+                    }}
+                    onClick={handleLocalBackup}
+                  >
+                    <Archive size={15} />
+                    <span>Local Backup (ZIP)</span>
+                  </button>
+
+                  {backupInfo && (
+                    <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '2px', lineHeight: 1.3 }}>
+                      Auto-Sync: {backupInfo.autoBackupTime}
+                      <br />
+                      Last: {backupInfo.lastSync ? new Date(backupInfo.lastSync).toLocaleDateString() + ' ' + new Date(backupInfo.lastSync).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Pending'}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </nav>
-
-        {/* Sync Button */}
-        <div style={{ padding: sidebarCollapsed ? '0 10px' : '0 20px', marginTop: 'auto', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button 
-            className="btn btn-primary" 
-            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', opacity: isSyncing ? 0.7 : 1, padding: sidebarCollapsed ? '10px 0' : '10px 16px' }}
-            onClick={handleSync}
-            disabled={isSyncing}
-            title="Cloud Backup"
-          >
-            <Cloud size={18} />
-            {!sidebarCollapsed && (isSyncing ? 'Syncing...' : 'Cloud Backup')}
-          </button>
-          
-          <button 
-            className="btn btn-outline" 
-            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', opacity: isRestoring ? 0.7 : 1, marginTop: '-2px', padding: sidebarCollapsed ? '10px 0' : '10px 16px' }}
-            onClick={handleRestoreCloud}
-            disabled={isRestoring}
-            title="Restore from Cloud"
-          >
-            <DownloadCloud size={18} />
-            {!sidebarCollapsed && (isRestoring ? 'Restoring...' : 'Restore from Cloud')}
-          </button>
-
-          <button 
-            className="btn btn-outline" 
-            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '-2px', padding: sidebarCollapsed ? '10px 0' : '10px 16px' }}
-            onClick={handleLocalBackup}
-            title="Local Backup"
-          >
-            <Archive size={18} />
-            {!sidebarCollapsed && 'Local Backup'}
-          </button>
-          
-          {!sidebarCollapsed && backupInfo && (
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '5px' }}>
-              Auto-Sync: {backupInfo.autoBackupTime}
-              <br />
-              Last Synced: {backupInfo.lastSync ? new Date(backupInfo.lastSync).toLocaleDateString() + ' ' + new Date(backupInfo.lastSync).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Pending'}
-            </div>
-          )}
-        </div>
 
         {/* Version Info & What's New */}
         {!sidebarCollapsed && (

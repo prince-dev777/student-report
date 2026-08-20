@@ -204,4 +204,25 @@ export const api = {
   // Cloud Sync
   syncDataToCloud: () => apiRequest('/sync', { method: 'POST' }),
   getBackupInfo: () => apiRequest('/system/backup-info'),
+
+  // Local Database & Storage Manager
+  getDatabaseOverview: () => apiRequest('/database/overview'),
+  getDatabaseItems: (collection, filter = 'all', search = '') => 
+    apiRequest(`/database/items/${collection}?filter=${filter}&search=${encodeURIComponent(search)}`),
+  deleteDatabaseItem: (collection, id) => 
+    apiRequest(`/database/item/${collection}/${id}`, { method: 'DELETE' }),
+  purgeDeletedRecords: (collection = 'all') => 
+    apiRequest('/database/purge-deleted', { method: 'POST', body: JSON.stringify({ collection }) }),
+  wipeCollection: (collection, confirmation = 'WIPE') => 
+    apiRequest('/database/wipe-collection', { method: 'POST', body: JSON.stringify({ collection, confirmation }) }),
+  purgeOrphanedFiles: () => 
+    apiRequest('/database/purge-orphaned-files', { method: 'POST' }),
+  deleteMediaFile: (folder, filename) => 
+    apiRequest(`/database/media-file?folder=${encodeURIComponent(folder)}&filename=${encodeURIComponent(filename)}`, { method: 'DELETE' }),
+  getCloudinaryStats: () => 
+    apiRequest('/database/cloudinary-stats'),
+  purgeCloudinaryUnwanted: () => 
+    apiRequest('/database/purge-cloudinary-unwanted', { method: 'POST' }),
+  getSystemLogs: () => 
+    apiRequest('/system/logs'),
 };

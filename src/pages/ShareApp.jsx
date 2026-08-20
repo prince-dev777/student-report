@@ -77,10 +77,10 @@ export default function ShareApp() {
     loadSettings();
   }, []);
 
-  const parentAppLink = "https://studentreport.cxjeeneet.com/#/parent";
-  const staffWebLink = "https://studentreport.cxjeeneet.com/#/staff";
-  const teacherWebLink = "https://studentreport.cxjeeneet.com/#/teacher";
-  const inquiryWebLink = "https://studentreport.cxjeeneet.com/#/inquiry";
+  const parentAppLink = "https://studentreport.cxjeeneet.com/?app=parent#/parent";
+  const staffWebLink = "https://studentreport.cxjeeneet.com/?app=staff#/staff";
+  const teacherWebLink = "https://studentreport.cxjeeneet.com/?app=teacher#/teacher";
+  const inquiryWebLink = "https://studentreport.cxjeeneet.com/?app=inquiry#/inquiry";
 
   const [copiedParentUrl, setCopiedParentUrl] = useState(false);
   const [copiedStaffUrl, setCopiedStaffUrl] = useState(false);
