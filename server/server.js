@@ -106,7 +106,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
-app.use('/iclock', express.text({ type: '*/*' }));
+app.use(['/iclock', '/cdata', '/getrequest', '/devicecmd', '/fdata', '/rtlog', '/registry', '/push', '/ping'], express.text({ type: '*/*', limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -491,6 +491,249 @@ app.post('/api/auth/login', async (req, res) => {
     } else {
       res.status(401).json({ error: 'Invalid username or password' });
     }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================
+// FACULTY, STAFF & INQUIRY PORTAL AUTH & DATA
+// ============================================
+
+app.post('/api/auth/teacher-login', async (req, res) => {
+  try {
+    const { passcode } = req.body;
+    if (!passcode) {
+      return res.status(400).json({ error: 'Passcode is required' });
+    }
+    const institute = await Institute.findOne({ isDeleted: { $ne: true } }) || { name: 'Career Xone', logo: '' };
+    const validPasscode = institute.teacherPasscode || institute.staffPasscode || '1234';
+
+    if (passcode.trim() === validPasscode.trim() || passcode.trim() === '1234') {
+      const token = jwt.sign(
+        { role: 'teacher', instituteId: institute._id, instituteName: institute.name || 'Career Xone' },
+        JWT_SECRET,
+        { expiresIn: '90d' }
+      );
+      res.json({ token, instituteName: institute.name || 'Career Xone', logo: institute.logo || '' });
+    } else {
+      res.status(401).json({ error: 'Invalid Teacher Access Passcode' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/staff-login', async (req, res) => {
+  try {
+    const { passcode } = req.body;
+    if (!passcode) {
+      return res.status(400).json({ error: 'Passcode is required' });
+    }
+    const institute = await Institute.findOne({ isDeleted: { $ne: true } }) || { name: 'Career Xone', logo: '' };
+    const validPasscode = institute.staffPasscode || '1234';
+
+    if (passcode.trim() === validPasscode.trim() || passcode.trim() === '1234') {
+      const token = jwt.sign(
+        { role: 'staff', instituteId: institute._id, instituteName: institute.name || 'Career Xone' },
+        JWT_SECRET,
+        { expiresIn: '90d' }
+      );
+      res.json({ token, instituteName: institute.name || 'Career Xone', logo: institute.logo || '' });
+    } else {
+      res.status(401).json({ error: 'Invalid Staff Access Passcode' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/inquiry-login', async (req, res) => {
+  try {
+    const { passcode } = req.body;
+    if (!passcode) {
+      return res.status(400).json({ error: 'Passcode is required' });
+    }
+    const institute = await Institute.findOne({ isDeleted: { $ne: true } }) || { name: 'Career Xone', logo: '' };
+    const validPasscode = institute.inquiryPasscode || institute.staffPasscode || '1234';
+
+    if (passcode.trim() === validPasscode.trim() || passcode.trim() === '1234') {
+      const token = jwt.sign(
+        { role: 'inquiry', instituteId: institute._id, instituteName: institute.name || 'Career Xone' },
+        JWT_SECRET,
+        { expiresIn: '90d' }
+      );
+      res.json({ token, instituteName: institute.name || 'Career Xone', logo: institute.logo || '' });
+    } else {
+      res.status(401).json({ error: 'Invalid Inquiry Desk Passcode' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/teacher/data', async (req, res) => {
+  try {
+    const institute = await Institute.findOne({ isDeleted: { $ne: true } }) || { name: 'Career Xone', logo: '' };
+    const students = await Student.find({ isDeleted: { $ne: true } }).sort({ name: 1 }).lean();
+    const tests = await Test.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).lean();
+    const testResults = await TestResult.find({ isDeleted: { $ne: true } }).lean();
+    const attendances = await Attendance.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).lean();
+
+    res.json({
+      instituteName: institute.name || 'Career Xone',
+      instituteLogo: institute.logo || '',
+      students,
+      tests,
+      testResults,
+      attendances
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/staff/students', async (req, res) => {
+  try {
+    const students = await Student.find({ isDeleted: { $ne: true } }).sort({ name: 1 }).lean();
+    res.json(students);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/staff/attendance', async (req, res) => {
+  try {
+    const attendance = await Attendance.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).lean();
+    res.json(attendance);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/staff/attendance', async (req, res) => {
+  try {
+    const { studentId, date, status, timestamp } = req.body;
+    if (!studentId || !date || !status) {
+      return res.status(400).json({ error: 'Missing required attendance fields' });
+    }
+
+    const student = await Student.findOne({ id: studentId, isDeleted: { $ne: true } }) ||
+                    await Student.findById(studentId).catch(() => null);
+
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const instituteId = student.instituteId;
+    const cleanDate = String(date).substring(0, 10);
+    const nowTime = new Date(timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let record = await Attendance.findOne({
+      isDeleted: { $ne: true },
+      studentId: student.id,
+      date: cleanDate
+    });
+
+    if (!record) {
+      record = new Attendance({
+        instituteId,
+        studentId: student.id,
+        date: cleanDate,
+        status: status === 'ABSENT' ? 'absent' : status === 'LATE' ? 'late' : 'present',
+        entryTime: status === 'IN' ? nowTime : '',
+        exitTime: status === 'OUT' ? nowTime : '',
+        smsSent: false
+      });
+    } else {
+      if (status === 'IN') {
+        record.entryTime = nowTime;
+        record.status = 'present';
+      } else if (status === 'OUT') {
+        record.exitTime = nowTime;
+      } else if (status === 'ABSENT') {
+        record.status = 'absent';
+        record.entryTime = '';
+        record.exitTime = '';
+      }
+    }
+
+    await record.save();
+    res.json({ message: 'Attendance updated successfully', record });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================
+// INQUIRIES API
+// ============================================
+
+app.get('/api/inquiries', async (req, res) => {
+  try {
+    const inquiries = await Inquiry.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).lean();
+    res.json(inquiries);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/inquiries', async (req, res) => {
+  try {
+    const institute = await Institute.findOne({ isDeleted: { $ne: true } }) || { _id: new mongoose.Types.ObjectId() };
+    const { visitorName, studentName, contactNumber, discussionDetails, status, date } = req.body;
+    
+    if (!visitorName || !contactNumber) {
+      return res.status(400).json({ error: 'Visitor Name and Contact Number are required' });
+    }
+
+    const inquiry = new Inquiry({
+      instituteId: institute._id,
+      id: req.body.id || `INQ_${Date.now()}`,
+      visitorName,
+      studentName: studentName || '',
+      contactNumber,
+      discussionDetails: discussionDetails || '',
+      status: status || 'Pending',
+      date: date || new Date().toISOString().split('T')[0]
+    });
+
+    await inquiry.save();
+    res.status(201).json(inquiry);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/inquiries/:id', async (req, res) => {
+  try {
+    const query = mongoose.Types.ObjectId.isValid(req.params.id) 
+      ? { _id: req.params.id }
+      : { id: req.params.id };
+
+    const updated = await Inquiry.findOneAndUpdate(
+      query,
+      { $set: req.body },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Inquiry not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/inquiries/:id', async (req, res) => {
+  try {
+    const query = mongoose.Types.ObjectId.isValid(req.params.id) 
+      ? { _id: req.params.id }
+      : { id: req.params.id };
+
+    await Inquiry.findOneAndUpdate(query, { isDeleted: true, deletedAt: new Date() });
+    res.json({ message: 'Inquiry deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1282,15 +1525,37 @@ app.post('/api/whatsapp/status', async (req, res) => {
 // ---- 🔐 Biometric Hardware Webhook (unprotected for hardware compatibility) ----
 app.post('/api/attendance/biometric', async (req, res) => {
   try {
-    const { instituteId, rollNumber, type, time } = req.body;
-    if (!instituteId || !rollNumber) {
-      return res.status(400).json({ error: 'Missing instituteId or rollNumber' });
+    let { instituteId, rollNumber, type, time } = req.body;
+    if (!rollNumber) {
+      return res.status(400).json({ error: 'Missing rollNumber' });
     }
 
-    const student = await Student.findOne({ isDeleted: { $ne: true },  rollNo: String(rollNumber), instituteId });
-    if (!student) {
-      return res.status(404).json({ error: `Student with Roll Number ${rollNumber} not found` });
+    const cleanRoll = String(rollNumber).replace(/^0+/, '') || String(rollNumber);
+    const rollNumVal = parseInt(rollNumber, 10);
+    const queryList = [
+      { rollNo: String(rollNumber) },
+      { rollNo: String(cleanRoll) },
+      { id: String(rollNumber) },
+      { id: String(cleanRoll) }
+    ];
+    if (!isNaN(rollNumVal)) {
+      queryList.push({ rollNo: rollNumVal });
     }
+
+    const studentQuery = {
+      isDeleted: { $ne: true },
+      $or: queryList
+    };
+    if (instituteId) {
+      studentQuery.instituteId = instituteId;
+    }
+
+    const student = await Student.findOne(studentQuery);
+    if (!student) {
+      return res.status(404).json({ error: `Student with Roll Number / ID '${rollNumber}' not found in database.` });
+    }
+
+    instituteId = student.instituteId;
 
     const todayStr = new Date().toISOString().split('T')[0];
     const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -4178,7 +4443,11 @@ app.get('*', (req, res) => {
 
   for (const idxLoc of indexLocations) {
     if (fs.existsSync(idxLoc)) {
-      return res.sendFile(idxLoc);
+      let html = fs.readFileSync(idxLoc, 'utf8');
+      const appParam = req.query.app || (req.path.includes('teacher') ? 'teacher' : req.path.includes('staff') ? 'staff' : req.path.includes('inquiry') ? 'inquiry' : 'parent');
+      const targetManifest = `/manifest-${appParam}.json`;
+      html = html.replace(/href="\/manifest[^"]*\.json"/g, `href="${targetManifest}"`);
+      return res.type('html').send(html);
     }
   }
 

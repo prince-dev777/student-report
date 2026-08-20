@@ -31,6 +31,10 @@ export default function TeacherPortalWeb() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [dossierTab, setDossierTab] = useState('tests'); // 'tests' | 'attendance'
 
+  useEffect(() => {
+    document.title = 'Career Xone - Teacher Portal';
+  }, []);
+
   // Institute Branding
   const instituteName = teacherData?.instituteName || 'Career Xone';
 
@@ -373,16 +377,16 @@ export default function TeacherPortalWeb() {
             />
           </div>
 
-          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>
+          <h2 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px' }}>
             Teacher & Faculty Portal
           </h2>
-          <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 20px' }}>
+          <p style={{ fontSize: '0.88rem', color: '#64748b', margin: '0 0 22px' }}>
             Search student & view complete Test & Attendance log
           </p>
 
           <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: '14px', textAlign: 'left' }}>
-              <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
+            <div style={{ marginBottom: '16px', textAlign: 'left' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '8px' }}>
                 TEACHER ACCESS PASSCODE:
               </label>
               <input
@@ -393,11 +397,11 @@ export default function TeacherPortalWeb() {
                 autoFocus
                 style={{
                   width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
                   border: '1.5px solid #cbd5e1',
-                  fontSize: '0.95rem',
-                  fontWeight: 600,
+                  fontSize: '1.05rem',
+                  fontWeight: 700,
                   outline: 'none',
                   boxSizing: 'border-box',
                   background: '#f8fafc',
@@ -412,19 +416,19 @@ export default function TeacherPortalWeb() {
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '11px',
+                padding: '13px',
                 background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                 color: '#ffffff',
                 border: 'none',
-                borderRadius: '10px',
-                fontSize: '0.88rem',
-                fontWeight: 700,
+                borderRadius: '12px',
+                fontSize: '0.96rem',
+                fontWeight: 800,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 boxShadow: '0 6px 16px -4px rgba(37, 99, 235, 0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px'
+                gap: '8px'
               }}
             >
               {loading ? 'Verifying...' : 'Access Student Records ➔'}
@@ -451,15 +455,15 @@ export default function TeacherPortalWeb() {
       {/* 📲 Download First PWA Install Banner */}
       <PWAInstallPrompt appName="Teacher Portal" />
 
-      {/* Top Header (Compact Single-Row for Mobile) */}
+      {/* Top Header (Comfortable Sizing for Mobile & Tablet) */}
       <header style={{
         background: '#ffffff',
         borderBottom: '1px solid #e2e8f0',
-        padding: '8px 12px',
+        padding: '12px 16px',
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
       }}>
         <div style={{
           maxWidth: '1000px',
@@ -467,21 +471,21 @@ export default function TeacherPortalWeb() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '8px'
+          gap: '12px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
             <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
+              width: '42px',
+              height: '42px',
+              borderRadius: '10px',
               background: '#ffffff',
-              border: '1px solid #e2e8f0',
+              border: '1.5px solid #e2e8f0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden',
               flexShrink: 0,
-              padding: '2px'
+              padding: '3px'
             }}>
               <img
                 src={teacherData?.instituteLogo || '/logo.png'}
@@ -494,100 +498,101 @@ export default function TeacherPortalWeb() {
             </div>
             <div style={{ minWidth: 0, overflow: 'hidden' }}>
               <div style={{
-                fontSize: '0.92rem',
+                fontSize: '1.08rem',
                 fontWeight: 800,
                 color: '#0f172a',
-                lineHeight: 1.15,
+                lineHeight: 1.2,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
               }}>
                 {instituteName}
               </div>
-              <div style={{ fontSize: '0.65rem', color: '#2563eb', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                Teacher Portal • Student Records
+              <div style={{ fontSize: '0.80rem', color: '#2563eb', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '1px' }}>
+                Teacher & Faculty Portal • Student Records
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             <button
               onClick={() => fetchTeacherData(true)}
               disabled={loading}
               style={{
-                padding: '6px 10px',
-                background: loading ? '#e2e8f0' : '#f1f5f9',
-                border: '1px solid #cbd5e1',
-                borderRadius: '8px',
-                color: '#1e293b',
-                fontSize: '0.74rem',
+                padding: '8px 14px',
+                background: loading ? '#e2e8f0' : '#eff6ff',
+                border: '1.5px solid #bfdbfe',
+                borderRadius: '10px',
+                color: '#1d4ed8',
+                fontSize: '0.86rem',
                 fontWeight: 700,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '6px',
                 transition: 'all 0.2s'
               }}
               title="Click to sync and refresh latest student data"
             >
-              <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
               <span>{loading ? 'Syncing...' : 'Sync'}</span>
             </button>
 
             <button
               onClick={handleLogout}
               style={{
-                padding: '6px 8px',
+                padding: '8px 12px',
                 background: '#fee2e2',
-                border: '1px solid #fecaca',
-                borderRadius: '8px',
+                border: '1.5px solid #fecaca',
+                borderRadius: '10px',
                 color: '#dc2626',
-                fontSize: '0.74rem',
-                fontWeight: 600,
+                fontSize: '0.86rem',
+                fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                gap: '4px'
               }}
               title="Log Out"
             >
-              <LogOut size={13} />
+              <LogOut size={16} />
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Container */}
-      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '10px 10px' }}>
+      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '14px 14px' }}>
 
-        {/* Search & Modern Dual-Dropdown Filter Bar (Compact) */}
+        {/* Search & Modern Dual-Dropdown Filter Bar */}
         <div style={{
           background: '#ffffff',
-          borderRadius: '12px',
-          padding: '8px 10px',
+          borderRadius: '16px',
+          padding: '12px 14px',
           border: '1px solid #e2e8f0',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-          marginBottom: '10px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          marginBottom: '14px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '6px'
+          gap: '10px'
         }}>
           {/* Search Box */}
           <div style={{ position: 'relative', width: '100%' }}>
-            <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+            <Search size={18} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
             <input
               type="text"
-              placeholder="Search by Name, Roll No, Phone..."
+              placeholder="Search student by Name, Roll No, Phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 width: '100%',
-                padding: '6px 30px 6px 30px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
+                padding: '10px 40px 10px 40px',
+                borderRadius: '10px',
+                border: '1.5px solid #cbd5e1',
                 background: '#f8fafc',
-                fontSize: '0.8rem',
-                fontWeight: 500,
+                fontSize: '0.95rem',
+                fontWeight: 600,
                 color: '#0f172a',
                 outline: 'none',
                 boxSizing: 'border-box'
@@ -598,30 +603,30 @@ export default function TeacherPortalWeb() {
                 onClick={() => setSearchQuery('')}
                 style={{
                   position: 'absolute',
-                  right: '8px',
+                  right: '10px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: '#e2e8f0',
                   border: 'none',
                   borderRadius: '50%',
-                  width: '18px',
-                  height: '18px',
+                  width: '22px',
+                  height: '22px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer'
                 }}
               >
-                <X size={10} color="#475569" />
+                <X size={13} color="#475569" />
               </button>
             )}
           </div>
 
-          {/* 2 Clean Dropdowns - Responsive 2-column on mobile */}
+          {/* 2 Clean Dropdowns */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-            gap: '6px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: '8px',
             alignItems: 'center'
           }}>
             {/* 1. Course Dropdown */}
@@ -631,19 +636,19 @@ export default function TeacherPortalWeb() {
                 onChange={(e) => setSelectedCourse(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '6px 24px 6px 8px',
-                  borderRadius: '8px',
-                  border: selectedCourse !== 'ALL' ? '1px solid #2563eb' : '1px solid #cbd5e1',
+                  padding: '8px 30px 8px 12px',
+                  borderRadius: '10px',
+                  border: selectedCourse !== 'ALL' ? '1.5px solid #2563eb' : '1.5px solid #cbd5e1',
                   background: selectedCourse !== 'ALL' ? '#eff6ff' : '#f8fafc',
                   color: selectedCourse !== 'ALL' ? '#1d4ed8' : '#334155',
-                  fontSize: '0.74rem',
+                  fontSize: '0.86rem',
                   fontWeight: 700,
                   outline: 'none',
                   appearance: 'none',
                   WebkitAppearance: 'none',
                   cursor: 'pointer',
                   boxSizing: 'border-box',
-                  height: '32px'
+                  height: '38px'
                 }}
               >
                 <option value="ALL">🎓 All Courses ({students.length})</option>
@@ -653,7 +658,7 @@ export default function TeacherPortalWeb() {
                   </option>
                 ))}
               </select>
-              <Filter size={11} color={selectedCourse !== 'ALL' ? '#2563eb' : '#64748b'} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <Filter size={14} color={selectedCourse !== 'ALL' ? '#2563eb' : '#64748b'} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             </div>
 
             {/* 2. Class / Batch Dropdown */}
@@ -663,19 +668,19 @@ export default function TeacherPortalWeb() {
                 onChange={(e) => setSelectedClass(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '6px 24px 6px 8px',
-                  borderRadius: '8px',
-                  border: selectedClass !== 'ALL' ? '1px solid #2563eb' : '1px solid #cbd5e1',
+                  padding: '8px 30px 8px 12px',
+                  borderRadius: '10px',
+                  border: selectedClass !== 'ALL' ? '1.5px solid #2563eb' : '1.5px solid #cbd5e1',
                   background: selectedClass !== 'ALL' ? '#eff6ff' : '#f8fafc',
                   color: selectedClass !== 'ALL' ? '#1d4ed8' : '#334155',
-                  fontSize: '0.74rem',
+                  fontSize: '0.86rem',
                   fontWeight: 700,
                   outline: 'none',
                   appearance: 'none',
                   WebkitAppearance: 'none',
                   cursor: 'pointer',
                   boxSizing: 'border-box',
-                  height: '32px'
+                  height: '38px'
                 }}
               >
                 <option value="ALL">🏷️ All Batches</option>
@@ -685,7 +690,7 @@ export default function TeacherPortalWeb() {
                   </option>
                 ))}
               </select>
-              <Filter size={11} color={selectedClass !== 'ALL' ? '#2563eb' : '#64748b'} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <Filter size={14} color={selectedClass !== 'ALL' ? '#2563eb' : '#64748b'} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             </div>
 
             {/* Reset Filters button if any active */}
@@ -697,22 +702,22 @@ export default function TeacherPortalWeb() {
                   setSearchQuery('');
                 }}
                 style={{
-                  padding: '6px 8px',
-                  borderRadius: '8px',
-                  border: '1px dashed #cbd5e1',
+                  padding: '8px 12px',
+                  borderRadius: '10px',
+                  border: '1.5px dashed #cbd5e1',
                   background: '#fef2f2',
                   color: '#ef4444',
-                  fontSize: '0.72rem',
+                  fontSize: '0.84rem',
                   fontWeight: 700,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '3px',
-                  height: '32px'
+                  gap: '4px',
+                  height: '38px'
                 }}
               >
-                <RefreshCw size={10} /> Clear Filter
+                <RefreshCw size={13} /> Clear Filters
               </button>
             )}
           </div>
@@ -723,62 +728,62 @@ export default function TeacherPortalWeb() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '8px',
+          marginBottom: '10px',
           padding: '0 4px',
-          fontSize: '0.72rem',
-          color: '#64748b',
-          fontWeight: 600
+          fontSize: '0.84rem',
+          color: '#475569',
+          fontWeight: 700
         }}>
-          <span>Showing {filteredStudents.length} Students</span>
-          <span>Tap to view complete records</span>
+          <span>Showing <strong>{filteredStudents.length}</strong> Students</span>
+          <span>Tap any student for full dossier ➔</span>
         </div>
 
         {/* Student Cards List */}
         {filteredStudents.length === 0 ? (
           <div style={{
             background: '#ffffff',
-            borderRadius: '14px',
-            padding: '30px 16px',
+            borderRadius: '16px',
+            padding: '36px 20px',
             textAlign: 'center',
             border: '1px solid #e2e8f0',
             color: '#64748b'
           }}>
-            <Users size={32} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#334155' }}>No students match your search</div>
-            <div style={{ fontSize: '0.75rem', marginTop: '2px' }}>Try typing a different name or selecting another batch.</div>
+            <Users size={38} color="#94a3b8" style={{ margin: '0 auto 10px' }} />
+            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#334155' }}>No students match your search</div>
+            <div style={{ fontSize: '0.84rem', marginTop: '4px' }}>Try typing a different name or selecting another batch.</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {filteredStudents.map((st) => (
               <div
                 key={st.stId}
                 onClick={() => setSelectedStudent(st)}
                 style={{
                   background: '#ffffff',
-                  borderRadius: '12px',
-                  padding: '10px 12px',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                  borderRadius: '16px',
+                  padding: '14px 16px',
+                  border: '1.5px solid #e2e8f0',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '8px',
+                  gap: '12px',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease'
                 }}
               >
                 {/* Left: Avatar + Details */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
                   {st.photo ? (
                     <img
                       src={st.photo}
                       alt={st.name}
-                      style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #e2e8f0', flexShrink: 0 }}
+                      style={{ width: '46px', height: '46px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #dbeafe', flexShrink: 0 }}
                     />
                   ) : (
                     <div style={{
-                      width: '36px',
-                      height: '36px',
+                      width: '46px',
+                      height: '46px',
                       borderRadius: '50%',
                       background: 'linear-gradient(135deg, #dbeafe, #bfdbfe)',
                       color: '#1d4ed8',
@@ -786,7 +791,7 @@ export default function TeacherPortalWeb() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 800,
-                      fontSize: '0.9rem',
+                      fontSize: '1.15rem',
                       flexShrink: 0
                     }}>
                       {(st.name || 'S').charAt(0).toUpperCase()}
@@ -794,47 +799,47 @@ export default function TeacherPortalWeb() {
                   )}
 
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '1.04rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {st.name}
                       </span>
                       <span style={{
                         background: '#eff6ff',
                         color: '#2563eb',
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                        padding: '1px 5px',
-                        borderRadius: '4px',
+                        fontSize: '0.76rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '6px',
                         border: '1px solid #dbeafe'
                       }}>
                         Roll: {st.rollNo || 'N/A'}
                       </span>
                     </div>
 
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      Batch: <strong>{formatBatchName(st.batch || st.course)}</strong>
+                    <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      Batch: <strong style={{ color: '#334155' }}>{formatBatchName(st.batch || st.course)}</strong>
                     </div>
 
                     {/* Quick Badges */}
-                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
                       <span style={{
-                        fontSize: '0.66rem',
+                        fontSize: '0.76rem',
                         fontWeight: 700,
                         color: st.attPercentage >= 75 ? '#15803d' : '#b45309',
                         background: st.attPercentage >= 75 ? '#dcfce7' : '#fef3c7',
-                        padding: '1px 6px',
-                        borderRadius: '4px'
+                        padding: '3px 8px',
+                        borderRadius: '6px'
                       }}>
                         📅 {st.attPercentage}% Att ({st.presentDays}/{st.totalAttDays || 0})
                       </span>
 
                       <span style={{
-                        fontSize: '0.66rem',
+                        fontSize: '0.76rem',
                         fontWeight: 700,
                         color: st.avgScore >= 60 ? '#4338ca' : '#b45309',
                         background: st.avgScore >= 60 ? '#e0e7ff' : '#fef3c7',
-                        padding: '1px 6px',
-                        borderRadius: '4px'
+                        padding: '3px 8px',
+                        borderRadius: '6px'
                       }}>
                         📊 {st.avgScore}% Marks ({st.testsCount} Tests)
                       </span>
@@ -844,17 +849,17 @@ export default function TeacherPortalWeb() {
 
                 {/* Right: Chevron Arrow */}
                 <div style={{
-                  width: '24px',
-                  height: '24px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
-                  background: '#f8fafc',
+                  background: '#eff6ff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: '#2563eb',
                   flexShrink: 0
                 }}>
-                  <ChevronRight size={14} />
+                  <ChevronRight size={18} />
                 </div>
               </div>
             ))}
@@ -873,7 +878,7 @@ export default function TeacherPortalWeb() {
           right: 0,
           bottom: 0,
           background: 'rgba(15, 23, 42, 0.75)',
-          backdropFilter: 'blur(4px)',
+          backdropFilter: 'blur(6px)',
           zIndex: 1000,
           display: 'flex',
           alignItems: 'center',
@@ -894,22 +899,22 @@ export default function TeacherPortalWeb() {
             <div style={{
               background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
               color: '#ffffff',
-              padding: '10px 14px',
+              padding: '14px 16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '8px',
+              gap: '10px',
               flexShrink: 0
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                 <button
                   onClick={() => setSelectedStudent(null)}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.2)',
+                    background: 'rgba(255, 255, 255, 0.25)',
                     border: 'none',
-                    borderRadius: '6px',
-                    width: '30px',
-                    height: '30px',
+                    borderRadius: '8px',
+                    width: '36px',
+                    height: '36px',
                     color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
@@ -919,20 +924,20 @@ export default function TeacherPortalWeb() {
                   }}
                   title="Back to Students"
                 >
-                  <ArrowLeft size={16} />
+                  <ArrowLeft size={20} />
                 </button>
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <h2 style={{ fontSize: '1.22rem', fontWeight: 900, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {selectedStudent.name}
                   </h2>
-                  <div style={{ fontSize: '0.70rem', opacity: 0.9, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontSize: '0.82rem', opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
                     Roll: {selectedStudent.rollNo || 'N/A'} • {formatBatchName(selectedStudent.batch || selectedStudent.course)}
                   </div>
                 </div>
               </div>
 
               {/* Direct Parent Action Buttons */}
-              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                 {selectedStudent.parentPhone && (
                   <>
                     <a
@@ -940,17 +945,18 @@ export default function TeacherPortalWeb() {
                       style={{
                         background: '#ffffff',
                         color: '#1e3a8a',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 800,
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '3px'
+                        gap: '5px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                       }}
                     >
-                      <Phone size={12} /> <span>Call</span>
+                      <Phone size={14} /> <span>Call</span>
                     </a>
 
                     <a
@@ -960,17 +966,18 @@ export default function TeacherPortalWeb() {
                       style={{
                         background: '#22c55e',
                         color: '#ffffff',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 800,
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '3px'
+                        gap: '5px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                       }}
                     >
-                      <MessageCircle size={12} /> <span>WhatsApp</span>
+                      <MessageCircle size={14} /> <span>WhatsApp</span>
                     </a>
                   </>
                 )}
@@ -980,35 +987,35 @@ export default function TeacherPortalWeb() {
             {/* Quick KPI Bar */}
             <div style={{
               background: '#f1f5f9',
-              padding: '8px 10px',
+              padding: '10px 12px',
               display: 'grid',
               gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '6px',
+              gap: '8px',
               borderBottom: '1px solid #e2e8f0',
               flexShrink: 0
             }}>
-              <div style={{ background: '#ffffff', padding: '6px 4px', borderRadius: '6px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.60rem', color: '#64748b', fontWeight: 700 }}>ATTENDANCE</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#16a34a', lineHeight: 1.15 }}>{selectedStudent.attPercentage}%</div>
-                <div style={{ fontSize: '0.60rem', color: '#94a3b8' }}>{selectedStudent.presentDays}/{selectedStudent.totalAttDays} Days</div>
+              <div style={{ background: '#ffffff', padding: '8px 6px', borderRadius: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 800 }}>ATTENDANCE</div>
+                <div style={{ fontSize: '1.20rem', fontWeight: 900, color: '#16a34a', lineHeight: 1.2 }}>{selectedStudent.attPercentage}%</div>
+                <div style={{ fontSize: '0.70rem', color: '#64748b' }}>{selectedStudent.presentDays}/{selectedStudent.totalAttDays} Days</div>
               </div>
 
-              <div style={{ background: '#ffffff', padding: '6px 4px', borderRadius: '6px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.60rem', color: '#64748b', fontWeight: 700 }}>AVG MARKS</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#2563eb', lineHeight: 1.15 }}>{selectedStudent.avgScore}%</div>
-                <div style={{ fontSize: '0.60rem', color: '#94a3b8' }}>{selectedStudent.testsCount} Tests</div>
+              <div style={{ background: '#ffffff', padding: '8px 6px', borderRadius: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 800 }}>AVG MARKS</div>
+                <div style={{ fontSize: '1.20rem', fontWeight: 900, color: '#2563eb', lineHeight: 1.2 }}>{selectedStudent.avgScore}%</div>
+                <div style={{ fontSize: '0.70rem', color: '#64748b' }}>{selectedStudent.testsCount} Tests</div>
               </div>
 
-              <div style={{ background: '#ffffff', padding: '6px 4px', borderRadius: '6px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.60rem', color: '#64748b', fontWeight: 700 }}>BEST SCORE</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#7c3aed', lineHeight: 1.15 }}>{selectedStudent.bestScore}%</div>
-                <div style={{ fontSize: '0.60rem', color: '#94a3b8' }}>Peak Marks</div>
+              <div style={{ background: '#ffffff', padding: '8px 6px', borderRadius: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 800 }}>BEST SCORE</div>
+                <div style={{ fontSize: '1.20rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.2 }}>{selectedStudent.bestScore}%</div>
+                <div style={{ fontSize: '0.70rem', color: '#64748b' }}>Peak Marks</div>
               </div>
 
-              <div style={{ background: '#ffffff', padding: '6px 4px', borderRadius: '6px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.60rem', color: '#64748b', fontWeight: 700 }}>DAILY HOURS</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#d97706', lineHeight: 1.15 }}>{selectedStudent.avgDailyHours}h</div>
-                <div style={{ fontSize: '0.60rem', color: '#94a3b8' }}>Avg / Day</div>
+              <div style={{ background: '#ffffff', padding: '8px 6px', borderRadius: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 800 }}>DAILY HOURS</div>
+                <div style={{ fontSize: '1.20rem', fontWeight: 900, color: '#d97706', lineHeight: 1.2 }}>{selectedStudent.avgDailyHours}h</div>
+                <div style={{ fontSize: '0.70rem', color: '#64748b' }}>Avg / Day</div>
               </div>
             </div>
 
@@ -1023,47 +1030,47 @@ export default function TeacherPortalWeb() {
                 onClick={() => setDossierTab('tests')}
                 style={{
                   flex: 1,
-                  padding: '8px 10px',
+                  padding: '12px 14px',
                   background: 'none',
                   border: 'none',
-                  borderBottom: dossierTab === 'tests' ? '2.5px solid #2563eb' : '2.5px solid transparent',
+                  borderBottom: dossierTab === 'tests' ? '3px solid #2563eb' : '3px solid transparent',
                   color: dossierTab === 'tests' ? '#2563eb' : '#64748b',
-                  fontSize: '0.82rem',
+                  fontSize: '0.94rem',
                   fontWeight: 800,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px'
+                  gap: '8px'
                 }}
               >
-                <BookOpen size={14} /> Tests ({selectedStudent.testResultsList.length})
+                <BookOpen size={16} /> Tests ({selectedStudent.testResultsList.length})
               </button>
 
               <button
                 onClick={() => setDossierTab('attendance')}
                 style={{
                   flex: 1,
-                  padding: '8px 10px',
+                  padding: '12px 14px',
                   background: 'none',
                   border: 'none',
-                  borderBottom: dossierTab === 'attendance' ? '2.5px solid #16a34a' : '2.5px solid transparent',
+                  borderBottom: dossierTab === 'attendance' ? '3px solid #16a34a' : '3px solid transparent',
                   color: dossierTab === 'attendance' ? '#16a34a' : '#64748b',
-                  fontSize: '0.82rem',
+                  fontSize: '0.94rem',
                   fontWeight: 800,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px'
+                  gap: '8px'
                 }}
               >
-                <Calendar size={14} /> Attendance ({selectedStudent.attendanceList.length})
+                <Calendar size={16} /> Attendance ({selectedStudent.attendanceList.length})
               </button>
             </div>
 
             {/* Tab Content Container */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 10px', background: '#f8fafc' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '14px 12px', background: '#f8fafc' }}>
 
               {/* 📑 TAB 1: ALL TESTS RESULTS HISTORY */}
               {dossierTab === 'tests' && (
@@ -1071,43 +1078,43 @@ export default function TeacherPortalWeb() {
                   {selectedStudent.testResultsList.length === 0 ? (
                     <div style={{
                       background: '#ffffff',
-                      borderRadius: '10px',
-                      padding: '24px',
+                      borderRadius: '12px',
+                      padding: '30px 20px',
                       textAlign: 'center',
                       color: '#64748b',
                       border: '1px solid #e2e8f0'
                     }}>
-                      <BookOpen size={28} color="#94a3b8" style={{ margin: '0 auto 6px' }} />
-                      <div style={{ fontWeight: 700, color: '#334155', fontSize: '0.88rem' }}>No test results recorded yet</div>
-                      <div style={{ fontSize: '0.74rem', marginTop: '2px' }}>Tests graded via OMR Scanner or manual entry will show here.</div>
+                      <BookOpen size={34} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
+                      <div style={{ fontWeight: 800, color: '#334155', fontSize: '0.96rem' }}>No test results recorded yet</div>
+                      <div style={{ fontSize: '0.82rem', marginTop: '4px' }}>Tests graded via OMR Scanner or manual entry will show here.</div>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {selectedStudent.testResultsList.map((testItem, idx) => (
                         <div
                           key={idx}
                           style={{
                             background: '#ffffff',
-                            borderRadius: '10px',
-                            padding: '10px 12px',
-                            border: '1px solid #e2e8f0',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                            borderRadius: '14px',
+                            padding: '12px 14px',
+                            border: '1.5px solid #e2e8f0',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                             <div>
-                              <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}>
+                              <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
                                 {testItem.testName}
                               </div>
-                              <div style={{ fontSize: '0.70rem', color: '#64748b', marginTop: '1px' }}>
+                              <div style={{ fontSize: '0.80rem', color: '#64748b', marginTop: '2px' }}>
                                 📅 {testItem.testDate} • {testItem.subject}
                               </div>
                             </div>
 
                             <span style={{
-                              padding: '2px 8px',
+                              padding: '3px 10px',
                               borderRadius: '14px',
-                              fontSize: '0.75rem',
+                              fontSize: '0.84rem',
                               fontWeight: 800,
                               background: testItem.percentage >= 75 ? '#dcfce7' : testItem.percentage >= 50 ? '#e0e7ff' : '#fee2e2',
                               color: testItem.percentage >= 75 ? '#15803d' : testItem.percentage >= 50 ? '#4338ca' : '#b91c1c'
@@ -1121,15 +1128,15 @@ export default function TeacherPortalWeb() {
                             justifyContent: 'space-between',
                             alignItems: 'center',
                             background: '#f8fafc',
-                            padding: '6px 10px',
-                            borderRadius: '6px',
-                            fontSize: '0.76rem'
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            fontSize: '0.84rem'
                           }}>
                             <div>
                               Marks: <strong>{testItem.score}</strong> / {testItem.totalMarks}
                             </div>
                             {testItem.rank && (
-                              <div style={{ color: '#7c3aed', fontWeight: 700 }}>
+                              <div style={{ color: '#7c3aed', fontWeight: 800 }}>
                                 🏆 Rank #{testItem.rank}
                               </div>
                             )}
@@ -1139,15 +1146,15 @@ export default function TeacherPortalWeb() {
                           {testItem.subjectBreakdown && typeof testItem.subjectBreakdown === 'object' && Object.keys(testItem.subjectBreakdown).length > 0 && (
                             <div style={{
                               display: 'flex',
-                              gap: '4px',
+                              gap: '6px',
                               flexWrap: 'wrap',
-                              marginTop: '6px',
-                              paddingTop: '6px',
+                              marginTop: '8px',
+                              paddingTop: '8px',
                               borderTop: '1px dashed #e2e8f0',
-                              fontSize: '0.68rem'
+                              fontSize: '0.78rem'
                             }}>
                               {Object.entries(testItem.subjectBreakdown).map(([subj, marks]) => (
-                                <span key={subj} style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', color: '#475569' }}>
+                                <span key={subj} style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: '6px', color: '#334155', fontWeight: 600 }}>
                                   {subj}: <strong>{Array.isArray(marks) ? marks.length : marks}</strong>
                                 </span>
                               ))}
@@ -1166,18 +1173,18 @@ export default function TeacherPortalWeb() {
                   {selectedStudent.attendanceList.length === 0 ? (
                     <div style={{
                       background: '#ffffff',
-                      borderRadius: '10px',
-                      padding: '24px',
+                      borderRadius: '12px',
+                      padding: '30px 20px',
                       textAlign: 'center',
                       color: '#64748b',
                       border: '1px solid #e2e8f0'
                     }}>
-                      <Calendar size={28} color="#94a3b8" style={{ margin: '0 auto 6px' }} />
-                      <div style={{ fontWeight: 700, color: '#334155', fontSize: '0.88rem' }}>No attendance records found</div>
-                      <div style={{ fontSize: '0.74rem', marginTop: '2px' }}>Biometric punches or manual staff attendance will appear here.</div>
+                      <Calendar size={34} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
+                      <div style={{ fontWeight: 800, color: '#334155', fontSize: '0.96rem' }}>No attendance records found</div>
+                      <div style={{ fontSize: '0.82rem', marginTop: '4px' }}>Biometric punches or manual staff attendance will appear here.</div>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {selectedStudent.attendanceList.map((att, idx) => {
                         const isPresent = att.status === 'present' || att.entryTime;
                         const isLate = att.status === 'late';
@@ -1188,45 +1195,45 @@ export default function TeacherPortalWeb() {
                             key={idx}
                             style={{
                               background: '#ffffff',
-                              borderRadius: '8px',
-                              padding: '8px 10px',
-                              border: '1px solid #e2e8f0',
+                              borderRadius: '12px',
+                              padding: '10px 12px',
+                              border: '1.5px solid #e2e8f0',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              gap: '8px'
+                              gap: '10px'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               <div style={{
-                                width: '26px',
-                                height: '26px',
-                                borderRadius: '6px',
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
                                 background: isPresent ? '#dcfce7' : isLate ? '#fef3c7' : '#fee2e2',
                                 color: isPresent ? '#15803d' : isLate ? '#b45309' : '#b91c1c',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center'
                               }}>
-                                {isPresent ? <CheckCircle2 size={14} /> : isLate ? <Clock size={14} /> : <XCircle size={14} />}
+                                {isPresent ? <CheckCircle2 size={18} /> : isLate ? <Clock size={18} /> : <XCircle size={18} />}
                               </div>
 
                               <div>
-                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a' }}>
+                                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>
                                   {att.date || 'Recent Date'}
                                 </div>
-                                <div style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                                  In: <strong>{att.entryTime || 'N/A'}</strong> • Out: <strong>{att.exitTime || 'N/A'}</strong>
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '1px' }}>
+                                  In: <strong style={{ color: '#0f172a' }}>{att.entryTime || 'N/A'}</strong> • Out: <strong style={{ color: '#0f172a' }}>{att.exitTime || 'N/A'}</strong>
                                 </div>
                               </div>
                             </div>
 
                             <div style={{ textAlign: 'right' }}>
                               <span style={{
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                fontSize: '0.68rem',
-                                fontWeight: 700,
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                fontSize: '0.76rem',
+                                fontWeight: 800,
                                 background: isPresent ? '#dcfce7' : isLate ? '#fef3c7' : '#fee2e2',
                                 color: isPresent ? '#15803d' : isLate ? '#b45309' : '#b91c1c'
                               }}>
