@@ -120,8 +120,12 @@ export default function AppInstallGate({
     }
   };
 
-  // If already in standalone installed app, do not show the install gate
-  if (isStandalone) return null;
+  // If running inside standalone installed app, automatically trigger onContinueToWeb
+  useEffect(() => {
+    if (isStandalone && onContinueToWeb) {
+      onContinueToWeb();
+    }
+  }, [isStandalone, onContinueToWeb]);
 
   return (
     <div style={{
@@ -409,22 +413,50 @@ export default function AppInstallGate({
               </div>
             </div>
 
-            <button
-              onClick={() => setShowIOSModal(false)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: themeColor,
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '12px',
-                fontWeight: 800,
-                fontSize: '0.9rem',
-                cursor: 'pointer'
-              }}
-            >
-              Understood! Close Guide
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowIOSModal(false);
+                  if (onContinueToWeb) onContinueToWeb();
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: themeColor,
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>Proceed to Login Portal</span>
+                <ArrowRight size={16} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowIOSModal(false)}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  background: 'transparent',
+                  color: '#64748b',
+                  border: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Close Guide
+              </button>
+            </div>
           </div>
         </div>
       )}

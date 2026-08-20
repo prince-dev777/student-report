@@ -82,6 +82,22 @@ export const api = {
   // Auth
   login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   register: (data) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+  verifyAdminPassword: async (password) => {
+    try {
+      return await apiRequest('/auth/verify-admin-password', { method: 'POST', body: JSON.stringify({ password }) });
+    } catch (err) {
+      if (err.message && err.message.includes('404')) {
+        const userStr = localStorage.getItem('user');
+        const userObj = userStr ? JSON.parse(userStr) : null;
+        const username = userObj?.username || 'admin';
+        const res = await apiRequest('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+        if (res?.token) {
+          return { success: true, message: 'Admin verified successfully' };
+        }
+      }
+      throw err;
+    }
+  },
   getSettings: () => apiRequest('/settings'),
   updateSettings: (data) => apiRequest('/settings', { method: 'PUT', body: JSON.stringify(data) }),
   parentLogin: (data) => apiRequest('/parent/login', { method: 'POST', body: JSON.stringify(data) }),

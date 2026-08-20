@@ -1,17 +1,60 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Database, HardDrive, Trash2, RefreshCw, FolderSearch, 
   Image, FileText, Users, Calendar, MessageSquare, 
-  CheckCircle2, AlertTriangle, Search, Eye, X, ShieldAlert,
-  Download, Sparkles, Filter, ChevronRight, Layers, UserCheck, Cloud, Terminal
+  CheckCircle2, AlertTriangle, Search, Eye, EyeOff, X, ShieldAlert,
+  Download, Sparkles, Filter, ChevronRight, Layers, UserCheck, Cloud, Terminal,
+  Lock, KeyRound, ArrowLeft
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
 
 export default function Settings() {
+  const navigate = useNavigate();
+  const [isUnlocked, setIsUnlocked] = useState(sessionStorage.getItem('settings_unlocked') === 'true');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [authError, setAuthError] = useState('');
+
   const [activeTab, setActiveTab] = useState('collections'); // 'collections' | 'media' | 'maintenance'
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [overview, setOverview] = useState(null);
+
+  // Handle password submission
+  const handleUnlock = async (e) => {
+    if (e) e.preventDefault();
+    if (!passwordInput.trim()) {
+      setAuthError('Please enter your Admin Password');
+      return;
+    }
+    try {
+      setIsVerifying(true);
+      setAuthError('');
+      await api.verifyAdminPassword(passwordInput);
+      sessionStorage.setItem('settings_unlocked', 'true');
+      setIsUnlocked(true);
+      toast.success('🔓 Settings unlocked successfully!');
+    } catch (err) {
+      const msg = (err.message && (err.message.includes('401') || err.message.includes('Invalid') || err.message.includes('Incorrect')))
+        ? 'Incorrect Admin Password. Access Denied.' 
+        : (err.message || 'Incorrect Admin Password. Access Denied.');
+      setAuthError(msg);
+      toast.error('Incorrect Admin Password');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Lock settings again
+  const handleLockSettings = () => {
+    sessionStorage.removeItem('settings_unlocked');
+    setIsUnlocked(false);
+    setPasswordInput('');
+    setAuthError('');
+    toast.success('🔒 Settings locked');
+  };
 
   // Collection Inspection Modal State
   const [inspectModalOpen, setInspectModalOpen] = useState(false);
@@ -60,8 +103,10 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    fetchOverview();
-  }, []);
+    if (isUnlocked) {
+      fetchOverview();
+    }
+  }, [isUnlocked]);
 
   // Open Collection Inspection Drawer/Modal
   const handleInspectCollection = async (collKey, collName) => {
@@ -243,6 +288,179 @@ export default function Settings() {
   const totalDbRecords = overview?.collections?.reduce((acc, c) => acc + c.total, 0) || 0;
   const totalTrashRecords = overview?.collections?.reduce((acc, c) => acc + c.deleted, 0) || 0;
 
+  // Render Password Gate if Settings is locked
+  if (!isUnlocked) {
+    return (
+      <div className="page-container" style={{ 
+        maxWidth: '480px', 
+        margin: '60px auto', 
+        padding: '0 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '65vh'
+      }}>
+        <div className="card" style={{
+          width: '100%',
+          padding: '40px 32px',
+          borderRadius: '24px',
+          background: 'var(--card-bg, #ffffff)',
+          boxShadow: '0 20px 40px -15px rgba(0,0,0,0.15)',
+          border: '1px solid var(--border-color, rgba(0,0,0,0.08))',
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          {/* Glowing background accent */}
+          <div style={{
+            position: 'absolute',
+            top: '-40px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '160px',
+            height: '90px',
+            background: 'radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0) 70%)',
+            pointerEvents: 'none'
+          }} />
+
+          {/* Animated Lock Badge */}
+          <div style={{
+            width: '72px',
+            height: '72px',
+            borderRadius: '22px',
+            background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px',
+            boxShadow: '0 12px 24px -6px rgba(79, 70, 229, 0.4)'
+          }}>
+            <Lock size={34} />
+          </div>
+
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 8px', color: 'var(--text-main, #1e293b)' }}>
+            Admin Password Required
+          </h2>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted, #64748b)', margin: '0 0 24px', lineHeight: 1.5 }}>
+            Settings, database tools & storage maintenance are protected. Please enter your Admin Password to continue.
+          </p>
+
+          <form onSubmit={handleUnlock}>
+            <div style={{ position: 'relative', marginBottom: '16px' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  if (authError) setAuthError('');
+                }}
+                placeholder="Enter Admin Password..."
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '14px 44px 14px 16px',
+                  borderRadius: '12px',
+                  border: authError ? '1.5px solid #ef4444' : '1.5px solid var(--border-color, #cbd5e1)',
+                  background: 'var(--bg-primary, #f8fafc)',
+                  fontSize: '0.95rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  color: 'var(--text-main, #0f172a)'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            {authError && (
+              <div style={{
+                color: '#ef4444',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}>
+                <AlertTriangle size={15} />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isVerifying}
+              className="btn btn-primary"
+              style={{
+                width: '100%',
+                padding: '13px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                fontSize: '0.92rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                marginBottom: '10px'
+              }}
+            >
+              {isVerifying ? (
+                <>
+                  <RefreshCw size={16} className="spin" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <KeyRound size={16} />
+                  <span>Unlock Settings</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="btn btn-secondary"
+              style={{
+                width: '100%',
+                padding: '11px',
+                borderRadius: '12px',
+                fontWeight: 600,
+                fontSize: '0.86rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <ArrowLeft size={15} />
+              <span>Back to Dashboard</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container" style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '60px' }}>
       
@@ -291,6 +509,16 @@ export default function Settings() {
           >
             <RefreshCw size={15} className={loading ? 'spin' : ''} />
             <span>Refresh Stats</span>
+          </button>
+
+          <button
+            onClick={handleLockSettings}
+            className="btn btn-secondary"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#6366f1' }}
+            title="Lock Settings Section"
+          >
+            <Lock size={15} />
+            <span>Lock</span>
           </button>
 
           <button

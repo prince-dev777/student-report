@@ -294,7 +294,7 @@ export default function TeacherPortalWeb() {
     window.location.search.includes('app=teacher')
   ));
 
-  if (!isLoggedIn && !isStandaloneApp) {
+  if (!isLoggedIn && !isStandaloneApp && !proceedToWeb) {
     return (
       <AppInstallGate
         appName="Teacher & Faculty Official App"
@@ -310,6 +310,10 @@ export default function TeacherPortalWeb() {
           { title: "Complete Attendance Log", desc: "Inspect daily biometric punch in/out and monthly consistency." },
           { title: "1-Tap Direct Launch", desc: "Add to home screen for fast one-tap access during classroom sessions." }
         ]}
+        onContinueToWeb={() => {
+          sessionStorage.setItem('skip_teacher_install_gate', '1');
+          setProceedToWeb(true);
+        }}
       />
     );
   }

@@ -3,8 +3,8 @@
   "name": "Career Xone Staff",
   "description": "Career Xone Staff Manual Attendance Management App",
   "start_url": "/?app=staff#/staff",
-  "scope": "/?app=staff",
-  "id": "/?app=staff",
+  "scope": "/",
+  "id": "cx-staff-app",
   "icons": [
     {
       "src": "/logo-192.png",

@@ -131,6 +131,32 @@ if (dataPath !== __dirname) {
   }));
 }
 
+// Serve static client assets (PWA manifests, Service Worker, compiled JS/CSS)
+const staticDirs = [
+  path.join(__dirname, 'public'),
+  path.join(__dirname, '../dist'),
+  path.join(__dirname, 'dist'),
+  path.join(__dirname, '../public')
+];
+
+for (const sDir of staticDirs) {
+  if (fs.existsSync(sDir)) {
+    app.use(express.static(sDir, {
+      maxAge: '1d',
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.json')) {
+          res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache');
+        } else if (filePath.endsWith('sw.js')) {
+          res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+          res.setHeader('Service-Worker-Allowed', '/');
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+      }
+    }));
+  }
+}
+
 function generateServerId(prefix = 'ID') {
   return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
 }
@@ -464,6 +490,28 @@ app.post('/api/auth/login', async (req, res) => {
       res.json({ token, username: user.username, instituteName: user.instituteId.name, logo: user.instituteId.logo });
     } else {
       res.status(401).json({ error: 'Invalid username or password' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Verify Admin Password (for accessing protected Settings & Database Manager)
+app.post('/api/auth/verify-admin-password', protect, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+    const isMatch = await user.comparePassword(password);
+    if (isMatch) {
+      return res.json({ success: true, message: 'Admin verified successfully' });
+    } else {
+      return res.status(401).json({ error: 'Incorrect Admin Password. Access denied.' });
     }
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -263,7 +263,7 @@ export default function StaffInquiryWeb() {
     window.location.search.includes('app=inquiry')
   ));
 
-  if (!isLoggedIn && !isStandaloneApp) {
+  if (!isLoggedIn && !isStandaloneApp && !proceedToWeb) {
     return (
       <AppInstallGate
         appName="Front-Desk Inquiry Official App"
@@ -279,6 +279,10 @@ export default function StaffInquiryWeb() {
           { title: "Follow-up Reminders", desc: "Track pending calls, scheduled visits, and admission conversions." },
           { title: "1-Tap Direct Launch", desc: "Add to home screen for instant reception and front-desk access." }
         ]}
+        onContinueToWeb={() => {
+          sessionStorage.setItem('skip_inquiry_install_gate', '1');
+          setProceedToWeb(true);
+        }}
       />
     );
   }

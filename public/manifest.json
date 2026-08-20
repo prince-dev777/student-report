@@ -3,8 +3,8 @@
   "name": "Career Xone Parents",
   "description": "Career Xone Student Attendance, Test Performance & OMR Report Parent App",
   "start_url": "/?app=parent#/parent",
-  "scope": "/?app=parent",
-  "id": "/?app=parent",
+  "scope": "/",
+  "id": "cx-parent-app",
   "icons": [
     {
       "src": "/logo-192.png",

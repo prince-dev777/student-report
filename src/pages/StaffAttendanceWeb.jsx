@@ -195,7 +195,7 @@ export default function StaffAttendanceWeb() {
     window.location.search.includes('app=staff')
   ));
 
-  if (!isAuthenticated && !isStandaloneApp) {
+  if (!isAuthenticated && !isStandaloneApp && !proceedToWeb) {
     return (
       <AppInstallGate
         appName="Staff Attendance Official App"
@@ -211,6 +211,10 @@ export default function StaffAttendanceWeb() {
           { title: "Automated WhatsApp & SMS", desc: "Auto-dispatches arrival and departure alerts to registered parents." },
           { title: "1-Tap Direct Launch", desc: "Add to home screen for fast daily punch access." }
         ]}
+        onContinueToWeb={() => {
+          sessionStorage.setItem('skip_staff_install_gate', '1');
+          setProceedToWeb(true);
+        }}
       />
     );
   }
