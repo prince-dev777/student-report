@@ -295,7 +295,35 @@ export default function AppInstallGate({
           <span>{isInstalling ? 'Preparing App...' : '📲 Install App to Home Screen'}</span>
         </button>
 
-        <p style={{ margin: '14px 0 0', fontSize: '0.74rem', color: '#94a3b8', fontWeight: 600 }}>
+        {/* Secondary Action: If already installed or wanting to open directly */}
+        <button
+          type="button"
+          onClick={() => {
+            setIsStandalone(true);
+            if (onContinueToWeb) onContinueToWeb();
+          }}
+          style={{
+            width: '100%',
+            background: 'transparent',
+            color: '#64748b',
+            border: '1px solid #cbd5e1',
+            padding: '11px 16px',
+            borderRadius: '14px',
+            fontSize: '0.84rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            marginTop: '10px'
+          }}
+        >
+          <ArrowRight size={16} />
+          <span>Already Installed? Open Portal</span>
+        </button>
+
+        <p style={{ margin: '12px 0 0', fontSize: '0.74rem', color: '#94a3b8', fontWeight: 600 }}>
           🔒 To access your student portal, install and open from your Phone Home Screen.
         </p>
       </div>

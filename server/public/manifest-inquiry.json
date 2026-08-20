@@ -3,8 +3,8 @@
   "name": "Career Xone - Inquiry Desk",
   "description": "Career Xone Front-Desk Student & Parent Inquiry Management App",
   "start_url": "/?app=inquiry#/inquiry",
-  "scope": "/",
-  "id": "/inquiry-pwa-app",
+  "scope": "/?app=inquiry",
+  "id": "/inquiry-portal-pwa",
   "icons": [
     {
       "src": "/logo-192.png",

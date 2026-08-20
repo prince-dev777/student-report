@@ -21,6 +21,16 @@ if (fs.existsSync(srcDir)) {
     content = content.replace(/href=["']\.\/vite\.svg["']/g, 'href="/vite.svg"');
     fs.writeFileSync(serverIndexHtml, content, 'utf8');
   }
+  // Ensure all manifests and sw.js are copied from public/
+  const publicDir = path.join(__dirname, 'public');
+  if (fs.existsSync(publicDir)) {
+    const publicFiles = fs.readdirSync(publicDir);
+    for (const f of publicFiles) {
+      if (f.startsWith('manifest') || f === 'sw.js' || f === 'logo.png') {
+        fs.copyFileSync(path.join(publicDir, f), path.join(destDir, f));
+      }
+    }
+  }
   
   console.log('✅ Successfully synced dist/ to server/public/ for cloud deployment!');
 } else {

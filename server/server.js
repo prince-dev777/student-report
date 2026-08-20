@@ -938,38 +938,71 @@ app.post('/iclock/cdata', async (req, res) => {
       line = line.trim();
       if (!line) continue;
 
-      // Format: "user_id\tYYYY-MM-DD HH:MM:SS\tstatus\tverify_type\twork_code"
-      const parts = line.split(/[\t\s]+/);
-      if (parts.length < 2) continue;
+      // Smart format parser:
+      // Case A: Tab-delimited "USER_ID\tYYYY-MM-DD HH:MM:SS\tSTATUS\t..."
+      // Case B: Space-delimited "USER_ID YYYY-MM-DD HH:MM:SS STATUS ..."
+      let rollNumber = '';
+      let dateStr = '';
+      let timeStr = '';
+      let statusVal = '0';
 
-      const rollNumber = parts[0].trim();
-      const dateStr = parts[1].trim(); // YYYY-MM-DD
-      const timeStr = parts[2] ? parts[2].trim() : ''; // HH:MM:SS
-      const statusVal = parts[3] ? parts[3].trim() : '0'; // 0=IN, 1=OUT
+      if (line.includes('\t')) {
+        const tParts = line.split('\t').map(p => p.trim()).filter(Boolean);
+        rollNumber = tParts[0] || '';
+        const dtPart = tParts[1] || '';
+        if (dtPart.includes(' ')) {
+          const [d, t] = dtPart.split(' ');
+          dateStr = d;
+          timeStr = t;
+        } else {
+          dateStr = dtPart;
+          timeStr = tParts[2] || '';
+        }
+        statusVal = tParts[2] && !tParts[2].includes(':') ? tParts[2] : (tParts[3] || '0');
+      } else {
+        const sParts = line.split(/\s+/).map(p => p.trim()).filter(Boolean);
+        rollNumber = sParts[0] || '';
+        dateStr = sParts[1] || '';
+        timeStr = sParts[2] || '';
+        statusVal = sParts[3] || '0';
+      }
+
+      if (!rollNumber) continue;
 
       let type = (statusVal === '1' || statusVal.toLowerCase() === 'out') ? 'OUT' : 'IN';
 
-      // Convert HH:MM:SS to HH:MM AM/PM
+      // Convert HH:MM:SS or HH:MM to formatted HH:MM AM/PM
       let formattedTime = timeStr;
       if (timeStr.includes(':')) {
         const tParts = timeStr.split(':');
         let hours = parseInt(tParts[0], 10);
-        const minutes = tParts[1] || '00';
+        const minutes = (tParts[1] || '00').padStart(2, '0');
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
         hours = hours ? hours : 12;
-        formattedTime = hours.toString().padStart(2, '0') + ':' + minutes + ' ' + ampm;
+        formattedTime = `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+      } else {
+        formattedTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
       }
 
-      // Find Student to get Institute ID
-      const student = await Student.findOne({ isDeleted: { $ne: true }, rollNo: String(rollNumber) });
+      // Robust Student Matching: rollNo string, rollNo number, or id
+      const cleanRoll = rollNumber.replace(/^0+/, '') || rollNumber;
+      const student = await Student.findOne({
+        isDeleted: { $ne: true },
+        $or: [
+          { rollNo: String(rollNumber) },
+          { rollNo: String(cleanRoll) },
+          { id: String(rollNumber) }
+        ]
+      });
+
       if (!student) {
-        console.warn(`[ADMS] Unrecognized Roll Number: ${rollNumber}`);
+        console.warn(`[ADMS] Unrecognized Roll Number / ID: ${rollNumber}`);
         continue;
       }
 
       const instituteId = student.instituteId;
-      const today = dateStr || new Date().toISOString().split('T')[0];
+      const today = dateStr && dateStr.length === 10 ? dateStr : new Date().toISOString().split('T')[0];
 
       // Find or create attendance record
       let record = await Attendance.findOne({ isDeleted: { $ne: true }, studentId: student.id, date: today, instituteId });
@@ -997,6 +1030,38 @@ app.post('/iclock/cdata', async (req, res) => {
         }
       }
 
+      // Calculate duration if both entry and exit exist
+      if (record.entryTime && record.exitTime && record.entryTime !== '--' && record.exitTime !== '--') {
+        try {
+          const parseMinutes = (tStr) => {
+            const match = tStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+            if (!match) return 0;
+            let h = parseInt(match[1], 10);
+            const m = parseInt(match[2], 10);
+            const ap = match[3] ? match[3].toUpperCase() : '';
+            if (ap === 'PM' && h < 12) h += 12;
+            if (ap === 'AM' && h === 12) h = 0;
+            return h * 60 + m;
+          };
+          const diff = parseMinutes(record.exitTime) - parseMinutes(record.entryTime);
+          if (diff > 0) record.durationMinutes = diff;
+        } catch(e) {}
+      }
+
+      // Auto-match Session
+      if (!record.sessionName && record.entryTime && record.entryTime !== '--') {
+        try {
+          const Session = mongoose.model('Session');
+          const sessions = await Session.find({ isDeleted: { $ne: true }, instituteId });
+          for (const sess of sessions) {
+            if (sess.startTime && sess.endTime) {
+              record.sessionName = sess.name;
+              break;
+            }
+          }
+        } catch(e) {}
+      }
+
       if (isNewPunch) {
         await record.save();
 
@@ -1015,13 +1080,16 @@ app.post('/iclock/cdata', async (req, res) => {
 
         // Trigger WhatsApp
         if (student.parentPhone) {
+          const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
+          const durationStr = record.durationMinutes ? ` (Duration: ${record.durationMinutes} mins)` : '';
+
           sendWhatsAppAlert({
             instituteId,
             studentId: student.id,
             parentPhone: student.parentPhone,
             studentName: student.name,
             type: type,
-            detail: formattedTime
+            detail: `${formattedTime}${type === 'IN' ? sessionCtx : durationStr}`
           }).catch(err => console.error('Failed to send ADMS WhatsApp alert:', err.message));
         }
         successCount++;
@@ -1816,80 +1884,9 @@ async function processBiometricPunch(rollNo, type, time) {
       await record.save();
     }
   } catch (err) {
-    console.error('[ADMS Relay] Error saving log or sending WhatsApp:', err.message);
+    console.error('[ADMS] Error saving log or sending WhatsApp:', err.message);
   }
 }
-
-app.all('/iclock/*', async (req, res) => {
-  const targetUrl = `http://13.126.240.100:71${req.originalUrl}`;
-  console.log(`[ADMS Relay] Relaying request to Edofox: ${req.method} ${targetUrl}`);
-
-  try {
-    // 1. If it's a cdata upload (POST) containing attendance logs, parse it!
-    if (req.method === 'POST' && req.path.includes('/cdata')) {
-      const tableName = req.query.table;
-
-      if (tableName === 'ATTLOG' && req.body) {
-        const bodyText = typeof req.body === 'string' ? req.body : req.body.toString();
-        const lines = bodyText.split('\n');
-
-        for (let line of lines) {
-          line = line.trim();
-          if (!line) continue;
-
-          const parts = line.split('\t');
-          if (parts.length >= 2) {
-            const rollNo = parts[0].trim();
-            const datetimeStr = parts[1].trim(); // "YYYY-MM-DD HH:MM:SS"
-            const statusVal = parts[2] ? parts[2].trim() : '0';
-
-            // Format time in 24-hour HH:mm
-            const timePart = datetimeStr.split(' ')[1] || '';
-            let formattedTime = '';
-            if (timePart) {
-              const timeParts = timePart.split(':');
-              if (timeParts.length >= 2) {
-                formattedTime = `${timeParts[0].padStart(2, '0')}:${timeParts[1]}`;
-              }
-            }
-
-            // Process punch
-            processBiometricPunch(rollNo, statusVal === '1' ? 'OUT' : 'IN', formattedTime);
-          }
-        }
-      }
-    }
-
-    // 2. Relay raw request to Edofox
-    const headers = { ...req.headers };
-    delete headers.host;
-
-    const options = {
-      method: req.method,
-      headers
-    };
-
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      options.body = req.body;
-    }
-
-    const response = await fetch(targetUrl, options);
-    const responseBody = await response.text();
-
-    res.status(response.status);
-
-    // Copy headers safely
-    response.headers.forEach((value, key) => {
-      res.set(key, value);
-    });
-
-    res.send(responseBody);
-
-  } catch (err) {
-    console.error(`[ADMS Relay] Error relaying request to Edofox:`, err.message);
-    res.status(200).set('Content-Type', 'text/plain').send('OK');
-  }
-});
 
 // ---- 🔐 Attendance API ----
 
