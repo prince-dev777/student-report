@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X, Camera, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { batches as fallbackBatches } from '../data/sampleData';
 

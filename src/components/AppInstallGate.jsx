@@ -41,13 +41,6 @@ export default function AppInstallGate({
   const instituteLogo = localStorage.getItem('institute_logo') || localStorage.getItem('logo') || '/logo.png';
 
   useEffect(() => {
-    // Dynamic manifest assignment based on appType
-    let manifestLink = document.getElementById('app-manifest');
-    const targetManifest = `/manifest-${appType}.json`;
-    if (manifestLink && manifestLink.getAttribute('href') !== targetManifest) {
-      manifestLink.href = targetManifest;
-    }
-
     if (window.deferredPrompt) {
       setDeferredPrompt(window.deferredPrompt);
     }

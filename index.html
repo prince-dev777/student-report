@@ -11,40 +11,26 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Career Xone" />
-    <link id="app-manifest" rel="manifest" href="/manifest-parent.json" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/logo.png" />
     
     <script>
       function updatePWAManifest() {
         const hash = window.location.hash || '';
         const search = window.location.search || '';
-        let manifestFile = '/manifest-parent.json';
         let appTitle = 'Career Xone - Parents App';
 
         if (hash.includes('/teacher') || search.includes('app=teacher')) {
-          manifestFile = '/manifest-teacher.json';
           appTitle = 'Teacher Portal';
         } else if (hash.includes('/staff') || search.includes('app=staff')) {
-          manifestFile = '/manifest-staff.json';
           appTitle = 'Staff Attendance';
         } else if (hash.includes('/inquiry') || search.includes('app=inquiry')) {
-          manifestFile = '/manifest-inquiry.json';
           appTitle = 'Inquiry Desk';
         } else if (hash.includes('/parent') || search.includes('app=parent')) {
-          manifestFile = '/manifest-parent.json';
           appTitle = 'Parents App';
         }
 
-        let manifestLink = document.getElementById('app-manifest');
-        if (!manifestLink) {
-          manifestLink = document.createElement('link');
-          manifestLink.id = 'app-manifest';
-          manifestLink.rel = 'manifest';
-          document.head.appendChild(manifestLink);
-        }
-        if (manifestLink.getAttribute('href') !== manifestFile) {
-          manifestLink.href = manifestFile;
-        }
+        document.title = appTitle + ' - Career Xone';
       }
       updatePWAManifest();
       window.addEventListener('hashchange', updatePWAManifest);

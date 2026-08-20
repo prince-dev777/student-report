@@ -3179,7 +3179,16 @@ app.post('/api/reset', async (req, res) => {
 // Explicit PWA Endpoints with strict Cache-Control for Cloudflare/PWA reliability
 app.get(['/manifest.json', '/manifest-parent.json', '/manifest-teacher.json', '/manifest-staff.json', '/manifest-inquiry.json'], (req, res) => {
   let reqPath = req.path.replace('/', '') || 'manifest.json';
-  const appParam = req.query.app || '';
+  let appParam = req.query.app || '';
+
+  if (!appParam && req.headers.referer) {
+    const ref = req.headers.referer.toLowerCase();
+    if (ref.includes('teacher')) appParam = 'teacher';
+    else if (ref.includes('staff')) appParam = 'staff';
+    else if (ref.includes('inquiry')) appParam = 'inquiry';
+    else if (ref.includes('parent')) appParam = 'parent';
+  }
+
   if (reqPath === 'manifest.json' && appParam) {
     reqPath = `manifest-${appParam}.json`;
   }

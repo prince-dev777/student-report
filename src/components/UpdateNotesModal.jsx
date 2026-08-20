@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, X, FileText, Check, Copy } from 'lucide-react';
 import fallbackNotes from '../data/updateNotes.json';
 import toast from 'react-hot-toast';
 import { API_BASE } from '../utils/api';
