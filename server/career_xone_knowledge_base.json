@@ -1,0 +1,72 @@
+{
+  "institute": {
+    "name": "Career Xone (CX)",
+    "tagline": "Vidarbha's #1 Selection Rate for JEE & NEET",
+    "founder": "Rohit Jha Sir",
+    "facultyTeam": "Team of experienced IITians and Doctor faculties from across India",
+    "established": "Since 2014 (12+ Years of Academic Excellence)",
+    "vision": "Bringing Kota-level coaching & mentorship right here to Vidarbha / Gondia",
+    "address": "Hadditoli Road, South of Railway Crossing, Near Ananya Hospital, Gondia, Maharashtra 441601",
+    "helpline1": "+91 96733 83561",
+    "helpline2": "+91 91454 81323",
+    "email": "cxjeeneet@gmail.com",
+    "website": "https://cxjeeneet.com",
+    "googleMaps": "https://maps.app.goo.gl/ECzbg6DcixL7ZxpW7",
+    "youtube": "https://www.youtube.com/@careerxonegondiajeeneet4961",
+    "instagram": "https://www.instagram.com/career_xone_gondia",
+    "facebook": "https://www.facebook.com/CareerXone"
+  },
+  "overallStats": {
+    "totalIITSelections": "74+ IITians",
+    "totalNITIIITSelections": "367+ in NIT & IIIT",
+    "totalAIIMSSelections": "37+ Doctors in AIIMS",
+    "totalGMCSelections": "367+ Doctors in Government Medical Colleges",
+    "highestNEETScore": "695 / 720 Marks",
+    "highestMathsPercentile": "100 Percentile in JEE Maths",
+    "neet2026Highlights": "53+ Eligible for MBBS Admissions",
+    "jee2025Highlights": "43+ Selected in IIT, NIT & IIIT"
+  },
+  "dailySchedule": {
+    "morningLectures": "07:00 AM - 12:00 PM",
+    "afternoonSelfStudy": "02:00 PM - 08:00 PM (Doubt Desk & Library)",
+    "visitingHours": "08:00 AM - 08:00 PM (Monday to Saturday)"
+  },
+  "courses": [
+    {
+      "id": "jee",
+      "name": "JEE (Main & Advanced) — Engineering",
+      "target": "Class 11th, Class 12th & Dropper/Repeater Batches",
+      "features": "Comprehensive IIT coaching, DPPs, chapter modules, PYQ drills, All India Test Series"
+    },
+    {
+      "id": "neet",
+      "name": "NEET (UG) — Medical Entrance",
+      "target": "Class 11th, Class 12th & Dropper/Repeater Batches",
+      "features": "AIIMS & GMC focused, NCERT centric approach, Biology speed drills, Regular OMR Mock Tests"
+    },
+    {
+      "id": "foundation",
+      "name": "Foundation Program (Class 6th to 10th)",
+      "target": "Class 6th, 7th, 8th, 9th & 10th",
+      "features": "Maths, Science & Mental Ability, Olympiads, NTSE, CBSE & State Board excellence"
+    },
+    {
+      "id": "mhcet",
+      "name": "MHT-CET & State Board / CBSE Acceleration",
+      "target": "Engineering & Pharmacy Aspirants of Maharashtra",
+      "features": "Board syllabus sync + Speed mock tests"
+    }
+  ],
+  "cxsatScholarship": {
+    "name": "Career Xone Scholarship Admission Test (CXSAT)",
+    "frequency": "Conducted Every Sunday",
+    "maxWaiver": "Up to 100% Tuition Fee Scholarship",
+    "slabs": [
+      { "score": "90% - 100%", "scholarship": "70% - 100% Scholarship" },
+      { "score": "80% - 90%", "scholarship": "60% Scholarship" },
+      { "score": "70% - 80%", "scholarship": "40% Scholarship" },
+      { "score": "60% - 70%", "scholarship": "25% Scholarship" }
+    ],
+    "specialQuotas": "Special scholarship provisions for meritorious girl students and EWS financial aid"
+  }
+}

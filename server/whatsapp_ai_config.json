@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "coachingName": "Career Xone",
+  "welcomeHeader": "Namaste! Welcome to Career Xone Intelligent Academic Assistant.",
+  "counselingPhone1": "9673383561",
+  "counselingPhone2": "9145481323",
+  "campusAddress": "Hadditoli Road, Near Ananya Hospital, Gondia, Maharashtra 441601",
+  "email": "cxjeeneet@gmail.com",
+  "googleMapsUrl": "https://maps.app.goo.gl/ECzbg6DcixL7ZxpW7",
+  "enableAttendance": true,
+  "enableMarks": true,
+  "enableTimetable": true,
+  "enableReport": true,
+  "enableHelp": true,
+  "enableLeaveLogger": true,
+  "enableLocationGuide": true,
+  "customFaqs": []
+}

@@ -24,7 +24,20 @@ import {
   Image as ImageIcon,
   Info,
   ArrowUpRight,
-  Download
+  Download,
+  Bot,
+  Sparkles,
+  Smartphone,
+  Check,
+  Play,
+  Pause,
+  Zap,
+  Sliders,
+  SlidersHorizontal,
+  History,
+  Eye,
+  User,
+  Copy
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api, API_BASE } from '../utils/api';
@@ -76,6 +89,65 @@ export default function SMSCenter() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Tab Management ('logs' | 'bot')
+  const [activeTab, setActiveTab] = useState('logs');
+
+  // WhatsApp Parent Auto-Reply Bot State
+  const [botConfig, setBotConfig] = useState({
+    enabled: true,
+    coachingName: 'Career Xone',
+    welcomeHeader: 'Namaste! Welcome to Career Xone Automated Student Assistant.',
+    enableAttendance: true,
+    enableMarks: true,
+    enableTimetable: true,
+    enableReport: true,
+    enableHelp: true,
+    customFaqs: []
+  });
+  const [botLogs, setBotLogs] = useState([]);
+  const [savingBot, setSavingBot] = useState(false);
+  const [selectedBotChatContact, setSelectedBotChatContact] = useState(null);
+  const [botSearchQuery, setBotSearchQuery] = useState('');
+  const [simulatorMode, setSimulatorMode] = useState('student'); // 'student' | 'guest'
+  const [simulatorStudentId, setSimulatorStudentId] = useState('');
+  const [simulatorLoading, setSimulatorLoading] = useState(false);
+  const [previewSimulatorInput, setPreviewSimulatorInput] = useState('');
+  const [previewChatMessages, setPreviewChatMessages] = useState([
+    { from: 'parent', text: 'Hi', time: '10:30 AM' },
+    { from: 'bot', text: '👋 *Namaste & Welcome to Career Xone AI Assistant!*\n\nLive interactive test environment is connected directly to the Backend NLP AI Engine. Send any message or click quick buttons above to test live AI responses.', time: '10:30 AM' }
+  ]);
+
+  // Group botLogs by phone number into conversations
+  const groupedBotChats = useMemo(() => {
+    const map = new Map();
+    for (const log of botLogs) {
+      const key = log.phone || 'Unknown';
+      if (!map.has(key)) {
+        map.set(key, {
+          phone: key,
+          studentName: log.studentName || 'Unknown / Guest',
+          rollNo: log.rollNo || '--',
+          lastTimestamp: log.timestamp,
+          lastQuery: log.incomingText,
+          lastReply: log.botReply,
+          totalInteractions: 0,
+          logs: []
+        });
+      }
+      const entry = map.get(key);
+      entry.totalInteractions++;
+      entry.logs.push(log);
+    }
+    const list = Array.from(map.values()).sort((a, b) => new Date(b.lastTimestamp) - new Date(a.lastTimestamp));
+    if (!botSearchQuery.trim()) return list;
+    const q = botSearchQuery.toLowerCase().trim();
+    return list.filter(c => 
+      c.phone.toLowerCase().includes(q) || 
+      c.studentName.toLowerCase().includes(q) || 
+      c.rollNo.toLowerCase().includes(q)
+    );
+  }, [botLogs, botSearchQuery]);
+
   // SMS Export State
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportDateRange, setExportDateRange] = useState({
@@ -125,6 +197,89 @@ export default function SMSCenter() {
     const interval = setInterval(fetchWhatsAppStatus, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // 🤖 Poll Bot Config & Interaction Logs
+  useEffect(() => {
+    let isMounted = true;
+    const fetchBotData = async () => {
+      try {
+        const config = await api.getWhatsAppBotConfig();
+        if (isMounted && config) setBotConfig(config);
+        const logs = await api.getWhatsAppBotLogs();
+        if (isMounted && Array.isArray(logs)) setBotLogs(logs);
+      } catch (err) {}
+    };
+
+    fetchBotData();
+    const botInterval = setInterval(fetchBotData, 4000);
+    return () => {
+      isMounted = false;
+      clearInterval(botInterval);
+    };
+  }, []);
+
+  const handleToggleBot = async () => {
+    const updated = { ...botConfig, enabled: !botConfig.enabled };
+    setBotConfig(updated);
+    try {
+      await api.saveWhatsAppBotConfig(updated);
+      toast.success(updated.enabled ? '🤖 WhatsApp Bot Enabled!' : '⏸️ WhatsApp Bot Paused');
+    } catch (err) {
+      toast.error('Failed to update bot status: ' + err.message);
+    }
+  };
+
+  const handleUpdateBotSetting = async (key, val) => {
+    const updated = { ...botConfig, [key]: val };
+    setBotConfig(updated);
+    try {
+      await api.saveWhatsAppBotConfig(updated);
+      toast.success('Settings Saved', { id: 'bot-setting-saved' });
+    } catch (err) {
+      toast.error('Failed to save: ' + err.message);
+    }
+  };
+
+  const handleSimulatorSend = async (customText = null) => {
+    const textToSend = typeof customText === 'string' ? customText : previewSimulatorInput;
+    if (!textToSend || !textToSend.trim()) return;
+    const q = textToSend.trim();
+    const timeNow = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    
+    setPreviewChatMessages(prev => [
+      ...prev,
+      { from: 'parent', text: q, time: timeNow }
+    ]);
+    setPreviewSimulatorInput('');
+    setSimulatorLoading(true);
+
+    try {
+      const activeStudent = students.find(s => String(s.id) === String(simulatorStudentId) || String(s._id) === String(simulatorStudentId)) || students[0];
+      const res = await api.simulateWhatsAppBotMessage({
+        query: q,
+        isGuest: simulatorMode === 'guest',
+        studentId: activeStudent ? (activeStudent.id || activeStudent._id) : null
+      });
+      if (res && res.reply) {
+        setPreviewChatMessages(prev => [
+          ...prev,
+          { 
+            from: 'bot', 
+            text: res.reply, 
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            studentName: res.studentName
+          }
+        ]);
+      }
+    } catch (err) {
+      setPreviewChatMessages(prev => [
+        ...prev,
+        { from: 'bot', text: `⚠️ Simulation Error: ${err.message}`, time: timeNow }
+      ]);
+    } finally {
+      setSimulatorLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (whatsappStatus === 'ready') {
@@ -502,13 +657,115 @@ export default function SMSCenter() {
         </div>
       </div>
 
-      {/* Stats Row */}
-      <motion.div
-        className="stat-cards-grid"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      {/* Sub-Header Navigation Tabs */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '20px',
+        background: 'var(--bg-secondary)',
+        padding: '6px',
+        borderRadius: '12px',
+        border: '1px solid var(--border-color)',
+        flexWrap: 'wrap',
+        gap: '8px'
+      }}>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button
+            onClick={() => setActiveTab('logs')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: '8px',
+              border: 'none',
+              fontWeight: 700,
+              fontSize: '0.86rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: activeTab === 'logs' ? 'var(--accent-blue)' : 'transparent',
+              color: activeTab === 'logs' ? '#ffffff' : 'var(--text-secondary)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <MessageSquare size={16} />
+            <span>Outbound Notification Logs</span>
+            <span style={{
+              background: activeTab === 'logs' ? 'rgba(255,255,255,0.2)' : 'var(--bg-card)',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              fontSize: '0.75rem'
+            }}>
+              {stats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('bot')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: '8px',
+              border: 'none',
+              fontWeight: 700,
+              fontSize: '0.86rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: activeTab === 'bot' ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' : 'transparent',
+              color: activeTab === 'bot' ? '#ffffff' : 'var(--text-secondary)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <Sparkles size={16} />
+            <span>✨ Career Xone AI Assistant</span>
+            <span style={{
+              background: botConfig.enabled ? '#22c55e' : '#ef4444',
+              color: '#ffffff',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              fontSize: '0.72rem',
+              fontWeight: 800
+            }}>
+              {botConfig.enabled ? 'ACTIVE' : 'PAUSED'}
+            </span>
+          </button>
+        </div>
+
+        {activeTab === 'bot' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingRight: '6px' }}>
+            <button
+              onClick={handleToggleBot}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: botConfig.enabled ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                color: botConfig.enabled ? '#ef4444' : '#22c55e'
+              }}
+            >
+              {botConfig.enabled ? <Pause size={14} /> : <Play size={14} />}
+              <span>{botConfig.enabled ? 'Pause Auto-Replies' : 'Resume Auto-Replies'}</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {activeTab === 'logs' ? (
+        <>
+          {/* Stats Row */}
+          <motion.div
+            className="stat-cards-grid"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
         <motion.div 
           className="stat-card blue clickable" 
           variants={itemVariants}
@@ -885,6 +1142,993 @@ export default function SMSCenter() {
           </div>
         )}
       </motion.div>
+        </>
+      ) : (
+        /* 🤖 WhatsApp AI & Parent Auto-Reply Bot Tab Content */
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+        >
+          {/* Bot Overview & Hero Banner */}
+          <div className="card" style={{
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
+            border: '1px solid rgba(99, 102, 241, 0.25)',
+            padding: '20px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '52px',
+                height: '52px',
+                borderRadius: '14px',
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 16px rgba(99, 102, 241, 0.25)'
+              }}>
+                <Bot size={28} />
+              </div>
+              <div>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  🤖 Automated WhatsApp Parent Assistant
+                  <span style={{
+                    background: botConfig.enabled ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    color: botConfig.enabled ? '#22c55e' : '#ef4444',
+                    fontSize: '0.75rem',
+                    padding: '3px 10px',
+                    borderRadius: '12px',
+                    fontWeight: 800
+                  }}>
+                    {botConfig.enabled ? '● LIVE & ACTIVE' : '○ PAUSED'}
+                  </span>
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  Parents can send keywords (like <strong>1</strong> for Attendance, <strong>2</strong> for Marks, <strong>3</strong> for Timetable) to get instant student reports.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button
+                className="btn"
+                onClick={handleToggleBot}
+                style={{
+                  background: botConfig.enabled ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                {botConfig.enabled ? <Pause size={16} /> : <Play size={16} />}
+                <span>{botConfig.enabled ? 'Disable Auto-Reply' : 'Enable Auto-Reply'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Main 2-Column Grid: Settings & Phone Simulator */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
+            gap: '20px',
+            alignItems: 'stretch'
+          }}>
+            {/* Left Column: Response Toggles & Customization */}
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem' }}>
+                  <Sliders size={18} color="var(--accent-blue)" />
+                  Bot Response Triggers & Toggles
+                </h4>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Auto-Saved</span>
+              </div>
+
+              {/* Coaching Name & Counseling Helplines */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>
+                    Coaching Display Name
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={botConfig.coachingName || 'Career Xone'}
+                    onChange={(e) => handleUpdateBotSetting('coachingName', e.target.value)}
+                    placeholder="e.g. Career Xone"
+                    style={{ width: '100%', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>
+                    📧 Official Email
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={botConfig.email || 'cxjeeneet@gmail.com'}
+                    onChange={(e) => handleUpdateBotSetting('email', e.target.value)}
+                    placeholder="cxjeeneet@gmail.com"
+                    style={{ width: '100%', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>
+                    📞 Counseling Helpline 1
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={botConfig.counselingPhone1 || '9673383561'}
+                    onChange={(e) => handleUpdateBotSetting('counselingPhone1', e.target.value)}
+                    placeholder="9673383561"
+                    style={{ width: '100%', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>
+                    📞 Counseling Helpline 2
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={botConfig.counselingPhone2 || '9145481323'}
+                    onChange={(e) => handleUpdateBotSetting('counselingPhone2', e.target.value)}
+                    placeholder="9145481323"
+                    style={{ width: '100%', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0, gridColumn: 'span 2' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>
+                    📍 Campus Address
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={botConfig.campusAddress || 'Hadditoli Road, Near Ananya Hospital, Gondia, Maharashtra 441601'}
+                    onChange={(e) => handleUpdateBotSetting('campusAddress', e.target.value)}
+                    placeholder="Hadditoli Road, Near Ananya Hospital, Gondia, Maharashtra 441601"
+                    style={{ width: '100%', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0, gridColumn: 'span 2' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>
+                    🗺️ Google Maps Location URL
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={botConfig.googleMapsUrl || 'https://maps.app.goo.gl/ECzbg6DcixL7ZxpW7'}
+                    onChange={(e) => handleUpdateBotSetting('googleMapsUrl', e.target.value)}
+                    placeholder="https://maps.app.goo.gl/ECzbg6DcixL7ZxpW7"
+                    style={{ width: '100%', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Trigger 1: Attendance */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px',
+                borderRadius: '10px',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>1️⃣ Attendance Auto-Reply</span>
+                    <code style={{ fontSize: '0.72rem', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', padding: '2px 6px', borderRadius: '4px' }}>
+                      '1', 'Attendance', 'Haajri'
+                    </code>
+                  </div>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                    Returns today's punch entry/exit time and monthly attendance rate.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleUpdateBotSetting('enableAttendance', !botConfig.enableAttendance)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    background: botConfig.enableAttendance ? 'rgba(34, 197, 94, 0.18)' : 'rgba(239, 68, 68, 0.18)',
+                    color: botConfig.enableAttendance ? '#22c55e' : '#ef4444'
+                  }}
+                >
+                  {botConfig.enableAttendance ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              {/* Trigger 2: Test Marks */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px',
+                borderRadius: '10px',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>2️⃣ Test Marks & Ranks</span>
+                    <code style={{ fontSize: '0.72rem', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', padding: '2px 6px', borderRadius: '4px' }}>
+                      '2', 'Marks', 'Result', 'Test'
+                    </code>
+                  </div>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                    Returns latest published exam marks, percentage, and batch rank.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleUpdateBotSetting('enableMarks', !botConfig.enableMarks)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    background: botConfig.enableMarks ? 'rgba(34, 197, 94, 0.18)' : 'rgba(239, 68, 68, 0.18)',
+                    color: botConfig.enableMarks ? '#22c55e' : '#ef4444'
+                  }}
+                >
+                  {botConfig.enableMarks ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              {/* Trigger 3: Strict Fee Redirection Protection */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px',
+                borderRadius: '10px',
+                background: 'rgba(245, 158, 11, 0.08)',
+                border: '1px solid rgba(245, 158, 11, 0.25)'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>3️⃣ Fee Counseling Protection</span>
+                    <code style={{ fontSize: '0.72rem', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', padding: '2px 6px', borderRadius: '4px' }}>
+                      '3', 'Fees', 'Payment'
+                    </code>
+                  </div>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                    🛡️ Auto-redirects to official counseling helpline (<strong>9673383561 / 9145481323</strong>).
+                  </p>
+                </div>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.15)', padding: '4px 8px', borderRadius: '6px' }}>
+                  PROTECTED
+                </span>
+              </div>
+
+              {/* Trigger 4: Timetable */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px',
+                borderRadius: '10px',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>4️⃣ Class Timetable & Schedule</span>
+                    <code style={{ fontSize: '0.72rem', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', padding: '2px 6px', borderRadius: '4px' }}>
+                      '4', 'Time', 'Timetable'
+                    </code>
+                  </div>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                    Returns daily lecture sessions and batch class timings.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleUpdateBotSetting('enableTimetable', !botConfig.enableTimetable)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    background: botConfig.enableTimetable ? 'rgba(34, 197, 94, 0.18)' : 'rgba(239, 68, 68, 0.18)',
+                    color: botConfig.enableTimetable ? '#22c55e' : '#ef4444'
+                  }}
+                >
+                  {botConfig.enableTimetable ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              {/* Trigger 5: Performance Report */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px',
+                borderRadius: '10px',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>5️⃣ Performance Report Card</span>
+                    <code style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '2px 6px', borderRadius: '4px' }}>
+                      '5', 'Report', 'Summary'
+                    </code>
+                  </div>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                    Returns comprehensive summary of attendance and test score history.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleUpdateBotSetting('enableReport', !botConfig.enableReport)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    background: botConfig.enableReport ? 'rgba(34, 197, 94, 0.18)' : 'rgba(239, 68, 68, 0.18)',
+                    color: botConfig.enableReport ? '#22c55e' : '#ef4444'
+                  }}
+                >
+                  {botConfig.enableReport ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              {/* Save Settings Button */}
+              <div style={{ marginTop: '4px' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={async () => {
+                    try {
+                      await api.saveWhatsAppBotConfig(botConfig);
+                      toast.success('✅ AI Assistant settings & helpline numbers saved permanently!');
+                    } catch (e) {
+                      toast.error('Failed to save settings: ' + e.message);
+                    }
+                  }}
+                  style={{ width: '100%', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 700, borderRadius: '10px' }}
+                >
+                  <Check size={16} />
+                  <span>💾 Save AI Settings & Helpline Numbers (सेटिंग्स सेव करें)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Right Column: WhatsApp Interactive Phone Simulator */}
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+              {/* Simulator Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Smartphone size={18} color="#22c55e" />
+                  <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800 }}>
+                    Live AI WhatsApp Chat Simulator
+                  </h4>
+                </div>
+
+                {/* Persona Mode Switch (Student vs Guest) */}
+                <div style={{ display: 'flex', background: 'var(--surface-color)', padding: '3px', borderRadius: '10px', border: '1px solid var(--border-color)', gap: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setSimulatorMode('student')}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontSize: '0.74rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: simulatorMode === 'student' ? 'var(--accent-blue)' : 'transparent',
+                      color: simulatorMode === 'student' ? '#ffffff' : 'var(--text-secondary)'
+                    }}
+                  >
+                    👨‍🎓 Student Parent
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimulatorMode('guest')}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontSize: '0.74rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: simulatorMode === 'guest' ? '#10b981' : 'transparent',
+                      color: simulatorMode === 'guest' ? '#ffffff' : 'var(--text-secondary)'
+                    }}
+                  >
+                    👤 Guest / Admission
+                  </button>
+                </div>
+              </div>
+
+              {/* Student Picker Bar (When in Student Mode) */}
+              {simulatorMode === 'student' && students.length > 0 && (
+                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(59, 130, 246, 0.06)', padding: '6px 12px', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--accent-blue)', whiteSpace: 'nowrap' }}>Testing Student:</span>
+                  <select
+                    value={simulatorStudentId}
+                    onChange={(e) => setSimulatorStudentId(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      background: 'var(--surface-color)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700
+                    }}
+                  >
+                    {students.slice(0, 50).map(s => (
+                      <option key={s.id || s._id} value={s.id || s._id}>
+                        {s.name} (Roll: {s.rollNo || '--'}) {s.batch ? `• ${s.batch}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Dynamic Quick Test Buttons */}
+              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                {(simulatorMode === 'guest'
+                  ? ['Hi', 'Good morning', 'Ok sir', 'Fees', 'Toppers', 'Scholarship', 'Location', 'Contact', 'Courses']
+                  : ['Hi', '1', '2', '3', '4', 'Attendance', 'Marks', 'Timetable', 'Fees', 'Toppers']
+                ).map(k => (
+                  <button
+                    key={k}
+                    disabled={simulatorLoading}
+                    onClick={() => handleSimulatorSend(k)}
+                    style={{
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--surface-color)',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: simulatorLoading ? 'not-allowed' : 'pointer',
+                      color: 'var(--text-primary)',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+
+              {/* Simulated Chat Feed */}
+              <div style={{
+                flex: 1,
+                minHeight: '260px',
+                maxHeight: '340px',
+                overflowY: 'auto',
+                background: 'rgba(0, 0, 0, 0.25)',
+                borderRadius: '12px',
+                padding: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }}>
+                {previewChatMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      alignSelf: msg.from === 'parent' ? 'flex-end' : 'flex-start',
+                      maxWidth: '85%',
+                      background: msg.from === 'parent' ? '#005c4b' : '#202c33',
+                      color: '#ffffff',
+                      padding: '8px 12px',
+                      borderRadius: msg.from === 'parent' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                      fontSize: '0.82rem',
+                      lineHeight: 1.45,
+                      whiteSpace: 'pre-wrap',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.68rem', opacity: 0.7, marginBottom: '2px', fontWeight: 600 }}>
+                      {msg.from === 'parent' ? '📱 Parent (You)' : `🤖 ${botConfig.coachingName || 'Career Xone'} AI`}
+                    </div>
+                    {msg.text}
+                    <div style={{ fontSize: '0.62rem', opacity: 0.6, textAlign: 'right', marginTop: '4px' }}>
+                      {msg.time}
+                    </div>
+                  </div>
+                ))}
+                {simulatorLoading && (
+                  <div style={{ alignSelf: 'flex-start', background: '#202c33', padding: '6px 12px', borderRadius: '12px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                    🤖 AI Assistant is typing...
+                  </div>
+                )}
+              </div>
+
+              {/* Simulator Input Box */}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={simulatorMode === 'guest' ? "Type guest question like 'fees', 'toppers', 'address'..." : "Type message like 'Hi', 'attendance', 'marks'..."}
+                  value={previewSimulatorInput}
+                  onChange={(e) => setPreviewSimulatorInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSimulatorSend(); }}
+                  style={{ flex: 1, fontSize: '0.85rem' }}
+                />
+                <button
+                  className="btn btn-primary"
+                  onClick={() => handleSimulatorSend()}
+                  disabled={simulatorLoading || !previewSimulatorInput.trim()}
+                  style={{ padding: '8px 16px' }}
+                >
+                  <Send size={15} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Live Bot Chat Stream / Conversation Manager */}
+          <div className="card" style={{ padding: '20px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h4 style={{ margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.05rem' }}>
+                  <MessageSquare size={20} color="#22c55e" />
+                  Parent WhatsApp Conversations & Live Stream
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  Click any contact or message row below to open the <strong>Full Conversation Thread</strong>.
+                </p>
+              </div>
+
+              {/* Search Bar & Active Stats */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ position: 'relative' }}>
+                  <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Search phone, student, roll..."
+                    value={botSearchQuery}
+                    onChange={(e) => setBotSearchQuery(e.target.value)}
+                    style={{ paddingLeft: '32px', fontSize: '0.82rem', height: '34px', width: '220px' }}
+                  />
+                  {botSearchQuery && (
+                    <button
+                      onClick={() => setBotSearchQuery('')}
+                      style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <span style={{
+                  background: 'rgba(34, 197, 94, 0.12)',
+                  color: '#22c55e',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {groupedBotChats.length} Contacts Active ({botLogs.length} Messages)
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Contact Inboxes Bar */}
+            {groupedBotChats.length > 0 && (
+              <div style={{
+                display: 'flex',
+                gap: '10px',
+                overflowX: 'auto',
+                paddingBottom: '12px',
+                marginBottom: '16px',
+                borderBottom: '1px solid var(--border-color)'
+              }}>
+                {groupedBotChats.map((contact) => (
+                  <div
+                    key={contact.phone}
+                    onClick={() => setSelectedBotChatContact(contact)}
+                    style={{
+                      flexShrink: 0,
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-blue)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: '0.85rem'
+                    }}>
+                      <User size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.84rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>{contact.studentName}</span>
+                        <span style={{ fontSize: '0.7rem', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', padding: '1px 6px', borderRadius: '4px' }}>
+                          {contact.totalInteractions} msgs
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                        📱 {contact.phone} {contact.rollNo !== '--' ? `• Roll ${contact.rollNo}` : ''}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {botLogs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+                <MessageCircle size={42} style={{ margin: '0 auto 10px auto', opacity: 0.4 }} />
+                <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>No Incoming Parent Messages Yet</p>
+                <span style={{ fontSize: '0.8rem' }}>When a parent sends a WhatsApp message, their entire conversation tab and live stream will appear here.</span>
+              </div>
+            ) : (
+              <div className="table-responsive" style={{ maxHeight: '420px', overflowY: 'auto' }}>
+                <table className="table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-secondary)', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                      <th style={{ padding: '10px 14px', width: '90px' }}>TIME</th>
+                      <th style={{ padding: '10px 14px', width: '130px' }}>PARENT PHONE</th>
+                      <th style={{ padding: '10px 14px', width: '180px' }}>ENROLLED STUDENT</th>
+                      <th style={{ padding: '10px 14px', width: '180px' }}>PARENT QUERY</th>
+                      <th style={{ padding: '10px 14px' }}>BOT AUTOMATED RESPONSE</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'center', width: '130px' }}>ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {botLogs.map((log) => {
+                      const contactData = groupedBotChats.find(c => c.phone === log.phone) || {
+                        phone: log.phone,
+                        studentName: log.studentName,
+                        rollNo: log.rollNo,
+                        logs: [log]
+                      };
+
+                      return (
+                        <tr
+                          key={log.id}
+                          onClick={() => setSelectedBotChatContact(contactData)}
+                          style={{ cursor: 'pointer', transition: 'background 0.15s ease' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-secondary)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          <td style={{ fontSize: '0.76rem', whiteSpace: 'nowrap', color: 'var(--text-muted)', padding: '10px 14px' }}>
+                            {new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </td>
+                          <td style={{ fontWeight: 800, fontSize: '0.86rem', padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Smartphone size={14} color="#22c55e" />
+                              {log.phone}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--accent-blue)', fontSize: '0.85rem' }}>
+                              {log.studentName}
+                            </div>
+                            {log.rollNo && log.rollNo !== '--' && (
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                Roll: {log.rollNo}
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px 14px', maxWidth: '200px' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              background: '#005c4b',
+                              color: '#ffffff',
+                              padding: '4px 10px',
+                              borderRadius: '12px 12px 2px 12px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              maxWidth: '100%',
+                              wordBreak: 'break-word'
+                            }}>
+                              {log.incomingText}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 14px', fontSize: '0.82rem', color: 'var(--text-primary)', maxWidth: '380px' }}>
+                            <div style={{
+                              background: 'var(--bg-tertiary)',
+                              padding: '6px 10px',
+                              borderRadius: '8px',
+                              border: '1px solid var(--border-color)',
+                              maxHeight: '48px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }} title={log.botReply}>
+                              {log.botReply}
+                            </div>
+                          </td>
+                          <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedBotChatContact(contactData);
+                              }}
+                              style={{
+                                fontSize: '0.75rem',
+                                padding: '4px 10px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                borderColor: 'var(--accent-blue)',
+                                color: 'var(--accent-blue)'
+                              }}
+                            >
+                              <Eye size={13} />
+                              <span>Full Chat</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* 📱 Full WhatsApp Parent Conversation Drawer / Modal */}
+      <AnimatePresence>
+        {selectedBotChatContact && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedBotChatContact(null)}
+            style={{ zIndex: 1100, backdropFilter: 'blur(4px)' }}
+          >
+            <motion.div
+              className="modal-content"
+              style={{
+                maxWidth: '620px',
+                width: '95%',
+                maxHeight: '85vh',
+                display: 'flex',
+                flexDirection: 'column',
+                padding: 0,
+                overflow: 'hidden',
+                borderRadius: '16px',
+                border: '1px solid var(--border-color)',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
+              }}
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* WhatsApp Modal Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #075e54 0%, #128c7e 100%)',
+                color: '#ffffff',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.2rem',
+                    fontWeight: 800
+                  }}>
+                    👤
+                  </div>
+                  <div>
+                    <h3 style={{ margin: '0 0 2px 0', fontSize: '1.1rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {selectedBotChatContact.studentName}
+                      {selectedBotChatContact.rollNo !== '--' && (
+                        <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: '10px' }}>
+                          Roll: {selectedBotChatContact.rollNo}
+                        </span>
+                      )}
+                    </h3>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>
+                      📱 {selectedBotChatContact.phone} • {selectedBotChatContact.logs?.length || 0} Messages Exchanged
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    onClick={() => {
+                      const fullChatText = (selectedBotChatContact.logs || [])
+                        .slice()
+                        .reverse()
+                        .map(l => `[${new Date(l.timestamp).toLocaleTimeString()}]\nParent: ${l.incomingText}\nBot:\n${l.botReply}\n-------------------`)
+                        .join('\n\n');
+                      navigator.clipboard.writeText(fullChatText);
+                      toast.success('Chat copied to clipboard!');
+                    }}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      border: 'none',
+                      color: '#ffffff',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontWeight: 700
+                    }}
+                  >
+                    <Copy size={14} /> Copy Chat
+                  </button>
+                  <button
+                    onClick={() => setSelectedBotChatContact(null)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      border: 'none',
+                      color: '#ffffff',
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* WhatsApp Chat Conversation Timeline */}
+              <div style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '20px',
+                background: 'var(--bg-tertiary)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                minHeight: '350px',
+                maxHeight: '520px'
+              }}>
+                <div style={{ textAlign: 'center', margin: '4px 0 10px 0' }}>
+                  <span style={{
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.72rem',
+                    padding: '4px 12px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    End-to-End Automated WhatsApp Assistant Thread
+                  </span>
+                </div>
+
+                {(selectedBotChatContact.logs || [])
+                  .slice()
+                  .reverse()
+                  .map((log, index) => (
+                    <div key={log.id || index} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {/* 1. Parent Message Bubble (Right-aligned) */}
+                      <div style={{
+                        alignSelf: 'flex-end',
+                        maxWidth: '85%',
+                        background: '#005c4b',
+                        color: '#ffffff',
+                        padding: '10px 14px',
+                        borderRadius: '14px 14px 2px 14px',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.25)',
+                        fontSize: '0.88rem',
+                        lineHeight: 1.45
+                      }}>
+                        <div style={{ fontSize: '0.7rem', color: '#a7f3d0', marginBottom: '4px', fontWeight: 700, display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                          <span>📱 Parent ({selectedBotChatContact.phone})</span>
+                          <span>{new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                          {log.incomingText}
+                        </div>
+                      </div>
+
+                      {/* 2. Bot Automated Reply Bubble (Left-aligned) */}
+                      <div style={{
+                        alignSelf: 'flex-start',
+                        maxWidth: '88%',
+                        background: '#202c33',
+                        color: '#ffffff',
+                        padding: '12px 16px',
+                        borderRadius: '14px 14px 14px 2px',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.25)',
+                        fontSize: '0.86rem',
+                        lineHeight: 1.5,
+                        border: '1px solid rgba(255,255,255,0.05)'
+                      }}>
+                        <div style={{ fontSize: '0.7rem', color: '#60a5fa', marginBottom: '6px', fontWeight: 700, display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                          <span>🤖 {botConfig.coachingName || 'Career Xone'} Bot</span>
+                          <span style={{ color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#f3f4f6' }}>
+                          {log.botReply}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px', fontSize: '0.68rem', color: '#34d399' }}>
+                          <Check size={12} />
+                          <span>⚡ Automated reply delivered in &lt;1s</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Modal Footer */}
+              <div style={{
+                background: 'var(--bg-secondary)',
+                padding: '12px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderTop: '1px solid var(--border-color)'
+              }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  Showing complete chat history for <strong>{selectedBotChatContact.phone}</strong>
+                </span>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setSelectedBotChatContact(null)}
+                  style={{ padding: '6px 18px' }}
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Export SMS Modal */}
       <AnimatePresence>

@@ -347,6 +347,19 @@ export async function testBiometricDevice(ip, port = 71) {
   };
 }
 
+// Helper: Get local primary IPv4 address on Wi-Fi
+export function getLocalNetworkIp() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
 // 2. Sync Attendance Logs From Device
 export async function syncBiometricLogs(ip, port = 71, instituteId = null) {
   if (isSyncing) {
@@ -428,6 +441,14 @@ export async function syncBiometricLogs(ip, port = 71, instituteId = null) {
     }
 
     // For FK / Realtime devices on Port 71
+    const Attendance = mongoose.model('Attendance');
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayPunches = await Attendance.countDocuments({
+      isDeleted: { $ne: true },
+      date: todayStr,
+      ...(instituteId ? { instituteId } : {})
+    });
+
     lastSyncStatus.connected = true;
     lastSyncStatus.lastSyncTime = new Date().toISOString();
     lastSyncStatus.targetIp = targetIp;
@@ -435,8 +456,8 @@ export async function syncBiometricLogs(ip, port = 71, instituteId = null) {
 
     return {
       success: true,
-      message: `Machine is connected on Wi-Fi (${targetIp}:${targetPort}). Real-time Automatic Push Receiver is actively capturing attendance punches.`,
-      totalOnDevice: 0,
+      message: `Machine is connected on Wi-Fi (${targetIp}:${targetPort}). Real-time Automatic Push Receiver is actively listening on ${getLocalNetworkIp()}:5000 (${todayPunches} attendance records recorded today).`,
+      totalOnDevice: todayPunches,
       newlyAdded: 0,
       lastSyncTime: lastSyncStatus.lastSyncTime
     };
@@ -487,5 +508,9 @@ export function stopBiometricAutoSync() {
 
 // 5. Get Current Status
 export function getBiometricStatus() {
-  return { ...lastSyncStatus };
+  return {
+    ...lastSyncStatus,
+    localIp: getLocalNetworkIp(),
+    serverPort: 5000
+  };
 }

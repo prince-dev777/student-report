@@ -278,6 +278,31 @@ app.whenReady().then(async () => {
     return result;
   });
 
+  ipcMain.handle('shell:openPath', async (event, folderPath) => {
+    try {
+      if (folderPath && fs.existsSync(folderPath)) {
+        const { shell } = require('electron');
+        return await shell.openPath(folderPath);
+      }
+    } catch (e) {
+      console.warn('shell.openPath error:', e);
+    }
+    return '';
+  });
+
+  ipcMain.handle('shell:showItemInFolder', async (event, filePath) => {
+    try {
+      if (filePath && fs.existsSync(filePath)) {
+        const { shell } = require('electron');
+        shell.showItemInFolder(filePath);
+        return true;
+      }
+    } catch (e) {
+      console.warn('shell.showItemInFolder error:', e);
+    }
+    return false;
+  });
+
   await startServer();
   // Wait a moment for server to start before creating window
   setTimeout(() => {

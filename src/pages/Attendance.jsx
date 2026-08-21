@@ -136,6 +136,7 @@ export default function Attendance() {
       const status = await api.getBiometricStatus();
       if (status) {
         setBiometricStatus(status);
+        if (status.localIp) setLocalIp(status.localIp);
         if (status.targetIp && status.targetIp !== '192.168.1.201') setBiometricIp(status.targetIp);
         if (status.autoSyncEnabled !== undefined) setBiometricAutoSync(status.autoSyncEnabled);
         if (status.deviceInfo) setBiometricDeviceInfo(status.deviceInfo);
@@ -144,9 +145,7 @@ export default function Attendance() {
   };
 
   useEffect(() => {
-    if (activeTab === 'adms') {
-      fetchBiometricStatus();
-    }
+    fetchBiometricStatus();
   }, [activeTab]);
 
   const handleTestBiometric = async () => {
@@ -1821,8 +1820,8 @@ export default function Attendance() {
                       </div>
                       <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
                         {biometricDeviceInfo 
-                          ? `Logs on device: ${biometricDeviceInfo.logCount || 'Live'} | Status: ${biometricDeviceInfo.status || 'Ready'}`
-                          : 'Click "Test Connection" to inspect device info.'}
+                          ? `Protocol: ${biometricDeviceInfo.version || 'Realtime/FK'} | Status: ${biometricDeviceInfo.status || 'Ready'}`
+                          : 'Click "Test Connection" to verify machine communication.'}
                       </div>
                     </div>
 
@@ -1834,6 +1833,51 @@ export default function Attendance() {
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Step-by-Step Machine Configuration Guide */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)',
+                  border: '1.5px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: '16px',
+                  padding: '20px 24px',
+                  marginTop: '6px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '1.1rem' }}>⚙️</span>
+                    <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      Real-Time Push Setup (Biometric Machine Screen Configuration)
+                    </h4>
+                  </div>
+                  <p style={{ margin: '0 0 16px', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
+                    Biometric machine real-time me student ke punch directly is computer par push karegi. Kripya machine ke physical screen me ye settings verify karein:
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                    <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 700 }}>1️⃣ MACHINE IP (Device IP)</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-blue)', marginTop: '4px', fontFamily: 'monospace' }}>
+                        192.168.0.12 (Port: 71)
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Menu ➔ Comm ➔ Network ➔ IP</div>
+                    </div>
+
+                    <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '10px', border: '1.5px solid rgba(16, 185, 129, 0.4)' }}>
+                      <div style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: 800 }}>2️⃣ SERVER IP (Computer IP)</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#10b981', marginTop: '4px', fontFamily: 'monospace' }}>
+                        {localIp} (Port: 5000)
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Menu ➔ Comm ➔ Cloud Server / ADMS</div>
+                    </div>
+
+                    <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 700 }}>3️⃣ PUSH / CLOUD SERVER</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#8b5cf6', marginTop: '4px' }}>
+                        Enable / ON
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Auto-sends punch on thumb scan</div>
+                    </div>
                   </div>
                 </div>
               </div>

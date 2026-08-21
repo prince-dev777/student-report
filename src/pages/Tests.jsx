@@ -403,13 +403,16 @@ export default function Tests() {
 
     // Extract exact source directory path from the uploaded image files
     let detectedPath = '';
-    if (window.electronAPI && typeof window.electronAPI.getPathForFile === 'function') {
-      try {
-        detectedPath = window.electronAPI.getPathForFile(imageFiles[0]);
-      } catch (e) {}
-    }
-    if (!detectedPath && imageFiles[0] && imageFiles[0].path) {
-      detectedPath = imageFiles[0].path;
+    for (const f of imageFiles) {
+      if (window.electronAPI && typeof window.electronAPI.getPathForFile === 'function') {
+        try {
+          detectedPath = window.electronAPI.getPathForFile(f);
+        } catch (e) {}
+      }
+      if (!detectedPath && f && f.path) {
+        detectedPath = f.path;
+      }
+      if (detectedPath) break;
     }
     if (detectedPath) {
       const sourceDir = detectedPath.replace(/[/\\][^/\\]+$/, '');
@@ -826,7 +829,7 @@ export default function Tests() {
       }
     }
 
-    // In web browser mode without local folder picker:
+    // In pure web browser mode without local folder picker / Electron:
     if (!window.electronAPI && (!targetDir || targetDir === '')) {
       const toastId = toast.loading(`Downloading ${imagesToDownload.length} OMR images...`);
       let successCount = 0;
@@ -835,6 +838,7 @@ export default function Tests() {
         const fileName = `OMR_${item.rollNo || 'Roll'}_${(item.name || '').replace(/\s+/g, '_')}.jpg`;
         try {
           const resp = await fetch(fullUrl);
+          if (!resp.ok) continue;
           const blob = await resp.blob();
           const blobUrl = window.URL.createObjectURL(blob);
           const link = document.createElement('a');
@@ -845,7 +849,7 @@ export default function Tests() {
           document.body.removeChild(link);
           setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
           successCount++;
-          await new Promise(r => setTimeout(r, 200));
+          await new Promise(r => setTimeout(r, 150));
         } catch (e) {
           console.warn('Direct download error:', e);
         }
@@ -864,7 +868,17 @@ export default function Tests() {
         targetDir: targetDir,
         images: imagesToDownload
       });
-      toast.success(`🎉 Saved ${res.copiedCount} OMR images to:\n${res.outputDir}`, { duration: 5000 });
+
+      // Automatically reveal the saved folder in Windows File Explorer
+      if (window.electronAPI && typeof window.electronAPI.openPath === 'function' && res.outputDir) {
+        try {
+          await window.electronAPI.openPath(res.outputDir);
+        } catch (e) {
+          console.warn('Could not auto-open folder:', e);
+        }
+      }
+
+      toast.success(`🎉 Saved ${res.copiedCount} evaluated OMR images to:\n${res.outputDir}`, { duration: 6000 });
     } catch (err) {
       console.error(err);
       toast.error(err.message || 'Failed to save OMR images');
@@ -896,13 +910,14 @@ export default function Tests() {
       toast.success(`Downloaded OMR for ${student.name || student.studentName || safeRoll}`);
     } catch (err) {
       console.warn('Blob download fallback:', err);
-      const link = document.createElement('a');
-      link.href = getMediaUrl(rawUrl);
-      link.download = `OMR_${student.rollNo || student.id || 'Student'}.jpg`;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      try {
+        const link = document.createElement('a');
+        link.href = getMediaUrl(rawUrl);
+        link.download = `OMR_${student.rollNo || student.id || 'Student'}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {}
     }
   };
 

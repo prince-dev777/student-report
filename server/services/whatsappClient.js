@@ -201,6 +201,16 @@ export function initializeWhatsAppClient() {
       initRetryCount = 0; // Reset on success
     });
 
+    // 🤖 Hook WhatsApp Parent Auto-Reply Bot (catches incoming messages & self-test chats)
+    client.on('message_create', async (msg) => {
+      try {
+        const { handleIncomingWhatsAppMessage } = await import('./whatsappBotService.js');
+        await handleIncomingWhatsAppMessage(client, msg);
+      } catch (botErr) {
+        console.error('[WhatsAppBot] Error handling message:', botErr.message);
+      }
+    });
+
     client.on('authenticated', () => {
       console.log('[WhatsAppClient] WhatsApp Client authenticated.');
     });

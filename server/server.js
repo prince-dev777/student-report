@@ -39,6 +39,11 @@ import {
   resetRetryCount
 } from './services/whatsappClient.js';
 import {
+  getBotConfig,
+  updateBotConfig,
+  getBotLogs
+} from './services/whatsappBotService.js';
+import {
   testBiometricDevice,
   syncBiometricLogs,
   startBiometricAutoSync,
@@ -1531,6 +1536,73 @@ app.post('/api/whatsapp/status', async (req, res) => {
   }
 });
 
+// ---- 🤖 WhatsApp Parent Auto-Reply Bot API ----
+app.get('/api/whatsapp/bot-config', (req, res) => {
+  try {
+    const config = getBotConfig();
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/whatsapp/bot-config', (req, res) => {
+  try {
+    const result = updateBotConfig(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/whatsapp/bot-logs', (req, res) => {
+  try {
+    const logs = getBotLogs();
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 🤖 WhatsApp Bot Simulator (Direct Live AI Test)
+app.post('/api/whatsapp/bot/simulate', async (req, res) => {
+  try {
+    const { query, isGuest, studentId } = req.body;
+    const { generateSmartStudentReply, generateSmartGuestReply } = await import('./services/whatsappBotService.js');
+    
+    let replyText = '';
+    let studentObj = null;
+
+    if (!isGuest) {
+      const Student = mongoose.model('Student');
+      if (studentId) {
+        studentObj = await Student.findOne({ 
+          isDeleted: { $ne: true },
+          $or: [{ id: studentId }, { _id: mongoose.Types.ObjectId.isValid(studentId) ? studentId : null }]
+        });
+      }
+      if (!studentObj) {
+        studentObj = await Student.findOne({ isDeleted: { $ne: true } }).sort({ rollNo: 1 });
+      }
+    }
+
+    if (studentObj && !isGuest) {
+      replyText = await generateSmartStudentReply(studentObj, query || 'Hi', studentObj.parentPhone || '9876543210');
+    } else {
+      replyText = await generateSmartGuestReply(query || 'Hi', '9999999999');
+    }
+
+    res.json({
+      success: true,
+      reply: replyText,
+      studentName: studentObj ? studentObj.name : 'Guest Parent',
+      rollNo: studentObj ? studentObj.rollNo : '--'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---- 📟 Biometric Control Center API (Direct IP Socket & Auto-Sync) ----
 app.post('/api/biometric/scan', async (req, res) => {
   try {
@@ -2995,16 +3067,19 @@ app.post('/api/test-results/download-omr-images', authenticateToken, async (req,
 
       // 2. Handle File URLs or Relative Upload Paths
       const cleanUrl = imgUrl.replace(/^https?:\/\/[^/]+/, '');
-      const originalFilename = path.basename(cleanUrl);
+      const originalFilename = path.basename(cleanUrl.split('?')[0]);
       
       const candidatePaths = [
         path.join(uploadDir, originalFilename),
         path.join(dataPath, 'uploads', originalFilename),
         path.join(dataPath, 'uploads', 'omr', originalFilename),
+        path.join(dataPath, cleanUrl),
         path.join(__dirname, 'uploads', 'omr', originalFilename),
         path.join(__dirname, 'uploads', originalFilename),
+        path.join(__dirname, cleanUrl),
         path.join(process.cwd(), 'uploads', originalFilename),
         path.join(process.cwd(), 'uploads', 'omr', originalFilename),
+        cleanUrl,
         imgUrl
       ];
 

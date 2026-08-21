@@ -255,4 +255,14 @@ export const api = {
     apiRequest('/biometric/status'),
   saveBiometricConfig: (data) => 
     apiRequest('/biometric/config', { method: 'POST', body: JSON.stringify(data) }),
+
+  // WhatsApp Parent Auto-Reply Bot
+  getWhatsAppBotConfig: () => 
+    apiRequest('/whatsapp/bot-config'),
+  saveWhatsAppBotConfig: (data) => 
+    apiRequest('/whatsapp/bot-config', { method: 'POST', body: JSON.stringify(data) }),
+  getWhatsAppBotLogs: () => 
+    apiRequest('/whatsapp/bot-logs'),
+  simulateWhatsAppBotMessage: (data) =>
+    apiRequest('/whatsapp/bot/simulate', { method: 'POST', body: JSON.stringify(data) }),
 };
