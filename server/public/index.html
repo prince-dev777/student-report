@@ -18,9 +18,11 @@
       (function() {
         const hash = window.location.hash || '';
         const search = window.location.search || '';
+        const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
+
         let appParam = 'parent';
-        let appTitle = 'Career Xone - Parents App';
-        let appleTitle = 'CX Parents';
+        let appTitle = isElectron ? 'Career Xone Pro' : 'Career Xone - Smart Portal';
+        let appleTitle = 'Career Xone';
 
         if (hash.includes('/teacher') || search.includes('app=teacher')) {
           appParam = 'teacher';
@@ -38,6 +40,8 @@
           appParam = 'parent';
           appTitle = 'Career Xone - Parents App';
           appleTitle = 'CX Parents';
+        } else if (isElectron) {
+          appTitle = 'Career Xone Pro';
         }
 
         document.title = appTitle;
@@ -48,9 +52,11 @@
       function updatePWAManifest() {
         const hash = window.location.hash || '';
         const search = window.location.search || '';
+        const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
+
         let appParam = 'parent';
-        let appTitle = 'Career Xone - Parents App';
-        let appleTitle = 'CX Parents';
+        let appTitle = isElectron ? 'Career Xone Pro' : 'Career Xone - Smart Portal';
+        let appleTitle = 'Career Xone';
 
         if (hash.includes('/teacher') || search.includes('app=teacher')) {
           appParam = 'teacher';
@@ -68,6 +74,8 @@
           appParam = 'parent';
           appTitle = 'Career Xone - Parents App';
           appleTitle = 'CX Parents';
+        } else if (isElectron) {
+          appTitle = 'Career Xone Pro';
         }
 
         document.title = appTitle;
@@ -104,7 +112,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="./assets/index-F8y85oO-.js"></script>
+    <script type="module" crossorigin src="./assets/index-Cy4GosgZ.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-D58_1uDB.css">
   </head>
   <body>

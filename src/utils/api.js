@@ -241,4 +241,18 @@ export const api = {
     apiRequest('/database/purge-cloudinary-unwanted', { method: 'POST' }),
   getSystemLogs: () => 
     apiRequest('/system/logs'),
+
+  // Biometric Control Center
+  scanBiometricDevices: () => 
+    apiRequest('/biometric/scan', { method: 'POST' }),
+  testBiometricConnection: (data) => 
+    apiRequest('/biometric/test', { method: 'POST', body: JSON.stringify(data) }),
+  syncBiometricNow: (data) => 
+    apiRequest('/biometric/sync', { method: 'POST', body: JSON.stringify(data) }),
+  toggleBiometricAutoSync: (data) => 
+    apiRequest('/biometric/auto-sync', { method: 'POST', body: JSON.stringify(data) }),
+  getBiometricStatus: () => 
+    apiRequest('/biometric/status'),
+  saveBiometricConfig: (data) => 
+    apiRequest('/biometric/config', { method: 'POST', body: JSON.stringify(data) }),
 };

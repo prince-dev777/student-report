@@ -21,7 +21,18 @@ import {
   FileSpreadsheet,
   Filter,
   Search,
-  X
+  X,
+  RefreshCw,
+  Play,
+  Pause,
+  Wifi,
+  WifiOff,
+  Server,
+  Activity,
+  Check,
+  Zap,
+  ShieldCheck,
+  Radar
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
@@ -60,8 +71,151 @@ export default function Attendance() {
   const [historyEndDate, setHistoryEndDate] = useState(getTodayStr());
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all'); // 'all' | 'present' | 'late' | 'absent'
   
-  // ADMS setup state
+  // Biometric Direct & ADMS Setup States
   const [localIp, setLocalIp] = useState('127.0.0.1');
+  const [biometricMode, setBiometricMode] = useState('direct'); // 'direct' | 'adms'
+  const [biometricIp, setBiometricIp] = useState(() => {
+    const saved = localStorage.getItem('biometric_ip');
+    if (!saved || saved === '192.168.1.201') return '192.168.0.12';
+    return saved;
+  });
+  const [biometricPort, setBiometricPort] = useState(() => localStorage.getItem('biometric_port') || '71');
+  const [biometricTesting, setBiometricTesting] = useState(false);
+  const [biometricSyncing, setBiometricSyncing] = useState(false);
+  const [biometricAutoSync, setBiometricAutoSync] = useState(false);
+  const [biometricDeviceInfo, setBiometricDeviceInfo] = useState(null);
+  const [biometricStatus, setBiometricStatus] = useState(null);
+  const [isScanningNetwork, setIsScanningNetwork] = useState(false);
+  const [discoveredDevices, setDiscoveredDevices] = useState([]);
+
+  const handleAutoScanNetwork = async () => {
+    setIsScanningNetwork(true);
+    setDiscoveredDevices([]);
+    try {
+      toast.loading('🔍 Scanning local Wi-Fi for Biometric Machines...', { id: 'wifi-scan' });
+      const res = await api.scanBiometricDevices();
+      toast.dismiss('wifi-scan');
+      if (res && res.success) {
+        setDiscoveredDevices(res.devices || []);
+        if (res.devices && res.devices.length > 0) {
+          toast.success(`🎉 Found ${res.devices.length} Biometric Machine(s) on Wi-Fi!`);
+        } else {
+          toast.error('No Biometric Machines found. Ensure machine is powered ON and on same Wi-Fi.');
+        }
+      }
+    } catch (err) {
+      toast.dismiss('wifi-scan');
+      toast.error(err.message || 'Subnet scan failed');
+    } finally {
+      setIsScanningNetwork(false);
+    }
+  };
+
+  const handleSelectDiscoveredDevice = async (device) => {
+    setBiometricIp(device.ip);
+    setBiometricPort(String(device.port));
+    localStorage.setItem('biometric_ip', device.ip);
+    localStorage.setItem('biometric_port', String(device.port));
+    toast.success(`⚡ Selected ${device.name} (${device.ip}:${device.port})`);
+    
+    // Auto-test connection
+    setBiometricTesting(true);
+    try {
+      const res = await api.testBiometricConnection({ ip: device.ip, port: device.port });
+      if (res && res.success) {
+        setBiometricDeviceInfo(res.deviceInfo);
+        toast.success(`🎉 Connected successfully to ${device.ip}:${device.port}!`);
+        fetchBiometricStatus();
+      }
+    } catch (e) {}
+    setBiometricTesting(false);
+  };
+
+  const fetchBiometricStatus = async () => {
+    try {
+      const status = await api.getBiometricStatus();
+      if (status) {
+        setBiometricStatus(status);
+        if (status.targetIp && status.targetIp !== '192.168.1.201') setBiometricIp(status.targetIp);
+        if (status.autoSyncEnabled !== undefined) setBiometricAutoSync(status.autoSyncEnabled);
+        if (status.deviceInfo) setBiometricDeviceInfo(status.deviceInfo);
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    if (activeTab === 'adms') {
+      fetchBiometricStatus();
+    }
+  }, [activeTab]);
+
+  const handleTestBiometric = async () => {
+    if (!biometricIp.trim()) {
+      toast.error('Please enter Biometric Machine IP');
+      return;
+    }
+    setBiometricTesting(true);
+    try {
+      localStorage.setItem('biometric_ip', biometricIp.trim());
+      localStorage.setItem('biometric_port', biometricPort.trim());
+      const res = await api.testBiometricConnection({ ip: biometricIp.trim(), port: parseInt(biometricPort, 10) || 71 });
+      if (res && res.success) {
+        setBiometricDeviceInfo(res.deviceInfo);
+        toast.success(`🎉 Connected successfully to Biometric Machine at ${biometricIp}:${biometricPort || 71}!`);
+        fetchBiometricStatus();
+      } else {
+        toast.error(res?.error || 'Connection failed');
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to connect to Biometric Machine');
+    } finally {
+      setBiometricTesting(false);
+    }
+  };
+
+  const handleSyncBiometricNow = async () => {
+    if (!biometricIp.trim()) {
+      toast.error('Please enter Biometric Machine IP');
+      return;
+    }
+    setBiometricSyncing(true);
+    try {
+      localStorage.setItem('biometric_ip', biometricIp.trim());
+      localStorage.setItem('biometric_port', biometricPort.trim());
+      const res = await api.syncBiometricNow({ ip: biometricIp.trim(), port: parseInt(biometricPort, 10) || 71 });
+      if (res && res.success) {
+        toast.success(`🎉 ${res.message || `Synced ${res.newlyAdded} new attendance punches!`}`);
+        fetchBiometricStatus();
+      } else {
+        toast.error(res?.error || 'Sync failed');
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to sync from Biometric Machine');
+    } finally {
+      setBiometricSyncing(false);
+    }
+  };
+
+  const handleToggleAutoSync = async () => {
+    const nextState = !biometricAutoSync;
+    try {
+      const res = await api.toggleBiometricAutoSync({
+        enabled: nextState,
+        ip: biometricIp.trim(),
+        port: parseInt(biometricPort, 10) || 4370,
+        intervalSeconds: 15
+      });
+      setBiometricAutoSync(res.autoSyncEnabled);
+      if (res.autoSyncEnabled) {
+        toast.success('🚀 Auto-Sync enabled! Polling machine every 15 seconds in background.');
+      } else {
+        toast.success('🛑 Auto-Sync paused.');
+      }
+      fetchBiometricStatus();
+    } catch (err) {
+      toast.error(err.message || 'Failed to toggle Auto-Sync');
+    }
+  };
   
   useEffect(() => {
     fetch(`${API_BASE}/system/local-ip`)
@@ -1323,7 +1477,7 @@ export default function Attendance() {
             </motion.div>
           </motion.div>
         )}
-        {/* ========== TAB 4: ADMS Biometric Setup ========== */}
+        {/* ========== TAB 4: Biometric Control Center & ADMS Setup ========== */}
         {activeTab === 'adms' && (
           <motion.div
             key="adms"
@@ -1334,56 +1488,354 @@ export default function Attendance() {
             className="flex flex-col gap-24"
           >
             <div className="card" style={{ padding: 30 }}>
-              <div className="flex items-center gap-12 mb-20">
-                <div style={{ padding: 12, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-blue)' }}>
-                  <Fingerprint size={28} />
-                </div>
-                <div>
-                  <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Biometric Machine (ADMS) Setup</h2>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Connect your ZKTeco or compatible biometric machine to this local server.</p>
-                </div>
-              </div>
-
-              <div style={{ background: 'var(--surface-color)', padding: 24, borderRadius: 16, border: '1px solid var(--border-color)', marginBottom: 24 }}>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: 16 }}>Connection Details</h3>
-                <p style={{ marginBottom: 20 }}>Your local Edge server is currently running. Enter these details in your Biometric Machine's <strong>ADMS / Cloud Server Settings</strong>:</p>
-                
-                <div className="flex gap-20">
-                  <div style={{ flex: 1, background: 'rgba(16, 185, 129, 0.05)', padding: 20, borderRadius: 12, border: '1px dashed rgba(16, 185, 129, 0.3)' }}>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Server IP Address</div>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--accent-green)' }}>{localIp}</div>
+              {/* Header */}
+              <div className="flex items-center justify-between gap-12 mb-20 flex-wrap">
+                <div className="flex items-center gap-12">
+                  <div style={{ padding: 12, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-blue)' }}>
+                    <Fingerprint size={28} />
                   </div>
-                  <div style={{ flex: 1, background: 'rgba(99, 102, 241, 0.05)', padding: 20, borderRadius: 12, border: '1px dashed rgba(99, 102, 241, 0.3)' }}>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Server Port</div>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--accent-indigo)' }}>5000</div>
+                  <div>
+                    <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0 }}>Biometric Machine Control Center</h2>
+                    <p style={{ margin: '2px 0 0', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+                      Direct Wi-Fi Socket Connection, 1-Click Punch Pulling & Real-Time ADMS Integration
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <div style={{ padding: 20, background: 'rgba(245, 158, 11, 0.05)', borderRadius: 12, border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-                <h4 className="flex items-center gap-8" style={{ color: 'var(--accent-orange)', margin: '0 0 10px 0' }}>
-                  <AlertTriangle size={18} /> Important Note
-                </h4>
-                <ul style={{ margin: 0, paddingLeft: 24, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  <li>Both your PC and the Biometric machine must be connected to the <strong>same WiFi network</strong>.</li>
-                  <li>If your PC restarts or disconnects from WiFi, your IP address might change, causing the machine to disconnect.</li>
-                </ul>
-                
-                <details style={{ marginTop: 16, background: 'rgba(255,255,255,0.5)', padding: '10px 16px', borderRadius: 8, cursor: 'pointer', border: '1px solid rgba(0,0,0,0.05)' }}>
-                  <summary style={{ fontWeight: 600, color: 'var(--accent-blue)', outline: 'none' }}>🛠️ How to permanently fix (Static) your IP Address in Windows</summary>
-                  <div style={{ padding: '12px 0 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, cursor: 'text' }}>
-                    <p style={{ margin: '0 0 8px 0' }}>To prevent your WiFi IP from changing, set a Static IP on your PC:</p>
-                    <ol style={{ paddingLeft: 20, margin: 0 }}>
-                      <li>Right-click the <strong>WiFi/Network icon</strong> on your taskbar and select <strong>Network and Internet settings</strong>.</li>
-                      <li>Click on your active <strong>WiFi</strong> or <strong>Ethernet</strong> connection.</li>
-                      <li>Find <strong>IP assignment</strong> (usually set to Automatic/DHCP) and click <strong>Edit</strong>.</li>
-                      <li>Change it to <strong>Manual</strong> and toggle <strong>IPv4</strong> to On.</li>
-                      <li>Enter the <strong>IP Address</strong> shown above (<code style={{background:'rgba(0,0,0,0.05)', padding:'2px 6px', borderRadius:4}}>{localIp}</code>).</li>
-                      <li>Set Subnet mask to <code style={{background:'rgba(0,0,0,0.05)', padding:'2px 6px', borderRadius:4}}>255.255.255.0</code> and Gateway to your router's IP (usually <code style={{background:'rgba(0,0,0,0.05)', padding:'2px 6px', borderRadius:4}}>192.168.1.1</code> or <code style={{background:'rgba(0,0,0,0.05)', padding:'2px 6px', borderRadius:4}}>192.168.0.1</code>).</li>
-                      <li>Set Preferred DNS to <code style={{background:'rgba(0,0,0,0.05)', padding:'2px 6px', borderRadius:4}}>8.8.8.8</code> and click <strong>Save</strong>.</li>
-                    </ol>
+              {/* ---------------------------------------------------------------- */}
+              {/* UNIFIED BIOMETRIC CONTROL CENTER (AUTO-SCAN + 1-CLICK SYNC)       */}
+              {/* ---------------------------------------------------------------- */}
+              <div className="flex flex-col gap-20">
+                {/* IP Input & Action Toolbar */}
+                <div style={{
+                  background: 'var(--surface-color)',
+                  padding: '20px 24px',
+                  borderRadius: 16,
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Wifi size={18} color="var(--accent-blue)" /> Machine Wi-Fi Connection
+                      </h3>
+
+                      <button
+                        type="button"
+                        onClick={handleAutoScanNetwork}
+                        disabled={isScanningNetwork}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: '8px',
+                          border: '1.5px solid rgba(139, 92, 246, 0.4)',
+                          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%)',
+                          color: '#8b5cf6',
+                          fontSize: '0.82rem',
+                          fontWeight: 800,
+                          cursor: isScanningNetwork ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 2px 8px rgba(139, 92, 246, 0.15)'
+                        }}
+                      >
+                        <Radar size={15} className={isScanningNetwork ? 'animate-spin' : ''} />
+                        <span>{isScanningNetwork ? 'Scanning Wi-Fi (2s)...' : '🔍 Auto-Scan Wi-Fi (Find All Machines)'}</span>
+                      </button>
+                    </div>
+
+                    {/* Live PC IP Badge */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(59, 130, 246, 0.08)',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      color: 'var(--accent-blue)'
+                    }}>
+                      <span>🖥️ This PC IP:</span>
+                      <code style={{ fontFamily: 'monospace', fontWeight: 800 }}>{localIp}</code>
+                    </div>
                   </div>
-                </details>
+
+                  {/* Discovered Machines Card Grid */}
+                  {discoveredDevices.length > 0 && (
+                    <div style={{
+                      background: 'rgba(59, 130, 246, 0.04)',
+                      border: '1.5px solid rgba(59, 130, 246, 0.25)',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      marginBottom: '16px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Radar size={16} className={isScanningNetwork ? 'animate-spin' : ''} />
+                          <span>Discovered Biometric Machines on Wi-Fi ({discoveredDevices.length})</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDiscoveredDevices([])}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+                        {discoveredDevices.map((dev, idx) => {
+                          const isSelected = biometricIp === dev.ip && String(biometricPort) === String(dev.port);
+                          return (
+                            <div
+                              key={idx}
+                              style={{
+                                background: isSelected ? 'rgba(16, 185, 129, 0.08)' : 'var(--surface-color)',
+                                border: isSelected ? '1.5px solid var(--accent-green)' : '1px solid var(--border-color)',
+                                borderRadius: '10px',
+                                padding: '10px 14px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                gap: '10px'
+                              }}
+                            >
+                              <div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>📟</span> {dev.name}
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontFamily: 'monospace', marginTop: '2px' }}>
+                                  <code>{dev.ip}:{dev.port}</code> <span style={{ color: 'var(--accent-green)', fontWeight: 700 }}>• {dev.status}</span>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectDiscoveredDevice(dev)}
+                                style={{
+                                  padding: '6px 12px',
+                                  borderRadius: '8px',
+                                  background: isSelected ? 'var(--accent-green)' : 'var(--accent-blue)',
+                                  color: '#fff',
+                                  border: 'none',
+                                  fontSize: '0.76rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                {isSelected ? <Check size={13} /> : <Zap size={13} />}
+                                <span>{isSelected ? 'Active' : '1-Click Connect'}</span>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', alignItems: 'flex-end' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                        BIOMETRIC MACHINE IP ADDRESS:
+                      </label>
+                      <input
+                        type="text"
+                        value={biometricIp}
+                        onChange={(e) => {
+                          setBiometricIp(e.target.value);
+                          localStorage.setItem('biometric_ip', e.target.value);
+                        }}
+                        placeholder="e.g. 192.168.0.12"
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: '10px',
+                          border: '1.5px solid var(--border-color)',
+                          background: 'var(--bg-color)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          fontFamily: 'monospace',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                        MACHINE PORT:
+                      </label>
+                      <input
+                        type="number"
+                        value={biometricPort}
+                        onChange={(e) => {
+                          setBiometricPort(e.target.value);
+                          localStorage.setItem('biometric_port', e.target.value);
+                        }}
+                        placeholder="71 or 4370"
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: '10px',
+                          border: '1.5px solid var(--border-color)',
+                          background: 'var(--bg-color)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          fontFamily: 'monospace',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={handleTestBiometric}
+                        disabled={biometricTesting || biometricSyncing}
+                        className="btn"
+                        style={{
+                          padding: '10px 16px',
+                          borderRadius: '10px',
+                          background: 'rgba(59, 130, 246, 0.12)',
+                          color: 'var(--accent-blue)',
+                          border: '1.5px solid rgba(59, 130, 246, 0.3)',
+                          fontWeight: 800,
+                          fontSize: '0.88rem',
+                          cursor: biometricTesting ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <Activity size={16} className={biometricTesting ? 'animate-spin' : ''} />
+                        <span>{biometricTesting ? 'Connecting...' : 'Test Connection'}</span>
+                      </button>
+
+                      <button
+                        onClick={handleSyncBiometricNow}
+                        disabled={biometricSyncing || biometricTesting}
+                        className="btn"
+                        style={{
+                          padding: '10px 18px',
+                          borderRadius: '10px',
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontWeight: 800,
+                          fontSize: '0.88rem',
+                          cursor: biometricSyncing ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                        }}
+                      >
+                        <RefreshCw size={16} className={biometricSyncing ? 'animate-spin' : ''} />
+                        <span>{biometricSyncing ? 'Pulling Logs...' : '1-Click Sync Attendance'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Auto-Sync Switch & Status Banner */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '16px'
+                }}>
+                  {/* Auto-Sync Card */}
+                  <div style={{
+                    background: biometricAutoSync ? 'rgba(16, 185, 129, 0.08)' : 'var(--surface-color)',
+                    border: biometricAutoSync ? '1.5px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--border-color)',
+                    borderRadius: '16px',
+                    padding: '18px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          background: biometricAutoSync ? '#10b981' : 'var(--text-secondary)',
+                          display: 'inline-block'
+                        }} />
+                        <span style={{ fontWeight: 800, fontSize: '0.92rem' }}>Continuous Background Auto-Sync</span>
+                      </div>
+                      <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                        {biometricAutoSync 
+                          ? 'Actively polling machine every 15s for instant punch arrival.' 
+                          : 'Turn ON to continuously sync attendance every 15 seconds.'}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleToggleAutoSync}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '10px',
+                        fontWeight: 800,
+                        fontSize: '0.82rem',
+                        border: 'none',
+                        background: biometricAutoSync ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'var(--accent-blue)',
+                        color: '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {biometricAutoSync ? <Pause size={14} /> : <Play size={14} />}
+                      <span>{biometricAutoSync ? 'Stop Auto-Sync' : 'Start Auto-Sync'}</span>
+                    </button>
+                  </div>
+
+                  {/* Machine Details Card */}
+                  <div style={{
+                    background: 'var(--surface-color)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '16px',
+                    padding: '18px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase' }}>
+                        DEVICE STATUS
+                      </div>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 900, color: biometricDeviceInfo ? '#10b981' : 'var(--text-primary)', marginTop: '2px' }}>
+                        {biometricDeviceInfo ? '✅ Connected & Ready' : '⚪ Not Connected'}
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        {biometricDeviceInfo 
+                          ? `Logs on device: ${biometricDeviceInfo.logCount || 'Live'} | Status: ${biometricDeviceInfo.status || 'Ready'}`
+                          : 'Click "Test Connection" to inspect device info.'}
+                      </div>
+                    </div>
+
+                    {biometricStatus?.lastSyncTime && (
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)' }}>LAST SYNC</div>
+                        <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                          {new Date(biometricStatus.lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>

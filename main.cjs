@@ -4,42 +4,65 @@ const path = require('path');
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
 
-let mainWindow;
-let serverProcess;
-let mongoProcess;
+// Enforce single instance lock to prevent duplicate app processes & port 5000 conflicts
+const gotTheLock = app.requestSingleInstanceLock();
 
-// Disable disk caching to prevent "Access is denied" and "Gpu Cache Creation failed" errors
-app.commandLine.appendSwitch('disable-http-cache');
-app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
-app.commandLine.appendSwitch('disable-gpu-disk-cache');
-app.commandLine.appendSwitch('disable-disk-cache');
+if (!gotTheLock) {
+  // If an instance is already running, quit this instance immediately
+  app.quit();
+} else {
+  let mainWindow;
+  let serverProcess;
+  let mongoProcess;
 
-// Helper: kill any process using port 5000 (cleanup leftover from previous run)
-function killPort(port) {
-  return new Promise((resolve) => {
-    exec(`netstat -ano | findstr :${port} | findstr LISTENING`, (err, stdout) => {
-      if (err || !stdout.trim()) return resolve();
-      const lines = stdout.trim().split('\n');
-      const pids = new Set();
-      for (const line of lines) {
-        const parts = line.trim().split(/\s+/);
-        const pid = parts[parts.length - 1];
-        if (pid && pid !== '0') pids.add(pid);
-      }
-      if (pids.size === 0) return resolve();
-      let done = 0;
-      for (const pid of pids) {
-        exec(`taskkill /PID ${pid} /F`, () => {
-          done++;
-          if (done === pids.size) {
-            // Give OS time to release the port
-            setTimeout(resolve, 1000);
-          }
-        });
-      }
-    });
+  function showMainWindow() {
+    if (!mainWindow) {
+      createWindow();
+      return;
+    }
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    if (!mainWindow.isVisible()) mainWindow.show();
+    mainWindow.show();
+    mainWindow.focus();
+  }
+
+  // Restore and focus existing window when second instance is launched
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    showMainWindow();
   });
-}
+
+  // Disable disk caching to prevent "Access is denied" and "Gpu Cache Creation failed" errors
+  app.commandLine.appendSwitch('disable-http-cache');
+  app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+  app.commandLine.appendSwitch('disable-gpu-disk-cache');
+  app.commandLine.appendSwitch('disable-disk-cache');
+
+  // Helper: kill any process using port 5000 (cleanup leftover from previous run)
+  function killPort(port) {
+    return new Promise((resolve) => {
+      exec(`netstat -ano | findstr :${port} | findstr LISTENING`, (err, stdout) => {
+        if (err || !stdout.trim()) return resolve();
+        const lines = stdout.trim().split('\n');
+        const pids = new Set();
+        for (const line of lines) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && pid !== '0') pids.add(pid);
+        }
+        if (pids.size === 0) return resolve();
+        let done = 0;
+        for (const pid of pids) {
+          exec(`taskkill /PID ${pid} /F`, () => {
+            done++;
+            if (done === pids.size) {
+              // Give OS time to release the port
+              setTimeout(resolve, 1000);
+            }
+          });
+        }
+      });
+    });
+  }
 
 function killMongo() {
   return new Promise((resolve) => {
@@ -92,73 +115,73 @@ function createWindow() {
 
 let tray = null;
 
-function createTray() {
-  const iconPath = path.join(__dirname, app.isPackaged ? 'dist' : 'public', 'logo.jpg');
-  tray = new Tray(iconPath);
-  
-  const contextMenu = Menu.buildFromTemplate([
-    { 
-      label: 'Open Career Xone Pro', 
-      click: () => {
-        mainWindow.show();
-      } 
-    },
-    { type: 'separator' },
-    {
-      label: 'Check for Updates',
-      click: () => {
-        if (app.isPackaged) {
-          autoUpdater.checkForUpdates().then((result) => {
-            if (!result || !result.updateInfo || result.updateInfo.version === app.getVersion()) {
+  function createTray() {
+    const iconPath = path.join(__dirname, app.isPackaged ? 'dist' : 'public', 'logo.jpg');
+    tray = new Tray(iconPath);
+    
+    const contextMenu = Menu.buildFromTemplate([
+      { 
+        label: 'Open Career Xone Pro', 
+        click: () => {
+          showMainWindow();
+        } 
+      },
+      { type: 'separator' },
+      {
+        label: 'Check for Updates',
+        click: () => {
+          if (app.isPackaged) {
+            autoUpdater.checkForUpdates().then((result) => {
+              if (!result || !result.updateInfo || result.updateInfo.version === app.getVersion()) {
+                dialog.showMessageBox(mainWindow, {
+                  type: 'info',
+                  title: 'No Updates',
+                  message: 'You are already on the latest version!',
+                  detail: `Current Version: v${app.getVersion()}`,
+                  buttons: ['OK']
+                }).catch(() => {});
+              }
+            }).catch((err) => {
               dialog.showMessageBox(mainWindow, {
-                type: 'info',
-                title: 'No Updates',
-                message: 'You are already on the latest version!',
-                detail: `Current Version: v${app.getVersion()}`,
+                type: 'error',
+                title: 'Update Check Failed',
+                message: 'Could not check for updates.',
+                detail: `Error: ${err.message}`,
                 buttons: ['OK']
               }).catch(() => {});
-            }
-          }).catch((err) => {
+            });
+          } else {
             dialog.showMessageBox(mainWindow, {
-              type: 'error',
-              title: 'Update Check Failed',
-              message: 'Could not check for updates.',
-              detail: `Error: ${err.message}`,
+              type: 'info',
+              title: 'Development Mode',
+              message: 'Auto-update is disabled in development mode.',
               buttons: ['OK']
             }).catch(() => {});
-          });
-        } else {
-          dialog.showMessageBox(mainWindow, {
-            type: 'info',
-            title: 'Development Mode',
-            message: 'Auto-update is disabled in development mode.',
-            buttons: ['OK']
-          }).catch(() => {});
+          }
         }
+      },
+      { type: 'separator' },
+      {
+        label: `Version: v${app.getVersion()}`,
+        enabled: false
+      },
+      { type: 'separator' },
+      { 
+        label: 'Quit', 
+        click: () => {
+          app.isQuiting = true;
+          app.quit();
+        } 
       }
-    },
-    { type: 'separator' },
-    {
-      label: `Version: v${app.getVersion()}`,
-      enabled: false
-    },
-    { type: 'separator' },
-    { 
-      label: 'Quit', 
-      click: () => {
-        app.isQuiting = true;
-        app.quit();
-      } 
-    }
-  ]);
-  
-  tray.setToolTip('Career Xone Pro - Background Server Running');
-  tray.setContextMenu(contextMenu);
-  
-  tray.on('double-click', () => {
-    mainWindow.show();
-  });
-}
+    ]);
+    
+    tray.setToolTip('Career Xone Pro - Background Server Running');
+    tray.setContextMenu(contextMenu);
+    
+    tray.on('double-click', () => {
+      showMainWindow();
+    });
+  }
 
 async function startServer() {
   // Kill any leftover process on port 5000 from a previous session
@@ -333,42 +356,43 @@ app.whenReady().then(async () => {
     setInterval(checkForUpdates, 15 * 60 * 1000); // Check every 15 minutes
   }
 
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    } else {
-      mainWindow.show();
-    }
-  });
-});
-
-app.on('window-all-closed', function () {
-  // Overridden: Do nothing here so the app stays running in background
-});
-
-app.on('before-quit', () => {
-  if (serverProcess) {
-    // Send clean shutdown signal first, then force kill after timeout
-    try {
-      if (serverProcess.connected) {
-        serverProcess.send('shutdown');
+    app.on('activate', function () {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      } else {
+        showMainWindow();
       }
-    } catch (e) {
-      // IPC channel might be closed already
-    }
-    setTimeout(() => {
-      try {
-        serverProcess.kill();
-      } catch (e) {}
-    }, 1000);
-  }
+    });
+  });
 
-  if (mongoProcess) {
-    try {
-      mongoProcess.kill();
-    } catch (e) {}
-  }
-  
-  // Failsafe
-  killMongo();
-});
+  app.on('window-all-closed', function () {
+    // Overridden: Do nothing here so the app stays running in background
+  });
+
+  app.on('before-quit', () => {
+    if (serverProcess) {
+      // Send clean shutdown signal first, then force kill after timeout
+      try {
+        if (serverProcess.connected) {
+          serverProcess.send('shutdown');
+        }
+      } catch (e) {
+        // IPC channel might be closed already
+      }
+      setTimeout(() => {
+        try {
+          serverProcess.kill();
+        } catch (e) {}
+      }, 1000);
+    }
+
+    if (mongoProcess) {
+      try {
+        mongoProcess.kill();
+      } catch (e) {}
+    }
+    
+    // Failsafe
+    killMongo();
+  });
+}

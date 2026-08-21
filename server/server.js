@@ -38,6 +38,15 @@ import {
   sendWhatsAppMessageWeb,
   resetRetryCount
 } from './services/whatsappClient.js';
+import {
+  testBiometricDevice,
+  syncBiometricLogs,
+  startBiometricAutoSync,
+  stopBiometricAutoSync,
+  getBiometricStatus,
+  processPunchRecord,
+  scanLocalSubnetForBiometricDevices
+} from './services/biometricService.js';
 import { logInfo, logError, logWarn, getRecentLogs, getLogsDir } from './utils/logger.js';
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -1521,6 +1530,163 @@ app.post('/api/whatsapp/status', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ---- 📟 Biometric Control Center API (Direct IP Socket & Auto-Sync) ----
+app.post('/api/biometric/scan', async (req, res) => {
+  try {
+    const result = await scanLocalSubnetForBiometricDevices();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/biometric/test', async (req, res) => {
+  try {
+    const { ip, port } = req.body;
+    const result = await testBiometricDevice(ip, port);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/biometric/sync', async (req, res) => {
+  try {
+    const { ip, port, instituteId } = req.body;
+    const result = await syncBiometricLogs(ip, port, instituteId);
+    // Real-time Cloud Sync Trigger
+    triggerBackgroundCloudSync();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/biometric/auto-sync', async (req, res) => {
+  try {
+    const { enabled, ip, port, intervalSeconds, instituteId } = req.body;
+    if (enabled) {
+      const result = startBiometricAutoSync(ip, port, intervalSeconds, instituteId);
+      res.json(result);
+    } else {
+      const result = stopBiometricAutoSync();
+      res.json(result);
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/biometric/status', (req, res) => {
+  try {
+    const status = getBiometricStatus();
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/biometric/config', async (req, res) => {
+  try {
+    const { biometricIp, biometricPort, biometricAutoSync } = req.body;
+    const Institute = mongoose.model('Institute');
+    const inst = await Institute.findOne();
+    if (inst) {
+      if (biometricIp !== undefined) inst.biometricIp = biometricIp;
+      if (biometricPort !== undefined) inst.biometricPort = biometricPort;
+      if (biometricAutoSync !== undefined) inst.biometricAutoSync = biometricAutoSync;
+      await inst.save();
+    }
+    res.json({ success: true, message: 'Biometric settings saved successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- 📡 Universal Biometric ADMS & FK Push Handlers ----
+const handleBiometricPush = async (req, res) => {
+  try {
+    const rawData = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    logInfo('BIOMETRIC_PUSH', `📥 Incoming Punch Push from ${req.ip} [${req.method} ${req.originalUrl}] Body: ${rawData ? rawData.slice(0, 200) : 'none'}`);
+
+    const lines = (rawData || '').split('\n').filter(l => l.trim().length > 0);
+    let processedAny = false;
+
+    for (const line of lines) {
+      let rollNo = '';
+      let punchTime = '';
+      let punchDate = '';
+      let type = 'IN';
+
+      // 1. Tab separated format (ZKTeco / FK ADMS)
+      if (line.includes('\t')) {
+        const parts = line.split('\t');
+        if (parts[0]) rollNo = parts[0].replace(/\D/g, '');
+        if (parts[1]) {
+          const d = new Date(parts[1]);
+          if (!isNaN(d.getTime())) {
+            punchDate = d.toISOString().split('T')[0];
+            punchTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          }
+        }
+        if (parts[2] === '1' || parts[3] === '1') type = 'OUT';
+      } 
+      // 2. Key-Value format (PIN=340\tTIME=... or PIN=340&TIME=...)
+      else if (line.includes('PIN=') || line.includes('pin=')) {
+        const matchPin = line.match(/PIN=([0-9a-zA-Z]+)/i);
+        const matchTime = line.match(/TIME=([^&\t\n]+)/i);
+        const matchStatus = line.match(/STATUS=([0-9]+)/i);
+        if (matchPin) rollNo = matchPin[1].replace(/^0+/, '');
+        if (matchTime) {
+          const d = new Date(matchTime[1]);
+          if (!isNaN(d.getTime())) {
+            punchDate = d.toISOString().split('T')[0];
+            punchTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          }
+        }
+        if (matchStatus && matchStatus[1] === '1') type = 'OUT';
+      }
+      // 3. JSON / Object payload formats
+      else if (req.body && typeof req.body === 'object') {
+        const rawPin = req.body.userId || req.body.PIN || req.body.pin || req.body.UserPIN || req.body.enrollid || req.body.EnrollNumber || req.body.rollNumber || req.body.rollNo;
+        if (rawPin) rollNo = String(rawPin).replace(/^0+/, '');
+        const rawT = req.body.time || req.body.RecordTime || req.body.punchTime || req.body.DateTime;
+        if (rawT) {
+          const d = new Date(rawT);
+          if (!isNaN(d.getTime())) {
+            punchDate = d.toISOString().split('T')[0];
+            punchTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          }
+        }
+        const rawState = req.body.status || req.body.state || req.body.type || req.body.InOutMode;
+        if (String(rawState) === '1' || String(rawState).toUpperCase() === 'OUT') type = 'OUT';
+      }
+
+      if (rollNo) {
+        logInfo('BIOMETRIC_PUSH', `⚡ Processing Punch: Roll ${rollNo}, Type: ${type}, Time: ${punchTime || 'now'}`);
+        const punchRes = await processPunchRecord({ rollNumber: rollNo, type, punchTime, punchDate });
+        logInfo('BIOMETRIC_PUSH', `✅ Punch Process Result: ${JSON.stringify(punchRes)}`);
+        processedAny = true;
+      }
+    }
+
+    if (processedAny) {
+      triggerBackgroundCloudSync();
+    }
+
+    res.setHeader('Content-Type', 'text/plain');
+    return res.send('OK');
+  } catch (err) {
+    logWarn('BIOMETRIC_PUSH', `Error parsing punch push: ${err.message}`);
+    res.setHeader('Content-Type', 'text/plain');
+    return res.send('OK');
+  }
+};
+
+app.all(['/iclock/cdata', '/cdata', '/fdata', '/rtlog', '/push', '/devicecmd'], handleBiometricPush);
+app.all('/iclock/getrequest', (req, res) => res.send('OK'));
+app.all('/ping', (req, res) => res.send('OK'));
 
 // ---- 🔐 Biometric Hardware Webhook (unprotected for hardware compatibility) ----
 app.post('/api/attendance/biometric', async (req, res) => {
@@ -4491,6 +4657,16 @@ app.listen(PORT, () => {
     }, 10 * 60 * 1000);
   }
 });
+
+// Also bind secondary listener on port 71 if free (to catch FK/Realtime biometric pushes)
+try {
+  const hwServer = app.listen(71, () => {
+    console.log(`📟 Hardware Biometric Push Listener active on port 71`);
+  });
+  hwServer.on('error', (e) => {
+    // Port 71 might be busy or restricted, ignore
+  });
+} catch (e) {}
 
 // ---- 🕒 Auto-Backup Scheduler ----
 let isSyncingAuto = false;
