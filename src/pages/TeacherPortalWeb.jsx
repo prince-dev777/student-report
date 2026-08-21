@@ -662,7 +662,7 @@ export default function TeacherPortalWeb() {
       </main>
 
       {/* ----------------------------------------------------
-          STUDENT COMPLETE HISTORY DOSSIER (Full Screen Modal)
+          STUDENT COMPLETE HISTORY DOSSIER (Ultra-Modern Modal)
           ---------------------------------------------------- */}
       {selectedStudent && (
         <div style={{
@@ -671,8 +671,8 @@ export default function TeacherPortalWeb() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(15, 23, 42, 0.75)',
-          backdropFilter: 'blur(6px)',
+          background: 'rgba(15, 23, 42, 0.70)',
+          backdropFilter: 'blur(8px)',
           zIndex: 1000,
           display: 'flex',
           alignItems: 'center',
@@ -680,86 +680,170 @@ export default function TeacherPortalWeb() {
           padding: '0'
         }}>
           <div style={{
-            background: '#ffffff',
+            background: '#f8fafc',
             width: '100%',
-            maxWidth: '750px',
+            maxWidth: '600px',
             height: '100%',
             maxHeight: '100vh',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden'
           }}>
-            {/* Dossier Header with spacious Name & Action Buttons */}
+            {/* 1. Modal Top Bar */}
             <div style={{
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-              color: '#ffffff',
-              padding: '12px 14px',
+              background: '#ffffff',
+              padding: '10px 14px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '10px',
+              borderBottom: '1px solid #e2e8f0',
               flexShrink: 0
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-                <button
-                  onClick={() => setSelectedStudent(null)}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.22)',
-                    border: 'none',
-                    borderRadius: '10px',
-                    width: '36px',
-                    height: '36px',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    flexShrink: 0
-                  }}
-                  title="Back to Students"
-                >
-                  <ArrowLeft size={18} />
-                </button>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <h2 style={{
-                    fontSize: '1.08rem',
-                    fontWeight: 900,
-                    margin: 0,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    letterSpacing: '-0.3px',
-                    lineHeight: 1.2
-                  }}>
-                    {selectedStudent.name}
-                  </h2>
-                  <div style={{ fontSize: '0.78rem', opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
-                    Roll: <strong>{selectedStudent.rollNo || 'N/A'}</strong> • {formatBatchName(selectedStudent.batch || selectedStudent.course)}
-                  </div>
-                </div>
+              <button
+                onClick={() => setSelectedStudent(null)}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  color: '#334155',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '0.80rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                <ArrowLeft size={16} />
+                <span>Back</span>
+              </button>
+
+              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a' }}>
+                Student 360° Dossier
               </div>
 
-              {/* Direct Parent Action Buttons */}
-              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              <button
+                onClick={() => setSelectedStudent(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  color: '#64748b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Scrollable Modal Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              
+              {/* 2. Hero Profile Card */}
+              <div style={{
+                background: '#ffffff',
+                borderRadius: '16px',
+                padding: '14px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 2px 10px rgba(15, 23, 42, 0.04)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {selectedStudent.photo ? (
+                    <img
+                      src={selectedStudent.photo}
+                      alt={selectedStudent.name}
+                      style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover', border: '2px solid #dbeafe', flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '12px',
+                      background: getAvatarGradient(selectedStudent.name),
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 900,
+                      fontSize: '1.25rem',
+                      flexShrink: 0,
+                      boxShadow: '0 4px 10px rgba(37, 99, 235, 0.25)'
+                    }}>
+                      {(selectedStudent.name || 'S').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <h2 style={{
+                      fontSize: '1.05rem',
+                      fontWeight: 900,
+                      color: '#0f172a',
+                      margin: 0,
+                      lineHeight: 1.25
+                    }}>
+                      {selectedStudent.name}
+                    </h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
+                      <span style={{
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid #dbeafe'
+                      }}>
+                        Roll: {selectedStudent.rollNo || 'N/A'}
+                      </span>
+                      <span style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: '#475569',
+                        background: '#f1f5f9',
+                        padding: '2px 8px',
+                        borderRadius: '6px'
+                      }}>
+                        🎯 {formatBatchName(selectedStudent.batch || selectedStudent.course) || 'General Batch'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Direct Parent Contact Buttons (Full Width & Clean) */}
                 {selectedStudent.parentPhone && (
-                  <>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '8px',
+                    marginTop: '12px',
+                    paddingTop: '12px',
+                    borderTop: '1px dashed #e2e8f0'
+                  }}>
                     <a
                       href={`tel:${selectedStudent.parentPhone}`}
                       style={{
-                        background: '#ffffff',
+                        background: '#f8fafc',
                         color: '#1e3a8a',
-                        padding: '6px 10px',
-                        borderRadius: '8px',
-                        fontSize: '0.76rem',
+                        border: '1px solid #cbd5e1',
+                        padding: '8px 10px',
+                        borderRadius: '10px',
+                        fontSize: '0.78rem',
                         fontWeight: 800,
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
                       }}
                     >
-                      <Phone size={13} /> <span>Call</span>
+                      <Phone size={14} color="#2563eb" /> <span>Call Parent</span>
                     </a>
 
                     <a
@@ -767,160 +851,278 @@ export default function TeacherPortalWeb() {
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        background: '#22c55e',
+                        background: 'linear-gradient(135deg, #22c55e, #16a34a)',
                         color: '#ffffff',
-                        padding: '6px 10px',
-                        borderRadius: '8px',
-                        fontSize: '0.76rem',
+                        border: 'none',
+                        padding: '8px 10px',
+                        borderRadius: '10px',
+                        fontSize: '0.78rem',
                         fontWeight: 800,
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 6px rgba(34, 197, 94, 0.25)'
                       }}
                     >
-                      <MessageCircle size={13} /> <span>WA</span>
+                      <MessageCircle size={14} /> <span>WhatsApp</span>
                     </a>
-                  </>
+                  </div>
                 )}
               </div>
-            </div>
 
-            {/* Quick KPI Bar */}
-            <div style={{
-              background: '#f1f5f9',
-              padding: '10px 12px',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '8px',
-              borderBottom: '1px solid #e2e8f0',
-              flexShrink: 0
-            }}>
-              <div style={{ background: '#ffffff', padding: '8px 6px', borderRadius: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 800 }}>ATTENDANCE</div>
-                <div style={{ fontSize: '1.20rem', fontWeight: 900, color: '#16a34a', lineHeight: 1.2 }}>{selectedStudent.attPercentage}%</div>
-                <div style={{ fontSize: '0.70rem', color: '#64748b' }}>{selectedStudent.presentDays}/{selectedStudent.totalAttDays} Days</div>
-              </div>
-
-              <div style={{ background: '#ffffff', padding: '8px 6px', borderRadius: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 800 }}>AVG MARKS</div>
-                <div style={{ fontSize: '1.20rem', fontWeight: 900, color: '#2563eb', lineHeight: 1.2 }}>{selectedStudent.avgScore}%</div>
-                <div style={{ fontSize: '0.70rem', color: '#64748b' }}>{selectedStudent.testsCount} Tests</div>
-              </div>
-
-              <div style={{ background: '#ffffff', padding: '8px 6px', borderRadius: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 800 }}>BEST SCORE</div>
-                <div style={{ fontSize: '1.20rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.2 }}>{selectedStudent.bestScore}%</div>
-                <div style={{ fontSize: '0.70rem', color: '#64748b' }}>Peak Marks</div>
-              </div>
-
-              <div style={{ background: '#ffffff', padding: '8px 6px', borderRadius: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 800 }}>DAILY HOURS</div>
-                <div style={{ fontSize: '1.20rem', fontWeight: 900, color: '#d97706', lineHeight: 1.2 }}>{selectedStudent.avgDailyHours}h</div>
-                <div style={{ fontSize: '0.70rem', color: '#64748b' }}>Avg / Day</div>
-              </div>
-            </div>
-
-            {/* 2 Main Tabs: Tests History & Attendance History */}
-            <div style={{
-              display: 'flex',
-              background: '#ffffff',
-              borderBottom: '2px solid #e2e8f0',
-              flexShrink: 0
-            }}>
-              <button
-                onClick={() => setDossierTab('tests')}
-                style={{
-                  flex: 1,
-                  padding: '12px 14px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: dossierTab === 'tests' ? '3px solid #2563eb' : '3px solid transparent',
-                  color: dossierTab === 'tests' ? '#2563eb' : '#64748b',
-                  fontSize: '0.94rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
+              {/* 3. 2x2 Clean Balanced KPI Metric Tiles */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '8px'
+              }}>
+                {/* 1. Attendance Card */}
+                <div style={{
+                  background: '#ffffff',
+                  borderRadius: '14px',
+                  padding: '10px 12px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.02)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-              >
-                <BookOpen size={16} /> Tests ({selectedStudent.testResultsList.length})
-              </button>
+                  gap: '10px'
+                }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    background: '#ecfdf5',
+                    color: '#059669',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <Calendar size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 800 }}>ATTENDANCE</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#047857', lineHeight: 1.1 }}>
+                      {selectedStudent.totalAttDays > 0 ? `${selectedStudent.attPercentage}%` : '--'}
+                    </div>
+                    <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '1px' }}>
+                      {selectedStudent.totalAttDays > 0 ? `${selectedStudent.presentDays}/${selectedStudent.totalAttDays} Days` : 'No punch records'}
+                    </div>
+                  </div>
+                </div>
 
-              <button
-                onClick={() => setDossierTab('attendance')}
-                style={{
-                  flex: 1,
-                  padding: '12px 14px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: dossierTab === 'attendance' ? '3px solid #16a34a' : '3px solid transparent',
-                  color: dossierTab === 'attendance' ? '#16a34a' : '#64748b',
-                  fontSize: '0.94rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
+                {/* 2. Avg Marks Card */}
+                <div style={{
+                  background: '#ffffff',
+                  borderRadius: '14px',
+                  padding: '10px 12px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.02)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-              >
-                <Calendar size={16} /> Attendance ({selectedStudent.attendanceList.length})
-              </button>
-            </div>
+                  gap: '10px'
+                }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    background: '#eff6ff',
+                    color: '#2563eb',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <TrendingUp size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 800 }}>AVG MARKS</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#1d4ed8', lineHeight: 1.1 }}>
+                      {selectedStudent.testsCount > 0 ? `${selectedStudent.avgScore}%` : '--'}
+                    </div>
+                    <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '1px' }}>
+                      {selectedStudent.testsCount > 0 ? `${selectedStudent.testsCount} Tests Graded` : 'Pending test score'}
+                    </div>
+                  </div>
+                </div>
 
-            {/* Tab Content Container */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '14px 12px', background: '#f8fafc' }}>
+                {/* 3. Best Score Card */}
+                <div style={{
+                  background: '#ffffff',
+                  borderRadius: '14px',
+                  padding: '10px 12px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.02)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    background: '#f5f3ff',
+                    color: '#7c3aed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <Award size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 800 }}>BEST SCORE</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#6d28d9', lineHeight: 1.1 }}>
+                      {selectedStudent.bestScore > 0 ? `${selectedStudent.bestScore}%` : '--'}
+                    </div>
+                    <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '1px' }}>
+                      {selectedStudent.bestScore > 0 ? 'Peak Score Achieved' : 'No records yet'}
+                    </div>
+                  </div>
+                </div>
 
+                {/* 4. Daily Hours Card */}
+                <div style={{
+                  background: '#ffffff',
+                  borderRadius: '14px',
+                  padding: '10px 12px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.02)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    background: '#fffbeb',
+                    color: '#d97706',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <Clock size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 800 }}>CAMPUS TIME</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#b45309', lineHeight: 1.1 }}>
+                      {selectedStudent.avgDailyHours > 0 ? `${selectedStudent.avgDailyHours}h` : '--'}
+                    </div>
+                    <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '1px' }}>
+                      {selectedStudent.avgDailyHours > 0 ? 'Daily Biometric Avg' : 'Pending punch log'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Sleek Segmented Pill Tabs */}
+              <div style={{
+                background: '#e2e8f0',
+                padding: '3px',
+                borderRadius: '12px',
+                display: 'flex',
+                gap: '4px'
+              }}>
+                <button
+                  onClick={() => setDossierTab('tests')}
+                  style={{
+                    flex: 1,
+                    padding: '7px 10px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: dossierTab === 'tests' ? '#ffffff' : 'transparent',
+                    color: dossierTab === 'tests' ? '#1d4ed8' : '#64748b',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: dossierTab === 'tests' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <BookOpen size={14} />
+                  <span>Tests ({selectedStudent.testResultsList.length})</span>
+                </button>
+
+                <button
+                  onClick={() => setDossierTab('attendance')}
+                  style={{
+                    flex: 1,
+                    padding: '7px 10px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: dossierTab === 'attendance' ? '#ffffff' : 'transparent',
+                    color: dossierTab === 'attendance' ? '#047857' : '#64748b',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: dossierTab === 'attendance' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Calendar size={14} />
+                  <span>Attendance ({selectedStudent.attendanceList.length})</span>
+                </button>
+              </div>
+
+              {/* 5. Tab Content Lists */}
               {/* 📑 TAB 1: ALL TESTS RESULTS HISTORY */}
               {dossierTab === 'tests' && (
                 <div>
                   {selectedStudent.testResultsList.length === 0 ? (
                     <div style={{
                       background: '#ffffff',
-                      borderRadius: '12px',
-                      padding: '30px 20px',
+                      borderRadius: '14px',
+                      padding: '28px 16px',
                       textAlign: 'center',
                       color: '#64748b',
                       border: '1px solid #e2e8f0'
                     }}>
-                      <BookOpen size={34} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
-                      <div style={{ fontWeight: 800, color: '#334155', fontSize: '0.96rem' }}>No test results recorded yet</div>
-                      <div style={{ fontSize: '0.82rem', marginTop: '4px' }}>Tests graded via OMR Scanner or manual entry will show here.</div>
+                      <BookOpen size={30} color="#94a3b8" style={{ margin: '0 auto 6px' }} />
+                      <div style={{ fontWeight: 800, color: '#334155', fontSize: '0.90rem' }}>No test results recorded yet</div>
+                      <div style={{ fontSize: '0.76rem', marginTop: '2px' }}>Tests graded via OMR Scanner or staff entry will show here.</div>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {selectedStudent.testResultsList.map((testItem, idx) => (
                         <div
                           key={idx}
                           style={{
                             background: '#ffffff',
-                            borderRadius: '14px',
-                            padding: '12px 14px',
-                            border: '1.5px solid #e2e8f0',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                            borderRadius: '12px',
+                            padding: '10px 12px',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                             <div>
-                              <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
+                              <div style={{ fontSize: '0.90rem', fontWeight: 800, color: '#0f172a' }}>
                                 {testItem.testName}
                               </div>
-                              <div style={{ fontSize: '0.80rem', color: '#64748b', marginTop: '2px' }}>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '1px' }}>
                                 📅 {testItem.testDate} • {testItem.subject}
                               </div>
                             </div>
 
                             <span style={{
-                              padding: '3px 10px',
-                              borderRadius: '14px',
-                              fontSize: '0.84rem',
+                              padding: '2px 8px',
+                              borderRadius: '10px',
+                              fontSize: '0.76rem',
                               fontWeight: 800,
-                              background: testItem.percentage >= 75 ? '#dcfce7' : testItem.percentage >= 50 ? '#e0e7ff' : '#fee2e2',
-                              color: testItem.percentage >= 75 ? '#15803d' : testItem.percentage >= 50 ? '#4338ca' : '#b91c1c'
+                              background: testItem.percentage >= 75 ? '#dcfce7' : testItem.percentage >= 50 ? '#eff6ff' : '#fee2e2',
+                              color: testItem.percentage >= 75 ? '#15803d' : testItem.percentage >= 50 ? '#1d4ed8' : '#b91c1c'
                             }}>
                               {testItem.percentage}%
                             </span>
@@ -931,12 +1133,12 @@ export default function TeacherPortalWeb() {
                             justifyContent: 'space-between',
                             alignItems: 'center',
                             background: '#f8fafc',
-                            padding: '8px 12px',
+                            padding: '6px 10px',
                             borderRadius: '8px',
-                            fontSize: '0.84rem'
+                            fontSize: '0.78rem'
                           }}>
                             <div>
-                              Marks: <strong>{testItem.score}</strong> / {testItem.totalMarks}
+                              Marks: <strong style={{ color: '#0f172a' }}>{testItem.score}</strong> / {testItem.totalMarks}
                             </div>
                             {testItem.rank && (
                               <div style={{ color: '#7c3aed', fontWeight: 800 }}>
@@ -949,15 +1151,15 @@ export default function TeacherPortalWeb() {
                           {testItem.subjectBreakdown && typeof testItem.subjectBreakdown === 'object' && Object.keys(testItem.subjectBreakdown).length > 0 && (
                             <div style={{
                               display: 'flex',
-                              gap: '6px',
+                              gap: '5px',
                               flexWrap: 'wrap',
-                              marginTop: '8px',
-                              paddingTop: '8px',
+                              marginTop: '6px',
+                              paddingTop: '6px',
                               borderTop: '1px dashed #e2e8f0',
-                              fontSize: '0.78rem'
+                              fontSize: '0.72rem'
                             }}>
                               {Object.entries(testItem.subjectBreakdown).map(([subj, marks]) => (
-                                <span key={subj} style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: '6px', color: '#334155', fontWeight: 600 }}>
+                                <span key={subj} style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', color: '#334155', fontWeight: 600 }}>
                                   {subj}: <strong>{Array.isArray(marks) ? marks.length : marks}</strong>
                                 </span>
                               ))}
@@ -976,56 +1178,55 @@ export default function TeacherPortalWeb() {
                   {selectedStudent.attendanceList.length === 0 ? (
                     <div style={{
                       background: '#ffffff',
-                      borderRadius: '12px',
-                      padding: '30px 20px',
+                      borderRadius: '14px',
+                      padding: '28px 16px',
                       textAlign: 'center',
                       color: '#64748b',
                       border: '1px solid #e2e8f0'
                     }}>
-                      <Calendar size={34} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
-                      <div style={{ fontWeight: 800, color: '#334155', fontSize: '0.96rem' }}>No attendance records found</div>
-                      <div style={{ fontSize: '0.82rem', marginTop: '4px' }}>Biometric punches or manual staff attendance will appear here.</div>
+                      <Calendar size={30} color="#94a3b8" style={{ margin: '0 auto 6px' }} />
+                      <div style={{ fontWeight: 800, color: '#334155', fontSize: '0.90rem' }}>No attendance records found</div>
+                      <div style={{ fontSize: '0.76rem', marginTop: '2px' }}>Biometric punches or staff attendance logs will appear here.</div>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {selectedStudent.attendanceList.map((att, idx) => {
                         const isPresent = att.status === 'present' || att.entryTime;
                         const isLate = att.status === 'late';
-                        const isAbsent = att.status === 'absent' && !att.entryTime;
 
                         return (
                           <div
                             key={idx}
                             style={{
                               background: '#ffffff',
-                              borderRadius: '12px',
-                              padding: '10px 12px',
-                              border: '1.5px solid #e2e8f0',
+                              borderRadius: '10px',
+                              padding: '8px 10px',
+                              border: '1px solid #e2e8f0',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              gap: '10px'
+                              gap: '8px'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '8px',
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '6px',
                                 background: isPresent ? '#dcfce7' : isLate ? '#fef3c7' : '#fee2e2',
                                 color: isPresent ? '#15803d' : isLate ? '#b45309' : '#b91c1c',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center'
                               }}>
-                                {isPresent ? <CheckCircle2 size={18} /> : isLate ? <Clock size={18} /> : <XCircle size={18} />}
+                                {isPresent ? <CheckCircle2 size={16} /> : isLate ? <Clock size={16} /> : <XCircle size={16} />}
                               </div>
 
                               <div>
-                                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>
+                                <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#0f172a' }}>
                                   {att.date || 'Recent Date'}
                                 </div>
-                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '1px' }}>
+                                <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '1px' }}>
                                   In: <strong style={{ color: '#0f172a' }}>{att.entryTime || 'N/A'}</strong> • Out: <strong style={{ color: '#0f172a' }}>{att.exitTime || 'N/A'}</strong>
                                 </div>
                               </div>
@@ -1033,9 +1234,9 @@ export default function TeacherPortalWeb() {
 
                             <div style={{ textAlign: 'right' }}>
                               <span style={{
-                                padding: '3px 8px',
-                                borderRadius: '6px',
-                                fontSize: '0.76rem',
+                                padding: '2px 6px',
+                                borderRadius: '5px',
+                                fontSize: '0.70rem',
                                 fontWeight: 800,
                                 background: isPresent ? '#dcfce7' : isLate ? '#fef3c7' : '#fee2e2',
                                 color: isPresent ? '#15803d' : isLate ? '#b45309' : '#b91c1c'
