@@ -519,7 +519,7 @@ export default function TeacherPortalWeb() {
           <span style={{ color: '#2563eb' }}>Tap student for dossier ➔</span>
         </div>
 
-        {/* Student Cards List (Compact, Dense, High-Speed Navigation) */}
+        {/* Student Cards List (Clean, Minimal, Fast Scanning) */}
         {filteredStudents.length === 0 ? (
           <div style={{
             background: '#ffffff',
@@ -542,131 +542,116 @@ export default function TeacherPortalWeb() {
                 style={{
                   background: '#ffffff',
                   borderRadius: '14px',
-                  padding: '10px 14px',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 2px 6px -1px rgba(15, 23, 42, 0.04)',
+                  padding: '12px 14px',
+                  border: '1.5px solid #f1f5f9',
+                  boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.05)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '10px',
+                  gap: '12px',
                   transition: 'all 0.15s ease'
                 }}
               >
-                {/* Left: Compact Avatar + Student Details */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                {/* Left: Avatar + Student Name & Batch */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
                   {st.photo ? (
                     <img
                       src={st.photo}
                       alt={st.name}
-                      style={{ width: '38px', height: '38px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0, border: '1px solid #cbd5e1' }}
+                      style={{ width: '42px', height: '42px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0, border: '1.5px solid #dbeafe' }}
                     />
                   ) : (
                     <div style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '10px',
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '12px',
                       background: getAvatarGradient(st.name, index),
                       color: '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 900,
-                      fontSize: '1.05rem',
+                      fontSize: '1.15rem',
                       flexShrink: 0,
-                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)'
+                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.2)'
                     }}>
                       {(st.name || 'S').charAt(0).toUpperCase()}
                     </div>
                   )}
 
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    {/* Row 1: Full Student Name + Roll Badge */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                      <span style={{
-                        fontSize: '0.94rem',
-                        fontWeight: 800,
-                        color: '#0f172a',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        lineHeight: 1.2
-                      }}>
-                        {st.name}
-                      </span>
-                      <span style={{
-                        background: '#eff6ff',
-                        color: '#2563eb',
-                        fontSize: '0.70rem',
-                        fontWeight: 800,
-                        padding: '1px 6px',
-                        borderRadius: '5px',
-                        border: '1px solid #dbeafe',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                      }}>
-                        #{st.rollNo || 'N/A'}
-                      </span>
+                    <div style={{
+                      fontSize: '1.02rem',
+                      fontWeight: 800,
+                      color: '#0f172a',
+                      lineHeight: 1.25,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {st.name}
                     </div>
 
-                    {/* Row 2: Batch Tag + Inline Attendance & Marks Chips */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px' }}>
                       <span style={{
-                        fontSize: '0.70rem',
+                        fontSize: '0.74rem',
                         fontWeight: 700,
                         color: '#475569',
                         background: '#f1f5f9',
-                        padding: '1px 6px',
-                        borderRadius: '4px',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        🎯 {formatBatchName(st.batch || st.course) || 'General'}
-                      </span>
-
-                      {/* Compact Attendance Chip */}
-                      <span style={{
-                        fontSize: '0.68rem',
-                        fontWeight: 700,
-                        padding: '1px 6px',
-                        borderRadius: '4px',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
                         whiteSpace: 'nowrap',
-                        background: st.totalAttDays > 0 ? (st.attPercentage >= 75 ? '#dcfce7' : st.attPercentage >= 50 ? '#fef3c7' : '#fee2e2') : '#f8fafc',
-                        color: st.totalAttDays > 0 ? (st.attPercentage >= 75 ? '#15803d' : st.attPercentage >= 50 ? '#b45309' : '#b91c1c') : '#94a3b8',
-                        border: st.totalAttDays > 0 ? (st.attPercentage >= 75 ? '1px solid #bbf7d0' : st.attPercentage >= 50 ? '1px solid #fde68a' : '1px solid #fecaca') : '1px solid #e2e8f0'
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
                       }}>
-                        📅 {st.totalAttDays > 0 ? `${st.attPercentage}% Att` : '-- Att'}
+                        🎯 {formatBatchName(st.batch || st.course) || 'General Batch'}
                       </span>
-
-                      {/* Compact Marks Chip */}
-                      <span style={{
-                        fontSize: '0.68rem',
-                        fontWeight: 700,
-                        padding: '1px 6px',
-                        borderRadius: '4px',
-                        whiteSpace: 'nowrap',
-                        background: st.testsCount > 0 ? (st.avgScore >= 60 ? '#e0e7ff' : '#fef3c7') : '#f8fafc',
-                        color: st.testsCount > 0 ? (st.avgScore >= 60 ? '#4338ca' : '#b45309') : '#94a3b8',
-                        border: st.testsCount > 0 ? (st.avgScore >= 60 ? '1px solid #c7d2fe' : '1px solid #fde68a') : '1px solid #e2e8f0'
-                      }}>
-                        📊 {st.testsCount > 0 ? `${st.avgScore}% Marks` : '-- Marks'}
-                      </span>
+                      {st.class && (
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          color: '#64748b',
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          padding: '1px 6px',
+                          borderRadius: '6px',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {String(st.class).toLowerCase().startsWith('class') ? st.class : `Class ${st.class}`}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Right Arrow */}
-                <div style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  background: '#f8fafc',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#94a3b8',
-                  flexShrink: 0
-                }}>
-                  <ChevronRight size={14} />
+                {/* Right: Roll Number Badge & Arrow */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                  <span style={{
+                    background: '#eff6ff',
+                    color: '#1d4ed8',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid #dbeafe',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 1px 2px rgba(37, 99, 235, 0.06)'
+                  }}>
+                    Roll: {st.rollNo || 'N/A'}
+                  </span>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    background: '#f8fafc',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#94a3b8'
+                  }}>
+                    <ChevronRight size={16} />
+                  </div>
                 </div>
               </div>
             ))}
@@ -702,24 +687,24 @@ export default function TeacherPortalWeb() {
             flexDirection: 'column',
             overflow: 'hidden'
           }}>
-            {/* Dossier Header */}
+            {/* Dossier Header with spacious Name & Action Buttons */}
             <div style={{
               background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
               color: '#ffffff',
-              padding: '14px 16px',
+              padding: '12px 14px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '10px',
               flexShrink: 0
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                 <button
                   onClick={() => setSelectedStudent(null)}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.25)',
+                    background: 'rgba(255, 255, 255, 0.22)',
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: '10px',
                     width: '36px',
                     height: '36px',
                     color: '#ffffff',
@@ -731,20 +716,29 @@ export default function TeacherPortalWeb() {
                   }}
                   title="Back to Students"
                 >
-                  <ArrowLeft size={20} />
+                  <ArrowLeft size={18} />
                 </button>
-                <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <h2 style={{ fontSize: '1.22rem', fontWeight: 900, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h2 style={{
+                    fontSize: '1.08rem',
+                    fontWeight: 900,
+                    margin: 0,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    letterSpacing: '-0.3px',
+                    lineHeight: 1.2
+                  }}>
                     {selectedStudent.name}
                   </h2>
-                  <div style={{ fontSize: '0.82rem', opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
-                    Roll: {selectedStudent.rollNo || 'N/A'} • {formatBatchName(selectedStudent.batch || selectedStudent.course)}
+                  <div style={{ fontSize: '0.78rem', opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                    Roll: <strong>{selectedStudent.rollNo || 'N/A'}</strong> • {formatBatchName(selectedStudent.batch || selectedStudent.course)}
                   </div>
                 </div>
               </div>
 
               {/* Direct Parent Action Buttons */}
-              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                 {selectedStudent.parentPhone && (
                   <>
                     <a
@@ -752,18 +746,18 @@ export default function TeacherPortalWeb() {
                       style={{
                         background: '#ffffff',
                         color: '#1e3a8a',
-                        padding: '6px 12px',
+                        padding: '6px 10px',
                         borderRadius: '8px',
-                        fontSize: '0.82rem',
+                        fontSize: '0.76rem',
                         fontWeight: 800,
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '5px',
+                        gap: '4px',
                         boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                       }}
                     >
-                      <Phone size={14} /> <span>Call</span>
+                      <Phone size={13} /> <span>Call</span>
                     </a>
 
                     <a
@@ -773,18 +767,18 @@ export default function TeacherPortalWeb() {
                       style={{
                         background: '#22c55e',
                         color: '#ffffff',
-                        padding: '6px 12px',
+                        padding: '6px 10px',
                         borderRadius: '8px',
-                        fontSize: '0.82rem',
+                        fontSize: '0.76rem',
                         fontWeight: 800,
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '5px',
+                        gap: '4px',
                         boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                       }}
                     >
-                      <MessageCircle size={14} /> <span>WhatsApp</span>
+                      <MessageCircle size={13} /> <span>WA</span>
                     </a>
                   </>
                 )}
