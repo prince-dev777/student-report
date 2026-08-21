@@ -12,6 +12,7 @@ import { api, API_BASE } from '../utils/api';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { getMediaUrl } from '../utils/api';
 import AppInstallGate from '../components/AppInstallGate';
+import PWAInstallPrompt from '../components/PWAInstallPrompt';
 
 export default function ParentPortalWeb() {
   const [proceedToWeb, setProceedToWeb] = useState(() => !!sessionStorage.getItem('skip_parent_install_gate'));
@@ -66,7 +67,6 @@ export default function ParentPortalWeb() {
       window.location.search.includes('source=pwa') ||
       window.location.search.includes('standalone=1') ||
       window.location.search.includes('installed=1') ||
-      window.location.search.includes('app=parent') ||
       document.referrer.includes('android-app://')
     );
   });
@@ -387,12 +387,19 @@ export default function ParentPortalWeb() {
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #0f172a 100%)',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
         fontFamily: "'Outfit', 'Inter', sans-serif"
       }}>
         <Toaster />
+        
+        {/* PWA Install Banner */}
+        <div style={{ width: '100%', maxWidth: '420px', marginBottom: '14px' }}>
+          <PWAInstallPrompt appName="CX Parents" />
+        </div>
+
         <div style={{
           background: 'rgba(255, 255, 255, 0.98)',
           backdropFilter: 'blur(16px)',
@@ -684,6 +691,7 @@ export default function ParentPortalWeb() {
       paddingBottom: '40px'
     }}>
       <Toaster />
+      <PWAInstallPrompt appName="CX Parents" />
 
       {/* Global CSS for Mobile & Print */}
       <style>{`
