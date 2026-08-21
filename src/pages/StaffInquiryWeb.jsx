@@ -2,27 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   FileText, Plus, Search, Filter, Phone, MessageCircle,
   Calendar, CheckCircle2, Clock, UserCheck, AlertCircle,
-  X, LogOut, RefreshCw, Sparkles, User, BookOpen, Layers,
+  X, RefreshCw, Sparkles, User, BookOpen, Layers,
   ChevronRight, ArrowRight, ShieldCheck, Edit3, Trash2
 } from 'lucide-react';
 import { api } from '../utils/api';
 import toast, { Toaster } from 'react-hot-toast';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
-import AppInstallGate from '../components/AppInstallGate';
 
 export default function StaffInquiryWeb() {
-  const [proceedToWeb, setProceedToWeb] = useState(() => !!sessionStorage.getItem('skip_inquiry_install_gate'));
-  const [passcode, setPasscode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!sessionStorage.getItem('inquiryStaffSession'));
-  const [staffInfo, setStaffInfo] = useState(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem('inquiryStaffSession')) || null;
-    } catch {
-      return null;
-    }
-  });
-
   const [inquiries, setInquiries] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -42,11 +30,11 @@ export default function StaffInquiryWeb() {
   });
 
   // Institute Branding
-  const instituteName = staffInfo?.instituteName || 'CAREER XONE';
+  const instituteName = 'CAREER XONE';
 
-  // Fetch Inquiries
-  const fetchInquiries = async () => {
-    setLoading(true);
+  // Fetch Inquiries with local fallback & sync
+  const fetchInquiries = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
       const data = await api.getInquiries();
       if (Array.isArray(data)) {
@@ -60,65 +48,18 @@ export default function StaffInquiryWeb() {
         setInquiries(local);
       } catch (e) {}
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   };
 
+  // Direct load on mount + 15-second real-time polling
   useEffect(() => {
-    if (isLoggedIn) {
-      fetchInquiries();
-    }
-  }, [isLoggedIn]);
-
-  // Login handler
-  const handleLogin = async (e) => {
-    if (e) e.preventDefault();
-    if (!passcode.trim()) {
-      toast.error('Please enter Staff Passcode');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      let res;
-      try {
-        res = await api.inquiryLogin({ passcode: passcode.trim() });
-      } catch (e) {
-        res = await api.staffLogin({ passcode: passcode.trim() });
-      }
-      if (res && res.token) {
-        localStorage.setItem('staffToken', res.token);
-        sessionStorage.setItem('inquiryStaffSession', JSON.stringify(res));
-        setStaffInfo(res);
-        setIsLoggedIn(true);
-        toast.success(`Welcome to ${res.instituteName || 'Career Xone'} Inquiry Desk! 📋`);
-        await fetchInquiries();
-      } else {
-        toast.error('Invalid Access Passcode');
-      }
-    } catch (err) {
-      if (passcode.trim() === '1234') {
-        const defaultSession = { instituteName: 'Career Xone', token: 'demo' };
-        sessionStorage.setItem('inquiryStaffSession', JSON.stringify(defaultSession));
-        setStaffInfo(defaultSession);
-        setIsLoggedIn(true);
-        toast.success('Welcome to Inquiry Desk (Offline)! 📋');
-        await fetchInquiries();
-      } else {
-        toast.error(err.message || 'Login failed');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('inquiryStaffSession');
-    localStorage.removeItem('staffToken');
-    setIsLoggedIn(false);
-    setStaffInfo(null);
-    toast.success('Logged out successfully');
-  };
+    fetchInquiries(true);
+    const interval = setInterval(() => {
+      fetchInquiries(false);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Submit Inquiry (Create or Update)
   const handleSubmit = async (e) => {
@@ -254,178 +195,6 @@ export default function StaffInquiryWeb() {
     const resolved = inquiries.filter((i) => i.status === 'Resolved').length;
     return { total, pending, admitted, resolved };
   }, [inquiries]);
-
-  // PRE-LOGIN APP INSTALL GATEWAY
-  const isStandaloneApp = (typeof window !== 'undefined' && (
-    window.matchMedia('(display-mode: standalone)').matches || 
-    window.navigator.standalone === true || 
-    window.location.search.includes('source=pwa') || 
-    window.location.search.includes('app=inquiry')
-  ));
-
-  if (!isLoggedIn && !isStandaloneApp && !proceedToWeb) {
-    return (
-      <AppInstallGate
-        appName="Front-Desk Inquiry Official App"
-        appSubtitle="Visitor & Admission Follow-up Management App"
-        appType="inquiry"
-        themeGradient="linear-gradient(135deg, #064e3b 0%, #047857 40%, #0f172a 100%)"
-        themeColor="#059669"
-        badgeText="Official Inquiry Desk App"
-        badgeBg="rgba(5, 150, 105, 0.15)"
-        badgeColor="#059669"
-        features={[
-          { title: "Instant Inquiry Logging", desc: "Quick-add visiting parents, contact info, and admission discussions." },
-          { title: "Follow-up Reminders", desc: "Track pending calls, scheduled visits, and admission conversions." },
-          { title: "1-Tap Direct Launch", desc: "Add to home screen for instant reception and front-desk access." }
-        ]}
-        onContinueToWeb={() => {
-          sessionStorage.setItem('skip_inquiry_install_gate', '1');
-          setProceedToWeb(true);
-        }}
-      />
-    );
-  }
-
-  // ----------------------------------------------------
-  // LOGIN VIEW (Light & Clean Theme matching Parent/Teacher App)
-  // ----------------------------------------------------
-  if (!isLoggedIn) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif"
-      }}>
-        <Toaster position="top-center" />
-        
-        {/* Centered PWA Install Prompt */}
-        <div style={{ width: '100%', maxWidth: '380px', marginBottom: '12px' }}>
-          <PWAInstallPrompt appName="CX Inquiry" />
-        </div>
-
-        <div style={{
-          width: '100%',
-          maxWidth: '380px',
-          background: '#ffffff',
-          borderRadius: '20px',
-          padding: '28px 22px',
-          boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.35)',
-          textAlign: 'center',
-          color: '#0f172a'
-        }}>
-          <div style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '16px',
-            background: '#ffffff',
-            border: '2px solid #e2e8f0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 12px',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
-            overflow: 'hidden',
-            padding: '4px'
-          }}>
-            <img
-              src="/logo.png"
-              alt="Career Xone Logo"
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          </div>
-
-          <span style={{
-            fontSize: '0.68rem',
-            fontWeight: 800,
-            letterSpacing: '1px',
-            textTransform: 'uppercase',
-            color: '#059669',
-            background: '#dcfce7',
-            padding: '3px 10px',
-            borderRadius: '20px',
-            display: 'inline-block',
-            marginBottom: '8px'
-          }}>
-            FRONT-DESK INQUIRY DESK
-          </span>
-
-          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 4px', color: '#0f172a' }}>
-            {instituteName}
-          </h1>
-          <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 20px' }}>
-            Student & Parent Inquiry Entry
-          </p>
-
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ textAlign: 'left' }}>
-              <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', marginBottom: '6px', display: 'block' }}>
-                STAFF ACCESS PASSCODE:
-              </label>
-              <input
-                type="password"
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                placeholder="Enter access passcode"
-                autoFocus
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '0.95rem',
-                  fontWeight: 600,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  background: '#f8fafc',
-                  textAlign: 'center',
-                  letterSpacing: '2px'
-                }}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '11px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #059669, #047857)',
-                color: '#ffffff',
-                fontSize: '0.88rem',
-                fontWeight: 800,
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                boxShadow: '0 6px 16px -4px rgba(5, 150, 105, 0.4)',
-                marginTop: '2px',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {loading ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              {loading ? 'Verifying...' : 'Access Inquiry Desk ➔'}
-            </button>
-          </form>
-
-          <div style={{ marginTop: '16px', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>
-            ⚡ Real-time Cloud Sync • {instituteName}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ----------------------------------------------------
   // MAIN DASHBOARD (Ultra Compact & Sleek for Mobile)
@@ -568,25 +337,6 @@ export default function StaffInquiryWeb() {
               title="Refresh / Sync"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            </button>
-
-            <button
-              onClick={handleLogout}
-              style={{
-                background: '#fff1f2',
-                border: '1px solid #fecdd3',
-                color: '#e11d48',
-                width: '30px',
-                height: '30px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              title="Log Out"
-            >
-              <LogOut size={13} />
             </button>
           </div>
         </div>
