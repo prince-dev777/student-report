@@ -46,11 +46,13 @@ import {
 import {
   testBiometricDevice,
   syncBiometricLogs,
+  syncAllBiometricDevices,
   startBiometricAutoSync,
   stopBiometricAutoSync,
   getBiometricStatus,
   processPunchRecord,
-  scanLocalSubnetForBiometricDevices
+  scanLocalSubnetForBiometricDevices,
+  recordAdmsActivity
 } from './services/biometricService.js';
 import { logInfo, logError, logWarn, getRecentLogs, getLogsDir } from './utils/logger.js';
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
@@ -652,6 +654,7 @@ app.post('/api/staff/attendance', async (req, res) => {
     if (!record) {
       record = new Attendance({
         instituteId,
+        id: `ATT_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         studentId: student.id,
         date: cleanDate,
         status: status === 'ABSENT' ? 'absent' : status === 'LATE' ? 'late' : 'present',
@@ -677,6 +680,8 @@ app.post('/api/staff/attendance', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
 // ============================================
 // INQUIRIES API (With Real-Time Cloud Sync)
 // ============================================
@@ -1350,10 +1355,10 @@ app.get(['/iclock/getrequest', '/getrequest', '/iclock/registry', '/registry', '
   res.send('OK');
 });
 
-// 3. Data Push Request (ATTLOG, OPERLOG, USERINFO)
+// 3. Data Push Request (ATTLOG, OPERLOG, USERINFO from ZKTeco, eSSL, Realtime, FK)
 app.post(['/iclock/cdata', '/cdata'], async (req, res) => {
   try {
-    const sn = req.query.SN || req.query.sn || '';
+    const sn = req.query.SN || req.query.sn || 'BIOMETRIC_DEV';
     const table = (req.query.table || req.query.tablename || 'ATTLOG').toUpperCase();
     let rawData = req.body;
     if (!rawData) {
@@ -1361,7 +1366,8 @@ app.post(['/iclock/cdata', '/cdata'], async (req, res) => {
     }
     if (typeof rawData !== 'string') rawData = rawData.toString();
 
-    console.log(`[ADMS] Received data push from SN: ${sn}, Table: ${table}, Body size: ${rawData.length} bytes`);
+    recordAdmsActivity(sn, rawData.length, req.ip);
+    logInfo('ADMS', `📥 Received push from SN: ${sn}, Table: ${table}, Body size: ${rawData.length} bytes`);
 
     const lines = rawData.split(/\r?\n/);
     let successCount = 0;
@@ -1370,9 +1376,6 @@ app.post(['/iclock/cdata', '/cdata'], async (req, res) => {
       line = line.trim();
       if (!line) continue;
 
-      // Smart format parser:
-      // Case A: Tab-delimited "USER_ID\tYYYY-MM-DD HH:MM:SS\tSTATUS\t..."
-      // Case B: Space-delimited "USER_ID YYYY-MM-DD HH:MM:SS STATUS ..."
       let rollNumber = '';
       let dateStr = '';
       let timeStr = '';
@@ -1391,6 +1394,19 @@ app.post(['/iclock/cdata', '/cdata'], async (req, res) => {
           timeStr = tParts[2] || '';
         }
         statusVal = tParts[2] && !tParts[2].includes(':') ? tParts[2] : (tParts[3] || '0');
+      } else if (line.includes('PIN=') || line.includes('pin=')) {
+        const matchPin = line.match(/PIN=([0-9a-zA-Z]+)/i);
+        const matchTime = line.match(/TIME=([^&\t\n]+)/i);
+        const matchStatus = line.match(/STATUS=([0-9]+)/i);
+        if (matchPin) rollNumber = matchPin[1].replace(/^0+/, '');
+        if (matchTime) {
+          const d = new Date(matchTime[1]);
+          if (!isNaN(d.getTime())) {
+            dateStr = d.toISOString().split('T')[0];
+            timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          }
+        }
+        if (matchStatus && matchStatus[1] === '1') statusVal = '1';
       } else {
         const sParts = line.split(/\s+/).map(p => p.trim()).filter(Boolean);
         rollNumber = sParts[0] || '';
@@ -1401,9 +1417,8 @@ app.post(['/iclock/cdata', '/cdata'], async (req, res) => {
 
       if (!rollNumber) continue;
 
-      let type = (statusVal === '1' || statusVal.toLowerCase() === 'out') ? 'OUT' : 'IN';
+      let type = (statusVal === '1' || String(statusVal).toLowerCase() === 'out') ? 'OUT' : 'IN';
 
-      // Convert HH:MM:SS or HH:MM to formatted HH:MM AM/PM
       let formattedTime = timeStr;
       if (timeStr.includes(':')) {
         const tParts = timeStr.split(':');
@@ -1417,135 +1432,28 @@ app.post(['/iclock/cdata', '/cdata'], async (req, res) => {
         formattedTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
       }
 
-      // Robust Student Matching: rollNo string, rollNo number, or id
-      const cleanRoll = rollNumber.replace(/^0+/, '') || rollNumber;
-      const rollNumVal = parseInt(rollNumber, 10);
-      const queryList = [
-        { rollNo: String(rollNumber) },
-        { rollNo: String(cleanRoll) },
-        { id: String(rollNumber) },
-        { id: String(cleanRoll) }
-      ];
-      if (!isNaN(rollNumVal)) {
-        queryList.push({ rollNo: rollNumVal });
-      }
-
-      const student = await Student.findOne({
-        isDeleted: { $ne: true },
-        $or: queryList
+      const punchRes = await processPunchRecord({
+        rollNumber,
+        type,
+        punchTime: formattedTime,
+        punchDate: dateStr,
+        deviceSN: sn
       });
 
-      if (!student) {
-        console.warn(`[ADMS] Unrecognized Roll Number / ID: ${rollNumber}`);
-        continue;
-      }
-
-      const instituteId = student.instituteId;
-      const today = dateStr && dateStr.length === 10 ? dateStr : new Date().toISOString().split('T')[0];
-
-      // Find or create attendance record
-      let record = await Attendance.findOne({ isDeleted: { $ne: true }, studentId: student.id, date: today, instituteId });
-
-      let isNewPunch = false;
-      if (!record) {
-        record = new Attendance({
-          instituteId,
-          studentId: student.id,
-          date: today,
-          status: 'present',
-          entryTime: type === 'IN' ? formattedTime : '',
-          exitTime: type === 'OUT' ? formattedTime : '',
-          smsSent: false
-        });
-        isNewPunch = true;
-      } else {
-        if (type === 'IN' && (!record.entryTime || record.entryTime === '--')) {
-          record.entryTime = formattedTime;
-          isNewPunch = true;
-        }
-        if (type === 'OUT' && (!record.exitTime || record.exitTime === '--')) {
-          record.exitTime = formattedTime;
-          isNewPunch = true;
-        }
-      }
-
-      // Calculate duration if both entry and exit exist
-      if (record.entryTime && record.exitTime && record.entryTime !== '--' && record.exitTime !== '--') {
-        try {
-          const parseMinutes = (tStr) => {
-            const match = tStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
-            if (!match) return 0;
-            let h = parseInt(match[1], 10);
-            const m = parseInt(match[2], 10);
-            const ap = match[3] ? match[3].toUpperCase() : '';
-            if (ap === 'PM' && h < 12) h += 12;
-            if (ap === 'AM' && h === 12) h = 0;
-            return h * 60 + m;
-          };
-          const diff = parseMinutes(record.exitTime) - parseMinutes(record.entryTime);
-          if (diff > 0) record.durationMinutes = diff;
-        } catch(e) {}
-      }
-
-      // Auto-match Session
-      if (!record.sessionName && record.entryTime && record.entryTime !== '--') {
-        try {
-          const Session = mongoose.model('Session');
-          const sessions = await Session.find({ isDeleted: { $ne: true }, instituteId });
-          for (const sess of sessions) {
-            if (sess.startTime && sess.endTime) {
-              record.sessionName = sess.name;
-              break;
-            }
-          }
-        } catch(e) {}
-      }
-
-      if (isNewPunch) {
-        if (student.parentPhone) {
-          record.smsSent = true;
-        }
-        await record.save();
-
-        // Create Notification
-        const title = type === 'IN' ? 'Check-In Alert' : 'Check-Out Alert';
-        const message = `${student.name} has checked ${type} at ${formattedTime}.`;
-
-        const notification = new Notification({
-          instituteId,
-          studentId: student._id,
-          title,
-          message,
-          type: 'ATTENDANCE'
-        });
-        await notification.save();
-
-        // Trigger WhatsApp & Log to SMSLog
-        if (student.parentPhone) {
-          const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
-          const durationStr = record.durationMinutes ? ` (Duration: ${record.durationMinutes} mins)` : '';
-
-          sendWhatsAppAlert({
-            instituteId,
-            studentId: student.id,
-            parentPhone: student.parentPhone,
-            studentName: student.name,
-            type: type,
-            detail: `${formattedTime}${type === 'IN' ? sessionCtx : durationStr}`
-          }).catch(err => console.error('Failed to send ADMS WhatsApp alert:', err.message));
-        }
-
-        // Real-time Background Cloud Sync (Pushes to cloud immediately)
-        triggerBackgroundCloudSync();
+      if (punchRes.success && punchRes.isNew) {
         successCount++;
       }
     }
 
-    console.log(`[ADMS] Successfully processed ${successCount} new attendance logs.`);
+    if (successCount > 0) {
+      triggerBackgroundCloudSync();
+    }
+
+    logInfo('ADMS', `✅ Successfully processed ${successCount} new attendance logs.`);
     res.setHeader('Content-Type', 'text/plain');
     res.send('OK');
   } catch (err) {
-    console.error('[ADMS] Processing Error:', err);
+    logError('ADMS', `Processing Error: ${err.message}`);
     res.setHeader('Content-Type', 'text/plain');
     res.send('OK');
   }
@@ -1698,11 +1606,24 @@ app.post('/api/biometric/sync', async (req, res) => {
   }
 });
 
+app.post('/api/biometric/sync-all', async (req, res) => {
+  try {
+    const { devices, instituteId } = req.body;
+    const result = await syncAllBiometricDevices(devices, instituteId);
+    // Real-time Cloud Sync Trigger
+    triggerBackgroundCloudSync();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/biometric/auto-sync', async (req, res) => {
   try {
-    const { enabled, ip, port, intervalSeconds, instituteId } = req.body;
+    const { enabled, ip, port, devices, intervalSeconds, instituteId } = req.body;
     if (enabled) {
-      const result = startBiometricAutoSync(ip, port, intervalSeconds, instituteId);
+      const target = Array.isArray(devices) && devices.length > 0 ? devices : ip;
+      const result = startBiometricAutoSync(target, port, intervalSeconds, instituteId);
       res.json(result);
     } else {
       const result = stopBiometricAutoSync();
@@ -1739,230 +1660,28 @@ app.post('/api/biometric/config', async (req, res) => {
   }
 });
 
-// ---- 📡 Universal Biometric ADMS & FK Push Handlers ----
-const handleBiometricPush = async (req, res) => {
-  try {
-    const rawData = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-    logInfo('BIOMETRIC_PUSH', `📥 Incoming Punch Push from ${req.ip} [${req.method} ${req.originalUrl}] Body: ${rawData ? rawData.slice(0, 200) : 'none'}`);
-
-    const lines = (rawData || '').split('\n').filter(l => l.trim().length > 0);
-    let processedAny = false;
-
-    for (const line of lines) {
-      let rollNo = '';
-      let punchTime = '';
-      let punchDate = '';
-      let type = 'IN';
-
-      // 1. Tab separated format (ZKTeco / FK ADMS)
-      if (line.includes('\t')) {
-        const parts = line.split('\t');
-        if (parts[0]) rollNo = parts[0].replace(/\D/g, '');
-        if (parts[1]) {
-          const d = new Date(parts[1]);
-          if (!isNaN(d.getTime())) {
-            punchDate = d.toISOString().split('T')[0];
-            punchTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-          }
-        }
-        if (parts[2] === '1' || parts[3] === '1') type = 'OUT';
-      } 
-      // 2. Key-Value format (PIN=340\tTIME=... or PIN=340&TIME=...)
-      else if (line.includes('PIN=') || line.includes('pin=')) {
-        const matchPin = line.match(/PIN=([0-9a-zA-Z]+)/i);
-        const matchTime = line.match(/TIME=([^&\t\n]+)/i);
-        const matchStatus = line.match(/STATUS=([0-9]+)/i);
-        if (matchPin) rollNo = matchPin[1].replace(/^0+/, '');
-        if (matchTime) {
-          const d = new Date(matchTime[1]);
-          if (!isNaN(d.getTime())) {
-            punchDate = d.toISOString().split('T')[0];
-            punchTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-          }
-        }
-        if (matchStatus && matchStatus[1] === '1') type = 'OUT';
-      }
-      // 3. JSON / Object payload formats
-      else if (req.body && typeof req.body === 'object') {
-        const rawPin = req.body.userId || req.body.PIN || req.body.pin || req.body.UserPIN || req.body.enrollid || req.body.EnrollNumber || req.body.rollNumber || req.body.rollNo;
-        if (rawPin) rollNo = String(rawPin).replace(/^0+/, '');
-        const rawT = req.body.time || req.body.RecordTime || req.body.punchTime || req.body.DateTime;
-        if (rawT) {
-          const d = new Date(rawT);
-          if (!isNaN(d.getTime())) {
-            punchDate = d.toISOString().split('T')[0];
-            punchTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-          }
-        }
-        const rawState = req.body.status || req.body.state || req.body.type || req.body.InOutMode;
-        if (String(rawState) === '1' || String(rawState).toUpperCase() === 'OUT') type = 'OUT';
-      }
-
-      if (rollNo) {
-        logInfo('BIOMETRIC_PUSH', `⚡ Processing Punch: Roll ${rollNo}, Type: ${type}, Time: ${punchTime || 'now'}`);
-        const punchRes = await processPunchRecord({ rollNumber: rollNo, type, punchTime, punchDate });
-        logInfo('BIOMETRIC_PUSH', `✅ Punch Process Result: ${JSON.stringify(punchRes)}`);
-        processedAny = true;
-      }
-    }
-
-    if (processedAny) {
-      triggerBackgroundCloudSync();
-    }
-
-    res.setHeader('Content-Type', 'text/plain');
-    return res.send('OK');
-  } catch (err) {
-    logWarn('BIOMETRIC_PUSH', `Error parsing punch push: ${err.message}`);
-    res.setHeader('Content-Type', 'text/plain');
-    return res.send('OK');
-  }
-};
-
-app.all(['/iclock/cdata', '/cdata', '/fdata', '/rtlog', '/push', '/devicecmd'], handleBiometricPush);
-app.all('/iclock/getrequest', (req, res) => res.send('OK'));
-app.all('/ping', (req, res) => res.send('OK'));
-
-// ---- 🔐 Biometric Hardware Webhook (unprotected for hardware compatibility) ----
+// ---- 🔐 Biometric Hardware Webhook (Receives pushes from Python sync_biometric.py or direct relays) ----
 app.post('/api/attendance/biometric', async (req, res) => {
   try {
-    let { instituteId, rollNumber, type, time } = req.body;
+    let { instituteId, rollNumber, type, time, date } = req.body;
     if (!rollNumber) {
-      return res.status(400).json({ error: 'Missing rollNumber' });
+      return res.status(400).json({ error: 'Missing rollNumber in biometric punch payload' });
     }
 
-    const cleanRoll = String(rollNumber).replace(/^0+/, '') || String(rollNumber);
-    const rollNumVal = parseInt(rollNumber, 10);
-    const queryList = [
-      { rollNo: String(rollNumber) },
-      { rollNo: String(cleanRoll) },
-      { id: String(rollNumber) },
-      { id: String(cleanRoll) }
-    ];
-    if (!isNaN(rollNumVal)) {
-      queryList.push({ rollNo: rollNumVal });
-    }
+    const punchRes = await processPunchRecord({
+      rollNumber,
+      type: type || 'IN',
+      punchTime: time,
+      punchDate: date,
+      instituteId
+    });
 
-    const studentQuery = {
-      isDeleted: { $ne: true },
-      $or: queryList
-    };
-    if (instituteId) {
-      studentQuery.instituteId = instituteId;
-    }
-
-    const student = await Student.findOne(studentQuery);
-    if (!student) {
-      return res.status(404).json({ error: `Student with Roll Number / ID '${rollNumber}' not found in database.` });
-    }
-
-    instituteId = student.instituteId;
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-    let record = await Attendance.findOne({ isDeleted: { $ne: true },  studentId: student.id, date: todayStr, instituteId });
-
-    if (record) {
-      if (type === 'IN') {
-        record.entryTime = punchTime;
-      } else {
-        record.exitTime = punchTime;
-      }
-      record.status = 'present';
+    if (punchRes.success) {
+      triggerBackgroundCloudSync();
+      return res.json({ message: 'Biometric attendance successfully recorded', result: punchRes });
     } else {
-      record = new Attendance({
-        studentId: student.id,
-        date: todayStr,
-        status: 'present',
-        entryTime: type === 'IN' ? punchTime : '--',
-        exitTime: type === 'OUT' ? punchTime : '--',
-        instituteId,
-        smsSent: false
-      });
+      return res.status(404).json({ error: punchRes.reason || punchRes.error || 'Student not found for biometric ID' });
     }
-
-    // Resolve Session Logic (same as manual attendance)
-    if (record.entryTime && record.entryTime !== '--' && !record.sessionName) {
-      const sessions = await Session.find({ isDeleted: { $ne: true }, instituteId });
-      
-      let entryMin = 0;
-      if (record.entryTime.includes('AM') || record.entryTime.includes('PM')) {
-         // handle 12-hour format for biometric punchTime
-         const [timePart, modifier] = record.entryTime.split(' ');
-         let [eH, eM] = timePart.split(':').map(Number);
-         if (eH === 12) eH = 0;
-         if (modifier === 'PM') eH += 12;
-         entryMin = eH * 60 + eM;
-      } else {
-         const [eH, eM] = record.entryTime.split(':').map(Number);
-         entryMin = eH * 60 + eM;
-      }
-
-      let bestMatch = null;
-      let bestScore = -1;
-
-      for (const sess of sessions) {
-        const [sH, sM] = sess.startTime.split(':').map(Number);
-        const [eH2, eM2] = sess.endTime.split(':').map(Number);
-        const startMin = sH * 60 + sM;
-        const endMin = eH2 * 60 + eM2;
-        
-        if (entryMin >= startMin - 30 && entryMin <= endMin) {
-          const sBatchId = sess.batchId || 'all';
-          const sClassName = sess.className || 'all';
-          
-          let matchesBatch = sBatchId === 'all' || sBatchId === student.batch;
-          let matchesClass = sClassName === 'all' || sClassName === student.class;
-          
-          if (matchesBatch && matchesClass) {
-            let score = 0;
-            if (sBatchId !== 'all') score += 1;
-            if (sClassName !== 'all') score += 1;
-            
-            if (score > bestScore) {
-              bestScore = score;
-              bestMatch = sess;
-            }
-          }
-        }
-      }
-      
-      if (bestMatch) {
-        record.sessionName = bestMatch.name;
-      }
-    }
-
-    if (record.entryTime && record.entryTime !== '--' && record.exitTime && record.exitTime !== '--') {
-       // Convert 12h to minutes to calc duration
-       const getMins = (t) => {
-         const [timePart, modifier] = t.split(' ');
-         let [h, m] = timePart.split(':').map(Number);
-         if (h === 12) h = 0;
-         if (modifier === 'PM') h += 12;
-         return h * 60 + m;
-       };
-       const totalInMin = getMins(record.exitTime) - getMins(record.entryTime);
-       if (totalInMin > 0) record.durationMinutes = totalInMin;
-    }
-
-    await record.save();
-
-    if (student.parentPhone) {
-      sendWhatsAppAlert({
-        instituteId,
-        studentId: student.id,
-        parentPhone: student.parentPhone,
-        studentName: student.name,
-        type: type || 'IN',
-        detail: punchTime
-      }).then(() => {
-        record.smsSent = true;
-        record.save();
-      }).catch(err => console.error('Failed to send biometric WhatsApp alert:', err.message));
-    }
-
-    res.json({ message: 'Biometric attendance successfully recorded', record });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

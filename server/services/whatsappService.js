@@ -122,7 +122,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
     const log = new SMSLog({
       instituteId,
       id: `SMS${Date.now()}`,
-      type: type === 'WELCOME' ? 'welcome' : (type === 'ABSENT' ? 'absent' : (type === 'TEST_RESULT' ? 'test-result' : 'attendance')),
+      type: type === 'WELCOME' ? 'welcome' : (type === 'ABSENT' ? 'absent' : (type === 'TEST_RESULT' ? 'test-result' : (type === 'OUT' ? 'attendance-exit' : 'attendance-entry'))),
       studentId,
       parentPhone,
       message: messageText,
@@ -130,7 +130,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       status
     });
     await log.save();
-    console.log(`[WhatsAppService] SMSLog saved successfully (Status: ${status}).`);
+    console.log(`[WhatsAppService] SMSLog saved successfully (Type: ${log.type}, Status: ${status}).`);
   } catch (logErr) {
     console.error('[WhatsAppService] Failed to save SMSLog:', logErr.message);
   }

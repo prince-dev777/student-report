@@ -50,16 +50,21 @@ const PAGE_SIZE = 50;
 const typeBadgeMap = {
   'attendance-entry': { className: 'badge badge-success', label: 'ENTRY' },
   'attendance-exit': { className: 'badge badge-warning', label: 'EXIT' },
+  attendance: { className: 'badge badge-success', label: 'ATTENDANCE' },
+  absent: { className: 'badge badge-danger', label: 'ABSENT' },
+  welcome: { className: 'badge badge-purple', label: 'WELCOME' },
   'test-result': { className: 'badge badge-info', label: 'RESULT' },
   custom: { className: 'badge badge-purple', label: 'CUSTOM' },
 };
 
 const typeFilterOptions = [
   { value: 'all', label: 'All Types' },
-  { value: 'attendance-entry', label: 'Entry' },
-  { value: 'attendance-exit', label: 'Exit' },
-  { value: 'test-result', label: 'Test Result' },
-  { value: 'custom', label: 'Custom' },
+  { value: 'attendance-entry', label: 'Entry Alerts' },
+  { value: 'attendance-exit', label: 'Exit Alerts' },
+  { value: 'absent', label: 'Absent Alerts' },
+  { value: 'test-result', label: 'Test Results' },
+  { value: 'welcome', label: 'Welcome / Passwords' },
+  { value: 'custom', label: 'Custom SMS' },
 ];
 
 export default function SMSCenter() {

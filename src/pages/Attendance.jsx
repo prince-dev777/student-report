@@ -53,7 +53,7 @@ import { getInitials, getAvatarClass } from '../data/sampleData';
 import { api, API_BASE } from '../utils/api';
 
 export default function Attendance() {
-  const { students, attendance, markAttendance } = useApp();
+  const { students, attendance, markAttendance, refreshAttendance, refreshSMSLogs } = useApp();
   const [activeTab, setActiveTab] = useState('mark');
   const [selectedStudent, setSelectedStudent] = useState('');
   const [todaySearch, setTodaySearch] = useState('');
@@ -146,7 +146,13 @@ export default function Attendance() {
 
   useEffect(() => {
     fetchBiometricStatus();
-  }, [activeTab]);
+    const interval = setInterval(() => {
+      fetchBiometricStatus();
+      if (typeof refreshAttendance === 'function') refreshAttendance();
+      if (typeof refreshSMSLogs === 'function') refreshSMSLogs();
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [activeTab, refreshAttendance, refreshSMSLogs]);
 
   const handleTestBiometric = async () => {
     if (!biometricIp.trim()) {
@@ -184,6 +190,8 @@ export default function Attendance() {
       const res = await api.syncBiometricNow({ ip: biometricIp.trim(), port: parseInt(biometricPort, 10) || 71 });
       if (res && res.success) {
         toast.success(`🎉 ${res.message || `Synced ${res.newlyAdded} new attendance punches!`}`);
+        if (typeof refreshAttendance === 'function') await refreshAttendance();
+        if (typeof refreshSMSLogs === 'function') await refreshSMSLogs();
         fetchBiometricStatus();
       } else {
         toast.error(res?.error || 'Sync failed');
@@ -195,18 +203,43 @@ export default function Attendance() {
     }
   };
 
+  const handleSyncAllDevicesNow = async () => {
+    const targetDevices = discoveredDevices.length > 0 ? discoveredDevices : [{ ip: biometricIp.trim(), port: parseInt(biometricPort, 10) || 71, name: 'Main Machine' }];
+    setBiometricSyncing(true);
+    try {
+      toast.loading(`⚡ Syncing ${targetDevices.length} Biometric Machines simultaneously...`, { id: 'sync-all' });
+      const res = await api.syncAllBiometricDevices({ devices: targetDevices });
+      toast.dismiss('sync-all');
+      if (res && res.success) {
+        toast.success(`🎉 ${res.message || `Synced ${res.newlyAdded} new attendance logs from ${res.successfulDevices} machines!`}`);
+        if (typeof refreshAttendance === 'function') await refreshAttendance();
+        if (typeof refreshSMSLogs === 'function') await refreshSMSLogs();
+        fetchBiometricStatus();
+      } else {
+        toast.error(res?.error || 'Batch sync failed');
+      }
+    } catch (err) {
+      toast.dismiss('sync-all');
+      toast.error(err.message || 'Failed to sync machines');
+    } finally {
+      setBiometricSyncing(false);
+    }
+  };
+
   const handleToggleAutoSync = async () => {
     const nextState = !biometricAutoSync;
+    const targetDevices = discoveredDevices.length > 0 ? discoveredDevices : [{ ip: biometricIp.trim(), port: parseInt(biometricPort, 10) || 71 }];
     try {
       const res = await api.toggleBiometricAutoSync({
         enabled: nextState,
         ip: biometricIp.trim(),
-        port: parseInt(biometricPort, 10) || 4370,
+        port: parseInt(biometricPort, 10) || 71,
+        devices: targetDevices,
         intervalSeconds: 15
       });
       setBiometricAutoSync(res.autoSyncEnabled);
       if (res.autoSyncEnabled) {
-        toast.success('🚀 Auto-Sync enabled! Polling machine every 15 seconds in background.');
+        toast.success(`🚀 Auto-Sync enabled! Polling ${targetDevices.length} machine(s) every 15 seconds.`);
       } else {
         toast.success('🛑 Auto-Sync paused.');
       }
@@ -1570,18 +1603,44 @@ export default function Attendance() {
                       padding: '14px 16px',
                       marginBottom: '16px'
                     }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Radar size={16} className={isScanningNetwork ? 'animate-spin' : ''} />
-                          <span>Discovered Biometric Machines on Wi-Fi ({discoveredDevices.length})</span>
+                          <span>Connected Biometric Machines on Wi-Fi ({discoveredDevices.length} Online)</span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setDiscoveredDevices([])}
-                          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
-                        >
-                          Dismiss
-                        </button>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={handleSyncAllDevicesNow}
+                            disabled={biometricSyncing}
+                            style={{
+                              padding: '6px 14px',
+                              borderRadius: '8px',
+                              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                              color: '#fff',
+                              border: 'none',
+                              fontSize: '0.78rem',
+                              fontWeight: 800,
+                              cursor: biometricSyncing ? 'not-allowed' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                            }}
+                          >
+                            <RefreshCw size={13} className={biometricSyncing ? 'animate-spin' : ''} />
+                            <span>{biometricSyncing ? 'Syncing All Machines...' : `⚡ Sync All ${discoveredDevices.length} Machines`}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDiscoveredDevices([])}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                          >
+                            Dismiss
+                          </button>
+                        </div>
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
@@ -1609,27 +1668,29 @@ export default function Attendance() {
                                   <code>{dev.ip}:{dev.port}</code> <span style={{ color: 'var(--accent-green)', fontWeight: 700 }}>• {dev.status}</span>
                                 </div>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => handleSelectDiscoveredDevice(dev)}
-                                style={{
-                                  padding: '6px 12px',
-                                  borderRadius: '8px',
-                                  background: isSelected ? 'var(--accent-green)' : 'var(--accent-blue)',
-                                  color: '#fff',
-                                  border: 'none',
-                                  fontSize: '0.76rem',
-                                  fontWeight: 800,
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  whiteSpace: 'nowrap'
-                                }}
-                              >
-                                {isSelected ? <Check size={13} /> : <Zap size={13} />}
-                                <span>{isSelected ? 'Active' : '1-Click Connect'}</span>
-                              </button>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSelectDiscoveredDevice(dev)}
+                                  style={{
+                                    padding: '6px 10px',
+                                    borderRadius: '8px',
+                                    background: isSelected ? 'var(--accent-green)' : 'var(--accent-blue)',
+                                    color: '#fff',
+                                    border: 'none',
+                                    fontSize: '0.74rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {isSelected ? <Check size={12} /> : <Zap size={12} />}
+                                  <span>{isSelected ? 'Selected' : 'Select'}</span>
+                                </button>
+                              </div>
                             </div>
                           );
                         })}
@@ -1640,7 +1701,7 @@ export default function Attendance() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', alignItems: 'flex-end' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        BIOMETRIC MACHINE IP ADDRESS:
+                        SELECTED MACHINE IP ADDRESS:
                       </label>
                       <input
                         type="text"
@@ -1717,28 +1778,53 @@ export default function Attendance() {
                         <span>{biometricTesting ? 'Connecting...' : 'Test Connection'}</span>
                       </button>
 
-                      <button
-                        onClick={handleSyncBiometricNow}
-                        disabled={biometricSyncing || biometricTesting}
-                        className="btn"
-                        style={{
-                          padding: '10px 18px',
-                          borderRadius: '10px',
-                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                          color: '#ffffff',
-                          border: 'none',
-                          fontWeight: 800,
-                          fontSize: '0.88rem',
-                          cursor: biometricSyncing ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-                        }}
-                      >
-                        <RefreshCw size={16} className={biometricSyncing ? 'animate-spin' : ''} />
-                        <span>{biometricSyncing ? 'Pulling Logs...' : '1-Click Sync Attendance'}</span>
-                      </button>
+                      {discoveredDevices.length > 1 ? (
+                        <button
+                          onClick={handleSyncAllDevicesNow}
+                          disabled={biometricSyncing || biometricTesting}
+                          className="btn"
+                          style={{
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            fontWeight: 800,
+                            fontSize: '0.88rem',
+                            cursor: biometricSyncing ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                          }}
+                        >
+                          <RefreshCw size={16} className={biometricSyncing ? 'animate-spin' : ''} />
+                          <span>{biometricSyncing ? 'Syncing All Machines...' : `⚡ Sync All (${discoveredDevices.length}) Machines`}</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleSyncBiometricNow}
+                          disabled={biometricSyncing || biometricTesting}
+                          className="btn"
+                          style={{
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            fontWeight: 800,
+                            fontSize: '0.88rem',
+                            cursor: biometricSyncing ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                          }}
+                        >
+                          <RefreshCw size={16} className={biometricSyncing ? 'animate-spin' : ''} />
+                          <span>{biometricSyncing ? 'Pulling Logs...' : '1-Click Sync Attendance'}</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1844,11 +1930,30 @@ export default function Attendance() {
                   padding: '20px 24px',
                   marginTop: '6px'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '1.1rem' }}>⚙️</span>
-                    <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                      Real-Time Push Setup (Biometric Machine Screen Configuration)
-                    </h4>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '1.1rem' }}>⚙️</span>
+                      <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        Real-Time Push Setup (Biometric Machine Screen Configuration)
+                      </h4>
+                    </div>
+
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: biometricStatus?.admsStatus?.totalPushesReceived > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(59, 130, 246, 0.12)',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      color: biometricStatus?.admsStatus?.totalPushesReceived > 0 ? '#10b981' : 'var(--accent-blue)'
+                    }}>
+                      <Activity size={13} className={biometricStatus?.admsStatus?.totalPushesReceived > 0 ? 'animate-pulse' : ''} />
+                      <span>
+                        ADMS Receiver: {biometricStatus?.admsStatus?.totalPushesReceived > 0 ? `Active (${biometricStatus.admsStatus.totalPushesReceived} pushes)` : 'Listening on Port 5000'}
+                      </span>
+                    </div>
                   </div>
                   <p style={{ margin: '0 0 16px', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
                     Biometric machine real-time me student ke punch directly is computer par push karegi. Kripya machine ke physical screen me ye settings verify karein:
@@ -1858,7 +1963,7 @@ export default function Attendance() {
                     <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
                       <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 700 }}>1️⃣ MACHINE IP (Device IP)</div>
                       <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-blue)', marginTop: '4px', fontFamily: 'monospace' }}>
-                        192.168.0.12 (Port: 71)
+                        {biometricIp || '192.168.0.12'} (Port: {biometricPort || 71})
                       </div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Menu ➔ Comm ➔ Network ➔ IP</div>
                     </div>
@@ -1879,6 +1984,119 @@ export default function Attendance() {
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Auto-sends punch on thumb scan</div>
                     </div>
                   </div>
+                </div>
+
+                {/* Real-time Recent Biometric Punches Stream */}
+                <div style={{
+                  background: 'var(--surface-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  padding: '20px 24px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Zap size={18} color="#eab308" />
+                      <h4 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        Live Biometric Punch Activity Stream
+                      </h4>
+                      <span style={{
+                        background: 'rgba(234, 179, 8, 0.12)',
+                        color: '#ca8a04',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: 800
+                      }}>
+                        Real-Time
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => { fetchBiometricStatus(); if (typeof refreshAttendance === 'function') refreshAttendance(); }}
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: '0.76rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <RefreshCw size={12} /> Refresh Stream
+                      </button>
+                    </div>
+                  </div>
+
+                  {biometricStatus?.recentPunches && biometricStatus.recentPunches.length > 0 ? (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="data-table" style={{ fontSize: '0.82rem', margin: 0 }}>
+                        <thead>
+                          <tr>
+                            <th>Student</th>
+                            <th>Roll / ID</th>
+                            <th>Punch Time</th>
+                            <th>Type</th>
+                            <th>WhatsApp Alert</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {biometricStatus.recentPunches.map((punch, pIdx) => (
+                            <tr key={pIdx}>
+                              <td>
+                                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                                  {punch.studentName || 'Unregistered Card / Roll'}
+                                </div>
+                                {punch.sessionName && (
+                                  <div style={{ fontSize: '0.70rem', color: 'var(--accent-blue)' }}>
+                                    Session: {punch.sessionName}
+                                  </div>
+                                )}
+                              </td>
+                              <td>
+                                <code style={{ fontFamily: 'monospace', fontWeight: 700, background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px' }}>
+                                  {punch.rollNumber}
+                                </code>
+                              </td>
+                              <td style={{ fontWeight: 600 }}>
+                                {punch.punchTime} <span style={{ fontSize: '0.70rem', color: 'var(--text-secondary)' }}>({punch.punchDate})</span>
+                              </td>
+                              <td>
+                                <span className={`badge ${punch.type === 'IN' ? 'badge-present' : 'badge-late'}`} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                                  {punch.type === 'IN' ? 'CHECK-IN' : 'CHECK-OUT'}
+                                </span>
+                              </td>
+                              <td>
+                                {punch.parentPhone ? (
+                                  <span style={{ color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}>
+                                    <CheckCircle2 size={13} /> {punch.parentPhone}
+                                  </span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>No Parent Phone</span>
+                                )}
+                              </td>
+                              <td>
+                                <span style={{ color: '#10b981', fontWeight: 800, fontSize: '0.74rem' }}>
+                                  ✅ Synced to Attendance
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '24px 16px',
+                      background: 'var(--bg-color)',
+                      borderRadius: '12px',
+                      border: '1px dashed var(--border-color)',
+                      color: 'var(--text-secondary)'
+                    }}>
+                      <Radar size={28} style={{ opacity: 0.4, margin: '0 auto 6px' }} />
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Listening for live biometric thumb scans...</div>
+                      <div style={{ fontSize: '0.76rem', marginTop: '4px' }}>
+                        Jaise hi koi student machine par thumb scan karega, unki attendance aur WhatsApp alert yahan instantly display hogi.
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -78,10 +78,10 @@ export function AppProvider({ children }) {
 
             const validIds = new Set(serverStudents.map((s) => s.id));
             setStudents(serverStudents);
-            setAttendance(serverAttendance.filter((a) => validIds.has(a.studentId)));
+            setAttendance(Array.isArray(serverAttendance) ? serverAttendance : []);
             setTests(serverTests);
             setTestResults(serverResults.filter((r) => validIds.has(r.studentId)));
-            setSMSHistory(serverSMS.filter((sms) => validIds.has(sms.studentId)));
+            setSMSHistory(Array.isArray(serverSMS) ? serverSMS : []);
             setSessions(serverSessions);
             setInquiries(serverInquiries);
             
@@ -644,13 +644,41 @@ export function AppProvider({ children }) {
     toast.success('All data reset to defaults!');
   }, [backendOnline]);
 
+  // ---- Real-time Refresh Helpers ----
+  const refreshAttendance = useCallback(async () => {
+    if (!backendOnline) return;
+    try {
+      const serverAttendance = await api.getAttendance();
+      if (Array.isArray(serverAttendance)) {
+        setAttendance(serverAttendance);
+      }
+    } catch (e) {
+      console.warn('[AppContext] Failed to refresh attendance:', e.message);
+    }
+  }, [backendOnline]);
+
+  const refreshSMSLogs = useCallback(async () => {
+    if (!backendOnline) return;
+    try {
+      const serverSMS = await api.getSMSLogs();
+      if (Array.isArray(serverSMS)) {
+        setSMSHistory(serverSMS);
+      }
+    } catch (e) {
+      console.warn('[AppContext] Failed to refresh SMS logs:', e.message);
+    }
+  }, [backendOnline]);
+
   const value = {
     students,
     attendance,
+    setAttendance,
+    refreshAttendance,
     tests,
     testResults,
     smsHistory,
     setSMSHistory,
+    refreshSMSLogs,
     sessions,
     setSessions,
     inquiries,

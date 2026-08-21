@@ -225,6 +225,8 @@ export const api = {
     apiRequest('/biometric/test', { method: 'POST', body: JSON.stringify(data) }),
   syncBiometricNow: (data) => 
     apiRequest('/biometric/sync', { method: 'POST', body: JSON.stringify(data) }),
+  syncAllBiometricDevices: (data) => 
+    apiRequest('/biometric/sync-all', { method: 'POST', body: JSON.stringify(data) }),
   toggleBiometricAutoSync: (data) => 
     apiRequest('/biometric/auto-sync', { method: 'POST', body: JSON.stringify(data) }),
   getBiometricStatus: () => 

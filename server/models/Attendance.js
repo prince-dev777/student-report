@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const attendanceSchema = new mongoose.Schema({
   instituteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institute', required: true },
-  id: { type: String, required: true },
+  id: { type: String, required: true, default: () => `ATT_${Date.now()}_${Math.random().toString(36).substring(2, 7)}` },
   studentId: { type: String, required: true },
   date: { type: String, required: true }, // YYYY-MM-DD
   status: { type: String, required: true, enum: ['present', 'absent', 'late', 'Present', 'Absent', 'Late', 'IN', 'OUT', 'ABSENT', 'UNMARKED'] },
