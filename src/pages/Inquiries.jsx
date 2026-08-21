@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Search, Edit2, Trash2, Phone, Calendar, 
   Download, Filter, FileSpreadsheet, CheckCircle2, 
-  Clock, UserCheck, AlertCircle, X, ArrowUpDown 
+  Clock, UserCheck, AlertCircle, X, ArrowUpDown, RefreshCw 
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
@@ -18,6 +18,34 @@ export default function Inquiries() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(null);
   const [inquiryToDelete, setInquiryToDelete] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Real-time Cloud Sync Handler
+  const fetchAndSyncInquiries = async (showToast = false) => {
+    try {
+      if (showToast) setIsSyncing(true);
+      const res = await api.getInquiries(true);
+      if (Array.isArray(res)) {
+        setInquiries(res);
+      } else if (res && res.inquiries) {
+        setInquiries(res.inquiries);
+      }
+      if (showToast) toast.success('Inquiries synced with cloud in real-time! ☁️✨');
+    } catch (err) {
+      if (showToast) toast.error('Cloud sync failed or offline');
+    } finally {
+      if (showToast) setIsSyncing(false);
+    }
+  };
+
+  // Auto-sync on mount and poll every 15s for live updates from Inquiry App
+  useEffect(() => {
+    fetchAndSyncInquiries(false);
+    const interval = setInterval(() => {
+      fetchAndSyncInquiries(false);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Date Filter State
   const [dateFilter, setDateFilter] = useState('all'); // 'all' | 'today' | '7days' | '30days' | 'custom'
@@ -243,6 +271,16 @@ export default function Inquiries() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => fetchAndSyncInquiries(true)}
+            disabled={isSyncing}
+            title="Sync latest inquiries from Cloud / Mobile Inquiry App in real-time"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', fontWeight: 600 }}
+          >
+            <RefreshCw size={16} color="#8b5cf6" className={isSyncing ? 'animate-spin' : ''} />
+            {isSyncing ? 'Syncing...' : 'Sync Cloud'}
+          </button>
           <a
             href="#/share-app"
             className="btn btn-secondary"

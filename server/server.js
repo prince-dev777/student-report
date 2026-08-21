@@ -677,16 +677,77 @@ app.post('/api/staff/attendance', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+// ============================================
+// INQUIRIES API (With Real-Time Cloud Sync)
+// ============================================
 
-// ============================================
-// INQUIRIES API
-// ============================================
+// Fast Cloud Sync Helper for Inquiries
+async function syncInquiriesWithCloud() {
+  let cloudConn = null;
+  try {
+    cloudConn = await mongoose.createConnection(CLOUD_MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000
+    }).asPromise();
+
+    const cloudColl = cloudConn.collection('inquiries');
+    const localColl = mongoose.connection.collection('inquiries');
+
+    // 1. Fetch all inquiries from cloud
+    const cloudDocs = await cloudColl.find({ isDeleted: { $ne: true } }).toArray();
+    if (cloudDocs && cloudDocs.length > 0) {
+      const bulkOps = cloudDocs.map(doc => ({
+        replaceOne: {
+          filter: { _id: doc._id },
+          replacement: doc,
+          upsert: true
+        }
+      }));
+      await localColl.bulkWrite(bulkOps);
+    }
+
+    // 2. Also push any local inquiries to cloud
+    const localDocs = await localColl.find({ isDeleted: { $ne: true } }).toArray();
+    if (localDocs && localDocs.length > 0) {
+      const cloudBulkOps = localDocs.map(doc => ({
+        replaceOne: {
+          filter: { _id: doc._id },
+          replacement: doc,
+          upsert: true
+        }
+      }));
+      await cloudColl.bulkWrite(cloudBulkOps);
+    }
+    return true;
+  } catch (err) {
+    // Silent fail if cloud is unreachable / offline
+    return false;
+  } finally {
+    if (cloudConn) await cloudConn.close().catch(() => {});
+  }
+}
 
 app.get('/api/inquiries', async (req, res) => {
   try {
-    const inquiries = await Inquiry.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).lean();
+    // If sync requested or running in desktop mode, trigger non-blocking cloud pull
+    if (req.query.sync === '1' || req.query.sync === 'true') {
+      await syncInquiriesWithCloud();
+    } else {
+      syncInquiriesWithCloud().catch(() => {});
+    }
+
+    const inquiries = await Inquiry.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1, date: -1 }).lean();
     res.json(inquiries);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/inquiries/sync-cloud', async (req, res) => {
+  try {
+    await syncInquiriesWithCloud();
+    const inquiries = await Inquiry.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1, date: -1 }).lean();
+    res.json({ message: 'Inquiries synced with cloud', inquiries });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -713,6 +774,10 @@ app.post('/api/inquiries', async (req, res) => {
     });
 
     await inquiry.save();
+
+    // Push immediately to cloud if online
+    syncInquiriesWithCloud().catch(() => {});
+
     res.status(201).json(inquiry);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -734,6 +799,10 @@ app.put('/api/inquiries/:id', async (req, res) => {
     if (!updated) {
       return res.status(404).json({ error: 'Inquiry not found' });
     }
+
+    // Push immediately to cloud
+    syncInquiriesWithCloud().catch(() => {});
+
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });

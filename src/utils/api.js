@@ -160,7 +160,8 @@ export const api = {
   deleteSession: (id) => apiRequest(`/sessions/${id}`, { method: 'DELETE' }),
 
   // Front-Desk Inquiries
-  getInquiries: () => apiRequest('/inquiries'),
+  getInquiries: (sync = false) => apiRequest(`/inquiries${sync ? '?sync=1' : ''}`),
+  syncCloudInquiries: () => apiRequest('/inquiries/sync-cloud', { method: 'POST' }),
   createInquiry: (inquiry) => apiRequest('/inquiries', { method: 'POST', body: JSON.stringify(inquiry) }),
   updateInquiry: (id, inquiry) => apiRequest(`/inquiries/${id}`, { method: 'PUT', body: JSON.stringify(inquiry) }),
   deleteInquiry: (id) => apiRequest(`/inquiries/${id}`, { method: 'DELETE' }),
