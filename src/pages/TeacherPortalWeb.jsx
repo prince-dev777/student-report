@@ -369,15 +369,15 @@ export default function TeacherPortalWeb() {
       </header>
 
       {/* Main Container */}
-      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '14px 14px' }}>
+      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '10px 12px' }}>
 
-        {/* Search Bar */}
+        {/* Compact Search Bar */}
         <div style={{
           position: 'relative',
           width: '100%',
-          marginBottom: '12px'
+          marginBottom: '8px'
         }}>
-          <Search size={18} color="#64748b" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+          <Search size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
             type="text"
             placeholder="Search by Name, Roll No, Phone..."
@@ -385,17 +385,16 @@ export default function TeacherPortalWeb() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '12px 40px 12px 42px',
-              borderRadius: '16px',
-              border: '1.5px solid #e2e8f0',
+              padding: '9px 36px 9px 36px',
+              borderRadius: '12px',
+              border: '1.5px solid #cbd5e1',
               background: '#ffffff',
-              fontSize: '0.94rem',
+              fontSize: '0.90rem',
               fontWeight: 600,
               color: '#0f172a',
               outline: 'none',
               boxSizing: 'border-box',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-              transition: 'border-color 0.2s'
+              boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
             }}
           />
           {searchQuery && (
@@ -403,47 +402,47 @@ export default function TeacherPortalWeb() {
               onClick={() => setSearchQuery('')}
               style={{
                 position: 'absolute',
-                right: '12px',
+                right: '10px',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 background: '#e2e8f0',
                 border: 'none',
                 borderRadius: '50%',
-                width: '22px',
-                height: '22px',
+                width: '20px',
+                height: '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer'
               }}
             >
-              <X size={13} color="#475569" />
+              <X size={12} color="#475569" />
             </button>
           )}
         </div>
 
-        {/* Horizontal Quick-Filter Chips */}
+        {/* Compact Horizontal Quick-Filter Chips */}
         <div style={{
           display: 'flex',
-          gap: '8px',
+          gap: '6px',
           overflowX: 'auto',
-          paddingBottom: '8px',
-          marginBottom: '10px',
+          paddingBottom: '6px',
+          marginBottom: '8px',
           scrollbarWidth: 'none'
         }}>
           <button
             onClick={() => setSelectedCourse('ALL')}
             style={{
-              padding: '7px 14px',
-              borderRadius: '20px',
-              fontSize: '0.78rem',
+              padding: '5px 12px',
+              borderRadius: '16px',
+              fontSize: '0.75rem',
               fontWeight: 800,
               whiteSpace: 'nowrap',
               cursor: 'pointer',
-              border: selectedCourse === 'ALL' ? 'none' : '1px solid #e2e8f0',
+              border: selectedCourse === 'ALL' ? 'none' : '1px solid #cbd5e1',
               background: selectedCourse === 'ALL' ? 'linear-gradient(135deg, #1e40af, #2563eb)' : '#ffffff',
               color: selectedCourse === 'ALL' ? '#ffffff' : '#475569',
-              boxShadow: selectedCourse === 'ALL' ? '0 4px 12px rgba(37, 99, 235, 0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
+              boxShadow: selectedCourse === 'ALL' ? '0 2px 8px rgba(37, 99, 235, 0.25)' : 'none',
               transition: 'all 0.15s ease'
             }}
           >
@@ -457,16 +456,16 @@ export default function TeacherPortalWeb() {
                 key={c}
                 onClick={() => setSelectedCourse(c)}
                 style={{
-                  padding: '7px 14px',
-                  borderRadius: '20px',
-                  fontSize: '0.78rem',
+                  padding: '5px 12px',
+                  borderRadius: '16px',
+                  fontSize: '0.75rem',
                   fontWeight: 800,
                   whiteSpace: 'nowrap',
                   cursor: 'pointer',
-                  border: isSel ? 'none' : '1px solid #e2e8f0',
+                  border: isSel ? 'none' : '1px solid #cbd5e1',
                   background: isSel ? 'linear-gradient(135deg, #1e40af, #2563eb)' : '#ffffff',
                   color: isSel ? '#ffffff' : '#475569',
-                  boxShadow: isSel ? '0 4px 12px rgba(37, 99, 235, 0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
+                  boxShadow: isSel ? '0 2px 8px rgba(37, 99, 235, 0.25)' : 'none',
                   transition: 'all 0.15s ease'
                 }}
               >
@@ -481,17 +480,16 @@ export default function TeacherPortalWeb() {
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
                 style={{
-                  padding: '7px 28px 7px 12px',
-                  borderRadius: '20px',
-                  fontSize: '0.78rem',
+                  padding: '5px 24px 5px 10px',
+                  borderRadius: '16px',
+                  fontSize: '0.75rem',
                   fontWeight: 800,
-                  border: selectedClass !== 'ALL' ? 'none' : '1px solid #e2e8f0',
+                  border: selectedClass !== 'ALL' ? 'none' : '1px solid #cbd5e1',
                   background: selectedClass !== 'ALL' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : '#ffffff',
                   color: selectedClass !== 'ALL' ? '#ffffff' : '#475569',
                   outline: 'none',
                   appearance: 'none',
-                  cursor: 'pointer',
-                  boxShadow: selectedClass !== 'ALL' ? '0 4px 12px rgba(124, 58, 237, 0.25)' : '0 1px 3px rgba(0,0,0,0.04)'
+                  cursor: 'pointer'
                 }}
               >
                 <option value="ALL">🏷️ All Classes</option>
@@ -501,239 +499,174 @@ export default function TeacherPortalWeb() {
                   </option>
                 ))}
               </select>
-              <Filter size={12} color={selectedClass !== 'ALL' ? '#ffffff' : '#64748b'} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <Filter size={11} color={selectedClass !== 'ALL' ? '#ffffff' : '#64748b'} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             </div>
           )}
         </div>
 
-        {/* Counter & Hint */}
+        {/* Compact Counter Bar */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '12px',
-          padding: '0 4px',
-          fontSize: '0.80rem',
+          marginBottom: '8px',
+          padding: '0 2px',
+          fontSize: '0.76rem',
           color: '#64748b',
           fontWeight: 700
         }}>
-          <span>Found <strong style={{ color: '#0f172a' }}>{filteredStudents.length}</strong> Students</span>
-          <span style={{ color: '#2563eb', display: 'flex', alignItems: 'center', gap: '3px' }}>
-            Tap card for 360° dossier ➔
-          </span>
+          <span>Showing <strong style={{ color: '#0f172a' }}>{filteredStudents.length}</strong> Students</span>
+          <span style={{ color: '#2563eb' }}>Tap student for dossier ➔</span>
         </div>
 
-        {/* Student Cards List (Ultra-Premium Redesign) */}
+        {/* Student Cards List (Compact, Dense, High-Speed Navigation) */}
         {filteredStudents.length === 0 ? (
           <div style={{
             background: '#ffffff',
-            borderRadius: '20px',
-            padding: '40px 20px',
+            borderRadius: '14px',
+            padding: '30px 16px',
             textAlign: 'center',
             border: '1px solid #e2e8f0',
-            color: '#64748b',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
+            color: '#64748b'
           }}>
-            <Users size={40} color="#94a3b8" style={{ margin: '0 auto 12px' }} />
-            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#334155' }}>No students match your filter</div>
-            <div style={{ fontSize: '0.84rem', marginTop: '4px' }}>Try typing a different search or clear course filters.</div>
+            <Users size={32} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
+            <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#334155' }}>No students match your filter</div>
+            <div style={{ fontSize: '0.78rem', marginTop: '2px' }}>Try searching by another name or clearing filters.</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {filteredStudents.map((st, index) => (
               <div
                 key={st.stId}
                 onClick={() => setSelectedStudent(st)}
                 style={{
                   background: '#ffffff',
-                  borderRadius: '18px',
-                  padding: '14px 16px',
-                  border: '1px solid #f1f5f9',
-                  boxShadow: '0 3px 14px -2px rgba(15, 23, 42, 0.05)',
+                  borderRadius: '14px',
+                  padding: '10px 14px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 2px 6px -1px rgba(15, 23, 42, 0.04)',
                   cursor: 'pointer',
-                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px'
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  transition: 'all 0.15s ease'
                 }}
               >
-                {/* Card Top Row: Avatar + Name + Roll Badge + Arrow */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-                    {/* Dynamic Avatar */}
-                    {st.photo ? (
-                      <img
-                        src={st.photo}
-                        alt={st.name}
-                        style={{ width: '46px', height: '46px', borderRadius: '14px', objectFit: 'cover', border: '2px solid #e0e7ff', flexShrink: 0 }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: '46px',
-                        height: '46px',
-                        borderRadius: '14px',
-                        background: getAvatarGradient(st.name, index),
-                        color: '#ffffff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 900,
-                        fontSize: '1.20rem',
-                        flexShrink: 0,
-                        boxShadow: '0 4px 10px rgba(37, 99, 235, 0.22)',
-                        letterSpacing: '-0.5px'
-                      }}>
-                        {(st.name || 'S').charAt(0).toUpperCase()}
-                      </div>
-                    )}
-
-                    {/* Name & Batch */}
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <h3 style={{
-                        fontSize: '1.02rem',
-                        fontWeight: 800,
-                        color: '#0f172a',
-                        margin: 0,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        lineHeight: 1.25
-                      }}>
-                        {st.name}
-                      </h3>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px', flexWrap: 'nowrap', overflow: 'hidden' }}>
-                        <span style={{
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          color: '#475569',
-                          background: '#f1f5f9',
-                          padding: '2px 7px',
-                          borderRadius: '6px',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}>
-                          🎯 {formatBatchName(st.batch || st.course) || 'General'}
-                        </span>
-                        {st.class && (
-                          <span style={{
-                            fontSize: '0.70rem',
-                            fontWeight: 700,
-                            color: '#64748b',
-                            background: '#f8fafc',
-                            border: '1px solid #e2e8f0',
-                            padding: '1px 5px',
-                            borderRadius: '6px',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {String(st.class).toLowerCase().startsWith('class') ? st.class : `Class ${st.class}`}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fixed Non-Wrapping Roll Badge & Chevron */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                    <span style={{
-                      background: '#eff6ff',
-                      color: '#1d4ed8',
-                      fontSize: '0.76rem',
-                      fontWeight: 800,
-                      padding: '3px 8px',
-                      borderRadius: '8px',
-                      border: '1px solid #dbeafe',
-                      whiteSpace: 'nowrap',
-                      boxShadow: '0 1px 2px rgba(37, 99, 235, 0.06)'
-                    }}>
-                      Roll: {st.rollNo || 'N/A'}
-                    </span>
+                {/* Left: Compact Avatar + Student Details */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                  {st.photo ? (
+                    <img
+                      src={st.photo}
+                      alt={st.name}
+                      style={{ width: '38px', height: '38px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0, border: '1px solid #cbd5e1' }}
+                    />
+                  ) : (
                     <div style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '50%',
-                      background: '#f8fafc',
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '10px',
+                      background: getAvatarGradient(st.name, index),
+                      color: '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#94a3b8'
+                      fontWeight: 900,
+                      fontSize: '1.05rem',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)'
                     }}>
-                      <ChevronRight size={15} />
+                      {(st.name || 'S').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    {/* Row 1: Full Student Name + Roll Badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                      <span style={{
+                        fontSize: '0.94rem',
+                        fontWeight: 800,
+                        color: '#0f172a',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        lineHeight: 1.2
+                      }}>
+                        {st.name}
+                      </span>
+                      <span style={{
+                        background: '#eff6ff',
+                        color: '#2563eb',
+                        fontSize: '0.70rem',
+                        fontWeight: 800,
+                        padding: '1px 6px',
+                        borderRadius: '5px',
+                        border: '1px solid #dbeafe',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }}>
+                        #{st.rollNo || 'N/A'}
+                      </span>
+                    </div>
+
+                    {/* Row 2: Batch Tag + Inline Attendance & Marks Chips */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px', flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: '0.70rem',
+                        fontWeight: 700,
+                        color: '#475569',
+                        background: '#f1f5f9',
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        🎯 {formatBatchName(st.batch || st.course) || 'General'}
+                      </span>
+
+                      {/* Compact Attendance Chip */}
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap',
+                        background: st.totalAttDays > 0 ? (st.attPercentage >= 75 ? '#dcfce7' : st.attPercentage >= 50 ? '#fef3c7' : '#fee2e2') : '#f8fafc',
+                        color: st.totalAttDays > 0 ? (st.attPercentage >= 75 ? '#15803d' : st.attPercentage >= 50 ? '#b45309' : '#b91c1c') : '#94a3b8',
+                        border: st.totalAttDays > 0 ? (st.attPercentage >= 75 ? '1px solid #bbf7d0' : st.attPercentage >= 50 ? '1px solid #fde68a' : '1px solid #fecaca') : '1px solid #e2e8f0'
+                      }}>
+                        📅 {st.totalAttDays > 0 ? `${st.attPercentage}% Att` : '-- Att'}
+                      </span>
+
+                      {/* Compact Marks Chip */}
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap',
+                        background: st.testsCount > 0 ? (st.avgScore >= 60 ? '#e0e7ff' : '#fef3c7') : '#f8fafc',
+                        color: st.testsCount > 0 ? (st.avgScore >= 60 ? '#4338ca' : '#b45309') : '#94a3b8',
+                        border: st.testsCount > 0 ? (st.avgScore >= 60 ? '1px solid #c7d2fe' : '1px solid #fde68a') : '1px solid #e2e8f0'
+                      }}>
+                        📊 {st.testsCount > 0 ? `${st.avgScore}% Marks` : '-- Marks'}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Card Bottom Row: 2 Color-Coded Metric Cards */}
+                {/* Right Arrow */}
                 <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '8px',
-                  paddingTop: '8px',
-                  borderTop: '1px dashed #f1f5f9'
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: '#f8fafc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#94a3b8',
+                  flexShrink: 0
                 }}>
-                  {/* Attendance Metric */}
-                  <div style={{
-                    padding: '6px 10px',
-                    borderRadius: '10px',
-                    background: st.totalAttDays > 0 
-                      ? (st.attPercentage >= 75 ? '#ecfdf5' : st.attPercentage >= 50 ? '#fffbeb' : '#fff1f2')
-                      : '#f8fafc',
-                    border: st.totalAttDays > 0 
-                      ? (st.attPercentage >= 75 ? '1px solid #a7f3d0' : st.attPercentage >= 50 ? '1px solid #fde68a' : '1px solid #fecdd3')
-                      : '1px solid #e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                    <Calendar size={13} color={st.totalAttDays > 0 ? (st.attPercentage >= 75 ? '#059669' : st.attPercentage >= 50 ? '#d97706' : '#e11d48') : '#94a3b8'} />
-                    <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                      <div style={{
-                        fontSize: '0.76rem',
-                        fontWeight: 800,
-                        color: st.totalAttDays > 0 ? (st.attPercentage >= 75 ? '#047857' : st.attPercentage >= 50 ? '#b45309' : '#be123c') : '#64748b',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}>
-                        {st.totalAttDays > 0 ? `${st.attPercentage}% Attendance` : 'No Attendance'}
-                      </div>
-                      <div style={{ fontSize: '0.66rem', color: '#64748b', whiteSpace: 'nowrap' }}>
-                        {st.totalAttDays > 0 ? `${st.presentDays}/${st.totalAttDays} Days Logged` : '0 days active'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Marks / Performance Metric */}
-                  <div style={{
-                    padding: '6px 10px',
-                    borderRadius: '10px',
-                    background: st.testsCount > 0 
-                      ? (st.avgScore >= 70 ? '#eff6ff' : st.avgScore >= 40 ? '#f5f3ff' : '#fff7ed')
-                      : '#f8fafc',
-                    border: st.testsCount > 0 
-                      ? (st.avgScore >= 70 ? '1px solid #bfdbfe' : st.avgScore >= 40 ? '1px solid #ddd6fe' : '1px solid #fed7aa')
-                      : '1px solid #e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                    <TrendingUp size={13} color={st.testsCount > 0 ? (st.avgScore >= 70 ? '#2563eb' : st.avgScore >= 40 ? '#7c3aed' : '#ea580c') : '#94a3b8'} />
-                    <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                      <div style={{
-                        fontSize: '0.76rem',
-                        fontWeight: 800,
-                        color: st.testsCount > 0 ? (st.avgScore >= 70 ? '#1d4ed8' : st.avgScore >= 40 ? '#6d28d9' : '#c2410c') : '#64748b',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}>
-                        {st.testsCount > 0 ? `${st.avgScore}% Marks Avg` : 'No Tests'}
-                      </div>
-                      <div style={{ fontSize: '0.66rem', color: '#64748b', whiteSpace: 'nowrap' }}>
-                        {st.testsCount > 0 ? `${st.testsCount} Tests Graded` : '0 tests evaluated'}
-                      </div>
-                    </div>
-                  </div>
+                  <ChevronRight size={14} />
                 </div>
               </div>
             ))}
