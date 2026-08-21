@@ -14,46 +14,14 @@
     <link rel="apple-touch-icon" href="/logo.png" />
     <link rel="icon" type="image/png" href="/logo-192.png" />
     
+    <link id="app-manifest" rel="manifest" href="/manifest.json" />
+    <meta name="apple-mobile-web-app-title" content="Career Xone" />
+
     <script>
-      (function() {
-        const path = window.location.pathname.toLowerCase();
-        const hash = window.location.hash || '';
-        const search = window.location.search || '';
-        const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
-
-        let appParam = 'parent';
-        let appTitle = isElectron ? 'Career Xone Pro' : 'Career Xone - Smart Portal';
-        let appleTitle = 'Career Xone';
-
-        if (path.includes('/teacher') || hash.includes('/teacher') || search.includes('app=teacher')) {
-          appParam = 'teacher';
-          appTitle = 'CX Teacher';
-          appleTitle = 'CX Teacher';
-        } else if (path.includes('/staff') || hash.includes('/staff') || search.includes('app=staff')) {
-          appParam = 'staff';
-          appTitle = 'CX Staff';
-          appleTitle = 'CX Staff';
-        } else if (path.includes('/inquiry') || hash.includes('/inquiry') || search.includes('app=inquiry')) {
-          appParam = 'inquiry';
-          appTitle = 'CX Inquiry';
-          appleTitle = 'CX Inquiry';
-        } else if (path.includes('/parent') || hash.includes('/parent') || search.includes('app=parent')) {
-          appParam = 'parent';
-          appTitle = 'CX Parents';
-          appleTitle = 'CX Parents';
-        } else if (isElectron) {
-          appTitle = 'Career Xone Pro';
-        }
-
-        document.title = appTitle;
-        document.write('<link id="app-manifest" rel="manifest" href="/manifest-' + appParam + '.json">');
-        document.write('<meta name="apple-mobile-web-app-title" content="' + appleTitle + '">');
-      })();
-
       function updatePWAManifest() {
-        const path = window.location.pathname.toLowerCase();
-        const hash = window.location.hash || '';
-        const search = window.location.search || '';
+        const path = (window.location.pathname || '').toLowerCase();
+        const hash = (window.location.hash || '').toLowerCase();
+        const search = (window.location.search || '').toLowerCase();
         const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 
         let appParam = 'parent';
@@ -84,14 +52,17 @@
         const appleTitleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
         if (appleTitleMeta) appleTitleMeta.setAttribute('content', appleTitle);
 
-        let link = document.getElementById('app-manifest');
-        if (link) {
+        const manifestEl = document.getElementById('app-manifest');
+        if (manifestEl) {
           const targetHref = '/manifest-' + appParam + '.json';
-          if (link.getAttribute('href') !== targetHref) {
-            link.href = targetHref;
+          if (manifestEl.getAttribute('href') !== targetHref) {
+            manifestEl.setAttribute('href', targetHref);
           }
         }
       }
+
+      // Initial execution safely without document.write
+      updatePWAManifest();
       window.addEventListener('hashchange', updatePWAManifest);
       window.addEventListener('popstate', updatePWAManifest);
 
