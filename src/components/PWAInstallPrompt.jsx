@@ -91,43 +91,47 @@ export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
   return (
     <>
       <div style={{
-        background: 'linear-gradient(135deg, #1e3a8a, #2563eb)',
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%)',
         color: '#ffffff',
-        padding: '10px 16px',
+        padding: '8px 14px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '12px',
-        fontSize: '0.82rem',
-        boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+        gap: '10px',
+        fontSize: '0.80rem',
+        boxShadow: '0 4px 16px -2px rgba(15, 23, 42, 0.3)',
         position: 'sticky',
         top: 0,
-        zIndex: 999
+        zIndex: 999,
+        borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+        backdropFilter: 'blur(8px)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
           <div style={{
-            width: '32px',
-            height: '32px',
+            width: '28px',
+            height: '28px',
             borderRadius: '8px',
-            background: 'rgba(255, 255, 255, 0.2)',
+            background: 'rgba(255, 255, 255, 0.18)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            flexShrink: 0
+            flexShrink: 0,
+            boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3)'
           }}>
-            <Smartphone size={18} color="#ffffff" />
+            <Smartphone size={15} color="#ffffff" />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              Install {appName}
+            <div style={{ fontWeight: 800, fontSize: '0.80rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>{appName}</span>
+              <span style={{ fontSize: '0.66rem', background: 'rgba(255,255,255,0.2)', padding: '1px 6px', borderRadius: '10px', fontWeight: 700 }}>1-Tap App</span>
             </div>
-            <div style={{ fontSize: '0.72rem', opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              Download to your home screen for fast 1-tap offline access
+            <div style={{ fontSize: '0.70rem', opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Add to home screen for fast direct access
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
           <button
             onClick={handleInstallClick}
             style={{
@@ -135,33 +139,38 @@ export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
               color: '#1e3a8a',
               border: 'none',
               borderRadius: '20px',
-              padding: '6px 14px',
-              fontSize: '0.78rem',
-              fontWeight: 700,
+              padding: '5px 12px',
+              fontSize: '0.75rem',
+              fontWeight: 800,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+              gap: '5px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+              transition: 'transform 0.15s ease'
             }}
           >
-            <Download size={14} />
-            <span>Install App</span>
+            <Download size={13} />
+            <span>Install</span>
           </button>
           <button
             onClick={() => setShowBanner(false)}
             style={{
-              background: 'transparent',
+              background: 'rgba(255,255,255,0.12)',
               border: 'none',
-              color: 'rgba(255, 255, 255, 0.7)',
+              borderRadius: '50%',
+              width: '24px',
+              height: '24px',
+              color: 'rgba(255, 255, 255, 0.85)',
               cursor: 'pointer',
-              padding: '4px',
               display: 'flex',
-              alignItems: 'center'
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0
             }}
             title="Dismiss"
           >
-            <X size={16} />
+            <X size={14} />
           </button>
         </div>
       </div>
