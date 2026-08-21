@@ -1023,6 +1023,47 @@ export default function StaffInquiryWeb() {
           </div>
         </div>
       )}
+
+      {/* Modern Floating Action Button (FAB) on Bottom Right */}
+      <button
+        onClick={() => {
+          setEditingInquiry(null);
+          setFormData({
+            visitorName: '',
+            studentName: '',
+            contactNumber: '',
+            discussionDetails: '',
+            status: 'Pending',
+            date: getTodayDateStr()
+          });
+          setIsAddModalOpen(true);
+        }}
+        title="Add New Inquiry"
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '20px',
+          zIndex: 40,
+          background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+          color: '#ffffff',
+          border: '2px solid rgba(255, 255, 255, 0.3)',
+          borderRadius: '50px',
+          padding: '12px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          boxShadow: '0 10px 25px -4px rgba(5, 150, 105, 0.5), 0 4px 12px rgba(0, 0, 0, 0.15)',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          fontSize: '0.88rem',
+          fontWeight: 800,
+          letterSpacing: '0.3px',
+          backdropFilter: 'blur(8px)'
+        }}
+      >
+        <Plus size={20} strokeWidth={2.6} />
+        <span>New Inquiry</span>
+      </button>
     </div>
   );
 }
