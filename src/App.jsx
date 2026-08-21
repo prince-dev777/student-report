@@ -66,17 +66,21 @@ const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 export default function App() {
   if (!isElectron) {
     if (typeof window !== 'undefined') {
-      const search = window.location.search || '';
-      const hash = window.location.hash || '';
+      const path = (window.location.pathname || '').toLowerCase();
+      const search = (window.location.search || '').toLowerCase();
+      const hash = (window.location.hash || '').toLowerCase();
+
       if (!hash || hash === '#/' || hash === '#') {
-        if (search.includes('app=teacher')) {
+        if (path.includes('/teacher') || search.includes('app=teacher')) {
           window.location.hash = '/teacher';
-        } else if (search.includes('app=staff')) {
+        } else if (path.includes('/staff') || search.includes('app=staff')) {
           window.location.hash = '/staff';
-        } else if (search.includes('app=inquiry')) {
+        } else if (path.includes('/inquiry') || search.includes('app=inquiry')) {
           window.location.hash = '/inquiry';
-        } else if (search.includes('app=parent') || search.includes('source=pwa')) {
+        } else if (path.includes('/parent') || search.includes('app=parent') || search.includes('source=pwa')) {
           window.location.hash = '/parent';
+        } else if (path.includes('/superadmin') || search.includes('app=superadmin')) {
+          window.location.hash = '/superadmin';
         }
       }
     }
