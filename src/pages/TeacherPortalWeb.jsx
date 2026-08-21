@@ -269,16 +269,16 @@ export default function TeacherPortalWeb() {
       {/* 📲 Modern PWA Install Banner */}
       <PWAInstallPrompt appName="CX Teacher" />
 
-      {/* Top Glassmorphic Header */}
+      {/* Top Glassmorphic Header (Compact & Refined) */}
       <header style={{
-        background: 'rgba(255, 255, 255, 0.94)',
+        background: 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-        padding: '12px 16px',
+        padding: '8px 12px',
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        boxShadow: '0 4px 20px -4px rgba(15, 23, 42, 0.04)'
+        boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)'
       }}>
         <div style={{
           maxWidth: '900px',
@@ -286,22 +286,22 @@ export default function TeacherPortalWeb() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '12px'
+          gap: '10px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
             <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
+              width: '34px',
+              height: '34px',
+              borderRadius: '8px',
               background: '#ffffff',
-              border: '1.5px solid #e2e8f0',
+              border: '1px solid #e2e8f0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden',
               flexShrink: 0,
-              padding: '3px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+              padding: '2px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
             }}>
               <img
                 src={teacherData?.instituteLogo || '/logo.png'}
@@ -314,54 +314,54 @@ export default function TeacherPortalWeb() {
             </div>
             <div style={{ minWidth: 0, overflow: 'hidden' }}>
               <div style={{
-                fontSize: '1.08rem',
+                fontSize: '0.94rem',
                 fontWeight: 900,
                 color: '#0f172a',
                 lineHeight: 1.2,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                letterSpacing: '-0.3px'
+                letterSpacing: '-0.2px'
               }}>
                 {instituteName}
               </div>
               <div style={{
-                fontSize: '0.76rem',
+                fontSize: '0.68rem',
                 color: '#2563eb',
-                fontWeight: 800,
+                fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
-                marginTop: '2px'
+                gap: '4px',
+                marginTop: '1px'
               }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
-                <span>Faculty Portal • 360° Student Dossier</span>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                <span>Faculty Portal • 360° Dossier</span>
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             <button
               onClick={() => fetchTeacherData(true)}
               disabled={loading}
               style={{
-                padding: '7px 13px',
+                padding: '5px 10px',
                 background: loading ? '#e2e8f0' : 'linear-gradient(135deg, #eff6ff, #dbeafe)',
                 border: '1px solid #bfdbfe',
-                borderRadius: '12px',
+                borderRadius: '8px',
                 color: '#1d4ed8',
-                fontSize: '0.82rem',
+                fontSize: '0.74rem',
                 fontWeight: 800,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.1)',
+                gap: '4px',
+                boxShadow: '0 1px 3px rgba(37, 99, 235, 0.08)',
                 transition: 'all 0.2s'
               }}
               title="Click to sync and refresh latest student data"
             >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
               <span>{loading ? 'Syncing...' : 'Sync'}</span>
             </button>
           </div>
@@ -369,32 +369,32 @@ export default function TeacherPortalWeb() {
       </header>
 
       {/* Main Container */}
-      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '10px 12px' }}>
+      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '8px 10px' }}>
 
         {/* Compact Search Bar */}
         <div style={{
           position: 'relative',
           width: '100%',
-          marginBottom: '8px'
+          marginBottom: '6px'
         }}>
-          <Search size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          <Search size={14} color="#64748b" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
             type="text"
-            placeholder="Search by Name, Roll No, Phone..."
+            placeholder="Search student by Name, Roll No, Phone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '9px 36px 9px 36px',
-              borderRadius: '12px',
-              border: '1.5px solid #cbd5e1',
+              padding: '7px 30px 7px 30px',
+              borderRadius: '10px',
+              border: '1px solid #cbd5e1',
               background: '#ffffff',
-              fontSize: '0.90rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
               color: '#0f172a',
               outline: 'none',
               boxSizing: 'border-box',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
             }}
           />
           {searchQuery && (
@@ -402,21 +402,21 @@ export default function TeacherPortalWeb() {
               onClick={() => setSearchQuery('')}
               style={{
                 position: 'absolute',
-                right: '10px',
+                right: '8px',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 background: '#e2e8f0',
                 border: 'none',
                 borderRadius: '50%',
-                width: '20px',
-                height: '20px',
+                width: '18px',
+                height: '18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer'
               }}
             >
-              <X size={12} color="#475569" />
+              <X size={10} color="#475569" />
             </button>
           )}
         </div>
@@ -424,25 +424,25 @@ export default function TeacherPortalWeb() {
         {/* Compact Horizontal Quick-Filter Chips */}
         <div style={{
           display: 'flex',
-          gap: '6px',
+          gap: '5px',
           overflowX: 'auto',
-          paddingBottom: '6px',
-          marginBottom: '8px',
+          paddingBottom: '4px',
+          marginBottom: '6px',
           scrollbarWidth: 'none'
         }}>
           <button
             onClick={() => setSelectedCourse('ALL')}
             style={{
-              padding: '5px 12px',
-              borderRadius: '16px',
-              fontSize: '0.75rem',
+              padding: '4px 10px',
+              borderRadius: '12px',
+              fontSize: '0.70rem',
               fontWeight: 800,
               whiteSpace: 'nowrap',
               cursor: 'pointer',
               border: selectedCourse === 'ALL' ? 'none' : '1px solid #cbd5e1',
               background: selectedCourse === 'ALL' ? 'linear-gradient(135deg, #1e40af, #2563eb)' : '#ffffff',
               color: selectedCourse === 'ALL' ? '#ffffff' : '#475569',
-              boxShadow: selectedCourse === 'ALL' ? '0 2px 8px rgba(37, 99, 235, 0.25)' : 'none',
+              boxShadow: selectedCourse === 'ALL' ? '0 2px 6px rgba(37, 99, 235, 0.2)' : 'none',
               transition: 'all 0.15s ease'
             }}
           >
@@ -456,16 +456,16 @@ export default function TeacherPortalWeb() {
                 key={c}
                 onClick={() => setSelectedCourse(c)}
                 style={{
-                  padding: '5px 12px',
-                  borderRadius: '16px',
-                  fontSize: '0.75rem',
+                  padding: '4px 10px',
+                  borderRadius: '12px',
+                  fontSize: '0.70rem',
                   fontWeight: 800,
                   whiteSpace: 'nowrap',
                   cursor: 'pointer',
                   border: isSel ? 'none' : '1px solid #cbd5e1',
                   background: isSel ? 'linear-gradient(135deg, #1e40af, #2563eb)' : '#ffffff',
                   color: isSel ? '#ffffff' : '#475569',
-                  boxShadow: isSel ? '0 2px 8px rgba(37, 99, 235, 0.25)' : 'none',
+                  boxShadow: isSel ? '0 2px 6px rgba(37, 99, 235, 0.2)' : 'none',
                   transition: 'all 0.15s ease'
                 }}
               >
@@ -480,9 +480,9 @@ export default function TeacherPortalWeb() {
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
                 style={{
-                  padding: '5px 24px 5px 10px',
-                  borderRadius: '16px',
-                  fontSize: '0.75rem',
+                  padding: '4px 20px 4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '0.70rem',
                   fontWeight: 800,
                   border: selectedClass !== 'ALL' ? 'none' : '1px solid #cbd5e1',
                   background: selectedClass !== 'ALL' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : '#ffffff',
@@ -499,7 +499,7 @@ export default function TeacherPortalWeb() {
                   </option>
                 ))}
               </select>
-              <Filter size={11} color={selectedClass !== 'ALL' ? '#ffffff' : '#64748b'} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <Filter size={10} color={selectedClass !== 'ALL' ? '#ffffff' : '#64748b'} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             </div>
           )}
         </div>
@@ -509,80 +509,81 @@ export default function TeacherPortalWeb() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '8px',
+          marginBottom: '6px',
           padding: '0 2px',
-          fontSize: '0.76rem',
+          fontSize: '0.72rem',
           color: '#64748b',
           fontWeight: 700
         }}>
           <span>Showing <strong style={{ color: '#0f172a' }}>{filteredStudents.length}</strong> Students</span>
-          <span style={{ color: '#2563eb' }}>Tap student for dossier ➔</span>
+          <span style={{ color: '#2563eb' }}>Tap for dossier ➔</span>
         </div>
 
-        {/* Student Cards List (Clean, Minimal, Fast Scanning) */}
+        {/* Student Cards List (Crisp Typography, Spacious Name, Never Truncates) */}
         {filteredStudents.length === 0 ? (
           <div style={{
             background: '#ffffff',
-            borderRadius: '14px',
-            padding: '30px 16px',
+            borderRadius: '12px',
+            padding: '24px 16px',
             textAlign: 'center',
             border: '1px solid #e2e8f0',
             color: '#64748b'
           }}>
-            <Users size={32} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#334155' }}>No students match your filter</div>
-            <div style={{ fontSize: '0.78rem', marginTop: '2px' }}>Try searching by another name or clearing filters.</div>
+            <Users size={28} color="#94a3b8" style={{ margin: '0 auto 6px' }} />
+            <div style={{ fontSize: '0.90rem', fontWeight: 800, color: '#334155' }}>No students match your filter</div>
+            <div style={{ fontSize: '0.74rem', marginTop: '2px' }}>Try searching by another name or clearing filters.</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {filteredStudents.map((st, index) => (
               <div
                 key={st.stId}
                 onClick={() => setSelectedStudent(st)}
                 style={{
                   background: '#ffffff',
-                  borderRadius: '14px',
-                  padding: '12px 14px',
-                  border: '1.5px solid #f1f5f9',
-                  boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.05)',
+                  borderRadius: '12px',
+                  padding: '9px 12px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 1px 4px rgba(15, 23, 42, 0.03)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '12px',
+                  gap: '10px',
                   transition: 'all 0.15s ease'
                 }}
               >
-                {/* Left: Avatar + Student Name & Batch */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                {/* Left: Avatar + Student Name & Line 2 Info */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                   {st.photo ? (
                     <img
                       src={st.photo}
                       alt={st.name}
-                      style={{ width: '42px', height: '42px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0, border: '1.5px solid #dbeafe' }}
+                      style={{ width: '34px', height: '34px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0, border: '1px solid #cbd5e1' }}
                     />
                   ) : (
                     <div style={{
-                      width: '42px',
-                      height: '42px',
-                      borderRadius: '12px',
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '8px',
                       background: getAvatarGradient(st.name, index),
                       color: '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 900,
-                      fontSize: '1.15rem',
+                      fontSize: '0.92rem',
                       flexShrink: 0,
-                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.2)'
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)'
                     }}>
                       {(st.name || 'S').charAt(0).toUpperCase()}
                     </div>
                   )}
 
                   <div style={{ minWidth: 0, flex: 1 }}>
+                    {/* Line 1: Student Name with Full Width */}
                     <div style={{
-                      fontSize: '1.02rem',
+                      fontSize: '0.88rem',
                       fontWeight: 800,
                       color: '#0f172a',
                       lineHeight: 1.25,
@@ -593,29 +594,44 @@ export default function TeacherPortalWeb() {
                       {st.name}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px' }}>
+                    {/* Line 2: Roll Badge + Batch Pill side-by-side */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px', flexWrap: 'wrap' }}>
                       <span style={{
-                        fontSize: '0.74rem',
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        border: '1px solid #dbeafe',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        Roll: {st.rollNo || 'N/A'}
+                      </span>
+
+                      <span style={{
+                        fontSize: '0.68rem',
                         fontWeight: 700,
                         color: '#475569',
                         background: '#f1f5f9',
-                        padding: '2px 8px',
-                        borderRadius: '6px',
+                        padding: '1px 6px',
+                        borderRadius: '4px',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis'
                       }}>
                         🎯 {formatBatchName(st.batch || st.course) || 'General Batch'}
                       </span>
+
                       {st.class && (
                         <span style={{
-                          fontSize: '0.72rem',
+                          fontSize: '0.66rem',
                           fontWeight: 700,
                           color: '#64748b',
                           background: '#f8fafc',
                           border: '1px solid #e2e8f0',
-                          padding: '1px 6px',
-                          borderRadius: '6px',
+                          padding: '1px 5px',
+                          borderRadius: '4px',
                           whiteSpace: 'nowrap'
                         }}>
                           {String(st.class).toLowerCase().startsWith('class') ? st.class : `Class ${st.class}`}
@@ -625,33 +641,19 @@ export default function TeacherPortalWeb() {
                   </div>
                 </div>
 
-                {/* Right: Roll Number Badge & Arrow */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                  <span style={{
-                    background: '#eff6ff',
-                    color: '#1d4ed8',
-                    fontSize: '0.78rem',
-                    fontWeight: 800,
-                    padding: '4px 10px',
-                    borderRadius: '8px',
-                    border: '1px solid #dbeafe',
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 1px 2px rgba(37, 99, 235, 0.06)'
-                  }}>
-                    Roll: {st.rollNo || 'N/A'}
-                  </span>
-                  <div style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    background: '#f8fafc',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#94a3b8'
-                  }}>
-                    <ChevronRight size={16} />
-                  </div>
+                {/* Right Arrow */}
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  background: '#f8fafc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#94a3b8',
+                  flexShrink: 0
+                }}>
+                  <ChevronRight size={13} />
                 </div>
               </div>
             ))}
