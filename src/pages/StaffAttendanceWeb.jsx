@@ -21,53 +21,6 @@ export default function StaffAttendanceWeb() {
   const [classFilter, setClassFilter] = useState('ALL');
   const [savingId, setSavingId] = useState(null);
 
-  // PWA Home Screen Install State
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showInstallBanner, setShowInstallBanner] = useState(true);
-  const [isStandalone, setIsStandalone] = useState(false);
-
-  useEffect(() => {
-    document.title = 'Career Xone - Staff Attendance Portal';
-    const checkStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    setIsStandalone(!!checkStandalone);
-
-    const handleBeforeInstall = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallBanner(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
-
-  const handleInstallApp = async () => {
-    if (deferredPrompt) {
-      try {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          toast.success('🎉 Staff App installed successfully!');
-          setShowInstallBanner(false);
-        }
-      } catch(e) {}
-      setDeferredPrompt(null);
-    } else {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        toast('📱 Mobile Install: Browser Menu (⋮ or Share) ➔ "Add to Home Screen"', {
-          icon: '📱',
-          duration: 8000
-        });
-      } else {
-        toast('💻 Laptop Install: Look at Address Bar ➔ Click (⊕) Install App icon OR Chrome Menu (⋮) ➔ Save & Share ➔ Install App', {
-          icon: '💻',
-          duration: 9000
-        });
-      }
-    }
-  };
-
   // Passcode Auth with Backend Token
   const [passcode, setPasscode] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -187,88 +140,77 @@ export default function StaffAttendanceWeb() {
     }
   }, [isAuthenticated]);
 
-  // PRE-LOGIN APP INSTALL GATEWAY
-  const isStandaloneApp = (typeof window !== 'undefined' && (
-    window.matchMedia('(display-mode: standalone)').matches || 
-    window.navigator.standalone === true || 
-    window.location.search.includes('source=pwa') || 
-    window.location.search.includes('app=staff')
-  ));
-
-  if (!isAuthenticated && !isStandaloneApp && !proceedToWeb) {
-    return (
-      <AppInstallGate
-        appName="Staff Attendance Official App"
-        appSubtitle="Manual Attendance Management & Batch Punch App"
-        appType="staff"
-        themeGradient="linear-gradient(135deg, #4c1d95 0%, #6d28d9 40%, #0f172a 100%)"
-        themeColor="#7c3aed"
-        badgeText="Staff Attendance App"
-        badgeBg="rgba(124, 58, 237, 0.15)"
-        badgeColor="#7c3aed"
-        features={[
-          { title: "Quick Roll-Call & Punch", desc: "Mark IN, OUT, LATE, or ABSENT for students across all batches." },
-          { title: "Automated WhatsApp & SMS", desc: "Auto-dispatches arrival and departure alerts to registered parents." },
-          { title: "1-Tap Direct Launch", desc: "Add to home screen for fast daily punch access." }
-        ]}
-        onContinueToWeb={() => {
-          sessionStorage.setItem('skip_staff_install_gate', '1');
-          setProceedToWeb(true);
-        }}
-      />
-    );
-  }
-
   if (!isAuthenticated) {
     return (
       <div style={{
-        minHeight: '100vh', background: '#0f172a',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: "'Inter', sans-serif", padding: '20px'
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: "'Outfit', 'Inter', sans-serif",
+        padding: '16px'
       }}>
+        {/* PWA Install Banner on Login Screen */}
+        <div style={{ width: '100%', maxWidth: '380px', marginBottom: '14px' }}>
+          <PWAInstallPrompt appName="CX Staff" />
+        </div>
+
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           style={{
-            background: 'rgba(30, 41, 59, 0.7)',
+            background: 'rgba(255, 255, 255, 0.98)',
             backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '24px',
-            padding: '36px',
-            maxWidth: '400px',
+            padding: '32px 24px',
+            maxWidth: '380px',
             width: '100%',
             textAlign: 'center',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-            color: '#f8fafc'
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+            color: '#0f172a'
           }}
         >
           <div style={{
-            width: '56px', height: '56px', borderRadius: '16px',
-            background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px'
+            width: '60px',
+            height: '60px',
+            borderRadius: '18px',
+            background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 14px',
+            boxShadow: '0 8px 20px rgba(124, 58, 237, 0.35)'
           }}>
-            <UserCheck size={28} />
+            <UserCheck size={30} />
           </div>
 
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '6px' }}>Staff Portal</h2>
-          <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '24px' }}>
-            Enter your Staff Access Passcode to unlock Attendance Management
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: '0 0 4px' }}>Staff Attendance</h2>
+          <p style={{ fontSize: '0.80rem', color: '#64748b', margin: '0 0 20px', fontWeight: 600 }}>
+            Enter your Staff Access Passcode to unlock daily attendance punch desk
           </p>
 
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <input
               type="password"
-              placeholder="Enter access passcode"
+              placeholder="Enter Access Passcode"
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
               autoFocus
               style={{
-                width: '100%', padding: '12px 16px',
-                borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)',
-                background: 'rgba(15, 23, 42, 0.6)', color: '#ffffff',
-                fontSize: '1rem', textAlign: 'center', letterSpacing: '4px',
-                outline: 'none', marginBottom: '16px'
+                width: '100%',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                border: '1.5px solid #cbd5e1',
+                background: '#f8fafc',
+                color: '#0f172a',
+                fontSize: '1.1rem',
+                textAlign: 'center',
+                letterSpacing: '4px',
+                fontWeight: 800,
+                outline: 'none'
               }}
             />
 
@@ -276,15 +218,20 @@ export default function StaffAttendanceWeb() {
               type="submit"
               disabled={isLoggingIn}
               style={{
-                width: '100%', padding: '12px 20px',
-                background: isLoggingIn ? '#64748b' : 'linear-gradient(135deg, #2563eb, #3b82f6)',
-                color: '#ffffff', border: 'none', borderRadius: '12px',
-                fontSize: '0.95rem', fontWeight: 600, cursor: isLoggingIn ? 'not-allowed' : 'pointer',
-                boxShadow: isLoggingIn ? 'none' : '0 4px 14px rgba(37, 99, 235, 0.4)',
+                width: '100%',
+                padding: '12px 20px',
+                background: isLoggingIn ? '#94a3b8' : 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '0.92rem',
+                fontWeight: 800,
+                cursor: isLoggingIn ? 'not-allowed' : 'pointer',
+                boxShadow: isLoggingIn ? 'none' : '0 4px 14px rgba(124, 58, 237, 0.4)',
                 opacity: isLoggingIn ? 0.7 : 1
               }}
             >
-              {isLoggingIn ? 'Authenticating...' : 'Unlock Staff Portal'}
+              {isLoggingIn ? 'Authenticating...' : 'Unlock Staff Desk'}
             </button>
           </form>
         </motion.div>

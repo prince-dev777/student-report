@@ -3,7 +3,7 @@
   "name": "CX Staff",
   "description": "Career Xone Staff & Faculty Attendance Scanner Portal",
   "start_url": "/staff?app=staff#/staff",
-  "scope": "/staff",
+  "scope": "/",
   "id": "com.cx.staff",
   "icons": [
     {

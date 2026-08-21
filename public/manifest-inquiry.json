@@ -3,7 +3,7 @@
   "name": "CX Inquiry",
   "description": "Career Xone Front-Desk Admission & Student Inquiry Desk Management App",
   "start_url": "/inquiry?app=inquiry#/inquiry",
-  "scope": "/inquiry",
+  "scope": "/",
   "id": "com.cx.inquiry",
   "icons": [
     {

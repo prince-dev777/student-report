@@ -3,7 +3,7 @@
   "name": "CX Teacher",
   "description": "Career Xone Teacher & Faculty 360 Student Dossier and Test Analytics App",
   "start_url": "/teacher?app=teacher#/teacher",
-  "scope": "/teacher",
+  "scope": "/",
   "id": "com.cx.teacher",
   "icons": [
     {
