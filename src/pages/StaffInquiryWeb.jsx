@@ -306,7 +306,7 @@ export default function StaffInquiryWeb() {
         
         {/* Centered PWA Install Prompt */}
         <div style={{ width: '100%', maxWidth: '380px', marginBottom: '12px' }}>
-          <PWAInstallPrompt appName="Inquiry App" />
+          <PWAInstallPrompt appName="CX Inquiry" />
         </div>
 
         <div style={{
@@ -439,7 +439,7 @@ export default function StaffInquiryWeb() {
       paddingBottom: '60px'
     }}>
       <Toaster position="top-center" />
-      <PWAInstallPrompt appName="Inquiry App" />
+      <PWAInstallPrompt appName="CX Inquiry" />
 
       {/* Top Header (Compact & Mobile-Optimized) */}
       <header style={{

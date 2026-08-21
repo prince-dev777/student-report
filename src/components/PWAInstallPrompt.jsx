@@ -9,8 +9,13 @@ export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    // Check if already in standalone mode (installed)
-    const isApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    // Check if already in standalone mode (installed app on phone)
+    const isApp = window.matchMedia('(display-mode: standalone)').matches 
+      || window.matchMedia('(display-mode: fullscreen)').matches
+      || window.navigator.standalone === true
+      || (typeof document !== 'undefined' && document.referrer.includes('android-app://'))
+      || (typeof window !== 'undefined' && (window.location.search.includes('source=pwa') || window.location.search.includes('mode=standalone')));
+
     setIsStandalone(isApp);
     if (isApp) {
       setShowBanner(false);

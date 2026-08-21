@@ -465,7 +465,7 @@ const getCourseName = (batch) => {
   return (
     <div style={styles.container}>
       {/* PWA Home Screen Install Banner */}
-      <PWAInstallPrompt appName="Staff Attendance" />
+      <PWAInstallPrompt appName="CX Staff" />
 
       {/* Top Header */}
       <header style={styles.header}>
