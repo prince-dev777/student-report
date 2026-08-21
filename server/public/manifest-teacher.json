@@ -1,10 +1,10 @@
 {
   "short_name": "CX Teacher",
-  "name": "Career Xone Teacher",
+  "name": "CX Teacher",
   "description": "Career Xone Teacher & Faculty 360 Student Dossier and Test Analytics App",
-  "start_url": "/?app=teacher#/teacher",
-  "scope": "/",
-  "id": "cx-teacher-app",
+  "start_url": "/teacher?app=teacher#/teacher",
+  "scope": "/teacher",
+  "id": "com.cx.teacher",
   "icons": [
     {
       "src": "/logo-192.png",
@@ -23,6 +23,12 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+cxteacher",
+      "url": "/teacher?url=%s"
     }
   ],
   "background_color": "#ffffff",

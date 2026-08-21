@@ -16,6 +16,7 @@
     
     <script>
       (function() {
+        const path = window.location.pathname.toLowerCase();
         const hash = window.location.hash || '';
         const search = window.location.search || '';
         const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
@@ -24,21 +25,21 @@
         let appTitle = isElectron ? 'Career Xone Pro' : 'Career Xone - Smart Portal';
         let appleTitle = 'Career Xone';
 
-        if (hash.includes('/teacher') || search.includes('app=teacher')) {
+        if (path.includes('/teacher') || hash.includes('/teacher') || search.includes('app=teacher')) {
           appParam = 'teacher';
-          appTitle = 'Career Xone - Teacher Portal';
+          appTitle = 'CX Teacher';
           appleTitle = 'CX Teacher';
-        } else if (hash.includes('/staff') || search.includes('app=staff')) {
+        } else if (path.includes('/staff') || hash.includes('/staff') || search.includes('app=staff')) {
           appParam = 'staff';
-          appTitle = 'Career Xone - Staff Attendance';
+          appTitle = 'CX Staff';
           appleTitle = 'CX Staff';
-        } else if (hash.includes('/inquiry') || search.includes('app=inquiry')) {
+        } else if (path.includes('/inquiry') || hash.includes('/inquiry') || search.includes('app=inquiry')) {
           appParam = 'inquiry';
-          appTitle = 'Career Xone - Inquiry Desk';
+          appTitle = 'CX Inquiry';
           appleTitle = 'CX Inquiry';
-        } else if (hash.includes('/parent') || search.includes('app=parent')) {
+        } else if (path.includes('/parent') || hash.includes('/parent') || search.includes('app=parent')) {
           appParam = 'parent';
-          appTitle = 'Career Xone - Parents App';
+          appTitle = 'CX Parents';
           appleTitle = 'CX Parents';
         } else if (isElectron) {
           appTitle = 'Career Xone Pro';
@@ -50,6 +51,7 @@
       })();
 
       function updatePWAManifest() {
+        const path = window.location.pathname.toLowerCase();
         const hash = window.location.hash || '';
         const search = window.location.search || '';
         const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
@@ -58,21 +60,21 @@
         let appTitle = isElectron ? 'Career Xone Pro' : 'Career Xone - Smart Portal';
         let appleTitle = 'Career Xone';
 
-        if (hash.includes('/teacher') || search.includes('app=teacher')) {
+        if (path.includes('/teacher') || hash.includes('/teacher') || search.includes('app=teacher')) {
           appParam = 'teacher';
-          appTitle = 'Career Xone - Teacher Portal';
+          appTitle = 'CX Teacher';
           appleTitle = 'CX Teacher';
-        } else if (hash.includes('/staff') || search.includes('app=staff')) {
+        } else if (path.includes('/staff') || hash.includes('/staff') || search.includes('app=staff')) {
           appParam = 'staff';
-          appTitle = 'Career Xone - Staff Attendance';
+          appTitle = 'CX Staff';
           appleTitle = 'CX Staff';
-        } else if (hash.includes('/inquiry') || search.includes('app=inquiry')) {
+        } else if (path.includes('/inquiry') || hash.includes('/inquiry') || search.includes('app=inquiry')) {
           appParam = 'inquiry';
-          appTitle = 'Career Xone - Inquiry Desk';
+          appTitle = 'CX Inquiry';
           appleTitle = 'CX Inquiry';
-        } else if (hash.includes('/parent') || search.includes('app=parent')) {
+        } else if (path.includes('/parent') || hash.includes('/parent') || search.includes('app=parent')) {
           appParam = 'parent';
-          appTitle = 'Career Xone - Parents App';
+          appTitle = 'CX Parents';
           appleTitle = 'CX Parents';
         } else if (isElectron) {
           appTitle = 'Career Xone Pro';
@@ -91,6 +93,7 @@
         }
       }
       window.addEventListener('hashchange', updatePWAManifest);
+      window.addEventListener('popstate', updatePWAManifest);
 
       window.deferredPrompt = null;
       window.addEventListener('beforeinstallprompt', (e) => {

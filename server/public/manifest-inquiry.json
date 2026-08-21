@@ -1,10 +1,10 @@
 {
   "short_name": "CX Inquiry",
-  "name": "Career Xone Inquiry",
-  "description": "Career Xone Front-Desk Student & Parent Inquiry Management App",
-  "start_url": "/?app=inquiry#/inquiry",
-  "scope": "/",
-  "id": "cx-inquiry-app",
+  "name": "CX Inquiry",
+  "description": "Career Xone Front-Desk Admission & Student Inquiry Desk Management App",
+  "start_url": "/inquiry?app=inquiry#/inquiry",
+  "scope": "/inquiry",
+  "id": "com.cx.inquiry",
   "icons": [
     {
       "src": "/logo-192.png",
@@ -23,6 +23,12 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+cxinquiry",
+      "url": "/inquiry?url=%s"
     }
   ],
   "background_color": "#ffffff",

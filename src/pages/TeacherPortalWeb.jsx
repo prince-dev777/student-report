@@ -3,19 +3,16 @@ import {
   GraduationCap, Users, Calendar, Clock, Search, Filter,
   TrendingUp, CheckCircle2, XCircle, AlertCircle,
   ChevronRight, Phone, MessageCircle, ArrowLeft,
-  LogOut, RefreshCw, Smartphone, Award, BookOpen, User, Check, X
+  RefreshCw, Smartphone, Award, BookOpen, User, Check, X
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { formatBatchName } from '../utils/helpers';
 import toast, { Toaster } from 'react-hot-toast';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
-import AppInstallGate from '../components/AppInstallGate';
 
 export default function TeacherPortalWeb() {
   const [proceedToWeb, setProceedToWeb] = useState(() => !!sessionStorage.getItem('skip_teacher_install_gate'));
-  const [passcode, setPasscode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!sessionStorage.getItem('teacherSession'));
   const [teacherData, setTeacherData] = useState(() => {
     try {
       return JSON.parse(sessionStorage.getItem('teacherSession')) || null;
@@ -33,6 +30,7 @@ export default function TeacherPortalWeb() {
 
   useEffect(() => {
     document.title = 'Career Xone - Teacher Portal';
+    fetchTeacherData();
   }, []);
 
   // Institute Branding
@@ -85,60 +83,6 @@ export default function TeacherPortalWeb() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchTeacherData();
-    }
-  }, [isLoggedIn]);
-
-  // Login handler
-  const handleLogin = async (e) => {
-    if (e) e.preventDefault();
-    if (!passcode.trim()) {
-      toast.error('Please enter teacher passcode');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await api.teacherLogin({ passcode: passcode.trim() });
-      if (res && res.token) {
-        localStorage.setItem('teacherToken', res.token);
-        localStorage.setItem('token', res.token);
-        setIsLoggedIn(true);
-        toast.success(`Welcome to Teacher Portal! 👨‍🏫`);
-        await fetchTeacherData();
-      } else {
-        if (passcode.trim() === '1234') {
-          setIsLoggedIn(true);
-          toast.success('Welcome to Teacher Portal! 👨‍🏫');
-          await fetchTeacherData();
-        } else {
-          toast.error('Invalid Teacher Passcode');
-        }
-      }
-    } catch (err) {
-      if (passcode.trim() === '1234') {
-        setIsLoggedIn(true);
-        toast.success('Welcome to Teacher Portal (Offline Mode)! 👨‍🏫');
-        await fetchTeacherData();
-      } else {
-        toast.error(err.message || 'Login failed. Please check passcode.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('teacherSession');
-    localStorage.removeItem('teacherToken');
-    setIsLoggedIn(false);
-    setTeacherData(null);
-    setSelectedStudent(null);
-    toast.success('Logged out successfully');
   };
 
   // Raw data collections
@@ -290,154 +234,9 @@ export default function TeacherPortalWeb() {
     }
   }, [enrichedStudents]);
 
-  // PRE-LOGIN APP INSTALL GATEWAY
-  const isStandaloneApp = (typeof window !== 'undefined' && (
-    window.matchMedia('(display-mode: standalone)').matches || 
-    window.navigator.standalone === true || 
-    window.location.search.includes('source=pwa') || 
-    window.location.search.includes('app=teacher')
-  ));
-
-  if (!isLoggedIn && !isStandaloneApp && !proceedToWeb) {
-    return (
-      <AppInstallGate
-        appName="Teacher & Faculty Official App"
-        appSubtitle="360° Student Dossier, Attendance & Analytics App"
-        appType="teacher"
-        themeGradient="linear-gradient(135deg, #1e3a8a 0%, #1e40af 40%, #0f172a 100%)"
-        themeColor="#2563eb"
-        badgeText="Official Faculty App"
-        badgeBg="rgba(37, 99, 235, 0.15)"
-        badgeColor="#2563eb"
-        features={[
-          { title: "Instant Student Search", desc: "Access full multi-year academic trajectory and test analysis in seconds." },
-          { title: "Complete Attendance Log", desc: "Inspect daily biometric punch in/out and monthly consistency." },
-          { title: "1-Tap Direct Launch", desc: "Add to home screen for fast one-tap access during classroom sessions." }
-        ]}
-        onContinueToWeb={() => {
-          sessionStorage.setItem('skip_teacher_install_gate', '1');
-          setProceedToWeb(true);
-        }}
-      />
-    );
-  }
-
   // ----------------------------------------------------
-  // LOGIN SCREEN (Compact & Mobile Friendly)
+  // MAIN APP INTERFACE (Direct Access, No Password Gate)
   // ----------------------------------------------------
-  if (!isLoggedIn) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif"
-      }}>
-        <Toaster position="top-center" />
-        
-        {/* Centered PWA Install Banner */}
-        <div style={{ width: '100%', maxWidth: '380px', marginBottom: '12px' }}>
-          <PWAInstallPrompt appName="Teacher Portal" />
-        </div>
-
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '20px',
-          padding: '28px 22px',
-          maxWidth: '380px',
-          width: '100%',
-          boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.35)',
-          textAlign: 'center'
-        }}>
-          <div style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '16px',
-            background: '#ffffff',
-            border: '2px solid #e2e8f0',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 12px',
-            overflow: 'hidden',
-            padding: '4px'
-          }}>
-            <img
-              src={teacherData?.instituteLogo || '/logo.png'}
-              alt="Career Xone Logo"
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          </div>
-
-          <h2 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px' }}>
-            Teacher & Faculty Portal
-          </h2>
-          <p style={{ fontSize: '0.88rem', color: '#64748b', margin: '0 0 22px' }}>
-            Search student & view complete Test & Attendance log
-          </p>
-
-          <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: '16px', textAlign: 'left' }}>
-              <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '8px' }}>
-                TEACHER ACCESS PASSCODE:
-              </label>
-              <input
-                type="password"
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                placeholder="Enter access passcode"
-                autoFocus
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  borderRadius: '12px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '1.05rem',
-                  fontWeight: 700,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  background: '#f8fafc',
-                  textAlign: 'center',
-                  letterSpacing: '2px'
-                }}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '13px',
-                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '0.96rem',
-                fontWeight: 800,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: '0 6px 16px -4px rgba(37, 99, 235, 0.4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-            >
-              {loading ? 'Verifying...' : 'Access Student Records ➔'}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   // ----------------------------------------------------
   // MAIN APP INTERFACE (Clean, Focused, Mobile-First)
@@ -536,27 +335,6 @@ export default function TeacherPortalWeb() {
             >
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
               <span>{loading ? 'Syncing...' : 'Sync'}</span>
-            </button>
-
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: '8px 12px',
-                background: '#fee2e2',
-                border: '1.5px solid #fecaca',
-                borderRadius: '10px',
-                color: '#dc2626',
-                fontSize: '0.86rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px'
-              }}
-              title="Log Out"
-            >
-              <LogOut size={16} />
             </button>
           </div>
         </div>

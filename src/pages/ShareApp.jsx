@@ -77,10 +77,10 @@ export default function ShareApp() {
     loadSettings();
   }, []);
 
-  const parentAppLink = "https://studentreport.cxjeeneet.com/?app=parent#/parent";
-  const staffWebLink = "https://studentreport.cxjeeneet.com/?app=staff#/staff";
-  const teacherWebLink = "https://studentreport.cxjeeneet.com/?app=teacher#/teacher";
-  const inquiryWebLink = "https://studentreport.cxjeeneet.com/?app=inquiry#/inquiry";
+  const parentAppLink = "https://studentreport.cxjeeneet.com/parent?app=parent#/parent";
+  const staffWebLink = "https://studentreport.cxjeeneet.com/staff?app=staff#/staff";
+  const teacherWebLink = "https://studentreport.cxjeeneet.com/teacher?app=teacher#/teacher";
+  const inquiryWebLink = "https://studentreport.cxjeeneet.com/inquiry?app=inquiry#/inquiry";
 
   const [copiedParentUrl, setCopiedParentUrl] = useState(false);
   const [copiedStaffUrl, setCopiedStaffUrl] = useState(false);
@@ -107,7 +107,7 @@ export default function ShareApp() {
   };
 
   const handleCopyTeacherInvite = () => {
-    const inviteText = `Career Xone Teacher & Faculty Portal Access:\n🔗 Link: ${teacherWebLink}\n🔑 Access Passcode: ${teacherPasscode}`;
+    const inviteText = `Career Xone Teacher & Faculty Portal Access:\n🔗 Link: ${teacherWebLink}\n✨ Direct Access to 360° Student Records & Test Analytics`;
     navigator.clipboard.writeText(inviteText);
     setTeacherCopied(true);
     toast.success("Teacher Portal Invite copied to clipboard!");

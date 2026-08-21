@@ -1,10 +1,10 @@
 {
   "short_name": "CX Staff",
-  "name": "Career Xone Staff",
-  "description": "Career Xone Staff Manual Attendance Management App",
-  "start_url": "/?app=staff#/staff",
-  "scope": "/",
-  "id": "cx-staff-app",
+  "name": "CX Staff",
+  "description": "Career Xone Staff & Faculty Attendance Scanner Portal",
+  "start_url": "/staff?app=staff#/staff",
+  "scope": "/staff",
+  "id": "com.cx.staff",
   "icons": [
     {
       "src": "/logo-192.png",
@@ -23,6 +23,12 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+cxstaff",
+      "url": "/staff?url=%s"
     }
   ],
   "background_color": "#ffffff",

@@ -25,6 +25,7 @@
     "files": [
       "dist/**/*",
       "main.cjs",
+      "preload.cjs",
       "server/**/*",
       "server/bin/**",
       "!server/myenv/**",

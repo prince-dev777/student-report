@@ -1,10 +1,10 @@
 {
   "short_name": "CX Parents",
-  "name": "Career Xone Parents",
+  "name": "CX Parents",
   "description": "Career Xone Student Attendance, Test Performance & OMR Report Parent App",
-  "start_url": "/?app=parent#/parent",
-  "scope": "/",
-  "id": "cx-parent-app",
+  "start_url": "/parent?app=parent#/parent",
+  "scope": "/parent",
+  "id": "com.cx.parents",
   "icons": [
     {
       "src": "/logo-192.png",
@@ -23,6 +23,12 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+cxparents",
+      "url": "/parent?url=%s"
     }
   ],
   "background_color": "#ffffff",
