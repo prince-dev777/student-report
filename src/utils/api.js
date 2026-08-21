@@ -132,32 +132,7 @@ export const api = {
   // Test Results
   getTestResults: () => apiRequest('/test-results'),
   downloadOMRImages: (data) => apiRequest('/test-results/download-omr-images', { method: 'POST', body: JSON.stringify(data) }),
-  uploadOMRImages: async (formData) => {
-    // Check if running inside Electron Desktop App
-    const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
-    
-    if (isElectron) {
-      // Edge Computing: Send heavy images to LOCAL server instead of cloud
-      const token = localStorage.getItem('token');
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      const response = await fetch('/api/test-results/omr-process', {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || `Local Server Error: ${response.status}`);
-      }
-      return response.json();
-    } else {
-      // Running on Web (Browser), fallback to Cloud API
-      return apiRequest('/test-results/omr-process', { method: 'POST', body: formData });
-    }
-  },
+  uploadOMRImages: (formData) => apiRequest('/test-results/omr-process', { method: 'POST', body: formData }),
   saveTestResultsBulk: (results) => apiRequest('/test-results/bulk', { method: 'POST', body: JSON.stringify(results) }),
   publishTestResults: (testId, sendSMS) => apiRequest(`/test-results/${testId}/publish`, { method: 'PUT', body: JSON.stringify({ sendSMS }) }),
 
@@ -174,23 +149,23 @@ export const api = {
   deleteSMSLogsBulk: (ids) => apiRequest('/sms-logs/bulk', { method: 'DELETE', body: JSON.stringify({ ids }) }),
   deleteAllSMSLogs: () => apiRequest('/sms-logs/all', { method: 'DELETE' }),
 
-  // Sync
+  // Cloud Pull & Bidirectional Sync
   pullCloudData: () => apiRequest('/sync/pull-cloud', { method: 'POST' }),
   bidirectionalSync: () => apiRequest('/sync/bidirectional', { method: 'POST' }),
 
-  // Sessions
+  // Batch Sessions & Timing Management
   getSessions: () => apiRequest('/sessions'),
-  createSession: (data) => apiRequest('/sessions', { method: 'POST', body: JSON.stringify(data) }),
-  updateSession: (id, data) => apiRequest(`/sessions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  createSession: (session) => apiRequest('/sessions', { method: 'POST', body: JSON.stringify(session) }),
+  updateSession: (id, session) => apiRequest(`/sessions/${id}`, { method: 'PUT', body: JSON.stringify(session) }),
   deleteSession: (id) => apiRequest(`/sessions/${id}`, { method: 'DELETE' }),
 
-  // Inquiries
+  // Front-Desk Inquiries
   getInquiries: () => apiRequest('/inquiries'),
-  createInquiry: (data) => apiRequest('/inquiries', { method: 'POST', body: JSON.stringify(data) }),
-  updateInquiry: (id, data) => apiRequest(`/inquiries/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  createInquiry: (inquiry) => apiRequest('/inquiries', { method: 'POST', body: JSON.stringify(inquiry) }),
+  updateInquiry: (id, inquiry) => apiRequest(`/inquiries/${id}`, { method: 'PUT', body: JSON.stringify(inquiry) }),
   deleteInquiry: (id) => apiRequest(`/inquiries/${id}`, { method: 'DELETE' }),
 
-  // Seed / Reset
+  // Database Management
   seedDatabase: (data) => apiRequest('/seed', { method: 'POST', body: JSON.stringify(data) }),
   resetDatabase: () => apiRequest('/reset', { method: 'POST' }),
 
@@ -200,20 +175,20 @@ export const api = {
   // System Updates
   getUpdateStatus: async () => {
     try {
-      const response = await fetch('/api/system/update-status');
+      const response = await fetch(`${API_BASE}/system/update-status`);
       if (response.ok) return await response.json();
     } catch (e) {}
     return { status: 'idle', version: '', releaseDate: '', currentVersion: '', progress: 0 };
   },
   startUpdateDownload: async () => {
     try {
-      const response = await fetch('/api/system/start-download', { method: 'POST' });
+      const response = await fetch(`${API_BASE}/system/start-download`, { method: 'POST' });
       if (response.ok) return await response.json();
     } catch (e) {}
   },
   restartAndUpdate: async () => {
     try {
-      await fetch('/api/system/restart-and-update', { method: 'POST' });
+      await fetch(`${API_BASE}/system/restart-and-update`, { method: 'POST' });
     } catch (e) {}
   },
   
