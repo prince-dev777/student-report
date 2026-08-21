@@ -288,46 +288,14 @@ export default function StaffInquiryWeb() {
           {/* Right: Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             <button
-              onClick={() => {
-                setEditingInquiry(null);
-                setFormData({
-                  visitorName: '',
-                  studentName: '',
-                  contactNumber: '',
-                  discussionDetails: '',
-                  status: 'Pending',
-                  date: getTodayDateStr()
-                });
-                setIsAddModalOpen(true);
-              }}
-              style={{
-                background: 'linear-gradient(135deg, #059669, #047857)',
-                border: 'none',
-                color: '#ffffff',
-                padding: '6px 10px',
-                borderRadius: '8px',
-                fontSize: '0.74rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)'
-              }}
-            >
-              <Plus size={14} />
-              <span>New</span>
-            </button>
-
-            <button
               onClick={fetchInquiries}
               disabled={loading}
               style={{
                 background: '#f1f5f9',
                 border: '1px solid #e2e8f0',
                 color: '#334155',
-                width: '30px',
-                height: '30px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 display: 'flex',
@@ -336,7 +304,7 @@ export default function StaffInquiryWeb() {
               }}
               title="Refresh / Sync"
             >
-              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
         </div>
@@ -1024,7 +992,7 @@ export default function StaffInquiryWeb() {
         </div>
       )}
 
-      {/* Modern Floating Action Button (FAB) on Bottom Right */}
+      {/* Sleek Floating Action Button (FAB) on Bottom Right */}
       <button
         onClick={() => {
           setEditingInquiry(null);
@@ -1041,27 +1009,27 @@ export default function StaffInquiryWeb() {
         title="Add New Inquiry"
         style={{
           position: 'fixed',
-          bottom: '24px',
-          right: '20px',
+          bottom: '22px',
+          right: '16px',
           zIndex: 40,
           background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
           color: '#ffffff',
-          border: '2px solid rgba(255, 255, 255, 0.3)',
-          borderRadius: '50px',
-          padding: '12px 20px',
+          border: '1.5px solid rgba(255, 255, 255, 0.25)',
+          borderRadius: '30px',
+          padding: '9px 15px',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          boxShadow: '0 10px 25px -4px rgba(5, 150, 105, 0.5), 0 4px 12px rgba(0, 0, 0, 0.15)',
+          gap: '6px',
+          boxShadow: '0 6px 18px -2px rgba(5, 150, 105, 0.45), 0 2px 8px rgba(0, 0, 0, 0.12)',
           cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          fontSize: '0.88rem',
+          transition: 'all 0.15s ease',
+          fontSize: '0.8rem',
           fontWeight: 800,
-          letterSpacing: '0.3px',
-          backdropFilter: 'blur(8px)'
+          letterSpacing: '0.2px',
+          backdropFilter: 'blur(6px)'
         }}
       >
-        <Plus size={20} strokeWidth={2.6} />
+        <Plus size={16} strokeWidth={2.6} />
         <span>New Inquiry</span>
       </button>
     </div>
