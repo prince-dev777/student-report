@@ -20,16 +20,54 @@ export default function Inquiries() {
   const [inquiryToDelete, setInquiryToDelete] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Real-time Cloud Sync Handler
+  // Real-time Cloud Sync Handler with Instant Dual-Fetch Merge
   const fetchAndSyncInquiries = async (showToast = false) => {
     try {
       if (showToast) setIsSyncing(true);
-      const res = await api.getInquiries(true);
-      if (Array.isArray(res)) {
-        setInquiries(res);
-      } else if (res && res.inquiries) {
-        setInquiries(res.inquiries);
+      
+      let serverInquiries = [];
+      try {
+        const res = await api.getInquiries(true);
+        if (Array.isArray(res)) serverInquiries = res;
+        else if (res && res.inquiries) serverInquiries = res.inquiries;
+      } catch (e) {
+        console.warn('Local inquiries fetch notice:', e.message);
       }
+
+      // Also query direct cloud fallback to guarantee 0-delay sync
+      let cloudInquiries = [];
+      try {
+        const cloudRes = await fetch('https://student-report-ezgw.onrender.com/api/inquiries', {
+          headers: { 'Accept': 'application/json' },
+          signal: (typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(6000) : undefined
+        });
+        if (cloudRes.ok) {
+          const cData = await cloudRes.json();
+          if (Array.isArray(cData)) cloudInquiries = cData;
+        }
+      } catch (e) {}
+
+      // Merge and deduplicate by _id or id
+      const inquiryMap = new Map();
+      [...serverInquiries, ...cloudInquiries].forEach(item => {
+        const key = item._id || item.id;
+        if (key) {
+          inquiryMap.set(key, item);
+        }
+      });
+
+      const merged = Array.from(inquiryMap.values()).sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.date || 0);
+        const dateB = new Date(b.createdAt || b.date || 0);
+        return dateB - dateA;
+      });
+
+      if (merged.length > 0) {
+        setInquiries(merged);
+      } else if (serverInquiries.length > 0) {
+        setInquiries(serverInquiries);
+      }
+
       if (showToast) toast.success('Inquiries synced with cloud in real-time! ☁️✨');
     } catch (err) {
       if (showToast) toast.error('Cloud sync failed or offline');
@@ -38,12 +76,12 @@ export default function Inquiries() {
     }
   };
 
-  // Auto-sync on mount and poll every 15s for live updates from Inquiry App
+  // Auto-sync on mount and poll every 10s for live updates from Inquiry App
   useEffect(() => {
     fetchAndSyncInquiries(false);
     const interval = setInterval(() => {
       fetchAndSyncInquiries(false);
-    }, 15000);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 

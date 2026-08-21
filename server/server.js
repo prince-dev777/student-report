@@ -686,28 +686,22 @@ async function syncInquiriesWithCloud() {
   let cloudConn = null;
   try {
     cloudConn = await mongoose.createConnection(CLOUD_MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 8000
     }).asPromise();
 
     const cloudColl = cloudConn.collection('inquiries');
-    const localColl = mongoose.connection.collection('inquiries');
 
-    // 1. Fetch all inquiries from cloud
+    // 1. Fetch all inquiries from cloud and upsert into local DB
     const cloudDocs = await cloudColl.find({ isDeleted: { $ne: true } }).toArray();
     if (cloudDocs && cloudDocs.length > 0) {
-      const bulkOps = cloudDocs.map(doc => ({
-        replaceOne: {
-          filter: { _id: doc._id },
-          replacement: doc,
-          upsert: true
-        }
-      }));
-      await localColl.bulkWrite(bulkOps);
+      for (const doc of cloudDocs) {
+        await Inquiry.updateOne({ _id: doc._id }, { $set: doc }, { upsert: true });
+      }
     }
 
     // 2. Also push any local inquiries to cloud
-    const localDocs = await localColl.find({ isDeleted: { $ne: true } }).toArray();
+    const localDocs = await Inquiry.find({ isDeleted: { $ne: true } }).lean();
     if (localDocs && localDocs.length > 0) {
       const cloudBulkOps = localDocs.map(doc => ({
         replaceOne: {
@@ -720,7 +714,7 @@ async function syncInquiriesWithCloud() {
     }
     return true;
   } catch (err) {
-    // Silent fail if cloud is unreachable / offline
+    console.warn('Inquiries cloud sync notice:', err.message);
     return false;
   } finally {
     if (cloudConn) await cloudConn.close().catch(() => {});
