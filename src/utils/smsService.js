@@ -99,20 +99,37 @@ export async function sendTestResultSMS(student, testName, marks, totalMarks, pe
 
 // Send custom SMS
 export async function sendCustomSMS(student, message, instituteName = 'Institute', attachment = null) {
-  const parsedMessage = message
-    .replace(/\{\{rollNo\}\}/gi, student.rollNo || '')
-    .replace(/\{\{password\}\}/gi, student.parentPasswordPlain || student.password || '123456');
+  const pName = student.parentName || 'Parent';
+  const sName = student.name || 'Student';
+  const pPhone = student.parentPhone || student.phone || '';
+  const sPass = student.parentPasswordPlain || student.password || '123456';
+  const sRoll = String(student.rollNo || '');
+  const sBatch = student.batch || '';
 
-  const template = smsTemplates.general(student.parentName, parsedMessage, instituteName);
+  let parsedMessage = message
+    .replace(/\{\{studentName\}\}/gi, sName)
+    .replace(/\{\{parentName\}\}/gi, pName)
+    .replace(/\{\{parentPhone\}\}/gi, pPhone)
+    .replace(/\{\{rollNo\}\}/gi, sRoll)
+    .replace(/\{\{batch\}\}/gi, sBatch)
+    .replace(/\{\{password\}\}/gi, sPass);
+
+  // Avoid duplicate "Dear ..." prefix if custom message already contains a greeting
+  let finalTemplate = parsedMessage;
+  if (!parsedMessage.trim().toLowerCase().startsWith('dear') && !parsedMessage.trim().toLowerCase().startsWith('namaste')) {
+    finalTemplate = smsTemplates.general(pName, parsedMessage, instituteName);
+  } else if (!parsedMessage.includes(instituteName)) {
+    finalTemplate = `${parsedMessage}\n\n- ${instituteName}`;
+  }
   
   const targetPhones = student.parentPhone2 ? `${student.parentPhone}, ${student.parentPhone2}` : student.parentPhone;
-  const result = await sendSMS(targetPhones, template);
+  const result = await sendSMS(targetPhones, finalTemplate);
 
   return createSMSLog(
     'custom',
     student,
     targetPhones,
-    template,
+    finalTemplate,
     result.status,
     attachment
   );

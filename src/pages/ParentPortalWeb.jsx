@@ -411,15 +411,53 @@ export default function ParentPortalWeb() {
     const ranks = testResults.map(t => Number(t.rank)).filter(r => !isNaN(r) && r > 0);
     const bestRank = ranks.length > 0 ? Math.min(...ranks) : '-';
 
-    // Subject breakdown estimation from real data
-    const subjectBreakdown = [
-      { subject: 'Physics', percentage: Math.min(100, Math.max(0, Math.round(avgPct * 0.92))), color: '#f59e0b' },
-      { subject: 'Chemistry', percentage: Math.min(100, Math.max(0, Math.round(avgPct * 1.05))), color: '#10b981' },
-      { subject: 'Maths / Bio', percentage: Math.min(100, Math.max(0, Math.round(avgPct * 0.98))), color: '#3b82f6' }
-    ].map(s => ({
-      ...s,
-      status: s.percentage >= 80 ? 'STRONG 🌟' : s.percentage >= 60 ? 'GOOD 👍' : 'NEEDS ATTENTION ⚠️'
-    }));
+    // Real Subject Breakdown Calculation strictly from actual student test records
+    const subjectMap = {};
+    const colorPalette = {
+      'Physics': '#f59e0b',
+      'Chemistry': '#10b981',
+      'Mathematics': '#3b82f6',
+      'Maths': '#3b82f6',
+      'Biology': '#ec4899',
+      'Bio': '#ec4899',
+      'Botany': '#059669',
+      'Zoology': '#d97706',
+      'Full Syllabus': '#8b5cf6',
+      'General': '#6366f1'
+    };
+
+    testResults.forEach(t => {
+      let subName = (t.subject || t.test?.subject || '').trim();
+      if (!subName || subName.toLowerCase() === 'all' || subName.toLowerCase() === 'general') {
+        const tName = (t.testName || t.name || '').toLowerCase();
+        if (tName.includes('physics')) subName = 'Physics';
+        else if (tName.includes('chem')) subName = 'Chemistry';
+        else if (tName.includes('math')) subName = 'Mathematics';
+        else if (tName.includes('bio')) subName = 'Biology';
+        else subName = 'Full Syllabus / Comprehensive';
+      }
+
+      if (!subjectMap[subName]) {
+        subjectMap[subName] = { obtained: 0, total: 0, count: 0 };
+      }
+      const obt = Number(t.marks) || 0;
+      const tot = Number(t.totalMarks) || (obt > 0 ? obt : 100);
+      subjectMap[subName].obtained += obt;
+      subjectMap[subName].total += tot;
+      subjectMap[subName].count += 1;
+    });
+
+    const subjectBreakdown = Object.keys(subjectMap).map(sub => {
+      const data = subjectMap[sub];
+      const pct = data.total > 0 ? Math.round((data.obtained / data.total) * 100) : 0;
+      const color = colorPalette[sub] || '#3b82f6';
+      return {
+        subject: sub,
+        percentage: Math.min(100, Math.max(0, pct)),
+        color,
+        status: pct >= 80 ? 'STRONG 🌟' : pct >= 60 ? 'GOOD 👍' : 'NEEDS FOCUS 🎯'
+      };
+    });
 
     let growthBadge = "Active Student";
     if (avgPct >= 80) growthBadge = "Top Ranker 🚀";

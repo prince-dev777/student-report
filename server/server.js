@@ -1368,18 +1368,24 @@ app.post('/api/parent/login', async (req, res) => {
 
 // ---- 📡 Biometric ADMS API (Direct Machine Connection for ZKTeco / eSSL / Realtime / FK) ----
 
-// 1. Initialization / Handshake Request
+// 1. Initialization / Handshake Request (ZKTeco / eSSL / Realtime ADMS Protocol)
 app.get(['/iclock/cdata', '/cdata'], (req, res) => {
-  const sn = req.query.SN || req.query.sn || 'BIOMETRIC_DEV';
+  const sn = req.query.SN || req.query.sn || req.query.DevSN || 'BIOMETRIC_DEV';
   console.log(`[ADMS] Handshake request from device SN: ${sn}`);
-  res.setHeader('Content-Type', 'text/plain');
-  res.send(`GET OPTION FROM: ${sn}\nStamp=9999\nOpStamp=9999\nErrorDelay=60\nDelay=30\nResStamp=9999\nTransTimes=00:00;14:05\nTransInterval=1\nTransFlag=1111000000\nTimeZone=330\nRealtime=1\nEncrypt=0\n`);
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('ServerVersion', '3.1.1');
+  res.status(200).send(`GET OPTION FROM: ${sn}\nStamp=9999\nOpStamp=9999\nErrorDelay=60\nDelay=30\nResStamp=9999\nTransTimes=00:00;14:05\nTransInterval=1\nTransFlag=1111000000\nTimeZone=330\nRealtime=1\nEncrypt=0\nServerVersion=3.1.1\n`);
 });
 
 // 2. Command Request Polling & Registry
 app.get(['/iclock/getrequest', '/getrequest', '/iclock/registry', '/registry', '/iclock/push', '/push', '/iclock/ping', '/ping'], (req, res) => {
-  res.setHeader('Content-Type', 'text/plain');
-  res.send('OK');
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('ServerVersion', '3.1.1');
+  res.status(200).send('OK\n');
 });
 
 // 3. Data Push Request (ATTLOG, OPERLOG, USERINFO from ZKTeco, eSSL, Realtime, FK)
@@ -1487,9 +1493,12 @@ app.post(['/iclock/cdata', '/cdata'], async (req, res) => {
 });
 
 // 4. Catch-all for other machine commands / queries
-app.all(['/iclock/*', '/iclock', '/devicecmd', '/fdata', '/rtlog', '/registry'], (req, res) => {
-  res.setHeader('Content-Type', 'text/plain');
-  res.send('OK');
+app.all(['/iclock/*', '/iclock', '/devicecmd', '/fdata', '/rtlog', '/registry', '/ping', '/query', '/exchange', '/cdata', '/cdata/*', '/getrequest', '/getrequest/*'], (req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('ServerVersion', '3.1.1');
+  res.status(200).send('OK\n');
 });
 
 // ---- 📞 Cloud WhatsApp Queue Endpoints (Token Authenticated) ----

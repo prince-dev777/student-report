@@ -164,7 +164,7 @@ export default function ShareApp() {
       setIsSending(true);
       try {
         const studentIds = students.map(s => s.id);
-        const message = `Dear Parent, please download our Institute's official Parents App to track your child's Attendance and Marks.\n\n📱 Download Link: ${parentAppLink}\n\nUser ID: {{parentPhone}}\nPassword: {{password}}`;
+        const message = `Dear Parent ({{studentName}}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: {{studentName}} (Roll: {{rollNo}})\n🔑 User ID: {{parentPhone}} (or Roll No: {{rollNo}})\n🔒 Password: {{password}}`;
         await sendBulkManualSMS(studentIds, message);
         toast.success(`WhatsApp blast queued for ${students.length} parents!`);
       } catch (error) {
@@ -186,8 +186,8 @@ export default function ShareApp() {
 
     setIsSending(true);
     try {
-      const instName = user?.instituteName || 'Career Xone Pro';
-      const message = `Dear Parent (${student.name}), please download our Institute's official Parents App to track your child's Attendance and Marks.\n\n📱 Download Link: ${parentAppLink}\n\nUser ID: ${student.parentPhone}\nPassword: ${student.parentPasswordPlain || '123456'}\n- ${instName}`;
+      const instName = user?.instituteName || 'Career Xone';
+      const message = `Dear Parent (${student.name}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: ${student.name} (Roll: ${student.rollNo})\n🔑 User ID: ${student.parentPhone || student.phone || student.rollNo} (or Roll No: ${student.rollNo})\n🔒 Password: ${student.parentPasswordPlain || student.password || '123456'}\n\n- ${instName}`;
       
       await sendManualSMS(student.id, message);
       toast.success(`App link sent to ${student.name}'s parent via WhatsApp!`);
