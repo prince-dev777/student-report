@@ -66,7 +66,8 @@ def fetch_and_sync(device_ip):
             payload = {
                 "rollNumber": roll_number,
                 "type": log_type,
-                "time": time_part
+                "time": time_part,
+                "date": date_part
             }
 
             try:

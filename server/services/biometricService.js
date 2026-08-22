@@ -228,7 +228,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     }
 
     const resolvedInstituteId = student.instituteId;
-    const todayStr = punchDate && punchDate.length === 10 ? punchDate : new Date().toISOString().split('T')[0];
+    const todayStr = punchDate && punchDate.length === 10 ? punchDate.replace(/\//g, '-') : new Date().toISOString().split('T')[0];
     const formattedTime = punchTime || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     let record = await Attendance.findOne({
