@@ -98,12 +98,12 @@ export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
       <div style={{
         background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%)',
         color: '#ffffff',
-        padding: '4px 10px',
+        padding: '6px 12px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '8px',
-        fontSize: '0.74rem',
+        gap: '9px',
+        fontSize: '0.76rem',
         boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.25)',
         position: 'sticky',
         top: 0,
@@ -111,40 +111,40 @@ export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
         borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
         backdropFilter: 'blur(8px)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
           <div style={{
-            width: '22px',
-            height: '22px',
-            borderRadius: '6px',
+            width: '26px',
+            height: '26px',
+            borderRadius: '7px',
             background: 'rgba(255, 255, 255, 0.18)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0
           }}>
-            <Smartphone size={12} color="#ffffff" />
+            <Smartphone size={14} color="#ffffff" />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: '0.74rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ fontWeight: 800, fontSize: '0.78rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '5px' }}>
               <span>{appName}</span>
-              <span style={{ fontSize: '0.58rem', background: 'rgba(255,255,255,0.2)', padding: '1px 5px', borderRadius: '6px', fontWeight: 700 }}>1-Tap App</span>
+              <span style={{ fontSize: '0.62rem', background: 'rgba(255,255,255,0.2)', padding: '1px 6px', borderRadius: '6px', fontWeight: 700 }}>1-Tap App</span>
             </div>
-            <div style={{ fontSize: '0.62rem', opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: '0.66rem', opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               Add to home screen for fast access
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
           <button
             onClick={handleInstallClick}
             style={{
               background: '#ffffff',
               color: '#1e3a8a',
               border: 'none',
-              borderRadius: '14px',
-              padding: '3px 9px',
-              fontSize: '0.68rem',
+              borderRadius: '16px',
+              padding: '4px 10px',
+              fontSize: '0.72rem',
               fontWeight: 800,
               cursor: 'pointer',
               display: 'flex',
@@ -153,7 +153,7 @@ export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
               boxShadow: '0 1px 4px rgba(0,0,0,0.15)'
             }}
           >
-            <Download size={11} />
+            <Download size={12} />
             <span>Install</span>
           </button>
           <button
@@ -162,8 +162,8 @@ export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
               background: 'rgba(255,255,255,0.12)',
               border: 'none',
               borderRadius: '50%',
-              width: '20px',
-              height: '20px',
+              width: '22px',
+              height: '22px',
               color: 'rgba(255, 255, 255, 0.85)',
               cursor: 'pointer',
               display: 'flex',
@@ -173,7 +173,7 @@ export default function PWAInstallPrompt({ appName = "Career Xone App" }) {
             }}
             title="Dismiss"
           >
-            <X size={12} />
+            <X size={13} />
           </button>
         </div>
       </div>

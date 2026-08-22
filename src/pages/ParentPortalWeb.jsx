@@ -809,19 +809,19 @@ export default function ParentPortalWeb() {
       <style>{`
         * { box-sizing: border-box; }
         @media (max-width: 600px) {
-          .parent-header { padding: 6px 10px !important; }
-          .parent-logo-img { width: 26px !important; height: 26px !important; border-radius: 6px !important; }
-          .parent-inst-name { font-size: 0.82rem !important; }
-          .parent-inst-sub { font-size: 0.6rem !important; }
-          .student-card { padding: 8px 10px !important; border-radius: 10px !important; margin-bottom: 6px !important; }
-          .student-avatar { width: 30px !important; height: 30px !important; font-size: 0.85rem !important; border-radius: 6px !important; }
-          .student-name { font-size: 0.84rem !important; }
-          .tab-btn-bar { gap: 3px !important; margin-bottom: 6px !important; }
-          .tab-btn { padding: 4px 2px !important; font-size: 0.66rem !important; border-radius: 6px !important; height: 26px !important; }
-          .metrics-grid { gap: 3px !important; margin-top: 6px !important; }
-          .metric-box { padding: 4px 2px !important; border-radius: 6px !important; }
-          .metric-label { font-size: 0.58rem !important; }
-          .metric-value { font-size: 0.78rem !important; }
+          .parent-header { padding: 8px 12px !important; }
+          .parent-logo-img { width: 30px !important; height: 30px !important; border-radius: 7px !important; }
+          .parent-inst-name { font-size: 0.88rem !important; }
+          .parent-inst-sub { font-size: 0.66rem !important; }
+          .student-card { padding: 10px 12px !important; border-radius: 12px !important; margin-bottom: 8px !important; }
+          .student-avatar { width: 34px !important; height: 34px !important; font-size: 0.95rem !important; border-radius: 8px !important; }
+          .student-name { font-size: 0.90rem !important; }
+          .tab-btn-bar { gap: 4px !important; margin-bottom: 8px !important; }
+          .tab-btn { padding: 5px 2px !important; font-size: 0.72rem !important; border-radius: 8px !important; height: 30px !important; }
+          .metrics-grid { gap: 5px !important; margin-top: 8px !important; }
+          .metric-box { padding: 6px 3px !important; border-radius: 8px !important; }
+          .metric-label { font-size: 0.62rem !important; }
+          .metric-value { font-size: 0.86rem !important; }
         }
         @media print {
           body * { visibility: hidden !important; }
@@ -835,7 +835,7 @@ export default function ParentPortalWeb() {
       <header className="parent-header no-print" style={{
         background: '#ffffff',
         borderBottom: '1px solid #e2e8f0',
-        padding: '6px 12px',
+        padding: '8px 14px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -845,21 +845,21 @@ export default function ParentPortalWeb() {
         zIndex: 50
       }}>
         {/* Left: Institute Logo & Name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
           <img
             src={instituteLogo}
             alt="Logo"
             className="parent-logo-img"
-            style={{ width: '28px', height: '28px', borderRadius: '7px', objectFit: 'contain', border: '1px solid #e2e8f0', flexShrink: 0 }}
+            style={{ width: '30px', height: '30px', borderRadius: '8px', objectFit: 'contain', border: '1px solid #e2e8f0', flexShrink: 0 }}
           />
           <div style={{ minWidth: 0, overflow: 'hidden' }}>
             <h4 className="parent-inst-name" style={{
-              margin: 0, fontSize: '0.86rem', fontWeight: 900, color: '#0369a1',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.15
+              margin: 0, fontSize: '0.90rem', fontWeight: 900, color: '#0369a1',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2
             }}>
               {instituteName}
             </h4>
-            <span className="parent-inst-sub" style={{ fontSize: '0.62rem', color: '#0284c7', fontWeight: 700, display: 'block' }}>
+            <span className="parent-inst-sub" style={{ fontSize: '0.66rem', color: '#0284c7', fontWeight: 700, display: 'block' }}>
               Parents Official App
             </span>
           </div>
@@ -875,9 +875,9 @@ export default function ParentPortalWeb() {
               background: '#f1f5f9',
               border: '1px solid #cbd5e1',
               color: '#334155',
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
+              width: '30px',
+              height: '30px',
+              borderRadius: '7px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -885,12 +885,12 @@ export default function ParentPortalWeb() {
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
             }}
           >
-            <Settings size={14} />
+            <Settings size={15} />
             {allNotifications.length > 0 && (
               <span style={{
                 position: 'absolute', top: '-3px', right: '-3px', background: '#ef4444',
-                color: '#ffffff', fontSize: '0.52rem', fontWeight: 900, width: '13px',
-                height: '13px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                color: '#ffffff', fontSize: '0.55rem', fontWeight: 900, width: '14px',
+                height: '14px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 {allNotifications.length}
               </span>
@@ -900,39 +900,39 @@ export default function ParentPortalWeb() {
       </header>
 
       {/* Main App Container */}
-      <div style={{ maxWidth: '480px', margin: '6px auto 0', padding: '0 8px' }}>
+      <div style={{ maxWidth: '490px', margin: '8px auto 0', padding: '0 10px' }}>
 
         {/* Student Profile Card (Compact & Sleek) */}
         <div className="student-card no-print" style={{
           background: '#ffffff',
           border: '1px solid #bae6fd',
-          borderRadius: '10px',
-          padding: '8px 10px',
-          marginBottom: '6px',
-          boxShadow: '0 1px 4px rgba(2, 132, 199, 0.04)'
+          borderRadius: '12px',
+          padding: '10px 12px',
+          marginBottom: '8px',
+          boxShadow: '0 2px 6px rgba(2, 132, 199, 0.04)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
             <div className="student-avatar" style={{
-              width: '30px', height: '30px', borderRadius: '7px',
+              width: '34px', height: '34px', borderRadius: '8px',
               background: 'linear-gradient(135deg, #0284c7, #0369a1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.85rem', fontWeight: 800, color: '#ffffff',
-              boxShadow: '0 1px 4px rgba(2, 132, 199, 0.15)', flexShrink: 0
+              fontSize: '0.95rem', fontWeight: 800, color: '#ffffff',
+              boxShadow: '0 1px 5px rgba(2, 132, 199, 0.18)', flexShrink: 0
             }}>
               {studentData?.name ? studentData.name.charAt(0) : 'S'}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h2 className="student-name" style={{
-                margin: 0, fontSize: '0.85rem', fontWeight: 900, color: '#0f172a',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.15
+                margin: 0, fontSize: '0.90rem', fontWeight: 900, color: '#0f172a',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2
               }}>
                 {studentData?.name}
               </h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', fontSize: '0.64rem', color: '#64748b', alignItems: 'center', marginTop: '2px' }}>
-                <span style={{ background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, color: '#334155' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', fontSize: '0.68rem', color: '#64748b', alignItems: 'center', marginTop: '2px' }}>
+                <span style={{ background: '#f1f5f9', padding: '1.5px 6px', borderRadius: '4px', fontWeight: 700, color: '#334155' }}>
                   Roll: <strong style={{ color: '#0f172a' }}>{studentData?.rollNo}</strong>
                 </span>
-                <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
+                <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '1.5px 6px', borderRadius: '4px', fontWeight: 800 }}>
                   {formatBatchName(studentData?.batch)}
                 </span>
               </div>
@@ -940,31 +940,31 @@ export default function ParentPortalWeb() {
           </div>
 
           {/* Quick Metrics 4-Grid */}
-          <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '6px' }}>
-            <div className="metric-box" style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '4px 2px', borderRadius: '6px', textAlign: 'center' }}>
-              <span className="metric-label" style={{ fontSize: '0.58rem', color: '#0369a1', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Attendance</span>
-              <strong className="metric-value" style={{ fontSize: '0.8rem', color: '#0284c7', fontWeight: 900 }}>
+          <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '5px', marginTop: '8px' }}>
+            <div className="metric-box" style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '6px 3px', borderRadius: '8px', textAlign: 'center' }}>
+              <span className="metric-label" style={{ fontSize: '0.62rem', color: '#0369a1', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Attendance</span>
+              <strong className="metric-value" style={{ fontSize: '0.86rem', color: '#0284c7', fontWeight: 900 }}>
                 {studentData?.attendanceRate !== undefined ? studentData.attendanceRate : (attendanceRecords.length > 0 ? Math.round((attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length / attendanceRecords.length) * 100) : 100)}%
               </strong>
             </div>
 
-            <div className="metric-box" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '4px 2px', borderRadius: '6px', textAlign: 'center' }}>
-              <span className="metric-label" style={{ fontSize: '0.58rem', color: '#15803d', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Present</span>
-              <strong className="metric-value" style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: 900 }}>
+            <div className="metric-box" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 3px', borderRadius: '8px', textAlign: 'center' }}>
+              <span className="metric-label" style={{ fontSize: '0.62rem', color: '#15803d', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Present</span>
+              <strong className="metric-value" style={{ fontSize: '0.86rem', color: '#16a34a', fontWeight: 900 }}>
                 {studentData?.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length}d
               </strong>
             </div>
 
-            <div className="metric-box" style={{ background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '4px 2px', borderRadius: '6px', textAlign: 'center' }}>
-              <span className="metric-label" style={{ fontSize: '0.58rem', color: '#a21caf', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Avg Score</span>
-              <strong className="metric-value" style={{ fontSize: '0.8rem', color: '#c026d3', fontWeight: 900 }}>
+            <div className="metric-box" style={{ background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '6px 3px', borderRadius: '8px', textAlign: 'center' }}>
+              <span className="metric-label" style={{ fontSize: '0.62rem', color: '#a21caf', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Avg Score</span>
+              <strong className="metric-value" style={{ fontSize: '0.86rem', color: '#c026d3', fontWeight: 900 }}>
                 {testResults.length > 0 ? `${Math.max(0, analyticsData.avgPercentage)}%` : '-'}
               </strong>
             </div>
 
-            <div className="metric-box" style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: '4px 2px', borderRadius: '6px', textAlign: 'center' }}>
-              <span className="metric-label" style={{ fontSize: '0.58rem', color: '#c2410c', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Best Rank</span>
-              <strong className="metric-value" style={{ fontSize: '0.8rem', color: '#ea580c', fontWeight: 900 }}>
+            <div className="metric-box" style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: '6px 3px', borderRadius: '8px', textAlign: 'center' }}>
+              <span className="metric-label" style={{ fontSize: '0.62rem', color: '#c2410c', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Best Rank</span>
+              <strong className="metric-value" style={{ fontSize: '0.86rem', color: '#ea580c', fontWeight: 900 }}>
                 {testResults.length > 0 && analyticsData.bestRank !== '-' ? `#${analyticsData.bestRank}` : '-'}
               </strong>
             </div>
@@ -972,69 +972,69 @@ export default function ParentPortalWeb() {
         </div>
 
         {/* 4 Navigation Tabs Switcher (Compact Horizontal Pill Row) */}
-        <div className="tab-btn-bar no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px', marginBottom: '6px' }}>
+        <div className="tab-btn-bar no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '8px' }}>
           <button
             className="tab-btn"
             onClick={() => setActiveTab('analytics')}
             style={{
-              padding: '4px 2px', borderRadius: '6px', border: '1px solid',
+              padding: '5px 2px', borderRadius: '8px', border: '1px solid',
               borderColor: activeTab === 'analytics' ? '#0284c7' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.66rem', cursor: 'pointer', height: '26px',
+              fontWeight: 800, fontSize: '0.70rem', cursor: 'pointer', height: '29px',
               background: activeTab === 'analytics' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : '#ffffff',
               color: activeTab === 'analytics' ? '#ffffff' : '#475569',
               boxShadow: activeTab === 'analytics' ? '0 1px 3px rgba(2, 132, 199, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px'
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px'
             }}
           >
-            <TrendingUp size={11} /> <span>Analytics</span>
+            <TrendingUp size={13} /> <span>Analytics</span>
           </button>
 
           <button
             className="tab-btn"
             onClick={() => setActiveTab('tests')}
             style={{
-              padding: '4px 2px', borderRadius: '6px', border: '1px solid',
+              padding: '5px 2px', borderRadius: '8px', border: '1px solid',
               borderColor: activeTab === 'tests' ? '#059669' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.66rem', cursor: 'pointer', height: '26px',
+              fontWeight: 800, fontSize: '0.70rem', cursor: 'pointer', height: '29px',
               background: activeTab === 'tests' ? 'linear-gradient(135deg, #059669, #047857)' : '#ffffff',
               color: activeTab === 'tests' ? '#ffffff' : '#475569',
               boxShadow: activeTab === 'tests' ? '0 1px 3px rgba(5, 150, 105, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px'
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px'
             }}
           >
-            <Award size={11} /> <span>Tests ({testResults.length})</span>
+            <Award size={13} /> <span>Tests ({testResults.length})</span>
           </button>
 
           <button
             className="tab-btn"
             onClick={() => setActiveTab('attendance')}
             style={{
-              padding: '4px 2px', borderRadius: '6px', border: '1px solid',
+              padding: '5px 2px', borderRadius: '8px', border: '1px solid',
               borderColor: activeTab === 'attendance' ? '#d97706' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.66rem', cursor: 'pointer', height: '26px',
+              fontWeight: 800, fontSize: '0.70rem', cursor: 'pointer', height: '29px',
               background: activeTab === 'attendance' ? 'linear-gradient(135deg, #d97706, #b45309)' : '#ffffff',
               color: activeTab === 'attendance' ? '#ffffff' : '#475569',
               boxShadow: activeTab === 'attendance' ? '0 1px 3px rgba(217, 119, 6, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px'
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px'
             }}
           >
-            <Calendar size={11} /> <span>Attendance</span>
+            <Calendar size={13} /> <span>Attendance</span>
           </button>
 
           <button
             className="tab-btn"
             onClick={() => setActiveTab('schedule')}
             style={{
-              padding: '4px 2px', borderRadius: '6px', border: '1px solid',
+              padding: '5px 2px', borderRadius: '8px', border: '1px solid',
               borderColor: activeTab === 'schedule' ? '#7c3aed' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.66rem', cursor: 'pointer', height: '26px',
+              fontWeight: 800, fontSize: '0.70rem', cursor: 'pointer', height: '29px',
               background: activeTab === 'schedule' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : '#ffffff',
               color: activeTab === 'schedule' ? '#ffffff' : '#475569',
               boxShadow: activeTab === 'schedule' ? '0 1px 3px rgba(124, 58, 237, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px'
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px'
             }}
           >
-            <Bell size={11} /> <span>Notices</span>
+            <Bell size={13} /> <span>Notices</span>
           </button>
         </div>
 
@@ -1042,40 +1042,40 @@ export default function ParentPortalWeb() {
         {/* TAB 1: 📈 AI ANALYTICS & SUBJECT WEAKNESS HEATMAP          */}
         {/* ========================================================= */}
         {activeTab === 'analytics' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {testResults.length === 0 ? (
-              <div style={{ background: '#ffffff', padding: '24px 16px', borderRadius: '10px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                <BarChart2 size={28} color="#94a3b8" style={{ marginBottom: '6px' }} />
-                <h4 style={{ margin: '0 0 4px 0', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}>No Test Records Yet</h4>
-                <p style={{ margin: 0, fontSize: '0.74rem', color: '#94a3b8' }}>Subject scores and performance analytics will appear here once tests are conducted.</p>
+              <div style={{ background: '#ffffff', padding: '28px 16px', borderRadius: '12px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                <BarChart2 size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '0.94rem', fontWeight: 800, color: '#0f172a' }}>No Test Records Yet</h4>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>Subject scores and performance analytics will appear here once tests are conducted.</p>
               </div>
             ) : (
               <>
                 {/* Subject Strength & Weakness Heatmap */}
                 <div style={{
-                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px',
-                  padding: '8px 10px', boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
+                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px',
+                  padding: '11px 12px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <h3 style={{ margin: 0, fontSize: '0.76rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <BarChart2 size={13} color="#0284c7" /> Subject Strength & Weakness
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '9px' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <BarChart2 size={15} color="#0284c7" /> Subject Strength & Weakness
                     </h3>
-                    <span style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600 }}>Real exam performance</span>
+                    <span style={{ fontSize: '0.66rem', color: '#64748b', fontWeight: 600 }}>Real exam performance</span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {analyticsData.subjectBreakdown.map((sub, idx) => (
-                      <div key={idx} style={{ background: '#f8fafc', padding: '6px 8px', borderRadius: '7px', border: '1px solid #f1f5f9' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#1e293b' }}>{sub.subject}</span>
+                      <div key={idx} style={{ background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1e293b' }}>{sub.subject}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '0.6rem', fontWeight: 800, color: sub.color }}>{sub.status}</span>
-                            <strong style={{ fontSize: '0.75rem', color: '#0f172a' }}>{sub.percentage}%</strong>
+                            <span style={{ fontSize: '0.66rem', fontWeight: 800, color: sub.color }}>{sub.status}</span>
+                            <strong style={{ fontSize: '0.80rem', color: '#0f172a' }}>{sub.percentage}%</strong>
                           </div>
                         </div>
                         {/* Progress Bar */}
-                        <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
-                          <div style={{ width: `${sub.percentage}%`, height: '100%', background: sub.color, borderRadius: '2px', transition: 'width 0.5s ease' }} />
+                        <div style={{ width: '100%', height: '5px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${sub.percentage}%`, height: '100%', background: sub.color, borderRadius: '3px', transition: 'width 0.5s ease' }} />
                         </div>
                       </div>
                     ))}
@@ -1084,26 +1084,26 @@ export default function ParentPortalWeb() {
 
                 {/* Performance Growth Trajectory List */}
                 <div style={{
-                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px',
-                  padding: '8px 10px', boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
+                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px',
+                  padding: '11px 12px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
                 }}>
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: '0.76rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <TrendingUp size={13} color="#16a34a" /> Recent Score Trajectory
+                  <h3 style={{ margin: '0 0 9px 0', fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <TrendingUp size={15} color="#16a34a" /> Recent Score Trajectory
                   </h3>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {testResults.slice(0, 4).map((t, idx) => (
                       <div key={idx} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '6px 8px', borderRadius: '7px', background: '#f8fafc', border: '1px solid #e2e8f0'
+                        padding: '8px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0'
                       }}>
                         <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
-                          <strong style={{ display: 'block', fontSize: '0.72rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTestName(t)}</strong>
-                          <span style={{ fontSize: '0.6rem', color: '#64748b' }}>{getTestDate(t)}</span>
+                          <strong style={{ display: 'block', fontSize: '0.76rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTestName(t)}</strong>
+                          <span style={{ fontSize: '0.64rem', color: '#64748b' }}>{getTestDate(t)}</span>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#0284c7' }}>{t.percentage}%</span>
-                          <span style={{ display: 'block', fontSize: '0.64rem', color: '#16a34a', fontWeight: 700 }}>Rank #{t.rank || 1}</span>
+                          <span style={{ fontSize: '0.84rem', fontWeight: 900, color: '#0284c7' }}>{t.percentage}%</span>
+                          <span style={{ display: 'block', fontSize: '0.68rem', color: '#16a34a', fontWeight: 700 }}>Rank #{t.rank || 1}</span>
                         </div>
                       </div>
                     ))}
@@ -1118,51 +1118,51 @@ export default function ParentPortalWeb() {
         {/* TAB 2: 📝 TEST RESULTS & OMR VIEW                          */}
         {/* ========================================================= */}
         {activeTab === 'tests' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {testResults.length === 0 ? (
-              <div style={{ background: '#ffffff', padding: '24px 16px', borderRadius: '10px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                <Award size={28} color="#94a3b8" style={{ marginBottom: '6px' }} />
-                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.84rem' }}>No published OMR test results found yet.</p>
-                <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Results will appear automatically once teachers scan OMR sheets.</span>
+              <div style={{ background: '#ffffff', padding: '28px 16px', borderRadius: '12px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                <Award size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
+                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.88rem' }}>No published OMR test results found yet.</p>
+                <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>Results will appear automatically once teachers scan OMR sheets.</span>
               </div>
             ) : (
               testResults.map((t, idx) => (
                 <div key={idx} style={{
                   background: '#ffffff', border: '1px solid #e2e8f0',
-                  borderRadius: '10px', padding: '8px 10px', boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
+                  borderRadius: '12px', padding: '11px 12px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                     <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
-                      <h4 style={{ margin: '0 0 2px 0', fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <h4 style={{ margin: '0 0 2px 0', fontSize: '0.84rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {getTestName(t)}
                       </h4>
-                      <span style={{ fontSize: '0.62rem', color: '#64748b' }}>Date: {getTestDate(t)}</span>
+                      <span style={{ fontSize: '0.66rem', color: '#64748b' }}>Date: {getTestDate(t)}</span>
                     </div>
                     <span style={{
                       background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0',
-                      padding: '2px 6px', borderRadius: '5px', fontSize: '0.74rem', fontWeight: 900, flexShrink: 0
+                      padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 900, flexShrink: 0
                     }}>
                       {t.percentage}%
                     </span>
                   </div>
 
                   <div style={{
-                    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px',
-                    background: '#f8fafc', padding: '6px 8px', borderRadius: '7px', border: '1px solid #f1f5f9'
+                    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px',
+                    background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #f1f5f9'
                   }}>
                     <div>
-                      <span style={{ fontSize: '0.58rem', color: '#64748b', display: 'block' }}>Score</span>
-                      <strong style={{ fontSize: '0.76rem', color: '#0f172a' }}>{t.marks} / {t.totalMarks || 360}</strong>
+                      <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Score</span>
+                      <strong style={{ fontSize: '0.82rem', color: '#0f172a' }}>{t.marks} / {t.totalMarks || 360}</strong>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.58rem', color: '#64748b', display: 'block' }}>Batch Rank</span>
-                      <strong style={{ fontSize: '0.76rem', color: '#0284c7' }}>
+                      <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Batch Rank</span>
+                      <strong style={{ fontSize: '0.82rem', color: '#0284c7' }}>
                         {t.rank ? `${t.rank} / ${t.totalStudents || 74}` : '-'}
                       </strong>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.58rem', color: '#64748b', display: 'block' }}>Status</span>
-                      <strong style={{ fontSize: '0.74rem', color: '#16a34a' }}>Passed</strong>
+                      <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Status</span>
+                      <strong style={{ fontSize: '0.80rem', color: '#16a34a' }}>Passed</strong>
                     </div>
                   </div>
 
@@ -1170,13 +1170,13 @@ export default function ParentPortalWeb() {
                     <button
                       onClick={() => setSelectedOmrImage(getMediaUrl(t.omrSheetImage))}
                       style={{
-                        marginTop: '6px', width: '100%', background: '#f0f9ff',
-                        border: '1px solid #bae6fd', color: '#0284c7', padding: '6px',
-                        borderRadius: '6px', fontSize: '0.7rem', fontWeight: 800,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
+                        marginTop: '8px', width: '100%', background: '#f0f9ff',
+                        border: '1px solid #bae6fd', color: '#0284c7', padding: '7px 10px',
+                        borderRadius: '8px', fontSize: '0.74rem', fontWeight: 800,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                       }}
                     >
-                      <ImageIcon size={12} /> View Annotated OMR Sheet
+                      <ImageIcon size={14} /> View Annotated OMR Sheet
                     </button>
                   )}
                 </div>
@@ -1189,11 +1189,11 @@ export default function ParentPortalWeb() {
         {/* TAB 3: 📅 ATTENDANCE LOG LIST                              */}
         {/* ========================================================= */}
         {activeTab === 'attendance' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {attendanceRecords.length === 0 ? (
-              <div style={{ background: '#ffffff', padding: '24px 16px', borderRadius: '10px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                <Calendar size={28} color="#94a3b8" style={{ marginBottom: '6px' }} />
-                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.84rem' }}>No attendance records recorded yet.</p>
+              <div style={{ background: '#ffffff', padding: '28px 16px', borderRadius: '12px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                <Calendar size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
+                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.88rem' }}>No attendance records recorded yet.</p>
               </div>
             ) : (
               attendanceRecords.map((item, idx) => {
@@ -1204,28 +1204,28 @@ export default function ParentPortalWeb() {
                 return (
                   <div key={idx} style={{
                     background: '#ffffff', border: '1px solid #e2e8f0',
-                    borderRadius: '8px', padding: '7px 10px', display: 'flex',
+                    borderRadius: '10px', padding: '9px 12px', display: 'flex',
                     alignItems: 'center', justifyContent: 'space-between',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
                       <div style={{
-                        width: '26px', height: '26px', borderRadius: '6px',
+                        width: '28px', height: '28px', borderRadius: '7px',
                         background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                       }}>
-                        {isPresent ? <CheckCircle2 size={14} color="#16a34a" /> : isAbsent ? <XCircle size={14} color="#dc2626" /> : <Clock size={14} color="#d97706" />}
+                        {isPresent ? <CheckCircle2 size={15} color="#16a34a" /> : isAbsent ? <XCircle size={15} color="#dc2626" /> : <Clock size={15} color="#d97706" />}
                       </div>
                       <div>
-                        <strong style={{ display: 'block', fontSize: '0.74rem', color: '#0f172a' }}>{item.date}</strong>
-                        <span style={{ fontSize: '0.62rem', color: '#64748b' }}>
+                        <strong style={{ display: 'block', fontSize: '0.78rem', color: '#0f172a' }}>{item.date}</strong>
+                        <span style={{ fontSize: '0.66rem', color: '#64748b' }}>
                           In: {item.entryTime || (isPresent ? '09:00 AM' : '-')} | Out: {item.exitTime || '-'}
                         </span>
                       </div>
                     </div>
 
                     <span style={{
-                      padding: '2px 7px', borderRadius: '5px', fontSize: '0.64rem', fontWeight: 800,
+                      padding: '3px 8px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 800,
                       background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
                       color: isPresent ? '#15803d' : isAbsent ? '#b91c1c' : '#b45309',
                       border: `1px solid ${isPresent ? '#bbf7d0' : isAbsent ? '#fecaca' : '#fde68a'}`
@@ -1243,42 +1243,42 @@ export default function ParentPortalWeb() {
         {/* TAB 4: 📢 EXAM SCHEDULE & NOTICE BOARD                    */}
         {/* ========================================================= */}
         {activeTab === 'schedule' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             
             {/* Upcoming Tests Section */}
-            <div style={{ background: '#ffffff', borderRadius: '10px', padding: '10px 12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.02)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <h3 style={{ margin: 0, fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Calendar size={13} color="#7c3aed" /> Upcoming Exam Schedule
+            <div style={{ background: '#ffffff', borderRadius: '12px', padding: '12px 14px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <h3 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar size={15} color="#7c3aed" /> Upcoming Exam Schedule
                 </h3>
-                <span style={{ fontSize: '0.62rem', color: '#7c3aed', fontWeight: 800, background: '#f5f3ff', padding: '2px 6px', borderRadius: '5px' }}>
+                <span style={{ fontSize: '0.66rem', color: '#7c3aed', fontWeight: 800, background: '#f5f3ff', padding: '2.5px 7px', borderRadius: '6px' }}>
                   Live Schedule
                 </span>
               </div>
 
               {upcomingTests.length === 0 ? (
-                <div style={{ padding: '18px 12px', textAlign: 'center', color: '#64748b', background: '#faf5ff', borderRadius: '8px', border: '1px dashed #d8b4fe' }}>
-                  <Calendar size={22} color="#a855f7" style={{ marginBottom: '4px' }} />
-                  <p style={{ margin: 0, fontSize: '0.74rem', fontWeight: 600 }}>No upcoming exams scheduled right now.</p>
+                <div style={{ padding: '20px 12px', textAlign: 'center', color: '#64748b', background: '#faf5ff', borderRadius: '10px', border: '1px dashed #d8b4fe' }}>
+                  <Calendar size={26} color="#a855f7" style={{ marginBottom: '6px' }} />
+                  <p style={{ margin: 0, fontSize: '0.78rem', fontWeight: 600 }}>No upcoming exams scheduled right now.</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {upcomingTests.map((t, idx) => (
                     <div key={idx} style={{
-                      background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '8px',
-                      padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '4px'
+                      background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '10px',
+                      padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '5px'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                          <strong style={{ fontSize: '0.78rem', color: '#581c87', display: 'block' }}>{t.name}</strong>
-                          <span style={{ fontSize: '0.65rem', color: '#6b21a8' }}>Syllabus: <strong>{t.subject}</strong></span>
+                          <strong style={{ fontSize: '0.82rem', color: '#581c87', display: 'block' }}>{t.name}</strong>
+                          <span style={{ fontSize: '0.70rem', color: '#6b21a8' }}>Syllabus: <strong>{t.subject}</strong></span>
                         </div>
-                        <span style={{ background: '#7c3aed', color: '#ffffff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '5px' }}>
+                        <span style={{ background: '#7c3aed', color: '#ffffff', fontSize: '0.70rem', fontWeight: 800, padding: '2.5px 8px', borderRadius: '6px' }}>
                           {t.totalMarks} Marks
                         </span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.64rem', color: '#7e22ce', fontWeight: 600 }}>
-                        <Clock size={12} /> {t.date}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', color: '#7e22ce', fontWeight: 600 }}>
+                        <Clock size={13} /> {t.date}
                       </div>
                     </div>
                   ))}
@@ -1287,33 +1287,33 @@ export default function ParentPortalWeb() {
             </div>
 
             {/* Official Notice Board Section */}
-            <div style={{ background: '#ffffff', borderRadius: '10px', padding: '10px 12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.02)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <h3 style={{ margin: 0, fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Bell size={13} color="#0284c7" /> Institute Notice Board
+            <div style={{ background: '#ffffff', borderRadius: '12px', padding: '12px 14px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <h3 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Bell size={15} color="#0284c7" /> Institute Notice Board
                 </h3>
-                <span style={{ fontSize: '0.62rem', color: '#64748b' }}>Circulars & Alerts</span>
+                <span style={{ fontSize: '0.66rem', color: '#64748b' }}>Circulars & Alerts</span>
               </div>
 
               {notices.length === 0 ? (
-                <div style={{ padding: '18px 12px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-                  <Bell size={22} color="#94a3b8" style={{ marginBottom: '4px' }} />
-                  <p style={{ margin: 0, fontSize: '0.74rem', fontWeight: 600 }}>No notices published yet.</p>
+                <div style={{ padding: '20px 12px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+                  <Bell size={26} color="#94a3b8" style={{ marginBottom: '6px' }} />
+                  <p style={{ margin: 0, fontSize: '0.78rem', fontWeight: 600 }}>No notices published yet.</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {notices.map((n, idx) => (
                     <div key={idx} style={{
-                      background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px',
-                      padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '3px'
+                      background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px',
+                      padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong style={{ fontSize: '0.76rem', color: '#0f172a' }}>{n.title}</strong>
-                        <span style={{ fontSize: '0.6rem', color: '#64748b' }}>
+                        <strong style={{ fontSize: '0.80rem', color: '#0f172a' }}>{n.title}</strong>
+                        <span style={{ fontSize: '0.64rem', color: '#64748b' }}>
                           {n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-IN') : 'Recent'}
                         </span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.7rem', color: '#475569', lineHeight: 1.4 }}>
+                      <p style={{ margin: 0, fontSize: '0.74rem', color: '#475569', lineHeight: 1.45 }}>
                         {n.message}
                       </p>
                     </div>
