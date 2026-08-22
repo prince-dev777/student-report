@@ -145,18 +145,8 @@ async function syncToCloud() {
 
       const result = await cloudColl.bulkWrite(bulkOps);
       
-      // Cleanup orphaned documents on the cloud (docs that exist in cloud but no longer exist locally)
-      // Exclude inquiries so web entries made by staff are not deleted before being pulled to desktop
-      if (collName !== 'institutes' && collName !== 'inquiries') {
-        const localActiveIds = activeDocs.map(doc => doc._id);
-        const delResult = await cloudColl.deleteMany({
-          _id: { $nin: localActiveIds }
-        });
-        if (delResult.deletedCount > 0) {
-          console.log(`   - 🗑️ Purged ${delResult.deletedCount} deleted/orphaned cloud documents from '${collName}'.`);
-        }
-      }
-
+      // Note: Never use $nin deleteMany across all collections as other desktops/web apps
+      // create documents in the cloud that should not be wiped out by this local machine.
       console.log(`   - Synced ${activeDocs.length} active documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
     }
 

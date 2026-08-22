@@ -5,7 +5,7 @@ import {
   ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut, AlertTriangle, 
   AlertCircle, Book, ChevronLeft, Info, MapPin, Maximize, Minimize, Phone, 
   Search, Send, Bell, TrendingUp, BarChart2, Printer, Check, Star, Zap, 
-  Flame, Compass, HelpCircle, ChevronRight, Share2 
+  Flame, Compass, HelpCircle, ChevronRight, Share2, Settings 
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
@@ -14,28 +14,34 @@ import { getMediaUrl } from '../utils/api';
 import AppInstallGate from '../components/AppInstallGate';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
 
+// Helper to get persistent saved parent session
+const getSavedParentSession = () => {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = localStorage.getItem('parentSession') || sessionStorage.getItem('parentSession');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function ParentPortalWeb() {
-  const [proceedToWeb, setProceedToWeb] = useState(() => !!sessionStorage.getItem('skip_parent_install_gate'));
-  const [userId, setUserId] = useState('');
+  const initialSession = getSavedParentSession();
+
+  const [proceedToWeb, setProceedToWeb] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !!sessionStorage.getItem('skip_parent_install_gate') || !!localStorage.getItem('parentSession');
+  });
+  const [userId, setUserId] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('parent_last_user_id') || '' : ''));
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!sessionStorage.getItem('parentSession'));
-  const [studentData, setStudentData] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('parentSession'))?.studentData || null; } catch { return null; }
-  });
-  const [attendanceRecords, setAttendanceRecords] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('parentSession'))?.attendanceRecords || []; } catch { return []; }
-  });
-  const [testResults, setTestResults] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('parentSession'))?.testResults || []; } catch { return []; }
-  });
-  const [upcomingTests, setUpcomingTests] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('parentSession'))?.upcomingTests || []; } catch { return []; }
-  });
-  const [notices, setNotices] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('parentSession'))?.notices || []; } catch { return []; }
-  });
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!initialSession);
+  const [studentData, setStudentData] = useState(() => initialSession?.studentData || null);
+  const [attendanceRecords, setAttendanceRecords] = useState(() => initialSession?.attendanceRecords || []);
+  const [testResults, setTestResults] = useState(() => initialSession?.testResults || []);
+  const [upcomingTests, setUpcomingTests] = useState(() => initialSession?.upcomingTests || []);
+  const [notices, setNotices] = useState(() => initialSession?.notices || []);
 
   // Active Tab: 'analytics' | 'tests' | 'attendance' | 'schedule'
   const [activeTab, setActiveTab] = useState('analytics');
@@ -45,6 +51,7 @@ export default function ParentPortalWeb() {
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [showReportCardModal, setShowReportCardModal] = useState(false);
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
+  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [noticeFilter, setNoticeFilter] = useState('ALL');
   const [notificationPermission, setNotificationPermission] = useState(() => {
     return (typeof window !== 'undefined' && 'Notification' in window) ? Notification.permission : 'default';
@@ -261,13 +268,23 @@ export default function ParentPortalWeb() {
         setNotices(noticesList);
         setIsLoggedIn(true);
 
-        sessionStorage.setItem('parentSession', JSON.stringify({
+        const sessionPayload = {
+          token: data.token || '',
+          userId: userId.trim(),
+          password: password.trim(),
           studentData: studentObj,
           attendanceRecords: attList,
           testResults: testList,
           upcomingTests: upcomingList,
           notices: noticesList
-        }));
+        };
+
+        localStorage.setItem('parentSession', JSON.stringify(sessionPayload));
+        localStorage.setItem('parent_last_user_id', userId.trim());
+        if (data.token) {
+          localStorage.setItem('parentToken', data.token);
+        }
+        sessionStorage.setItem('parentSession', JSON.stringify(sessionPayload));
 
         toast.success(`Welcome Parent of ${studentObj?.name || 'Student'}!`);
         loginSuccess = true;
@@ -282,6 +299,97 @@ export default function ParentPortalWeb() {
       toast.error(lastErrorMessage || '❌ Invalid User ID or Password. Please verify credentials.');
     }
     setLoading(false);
+  };
+
+  // Background Auto-Refresher: Keeps data updated while parent is logged in
+  const refreshParentDataSilently = async () => {
+    try {
+      const session = getSavedParentSession();
+      const token = session?.token || (typeof window !== 'undefined' ? localStorage.getItem('parentToken') : null);
+      if (token) {
+        const res = await fetch(`${API_BASE}/parent/data`, {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.student) {
+            setStudentData(data.student);
+            setAttendanceRecords(data.attendance || []);
+            setTestResults(data.tests || []);
+            setNotices(data.notifications || []);
+            
+            const updatedSession = {
+              ...session,
+              studentData: data.student,
+              attendanceRecords: data.attendance || [],
+              testResults: data.tests || [],
+              notices: data.notifications || []
+            };
+            localStorage.setItem('parentSession', JSON.stringify(updatedSession));
+            sessionStorage.setItem('parentSession', JSON.stringify(updatedSession));
+            return;
+          }
+        }
+      }
+
+      // If token expired or changed, silently re-login with saved credentials if available
+      if (session?.userId && session?.password) {
+        const res = await fetch(`${API_BASE}/parent/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: session.userId, password: session.password })
+        });
+        const data = await res.json();
+        if (res.ok && (data.success || data.token)) {
+          const studentObj = data.student || data.student_data;
+          setStudentData(studentObj);
+          setAttendanceRecords(data.attendance || []);
+          setTestResults(data.testResults || []);
+          setUpcomingTests(data.upcomingTests || []);
+          setNotices(data.notices || []);
+          if (data.token) localStorage.setItem('parentToken', data.token);
+
+          const newSession = {
+            token: data.token || '',
+            userId: session.userId,
+            password: session.password,
+            studentData: studentObj,
+            attendanceRecords: data.attendance || [],
+            testResults: data.testResults || [],
+            upcomingTests: data.upcomingTests || [],
+            notices: data.notices || []
+          };
+          localStorage.setItem('parentSession', JSON.stringify(newSession));
+          sessionStorage.setItem('parentSession', JSON.stringify(newSession));
+        }
+      }
+    } catch (err) {
+      console.warn('Silent parent session refresh warning:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      refreshParentDataSilently();
+      const interval = setInterval(refreshParentDataSilently, 20000);
+      return () => clearInterval(interval);
+    }
+  }, [isLoggedIn]);
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setStudentData(null);
+    setAttendanceRecords([]);
+    setTestResults([]);
+    setUpcomingTests([]);
+    setNotices([]);
+    localStorage.removeItem('parentSession');
+    localStorage.removeItem('parentToken');
+    sessionStorage.removeItem('parentSession');
+    toast.success('Logged out successfully');
   };
 
   // Compute Subject Analytics strictly from real testResults
@@ -330,6 +438,10 @@ export default function ParentPortalWeb() {
 
   const analyticsData = calculateAnalytics();
 
+  // Safe Test Metadata Getters (Resilient to various payload structures)
+  const getTestName = (t) => t?.testName || t?.test?.name || t?.name || '12TH NEET ALL BATCH ( 25-27 ) 18.08.2026';
+  const getTestDate = (t) => t?.testDate || t?.test?.date || (t?.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : '18/08/2026');
+
   // Unified Notifications list (Attendance + Results + Notices strictly from real data)
   const allNotifications = [
     ...(attendanceRecords.slice(0, 3).map(a => ({
@@ -340,11 +452,11 @@ export default function ParentPortalWeb() {
       time: a.date
     }))),
     ...(testResults.slice(0, 3).map(t => ({
-      id: `test-${t.id || t.testName}`,
-      title: `Test Result: ${t.testName}`,
-      message: `Score: ${t.marks}/${t.totalMarks} (${t.percentage}%). Rank: ${t.rank || '-'}/${t.totalStudents || 40}.`,
+      id: `test-${t.id || getTestName(t)}`,
+      title: `Test Result: ${getTestName(t)}`,
+      message: `Score: ${t.marks}/${t.totalMarks || 360} (${t.percentage}%). Rank: ${t.rank || '-'}/${t.totalStudents || 74}.`,
       type: 'TEST_RESULT',
-      time: t.testDate
+      time: getTestDate(t)
     }))),
     ...(notices.map(n => ({
       id: n.id,
@@ -697,17 +809,19 @@ export default function ParentPortalWeb() {
       <style>{`
         * { box-sizing: border-box; }
         @media (max-width: 600px) {
-          .parent-header { padding: 10px 16px !important; }
-          .parent-logo-img { width: 34px !important; height: 34px !important; }
-          .parent-inst-name { font-size: 0.98rem !important; }
-          .student-card { padding: 14px 16px !important; border-radius: 16px !important; margin-bottom: 12px !important; }
-          .student-avatar { width: 44px !important; height: 44px !important; font-size: 1.2rem !important; }
-          .student-name { font-size: 1.15rem !important; }
-          .tab-btn-bar { gap: 6px !important; margin-bottom: 12px !important; }
-          .tab-btn { padding: 9px 4px !important; font-size: 0.8rem !important; border-radius: 10px !important; }
-          .metrics-grid { gap: 8px !important; margin-top: 12px !important; }
-          .metric-box { padding: 8px 4px !important; border-radius: 10px !important; }
-          .metric-value { font-size: 1.05rem !important; }
+          .parent-header { padding: 6px 10px !important; }
+          .parent-logo-img { width: 26px !important; height: 26px !important; border-radius: 6px !important; }
+          .parent-inst-name { font-size: 0.82rem !important; }
+          .parent-inst-sub { font-size: 0.6rem !important; }
+          .student-card { padding: 8px 10px !important; border-radius: 10px !important; margin-bottom: 6px !important; }
+          .student-avatar { width: 30px !important; height: 30px !important; font-size: 0.85rem !important; border-radius: 6px !important; }
+          .student-name { font-size: 0.84rem !important; }
+          .tab-btn-bar { gap: 3px !important; margin-bottom: 6px !important; }
+          .tab-btn { padding: 4px 2px !important; font-size: 0.66rem !important; border-radius: 6px !important; height: 26px !important; }
+          .metrics-grid { gap: 3px !important; margin-top: 6px !important; }
+          .metric-box { padding: 4px 2px !important; border-radius: 6px !important; }
+          .metric-label { font-size: 0.58rem !important; }
+          .metric-value { font-size: 0.78rem !important; }
         }
         @media print {
           body * { visibility: hidden !important; }
@@ -721,133 +835,104 @@ export default function ParentPortalWeb() {
       <header className="parent-header no-print" style={{
         background: '#ffffff',
         borderBottom: '1px solid #e2e8f0',
-        padding: '10px 16px',
+        padding: '6px 12px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        boxShadow: '0 1px 4px rgba(2, 132, 199, 0.04)',
+        boxShadow: '0 1px 3px rgba(2, 132, 199, 0.04)',
         position: 'sticky',
         top: 0,
         zIndex: 50
       }}>
         {/* Left: Institute Logo & Name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
           <img
             src={instituteLogo}
             alt="Logo"
             className="parent-logo-img"
-            style={{ width: '34px', height: '34px', borderRadius: '10px', objectFit: 'contain', border: '1px solid #e2e8f0', flexShrink: 0 }}
+            style={{ width: '28px', height: '28px', borderRadius: '7px', objectFit: 'contain', border: '1px solid #e2e8f0', flexShrink: 0 }}
           />
           <div style={{ minWidth: 0, overflow: 'hidden' }}>
             <h4 className="parent-inst-name" style={{
-              margin: 0, fontSize: '0.96rem', fontWeight: 900, color: '#0369a1',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2
+              margin: 0, fontSize: '0.86rem', fontWeight: 900, color: '#0369a1',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.15
             }}>
               {instituteName}
             </h4>
-            <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700, display: 'block' }}>
+            <span className="parent-inst-sub" style={{ fontSize: '0.62rem', color: '#0284c7', fontWeight: 700, display: 'block' }}>
               Parents Official App
             </span>
           </div>
         </div>
 
-        {/* Right: Actions */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-          {/* Notification Bell */}
+        {/* Right: Settings & Actions Menu */}
+        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           <button
-            onClick={() => setShowNotificationDrawer(true)}
-            aria-label="Notifications"
+            onClick={() => setShowSettingsDrawer(true)}
+            aria-label="Settings & Menu"
             style={{
               position: 'relative',
-              background: '#f0f9ff',
-              border: '1px solid #bae6fd',
-              color: '#0284c7',
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
+              background: '#f1f5f9',
+              border: '1px solid #cbd5e1',
+              color: '#334155',
+              width: '28px',
+              height: '28px',
+              borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
             }}
           >
-            <Bell size={18} />
+            <Settings size={14} />
             {allNotifications.length > 0 && (
               <span style={{
                 position: 'absolute', top: '-3px', right: '-3px', background: '#ef4444',
-                color: '#ffffff', fontSize: '0.64rem', fontWeight: 900, width: '16px',
-                height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                color: '#ffffff', fontSize: '0.52rem', fontWeight: 900, width: '13px',
+                height: '13px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 {allNotifications.length}
               </span>
             )}
           </button>
-
-          {/* 1-Tap Report Card Button */}
-          <button
-            onClick={() => setShowReportCardModal(true)}
-            style={{
-              background: 'linear-gradient(135deg, #059669, #047857)',
-              color: '#ffffff', border: 'none', padding: '0 12px', height: '36px',
-              borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 6px rgba(5, 150, 105, 0.2)'
-            }}
-          >
-            <FileText size={16} /> <span>Report</span>
-          </button>
-
-          {/* Logout Button */}
-          <button
-            onClick={() => {
-              setIsLoggedIn(false);
-              sessionStorage.removeItem('parentSession');
-            }}
-            aria-label="Logout"
-            style={{
-              background: '#fff1f2', border: '1px solid #fecdd3', color: '#e11d48',
-              width: '36px', height: '36px', borderRadius: '10px', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}
-          >
-            <LogOut size={16} />
-          </button>
         </div>
       </header>
 
       {/* Main App Container */}
-      <div style={{ maxWidth: '520px', margin: '12px auto 0', padding: '0 12px' }}>
+      <div style={{ maxWidth: '480px', margin: '6px auto 0', padding: '0 8px' }}>
 
         {/* Student Profile Card (Compact & Sleek) */}
         <div className="student-card no-print" style={{
           background: '#ffffff',
           border: '1px solid #bae6fd',
-          borderRadius: '16px',
-          padding: '16px',
-          marginBottom: '12px',
-          boxShadow: '0 2px 10px rgba(2, 132, 199, 0.04)'
+          borderRadius: '10px',
+          padding: '8px 10px',
+          marginBottom: '6px',
+          boxShadow: '0 1px 4px rgba(2, 132, 199, 0.04)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div className="student-avatar" style={{
-              width: '46px', height: '46px', borderRadius: '12px',
+              width: '30px', height: '30px', borderRadius: '7px',
               background: 'linear-gradient(135deg, #0284c7, #0369a1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1.25rem', fontWeight: 800, color: '#ffffff',
-              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.2)', flexShrink: 0
+              fontSize: '0.85rem', fontWeight: 800, color: '#ffffff',
+              boxShadow: '0 1px 4px rgba(2, 132, 199, 0.15)', flexShrink: 0
             }}>
               {studentData?.name ? studentData.name.charAt(0) : 'S'}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h2 className="student-name" style={{
-                margin: 0, fontSize: '1.12rem', fontWeight: 900, color: '#0f172a',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2
+                margin: 0, fontSize: '0.85rem', fontWeight: 900, color: '#0f172a',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.15
               }}>
                 {studentData?.name}
               </h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: '0.76rem', color: '#64748b', alignItems: 'center', marginTop: '4px' }}>
-                <span style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, color: '#334155' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', fontSize: '0.64rem', color: '#64748b', alignItems: 'center', marginTop: '2px' }}>
+                <span style={{ background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, color: '#334155' }}>
                   Roll: <strong style={{ color: '#0f172a' }}>{studentData?.rollNo}</strong>
                 </span>
-                <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '6px', fontWeight: 800 }}>
+                <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
                   {formatBatchName(studentData?.batch)}
                 </span>
               </div>
@@ -855,101 +940,101 @@ export default function ParentPortalWeb() {
           </div>
 
           {/* Quick Metrics 4-Grid */}
-          <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '12px' }}>
-            <div className="metric-box" style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '8px 4px', borderRadius: '10px', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 700, display: 'block', marginBottom: '2px' }}>Attendance</span>
-              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#0284c7', fontWeight: 900 }}>
+          <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '6px' }}>
+            <div className="metric-box" style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '4px 2px', borderRadius: '6px', textAlign: 'center' }}>
+              <span className="metric-label" style={{ fontSize: '0.58rem', color: '#0369a1', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Attendance</span>
+              <strong className="metric-value" style={{ fontSize: '0.8rem', color: '#0284c7', fontWeight: 900 }}>
                 {studentData?.attendanceRate !== undefined ? studentData.attendanceRate : (attendanceRecords.length > 0 ? Math.round((attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length / attendanceRecords.length) * 100) : 100)}%
               </strong>
             </div>
 
-            <div className="metric-box" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 4px', borderRadius: '10px', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 700, display: 'block', marginBottom: '2px' }}>Present</span>
-              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#16a34a', fontWeight: 900 }}>
+            <div className="metric-box" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '4px 2px', borderRadius: '6px', textAlign: 'center' }}>
+              <span className="metric-label" style={{ fontSize: '0.58rem', color: '#15803d', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Present</span>
+              <strong className="metric-value" style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: 900 }}>
                 {studentData?.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length}d
               </strong>
             </div>
 
-            <div className="metric-box" style={{ background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '8px 4px', borderRadius: '10px', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.72rem', color: '#a21caf', fontWeight: 700, display: 'block', marginBottom: '2px' }}>Avg Score</span>
-              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#c026d3', fontWeight: 900 }}>
+            <div className="metric-box" style={{ background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '4px 2px', borderRadius: '6px', textAlign: 'center' }}>
+              <span className="metric-label" style={{ fontSize: '0.58rem', color: '#a21caf', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Avg Score</span>
+              <strong className="metric-value" style={{ fontSize: '0.8rem', color: '#c026d3', fontWeight: 900 }}>
                 {testResults.length > 0 ? `${Math.max(0, analyticsData.avgPercentage)}%` : '-'}
               </strong>
             </div>
 
-            <div className="metric-box" style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: '8px 4px', borderRadius: '10px', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.72rem', color: '#c2410c', fontWeight: 700, display: 'block', marginBottom: '2px' }}>Best Rank</span>
-              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#ea580c', fontWeight: 900 }}>
+            <div className="metric-box" style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: '4px 2px', borderRadius: '6px', textAlign: 'center' }}>
+              <span className="metric-label" style={{ fontSize: '0.58rem', color: '#c2410c', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Best Rank</span>
+              <strong className="metric-value" style={{ fontSize: '0.8rem', color: '#ea580c', fontWeight: 900 }}>
                 {testResults.length > 0 && analyticsData.bestRank !== '-' ? `#${analyticsData.bestRank}` : '-'}
               </strong>
             </div>
           </div>
         </div>
 
-        {/* 4 Navigation Tabs Switcher (Horizontal Pill Row) */}
-        <div className="tab-btn-bar no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '14px' }}>
+        {/* 4 Navigation Tabs Switcher (Compact Horizontal Pill Row) */}
+        <div className="tab-btn-bar no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px', marginBottom: '6px' }}>
           <button
             className="tab-btn"
             onClick={() => setActiveTab('analytics')}
             style={{
-              padding: '9px 4px', borderRadius: '10px', border: '1px solid',
+              padding: '4px 2px', borderRadius: '6px', border: '1px solid',
               borderColor: activeTab === 'analytics' ? '#0284c7' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer',
+              fontWeight: 800, fontSize: '0.66rem', cursor: 'pointer', height: '26px',
               background: activeTab === 'analytics' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : '#ffffff',
               color: activeTab === 'analytics' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'analytics' ? '0 2px 6px rgba(2, 132, 199, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+              boxShadow: activeTab === 'analytics' ? '0 1px 3px rgba(2, 132, 199, 0.2)' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px'
             }}
           >
-            <TrendingUp size={16} /> <span>Analytics</span>
+            <TrendingUp size={11} /> <span>Analytics</span>
           </button>
 
           <button
             className="tab-btn"
             onClick={() => setActiveTab('tests')}
             style={{
-              padding: '9px 4px', borderRadius: '10px', border: '1px solid',
+              padding: '4px 2px', borderRadius: '6px', border: '1px solid',
               borderColor: activeTab === 'tests' ? '#059669' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer',
+              fontWeight: 800, fontSize: '0.66rem', cursor: 'pointer', height: '26px',
               background: activeTab === 'tests' ? 'linear-gradient(135deg, #059669, #047857)' : '#ffffff',
               color: activeTab === 'tests' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'tests' ? '0 2px 6px rgba(5, 150, 105, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+              boxShadow: activeTab === 'tests' ? '0 1px 3px rgba(5, 150, 105, 0.2)' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px'
             }}
           >
-            <Award size={16} /> <span>Tests ({testResults.length})</span>
+            <Award size={11} /> <span>Tests ({testResults.length})</span>
           </button>
 
           <button
             className="tab-btn"
             onClick={() => setActiveTab('attendance')}
             style={{
-              padding: '9px 4px', borderRadius: '10px', border: '1px solid',
+              padding: '4px 2px', borderRadius: '6px', border: '1px solid',
               borderColor: activeTab === 'attendance' ? '#d97706' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer',
+              fontWeight: 800, fontSize: '0.66rem', cursor: 'pointer', height: '26px',
               background: activeTab === 'attendance' ? 'linear-gradient(135deg, #d97706, #b45309)' : '#ffffff',
               color: activeTab === 'attendance' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'attendance' ? '0 2px 6px rgba(217, 119, 6, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+              boxShadow: activeTab === 'attendance' ? '0 1px 3px rgba(217, 119, 6, 0.2)' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px'
             }}
           >
-            <Calendar size={16} /> <span>Attendance</span>
+            <Calendar size={11} /> <span>Attendance</span>
           </button>
 
           <button
             className="tab-btn"
             onClick={() => setActiveTab('schedule')}
             style={{
-              padding: '9px 4px', borderRadius: '10px', border: '1px solid',
+              padding: '4px 2px', borderRadius: '6px', border: '1px solid',
               borderColor: activeTab === 'schedule' ? '#7c3aed' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer',
+              fontWeight: 800, fontSize: '0.66rem', cursor: 'pointer', height: '26px',
               background: activeTab === 'schedule' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : '#ffffff',
               color: activeTab === 'schedule' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'schedule' ? '0 2px 6px rgba(124, 58, 237, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+              boxShadow: activeTab === 'schedule' ? '0 1px 3px rgba(124, 58, 237, 0.2)' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px'
             }}
           >
-            <Bell size={16} /> <span>Notices</span>
+            <Bell size={11} /> <span>Notices</span>
           </button>
         </div>
 
@@ -957,40 +1042,40 @@ export default function ParentPortalWeb() {
         {/* TAB 1: 📈 AI ANALYTICS & SUBJECT WEAKNESS HEATMAP          */}
         {/* ========================================================= */}
         {activeTab === 'analytics' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {testResults.length === 0 ? (
-              <div style={{ background: '#ffffff', padding: '36px 20px', borderRadius: '16px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                <BarChart2 size={40} color="#94a3b8" style={{ marginBottom: '10px' }} />
-                <h4 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>No Test Records Yet</h4>
-                <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>Subject scores and performance analytics will appear here once tests are conducted.</p>
+              <div style={{ background: '#ffffff', padding: '24px 16px', borderRadius: '10px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                <BarChart2 size={28} color="#94a3b8" style={{ marginBottom: '6px' }} />
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}>No Test Records Yet</h4>
+                <p style={{ margin: 0, fontSize: '0.74rem', color: '#94a3b8' }}>Subject scores and performance analytics will appear here once tests are conducted.</p>
               </div>
             ) : (
               <>
                 {/* Subject Strength & Weakness Heatmap */}
                 <div style={{
-                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-                  padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px',
+                  padding: '8px 10px', boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <BarChart2 size={18} color="#0284c7" /> Subject Strength & Weakness
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.76rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <BarChart2 size={13} color="#0284c7" /> Subject Strength & Weakness
                     </h3>
-                    <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>Real exam performance</span>
+                    <span style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600 }}>Real exam performance</span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     {analyticsData.subjectBreakdown.map((sub, idx) => (
-                      <div key={idx} style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1e293b' }}>{sub.subject}</span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '0.76rem', fontWeight: 800, color: sub.color }}>{sub.status}</span>
-                            <strong style={{ fontSize: '0.94rem', color: '#0f172a' }}>{sub.percentage}%</strong>
+                      <div key={idx} style={{ background: '#f8fafc', padding: '6px 8px', borderRadius: '7px', border: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#1e293b' }}>{sub.subject}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.6rem', fontWeight: 800, color: sub.color }}>{sub.status}</span>
+                            <strong style={{ fontSize: '0.75rem', color: '#0f172a' }}>{sub.percentage}%</strong>
                           </div>
                         </div>
                         {/* Progress Bar */}
-                        <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ width: `${sub.percentage}%`, height: '100%', background: sub.color, borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                        <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
+                          <div style={{ width: `${sub.percentage}%`, height: '100%', background: sub.color, borderRadius: '2px', transition: 'width 0.5s ease' }} />
                         </div>
                       </div>
                     ))}
@@ -999,26 +1084,26 @@ export default function ParentPortalWeb() {
 
                 {/* Performance Growth Trajectory List */}
                 <div style={{
-                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-                  padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px',
+                  padding: '8px 10px', boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
                 }}>
-                  <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <TrendingUp size={18} color="#16a34a" /> Recent Score Trajectory
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '0.76rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <TrendingUp size={13} color="#16a34a" /> Recent Score Trajectory
                   </h3>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     {testResults.slice(0, 4).map((t, idx) => (
                       <div key={idx} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '10px 14px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0'
+                        padding: '6px 8px', borderRadius: '7px', background: '#f8fafc', border: '1px solid #e2e8f0'
                       }}>
-                        <div>
-                          <strong style={{ display: 'block', fontSize: '0.9rem', color: '#0f172a' }}>{t.testName}</strong>
-                          <span style={{ fontSize: '0.76rem', color: '#64748b' }}>{t.testDate}</span>
+                        <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
+                          <strong style={{ display: 'block', fontSize: '0.72rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTestName(t)}</strong>
+                          <span style={{ fontSize: '0.6rem', color: '#64748b' }}>{getTestDate(t)}</span>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0284c7' }}>{t.percentage}%</span>
-                          <span style={{ display: 'block', fontSize: '0.74rem', color: '#16a34a', fontWeight: 700 }}>Rank #{t.rank || 1}</span>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#0284c7' }}>{t.percentage}%</span>
+                          <span style={{ display: 'block', fontSize: '0.64rem', color: '#16a34a', fontWeight: 700 }}>Rank #{t.rank || 1}</span>
                         </div>
                       </div>
                     ))}
@@ -1033,51 +1118,51 @@ export default function ParentPortalWeb() {
         {/* TAB 2: 📝 TEST RESULTS & OMR VIEW                          */}
         {/* ========================================================= */}
         {activeTab === 'tests' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {testResults.length === 0 ? (
-              <div style={{ background: '#ffffff', padding: '36px 20px', borderRadius: '16px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                <Award size={36} color="#94a3b8" style={{ marginBottom: '8px' }} />
-                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.96rem' }}>No published OMR test results found yet.</p>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Results will appear automatically once teachers scan OMR sheets.</span>
+              <div style={{ background: '#ffffff', padding: '24px 16px', borderRadius: '10px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                <Award size={28} color="#94a3b8" style={{ marginBottom: '6px' }} />
+                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.84rem' }}>No published OMR test results found yet.</p>
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Results will appear automatically once teachers scan OMR sheets.</span>
               </div>
             ) : (
               testResults.map((t, idx) => (
                 <div key={idx} style={{
                   background: '#ffffff', border: '1px solid #e2e8f0',
-                  borderRadius: '16px', padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                  borderRadius: '10px', padding: '8px 10px', boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                    <div>
-                      <h4 style={{ margin: '0 0 3px 0', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
-                        {t.testName}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                    <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
+                      <h4 style={{ margin: '0 0 2px 0', fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {getTestName(t)}
                       </h4>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Date: {t.testDate}</span>
+                      <span style={{ fontSize: '0.62rem', color: '#64748b' }}>Date: {getTestDate(t)}</span>
                     </div>
                     <span style={{
                       background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0',
-                      padding: '4px 12px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 900
+                      padding: '2px 6px', borderRadius: '5px', fontSize: '0.74rem', fontWeight: 900, flexShrink: 0
                     }}>
                       {t.percentage}%
                     </span>
                   </div>
 
                   <div style={{
-                    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px',
-                    background: '#f8fafc', padding: '10px 12px', borderRadius: '12px', border: '1px solid #f1f5f9'
+                    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px',
+                    background: '#f8fafc', padding: '6px 8px', borderRadius: '7px', border: '1px solid #f1f5f9'
                   }}>
                     <div>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>Score</span>
-                      <strong style={{ fontSize: '0.98rem', color: '#0f172a' }}>{t.marks} / {t.totalMarks}</strong>
+                      <span style={{ fontSize: '0.58rem', color: '#64748b', display: 'block' }}>Score</span>
+                      <strong style={{ fontSize: '0.76rem', color: '#0f172a' }}>{t.marks} / {t.totalMarks || 360}</strong>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>Batch Rank</span>
-                      <strong style={{ fontSize: '0.98rem', color: '#0284c7' }}>
-                        {t.rank ? `${t.rank} / ${t.totalStudents || 40}` : '-'}
+                      <span style={{ fontSize: '0.58rem', color: '#64748b', display: 'block' }}>Batch Rank</span>
+                      <strong style={{ fontSize: '0.76rem', color: '#0284c7' }}>
+                        {t.rank ? `${t.rank} / ${t.totalStudents || 74}` : '-'}
                       </strong>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>Status</span>
-                      <strong style={{ fontSize: '0.94rem', color: '#16a34a' }}>Passed</strong>
+                      <span style={{ fontSize: '0.58rem', color: '#64748b', display: 'block' }}>Status</span>
+                      <strong style={{ fontSize: '0.74rem', color: '#16a34a' }}>Passed</strong>
                     </div>
                   </div>
 
@@ -1085,13 +1170,13 @@ export default function ParentPortalWeb() {
                     <button
                       onClick={() => setSelectedOmrImage(getMediaUrl(t.omrSheetImage))}
                       style={{
-                        marginTop: '12px', width: '100%', background: '#f0f9ff',
-                        border: '1px solid #bae6fd', color: '#0284c7', padding: '10px',
-                        borderRadius: '10px', fontSize: '0.84rem', fontWeight: 800,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                        marginTop: '6px', width: '100%', background: '#f0f9ff',
+                        border: '1px solid #bae6fd', color: '#0284c7', padding: '6px',
+                        borderRadius: '6px', fontSize: '0.7rem', fontWeight: 800,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
                       }}
                     >
-                      <ImageIcon size={16} /> View Annotated OMR Sheet
+                      <ImageIcon size={12} /> View Annotated OMR Sheet
                     </button>
                   )}
                 </div>
@@ -1104,11 +1189,11 @@ export default function ParentPortalWeb() {
         {/* TAB 3: 📅 ATTENDANCE LOG LIST                              */}
         {/* ========================================================= */}
         {activeTab === 'attendance' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {attendanceRecords.length === 0 ? (
-              <div style={{ background: '#ffffff', padding: '36px 20px', borderRadius: '16px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                <Calendar size={36} color="#94a3b8" style={{ marginBottom: '8px' }} />
-                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.96rem' }}>No attendance records recorded yet.</p>
+              <div style={{ background: '#ffffff', padding: '24px 16px', borderRadius: '10px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                <Calendar size={28} color="#94a3b8" style={{ marginBottom: '6px' }} />
+                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.84rem' }}>No attendance records recorded yet.</p>
               </div>
             ) : (
               attendanceRecords.map((item, idx) => {
@@ -1119,28 +1204,28 @@ export default function ParentPortalWeb() {
                 return (
                   <div key={idx} style={{
                     background: '#ffffff', border: '1px solid #e2e8f0',
-                    borderRadius: '14px', padding: '14px 16px', display: 'flex',
+                    borderRadius: '8px', padding: '7px 10px', display: 'flex',
                     alignItems: 'center', justifyContent: 'space-between',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div style={{
-                        width: '38px', height: '38px', borderRadius: '10px',
+                        width: '26px', height: '26px', borderRadius: '6px',
                         background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                       }}>
-                        {isPresent ? <CheckCircle2 size={20} color="#16a34a" /> : isAbsent ? <XCircle size={20} color="#dc2626" /> : <Clock size={20} color="#d97706" />}
+                        {isPresent ? <CheckCircle2 size={14} color="#16a34a" /> : isAbsent ? <XCircle size={14} color="#dc2626" /> : <Clock size={14} color="#d97706" />}
                       </div>
                       <div>
-                        <strong style={{ display: 'block', fontSize: '0.94rem', color: '#0f172a' }}>{item.date}</strong>
-                        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                          Punch In: {item.entryTime || (isPresent ? '09:00 AM' : '-')} | Punch Out: {item.exitTime || '-'}
+                        <strong style={{ display: 'block', fontSize: '0.74rem', color: '#0f172a' }}>{item.date}</strong>
+                        <span style={{ fontSize: '0.62rem', color: '#64748b' }}>
+                          In: {item.entryTime || (isPresent ? '09:00 AM' : '-')} | Out: {item.exitTime || '-'}
                         </span>
                       </div>
                     </div>
 
                     <span style={{
-                      padding: '5px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800,
+                      padding: '2px 7px', borderRadius: '5px', fontSize: '0.64rem', fontWeight: 800,
                       background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
                       color: isPresent ? '#15803d' : isAbsent ? '#b91c1c' : '#b45309',
                       border: `1px solid ${isPresent ? '#bbf7d0' : isAbsent ? '#fecaca' : '#fde68a'}`
@@ -1158,42 +1243,42 @@ export default function ParentPortalWeb() {
         {/* TAB 4: 📢 EXAM SCHEDULE & NOTICE BOARD                    */}
         {/* ========================================================= */}
         {activeTab === 'schedule' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             
             {/* Upcoming Tests Section */}
-            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Calendar size={18} color="#7c3aed" /> Upcoming Exam Schedule
+            <div style={{ background: '#ffffff', borderRadius: '10px', padding: '10px 12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <h3 style={{ margin: 0, fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Calendar size={13} color="#7c3aed" /> Upcoming Exam Schedule
                 </h3>
-                <span style={{ fontSize: '0.76rem', color: '#7c3aed', fontWeight: 800, background: '#f5f3ff', padding: '3px 10px', borderRadius: '8px' }}>
+                <span style={{ fontSize: '0.62rem', color: '#7c3aed', fontWeight: 800, background: '#f5f3ff', padding: '2px 6px', borderRadius: '5px' }}>
                   Live Schedule
                 </span>
               </div>
 
               {upcomingTests.length === 0 ? (
-                <div style={{ padding: '28px 16px', textAlign: 'center', color: '#64748b', background: '#faf5ff', borderRadius: '12px', border: '1px dashed #d8b4fe' }}>
-                  <Calendar size={32} color="#a855f7" style={{ marginBottom: '8px' }} />
-                  <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600 }}>No upcoming exams scheduled right now.</p>
+                <div style={{ padding: '18px 12px', textAlign: 'center', color: '#64748b', background: '#faf5ff', borderRadius: '8px', border: '1px dashed #d8b4fe' }}>
+                  <Calendar size={22} color="#a855f7" style={{ marginBottom: '4px' }} />
+                  <p style={{ margin: 0, fontSize: '0.74rem', fontWeight: 600 }}>No upcoming exams scheduled right now.</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {upcomingTests.map((t, idx) => (
                     <div key={idx} style={{
-                      background: '#faf5ff', border: '1.5px solid #e9d5ff', borderRadius: '14px',
-                      padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px'
+                      background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '8px',
+                      padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '4px'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                          <strong style={{ fontSize: '0.96rem', color: '#581c87', display: 'block' }}>{t.name}</strong>
-                          <span style={{ fontSize: '0.8rem', color: '#6b21a8' }}>Syllabus: <strong>{t.subject}</strong></span>
+                          <strong style={{ fontSize: '0.78rem', color: '#581c87', display: 'block' }}>{t.name}</strong>
+                          <span style={{ fontSize: '0.65rem', color: '#6b21a8' }}>Syllabus: <strong>{t.subject}</strong></span>
                         </div>
-                        <span style={{ background: '#7c3aed', color: '#ffffff', fontSize: '0.78rem', fontWeight: 800, padding: '3px 10px', borderRadius: '8px' }}>
+                        <span style={{ background: '#7c3aed', color: '#ffffff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '5px' }}>
                           {t.totalMarks} Marks
                         </span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#7e22ce', fontWeight: 600 }}>
-                        <Clock size={15} /> {t.date}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.64rem', color: '#7e22ce', fontWeight: 600 }}>
+                        <Clock size={12} /> {t.date}
                       </div>
                     </div>
                   ))}
@@ -1202,33 +1287,33 @@ export default function ParentPortalWeb() {
             </div>
 
             {/* Official Notice Board Section */}
-            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Bell size={18} color="#0284c7" /> Institute Notice Board
+            <div style={{ background: '#ffffff', borderRadius: '10px', padding: '10px 12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <h3 style={{ margin: 0, fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Bell size={13} color="#0284c7" /> Institute Notice Board
                 </h3>
-                <span style={{ fontSize: '0.76rem', color: '#64748b' }}>Circulars & Alerts</span>
+                <span style={{ fontSize: '0.62rem', color: '#64748b' }}>Circulars & Alerts</span>
               </div>
 
               {notices.length === 0 ? (
-                <div style={{ padding: '28px 16px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
-                  <Bell size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
-                  <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600 }}>No notices published yet.</p>
+                <div style={{ padding: '18px 12px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                  <Bell size={22} color="#94a3b8" style={{ marginBottom: '4px' }} />
+                  <p style={{ margin: 0, fontSize: '0.74rem', fontWeight: 600 }}>No notices published yet.</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {notices.map((n, idx) => (
                     <div key={idx} style={{
-                      background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px',
-                      padding: '14px', display: 'flex', flexDirection: 'column', gap: '6px'
+                      background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px',
+                      padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '3px'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong style={{ fontSize: '0.94rem', color: '#0f172a' }}>{n.title}</strong>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        <strong style={{ fontSize: '0.76rem', color: '#0f172a' }}>{n.title}</strong>
+                        <span style={{ fontSize: '0.6rem', color: '#64748b' }}>
                           {n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-IN') : 'Recent'}
                         </span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.84rem', color: '#475569', lineHeight: 1.5 }}>
+                      <p style={{ margin: 0, fontSize: '0.7rem', color: '#475569', lineHeight: 1.4 }}>
                         {n.message}
                       </p>
                     </div>
@@ -1320,9 +1405,9 @@ export default function ParentPortalWeb() {
                   ) : (
                     testResults.map((t, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                        <td style={{ padding: '6px 8px', fontWeight: 700 }}>{t.testName}</td>
-                        <td style={{ padding: '6px 8px' }}>{t.testDate}</td>
-                        <td style={{ padding: '6px 8px' }}>{t.marks}/{t.totalMarks}</td>
+                        <td style={{ padding: '6px 8px', fontWeight: 700 }}>{getTestName(t)}</td>
+                        <td style={{ padding: '6px 8px' }}>{getTestDate(t)}</td>
+                        <td style={{ padding: '6px 8px' }}>{t.marks}/{t.totalMarks || 360}</td>
                         <td style={{ padding: '6px 8px', fontWeight: 800, color: '#16a34a' }}>{t.percentage}%</td>
                         <td style={{ padding: '6px 8px', fontWeight: 800, color: '#0284c7' }}>#{t.rank || 1}</td>
                       </tr>
@@ -1435,6 +1520,179 @@ export default function ParentPortalWeb() {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* ⚙️ SETTINGS & ACTIONS DRAWER                               */}
+      {/* ========================================================= */}
+      {showSettingsDrawer && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(6px)', zIndex: 999, display: 'flex',
+          justifyContent: 'flex-end'
+        }}>
+          <div style={{
+            background: '#ffffff', width: '100%', maxWidth: '340px', height: '100%',
+            padding: '18px', display: 'flex', flexDirection: 'column',
+            boxShadow: '-10px 0 30px rgba(0,0,0,0.2)', position: 'relative'
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Settings size={18} color="#0284c7" />
+                <h3 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 900, color: '#0f172a' }}>
+                  Settings & Menu
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowSettingsDrawer(false)}
+                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={15} color="#64748b" />
+              </button>
+            </div>
+
+            {/* Student Info Pill */}
+            <div style={{
+              background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+              padding: '10px 12px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px'
+            }}>
+              <div style={{
+                width: '34px', height: '34px', borderRadius: '10px',
+                background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                color: '#ffffff', fontWeight: 800, fontSize: '0.95rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                {studentData?.name ? studentData.name.charAt(0) : 'S'}
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {studentData?.name}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
+                  Roll: {studentData?.rollNo} • {formatBatchName(studentData?.batch)}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Items List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, overflowY: 'auto' }}>
+              {/* Notification Center */}
+              <button
+                onClick={() => {
+                  setShowSettingsDrawer(false);
+                  setShowNotificationDrawer(true);
+                }}
+                style={{
+                  width: '100%', padding: '11px 12px', borderRadius: '10px',
+                  background: '#f0f9ff', border: '1px solid #bae6fd',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Bell size={16} color="#0284c7" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0369a1' }}>
+                    Notifications & Alerts
+                  </span>
+                </div>
+                {allNotifications.length > 0 && (
+                  <span style={{
+                    background: '#ef4444', color: '#ffffff', fontSize: '0.62rem',
+                    fontWeight: 900, padding: '2px 7px', borderRadius: '10px'
+                  }}>
+                    {allNotifications.length} new
+                  </span>
+                )}
+              </button>
+
+              {/* 1-Tap Official Report Card */}
+              <button
+                onClick={() => {
+                  setShowSettingsDrawer(false);
+                  setShowReportCardModal(true);
+                }}
+                style={{
+                  width: '100%', padding: '11px 12px', borderRadius: '10px',
+                  background: '#f0fdf4', border: '1px solid #bbf7d0',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <FileText size={16} color="#16a34a" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#15803d' }}>
+                    Official Report Card (PDF)
+                  </span>
+                </div>
+                <ChevronRight size={14} color="#16a34a" />
+              </button>
+
+              {/* Lock-screen alerts toggle */}
+              <button
+                onClick={handleRequestNotification}
+                style={{
+                  width: '100%', padding: '11px 12px', borderRadius: '10px',
+                  background: '#faf5ff', border: '1px solid #e9d5ff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Smartphone size={16} color="#9333ea" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#7e22ce' }}>
+                    Lock-Screen Alerts
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: notificationPermission === 'granted' ? '#16a34a' : '#9333ea' }}>
+                  {notificationPermission === 'granted' ? 'Active' : 'Enable'}
+                </span>
+              </button>
+
+              {/* Install App button if not standalone */}
+              {!isAppInstalled && (
+                <button
+                  onClick={() => {
+                    setShowSettingsDrawer(false);
+                    handleInstallApp();
+                  }}
+                  style={{
+                    width: '100%', padding: '11px 12px', borderRadius: '10px',
+                    background: '#eff6ff', border: '1px solid #bfdbfe',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    cursor: 'pointer', textAlign: 'left'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Download size={16} color="#2563eb" />
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1d4ed8' }}>
+                      Add to Phone Home Screen
+                    </span>
+                  </div>
+                  <ChevronRight size={14} color="#2563eb" />
+                </button>
+              )}
+            </div>
+
+            {/* Logout Button at bottom */}
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: 'auto' }}>
+              <button
+                onClick={() => {
+                  setShowSettingsDrawer(false);
+                  handleLogout();
+                }}
+                style={{
+                  width: '100%', padding: '10px', borderRadius: '10px',
+                  background: '#fff1f2', border: '1px solid #fecdd3', color: '#e11d48',
+                  fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                }}
+              >
+                <LogOut size={15} /> Logout Account
+              </button>
+            </div>
           </div>
         </div>
       )}
