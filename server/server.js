@@ -2837,23 +2837,30 @@ app.post('/api/tests/:id/regrade', authenticateToken, async (req, res) => {
         }
 
         const ansStr = String(ans).trim().toUpperCase();
-        if (idx < flatAnswerKey.length && ansStr && ansStr !== 'NULL' && flatAnswerKey[idx]) {
+        if (idx < flatAnswerKey.length && flatAnswerKey[idx]) {
           const corStr = String(flatAnswerKey[idx]).trim().toUpperCase();
-          let matched = false;
-          if (ansStr === corStr) {
-            matched = true;
-          } else {
-            const parsedAns = parseFloat(ansStr);
-            const parsedCor = parseFloat(corStr);
-            if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
-              matched = true;
-            }
-          }
-
-          if (matched) {
+          const isBonus = corStr === '*' || corStr.startsWith('*') || corStr.endsWith('*') || corStr.includes('BONUS') || corStr.includes('STAR');
+          
+          if (isBonus) {
+            // ⭐ Bonus Question: full marks awarded unconditionally, zero negative deduction
             correct++;
-          } else {
-            wrong++;
+          } else if (ansStr && ansStr !== 'NULL') {
+            let matched = false;
+            if (ansStr === corStr) {
+              matched = true;
+            } else {
+              const parsedAns = parseFloat(ansStr);
+              const parsedCor = parseFloat(corStr);
+              if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
+                matched = true;
+              }
+            }
+
+            if (matched) {
+              correct++;
+            } else {
+              wrong++;
+            }
           }
         }
       });

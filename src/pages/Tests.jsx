@@ -17,6 +17,13 @@ import { api, getMediaUrl } from '../utils/api';
 import omrTemplatePdf from '../assets/OMR_Templates.pdf';
 import EditTestModal from '../components/EditTestModal';
 
+// Helper to identify bonus questions in answer keys (e.g. '*', '*A', '*B', '*1', 'BONUS')
+export const isBonusAnswer = (key) => {
+  if (key === undefined || key === null) return false;
+  const str = String(key).trim().toUpperCase();
+  return str === '*' || str.startsWith('*') || str.endsWith('*') || str.includes('BONUS') || str.includes('STAR');
+};
+
 export default function Tests() {
   const { 
     tests, testResults, students, batches, 
@@ -335,7 +342,10 @@ export default function Tests() {
            }
            
            if (isMapped) {
-              if (status === 'invalid') {
+              if (idx < answerKey.length && isBonusAnswer(answerKey[idx])) {
+                 // ⭐ Bonus Question: full marks awarded unconditionally, zero negative deduction
+                 correct++;
+              } else if (status === 'invalid') {
                  wrong++;
               } else if (status === 'valid' && selected && selected !== 'NULL') {
                  if (idx < answerKey.length) {
@@ -579,7 +589,10 @@ export default function Tests() {
            }
            
            if (isMapped) {
-              if (status === 'invalid') {
+              if (idx < answerKey.length && isBonusAnswer(answerKey[idx])) {
+                 // ⭐ Bonus Question: full marks awarded unconditionally, zero negative deduction
+                 correct++;
+              } else if (status === 'invalid') {
                  wrong++;
               } else if (status === 'valid' && selected && selected !== 'NULL') {
                  if (idx < answerKey.length) {
@@ -728,7 +741,10 @@ export default function Tests() {
          }
          
          if (isMapped) {
-            if (status === 'invalid') {
+            if (idx < answerKey.length && isBonusAnswer(answerKey[idx])) {
+               // ⭐ Bonus Question: full marks awarded unconditionally, zero negative deduction
+               correct++;
+            } else if (status === 'invalid') {
                wrong++;
             } else if (status === 'valid' && selected && selected !== 'NULL') {
                if (idx < answerKey.length && answerKey[idx]) {
@@ -1163,28 +1179,28 @@ export default function Tests() {
               extractedAns = ans;
             }
             const ansStr = String(extractedAns).trim().toUpperCase();
-            if (
-              idx < tokens.length && 
-              ansStr && 
-              ansStr !== 'NULL' && 
-              tokens[idx]
-            ) {
-              const corStr = String(tokens[idx]).trim().toUpperCase();
-              let matched = false;
-              if (ansStr === corStr) {
-                matched = true;
-              } else {
-                const parsedAns = parseFloat(ansStr);
-                const parsedCor = parseFloat(corStr);
-                if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
-                  matched = true;
-                }
-              }
-
-              if (matched) {
+            if (idx < tokens.length) {
+              if (isBonusAnswer(tokens[idx])) {
+                // ⭐ Bonus Question: full marks awarded unconditionally
                 correct++;
-              } else {
-                wrong++;
+              } else if (ansStr && ansStr !== 'NULL' && tokens[idx]) {
+                const corStr = String(tokens[idx]).trim().toUpperCase();
+                let matched = false;
+                if (ansStr === corStr) {
+                  matched = true;
+                } else {
+                  const parsedAns = parseFloat(ansStr);
+                  const parsedCor = parseFloat(corStr);
+                  if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
+                    matched = true;
+                  }
+                }
+
+                if (matched) {
+                  correct++;
+                } else {
+                  wrong++;
+                }
               }
             }
           });
@@ -1377,20 +1393,25 @@ export default function Tests() {
             extractedAns = ans;
           }
           const ansStr = String(extractedAns).trim().toUpperCase();
-          if (idx < tokens.length && ansStr && ansStr !== 'NULL' && tokens[idx]) {
-            const corStr = String(tokens[idx]).trim().toUpperCase();
-            let matched = false;
-            if (ansStr === corStr) {
-              matched = true;
-            } else {
-              const parsedAns = parseFloat(ansStr);
-              const parsedCor = parseFloat(corStr);
-              if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
+          if (idx < tokens.length) {
+            if (isBonusAnswer(tokens[idx])) {
+              // ⭐ Bonus Question: full marks awarded unconditionally
+              correct++;
+            } else if (ansStr && ansStr !== 'NULL' && tokens[idx]) {
+              const corStr = String(tokens[idx]).trim().toUpperCase();
+              let matched = false;
+              if (ansStr === corStr) {
                 matched = true;
+              } else {
+                const parsedAns = parseFloat(ansStr);
+                const parsedCor = parseFloat(corStr);
+                if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
+                  matched = true;
+                }
               }
+              if (matched) correct++;
+              else wrong++;
             }
-            if (matched) correct++;
-            else wrong++;
           }
         });
         const score = (correct * marksPerQ) - (wrong * negMarks);
@@ -1526,7 +1547,10 @@ export default function Tests() {
         const sAnsStr = extractedAns ? String(extractedAns).trim().toUpperCase() : 'NULL';
         const cAnsStr = correctAns ? String(correctAns).trim().toUpperCase() : 'NULL';
         
-        if (!sAnsStr || sAnsStr === 'NULL' || sAnsStr === 'UNDEFINED' || sAnsStr === '') {
+        if (isBonusAnswer(correctAns)) {
+          // ⭐ Bonus Question: full marks awarded to subject
+          correct++;
+        } else if (!sAnsStr || sAnsStr === 'NULL' || sAnsStr === 'UNDEFINED' || sAnsStr === '') {
           skipped++;
         } else if (cAnsStr && cAnsStr !== 'NULL' && cAnsStr !== 'UNDEFINED' && cAnsStr !== '') {
           let matched = false;
@@ -3361,11 +3385,14 @@ export default function Tests() {
                       
                       const selStr = String(ans || '').trim().toUpperCase();
                       const corStr = String(correctAns).trim().toUpperCase();
+                      const isBonus = isBonusAnswer(corStr);
                       
                       let isCorrect = false;
                       let isSkipped = false;
                       
-                      if (!selStr || selStr === 'NULL') {
+                      if (isBonus) {
+                        isCorrect = true;
+                      } else if (!selStr || selStr === 'NULL') {
                         isSkipped = true;
                       } else if (selStr === corStr) {
                         isCorrect = true;
@@ -3377,7 +3404,11 @@ export default function Tests() {
                       let color = 'var(--text-primary)';
                       let borderColor = 'var(--border-color)';
 
-                      if (isSkipped) {
+                      if (isBonus) {
+                        bgColor = 'rgba(245, 158, 11, 0.14)';
+                        color = '#b45309';
+                        borderColor = 'rgba(245, 158, 11, 0.45)';
+                      } else if (isSkipped) {
                         color = 'var(--text-tertiary)';
                       } else if (isCorrect) {
                         bgColor = 'rgba(34, 197, 94, 0.1)';
@@ -3393,17 +3424,23 @@ export default function Tests() {
                         <div key={idx} style={{ 
                           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                           padding: '8px 4px', borderRadius: '8px', background: bgColor, 
-                          border: `1px solid ${borderColor}`, textAlign: 'center'
+                          border: `1.5px solid ${borderColor}`, textAlign: 'center'
                         }}>
-                          <span style={{ fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', fontSize: '0.75rem' }}>Q{idx + 1}</span>
+                          <span style={{ fontWeight: 700, color: isBonus ? '#b45309' : 'var(--text-secondary)', marginBottom: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            Q{idx + 1} {isBonus && '⭐'}
+                          </span>
                           <div style={{ fontSize: '0.9rem', fontWeight: 800, color }}>
                             {selStr !== 'NULL' && selStr ? selStr : '-'}
                           </div>
-                          {!isCorrect && !isSkipped && (
+                          {isBonus ? (
+                            <div style={{ fontSize: '0.64rem', color: '#b45309', marginTop: '2px', fontWeight: 800 }}>
+                              BONUS (+{selectedTestResults?.test?.marksPerQuestion || 4})
+                            </div>
+                          ) : (!isCorrect && !isSkipped && (
                             <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '2px', fontWeight: 600 }}>
                               Ans: {corStr}
                             </div>
-                          )}
+                          ))}
                         </div>
                       );
                     })}
@@ -3472,73 +3509,105 @@ export default function Tests() {
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '10px', fontSize: '0.85rem', color: '#475569' }}>
                   <strong>💡 How to use Quick Paste:</strong> Open Notepad, write your answers separated by commas (e.g., <code>A, B, C, D...</code>), press <code>Ctrl + A</code> to select all, copy them, and click <strong>Quick Paste</strong> to fill all boxes instantly!
                 </div>
+                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', padding: '9px 12px', fontSize: '0.82rem', color: '#92400e', display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '8px' }}>
+                  <Sparkles size={16} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <strong>⭐ Bonus Questions:</strong> Type <code>*</code>, <code>*A</code>, <code>*B</code>, <code>*1</code>, or <code>BONUS</code> in any box to mark that question as a <strong>BONUS</strong>. All students will automatically get full marks (+{selectedEntryTest?.marksPerQuestion || 4}) for bonus questions!
+                  </div>
+                </div>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px', maxHeight: '50vh', overflowY: 'auto', padding: '4px' }}>
-                {manualAnswersGrid.map((ans, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-tertiary)', width: '24px' }}>{questionNumbers[idx] || (idx + 1)}.</span>
-                    <input
-                      type="text"
-                      className="form-input"
-                      style={{ width: '100%', padding: '4px', textAlign: 'center', fontWeight: 'bold', border: 'none', background: 'transparent' }}
-                      value={ans}
-                      onChange={(e) => {
-                        const val = e.target.value.toUpperCase();
-                        setManualAnswersGrid(prev => {
-                          const newGrid = [...prev];
-                          newGrid[idx] = val;
-                          return newGrid;
-                        });
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: '8px', maxHeight: '50vh', overflowY: 'auto', padding: '4px' }}>
+                {manualAnswersGrid.map((ans, idx) => {
+                  const isBonus = isBonusAnswer(ans);
+                  return (
+                    <div 
+                      key={idx} 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        background: isBonus ? '#fffbeb' : 'var(--bg-secondary)', 
+                        padding: '4px 8px', 
+                        borderRadius: '6px', 
+                        border: isBonus ? '1.5px solid #f59e0b' : '1px solid var(--border-color)',
+                        boxShadow: isBonus ? '0 1px 5px rgba(245, 158, 11, 0.25)' : 'none',
+                        transition: 'all 0.15s ease'
                       }}
-                      onKeyDown={(e) => {
-                        const inputs = Array.from(e.target.closest('.modal-body').querySelectorAll('input'));
-                        const index = inputs.indexOf(e.target);
-                        
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (index > -1 && index < inputs.length - 1) {
-                            inputs[index + 1].focus();
-                          }
-                        } else if (e.key === 'Backspace') {
-                          if (e.target.value === '' && index > 0) {
-                            e.preventDefault();
-                            inputs[index - 1].focus();
-                          }
-                        } else if (e.key === 'ArrowRight') {
-                          if (e.target.selectionStart === e.target.value.length && index < inputs.length - 1) {
-                            e.preventDefault();
-                            inputs[index + 1].focus();
-                          }
-                        } else if (e.key === 'ArrowLeft') {
-                          if (e.target.selectionEnd === 0 && index > 0) {
-                            e.preventDefault();
-                            inputs[index - 1].focus();
-                          }
-                        } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                          e.preventDefault();
-                          let cols = 0;
-                          if (inputs.length > 0) {
-                            const firstTop = inputs[0].offsetTop;
-                            for (let i = 1; i < inputs.length; i++) {
-                              if (inputs[i].offsetTop > firstTop) {
-                                cols = i;
-                              }
-                            }
-                            if (cols === 0) cols = inputs.length;
-                          }
+                    >
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: isBonus ? '#b45309' : 'var(--text-tertiary)', width: isBonus ? '30px' : '24px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        {questionNumbers[idx] || (idx + 1)}.{isBonus && '⭐'}
+                      </span>
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ 
+                          width: '100%', 
+                          padding: '4px', 
+                          textAlign: 'center', 
+                          fontWeight: 800, 
+                          border: 'none', 
+                          background: 'transparent',
+                          color: isBonus ? '#b45309' : 'inherit'
+                        }}
+                        value={ans}
+                        placeholder="-"
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setManualAnswersGrid(prev => {
+                            const newGrid = [...prev];
+                            newGrid[idx] = val;
+                            return newGrid;
+                          });
+                        }}
+                        onKeyDown={(e) => {
+                          const inputs = Array.from(e.target.closest('.modal-body').querySelectorAll('input'));
+                          const index = inputs.indexOf(e.target);
                           
-                          if (e.key === 'ArrowUp' && index >= cols) {
-                            inputs[index - cols].focus();
-                          } else if (e.key === 'ArrowDown' && index + cols < inputs.length) {
-                            inputs[index + cols].focus();
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (index > -1 && index < inputs.length - 1) {
+                              inputs[index + 1].focus();
+                            }
+                          } else if (e.key === 'Backspace') {
+                            if (e.target.value === '' && index > 0) {
+                              e.preventDefault();
+                              inputs[index - 1].focus();
+                            }
+                          } else if (e.key === 'ArrowRight') {
+                            if (e.target.selectionStart === e.target.value.length && index < inputs.length - 1) {
+                              e.preventDefault();
+                              inputs[index + 1].focus();
+                            }
+                          } else if (e.key === 'ArrowLeft') {
+                            if (e.target.selectionEnd === 0 && index > 0) {
+                              e.preventDefault();
+                              inputs[index - 1].focus();
+                            }
+                          } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            let cols = 0;
+                            if (inputs.length > 0) {
+                              const firstTop = inputs[0].offsetTop;
+                              for (let i = 1; i < inputs.length; i++) {
+                                if (inputs[i].offsetTop > firstTop) {
+                                  cols = i;
+                                }
+                              }
+                              if (cols === 0) cols = inputs.length;
+                            }
+                            
+                            if (e.key === 'ArrowUp' && index >= cols) {
+                              inputs[index - cols].focus();
+                            } else if (e.key === 'ArrowDown' && index + cols < inputs.length) {
+                              inputs[index + cols].focus();
+                            }
                           }
-                        }
-                      }}
-                      maxLength={4}
-                    />
-                  </div>
-                ))}
+                        }}
+                        maxLength={8}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
