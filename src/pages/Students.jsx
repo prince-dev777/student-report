@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, animate } from 'framer-motion';
 import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X, FileSpreadsheet, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api } from '../utils/api';
-import { calcAttendancePercent } from '../utils/helpers';
+import { calcAttendancePercent, formatBatchName } from '../utils/helpers';
 import { getAvatarClass, getInitials } from '../data/sampleData';
 import AddStudentModal from '../components/AddStudentModal';
 import StudentProfileModal from '../components/StudentProfileModal';
@@ -71,21 +71,13 @@ export default function Students() {
     return paginatedStudents || [];
   }, [students, paginatedStudents]);
 
-  // Dynamic unique classes from all students in database + standard classes + batches
+  // Dynamic unique classes from all students in database (only classes where students actually exist)
   const uniqueClasses = useMemo(() => {
     const classSet = new Set();
-    // Standard classes
-    ['8th', '9th', '10th', '11th', '12th', 'Dropper', 'Target', 'Foundation'].forEach(c => classSet.add(c));
-    // All student classes
     allStudentsList.forEach(s => {
-      if (s.class && String(s.class).trim()) {
-        classSet.add(String(s.class).trim());
-      }
-    });
-    // Batch configured classes
-    (batches || []).forEach(b => {
-      if (b.class && String(b.class).trim()) {
-        classSet.add(String(b.class).trim());
+      const cls = String(s.class || '').trim();
+      if (cls) {
+        classSet.add(cls);
       }
     });
     return Array.from(classSet).filter(Boolean).sort((a, b) => {
@@ -94,26 +86,20 @@ export default function Students() {
       if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
       return a.localeCompare(b);
     });
-  }, [allStudentsList, batches]);
+  }, [allStudentsList]);
 
-  // Dynamic courses / batches from config + student records
+  // Dynamic courses / batches from student records (only batches where students actually exist)
   const dynamicBatches = useMemo(() => {
     const map = new Map();
-    (batches || []).forEach(b => {
-      if (b && (b.id || b.name)) {
-        const id = b.id || b.name;
-        map.set(id, { id, name: b.name || formatBatchName(id, batches) });
-      }
-    });
     allStudentsList.forEach(s => {
       const bVal = s.batch || s.targetClass;
       if (bVal && !map.has(bVal)) {
         const formatted = formatBatchName(bVal, batches);
-        map.set(bVal, { id: bVal, name: formatted });
+        map.set(bVal, { id: bVal, name: formatted || bVal });
       }
     });
     return Array.from(map.values());
-  }, [batches, allStudentsList]);
+  }, [allStudentsList, batches]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);

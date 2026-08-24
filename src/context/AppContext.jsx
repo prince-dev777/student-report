@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { batches } from '../data/sampleData';
 import { generateId, getTodayStr, getCurrentTime, calculateRanks } from '../utils/helpers';
 import { sendAttendanceSMS, sendTestResultSMS, sendCustomSMS } from '../utils/smsService';
-import { api, checkBackendStatus } from '../utils/api';
+import { api, checkBackendStatus, API_BASE } from '../utils/api';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
 
@@ -721,6 +721,47 @@ export function AppProvider({ children }) {
       return false;
     }
   }, []);
+
+  // ---- 🔄 SSE Live-Sync: Auto-refresh when server pulls new data from cloud ----
+  useEffect(() => {
+    if (!backendOnline) return;
+
+    // Derive SSE URL from API_BASE (strip /api suffix)
+    const sseUrl = API_BASE.replace(/\/api\/?$/, '') + '/api/sync/live';
+    let eventSource;
+    let reconnectTimer;
+
+    function connect() {
+      eventSource = new EventSource(sseUrl);
+
+      eventSource.addEventListener('data-updated', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          console.log('[SSE] Data updated from cloud:', data);
+          refreshAllData();
+        } catch (err) {
+          console.warn('[SSE] Failed to parse event:', err);
+        }
+      });
+
+      eventSource.addEventListener('connected', () => {
+        console.log('[SSE] Connected to live-sync server');
+      });
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        // Reconnect after 10 seconds
+        reconnectTimer = setTimeout(connect, 10000);
+      };
+    }
+
+    connect();
+
+    return () => {
+      if (eventSource) eventSource.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+    };
+  }, [backendOnline, refreshAllData]);
 
   const value = {
     students,

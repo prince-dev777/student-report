@@ -475,6 +475,40 @@ export function triggerBackgroundCloudSync() {
 // Background auto heartbeat: Automatically sync every 3 minutes
 setInterval(triggerBackgroundCloudSync, 180000);
 
+// ---- 🔄 SSE Live-Sync: Real-time data update notifications to all connected frontends ----
+const sseClients = new Set();
+
+function broadcastSSE(event, data = {}) {
+  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const client of sseClients) {
+    try { client.write(payload); } catch (e) { sseClients.delete(client); }
+  }
+}
+
+// ---- 🔄 Auto-Pull: Automatically restore from cloud every 5 minutes ----
+let isAutoPulling = false;
+
+async function autoRestoreFromCloud() {
+  if (isAutoPulling || mongoose.connection.readyState !== 1) return;
+  isAutoPulling = true;
+  try {
+    const result = await performRestoreFromCloud();
+    if (result && result.totalRestored > 0) {
+      logInfo('AUTO-PULL', `✅ Auto-pulled ${result.totalRestored} records from cloud. Notifying frontends...`);
+      broadcastSSE('data-updated', { source: 'auto-pull', totalRestored: result.totalRestored, timestamp: new Date().toISOString() });
+    }
+  } catch (err) {
+    logWarn('AUTO-PULL', `Auto-pull skipped: ${err.message}`);
+  } finally {
+    isAutoPulling = false;
+  }
+}
+
+// Run auto-pull every 5 minutes (300000ms)
+setInterval(autoRestoreFromCloud, 300000);
+// Also run first auto-pull 30 seconds after server start
+setTimeout(autoRestoreFromCloud, 30000);
+
 // ---- 🔐 Auth API ----
 // Registration endpoint removed for security. 
 // Institutes must be created by Super Admin via /api/superadmin/create-institute
@@ -4009,10 +4043,39 @@ app.post('/api/system/restore-cloud', protect, async (req, res) => {
   logInfo('RESTORE', 'Triggering in-process restore from Express API...');
   try {
     const result = await performRestoreFromCloud();
+    // Notify all connected frontends that data has been updated
+    broadcastSSE('data-updated', { source: 'manual-restore', totalRestored: result.totalRestored, timestamp: new Date().toISOString() });
     res.json({ message: `Successfully restored ${result.totalRestored} records from Cloud to Local PC.` });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to restore data from cloud.' });
   }
+});
+
+// ---- 📡 SSE Live-Sync Endpoint ----
+app.get('/api/sync/live', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*'
+  });
+
+  // Send initial heartbeat
+  res.write(`event: connected\ndata: ${JSON.stringify({ message: 'SSE connected for live sync' })}\n\n`);
+
+  sseClients.add(res);
+  logInfo('SSE', `Client connected. Total SSE clients: ${sseClients.size}`);
+
+  // Keep-alive ping every 30 seconds
+  const keepAlive = setInterval(() => {
+    try { res.write(': keep-alive\n\n'); } catch (e) { clearInterval(keepAlive); }
+  }, 30000);
+
+  req.on('close', () => {
+    clearInterval(keepAlive);
+    sseClients.delete(res);
+    logInfo('SSE', `Client disconnected. Total SSE clients: ${sseClients.size}`);
+  });
 });
 
 // ---- 📋 System & Sync Debug Logs API ----
