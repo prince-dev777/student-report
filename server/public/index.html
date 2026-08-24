@@ -75,19 +75,34 @@
       });
 
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((reg) => {
-          console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
-        }).catch((err) => {
-          console.warn('[PWA] ServiceWorker registration error:', err);
-        });
+        if (!isElectron) {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((reg) => {
+            console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
+          }).catch((err) => {
+            console.warn('[PWA] ServiceWorker registration error:', err);
+          });
+        } else {
+          // Inside Electron: unregister any legacy service workers and clear cache storage
+          navigator.serviceWorker.getRegistrations().then((regs) => {
+            for (const reg of regs) {
+              reg.unregister();
+              console.log('[Desktop] Unregistered lingering ServiceWorker');
+            }
+          }).catch(() => {});
+          if ('caches' in window) {
+            caches.keys().then((names) => {
+              names.forEach((name) => caches.delete(name));
+            }).catch(() => {});
+          }
+        }
       }
     </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="./assets/index-DLLyDb9D.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-D58_1uDB.css">
+    <script type="module" crossorigin src="./assets/index-CcwLzmag.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Cd0I7I4L.css">
   </head>
   <body>
     <div id="root"></div>

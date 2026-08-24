@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Search, Edit2, Trash2, Phone, Calendar, 
   Download, Filter, FileSpreadsheet, CheckCircle2, 
-  Clock, UserCheck, AlertCircle, X, ArrowUpDown, RefreshCw 
+  Clock, UserCheck, AlertCircle, X, ArrowUpDown, RefreshCw,
+  Eye, MessageCircle, Copy, ExternalLink, User, FileText, Check
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
@@ -18,6 +19,8 @@ export default function Inquiries() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(null);
   const [inquiryToDelete, setInquiryToDelete] = useState(null);
+  const [selectedInquiry, setSelectedInquiry] = useState(null);
+  const [copiedPhone, setCopiedPhone] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Real-time Cloud Sync Handler with Instant Dual-Fetch Merge
@@ -99,6 +102,14 @@ export default function Inquiries() {
     status: 'Pending',
     date: getTodayStr()
   });
+
+  const handleCopyPhone = (phone) => {
+    if (!phone) return;
+    navigator.clipboard.writeText(phone);
+    setCopiedPhone(true);
+    toast.success(`Copied ${phone} to clipboard!`);
+    setTimeout(() => setCopiedPhone(false), 2000);
+  };
 
   // Filter inquiries based on Search, Status, and Date Range
   const filteredInquiries = useMemo(() => {
@@ -528,7 +539,12 @@ export default function Inquiries() {
               </tr>
             ) : (
               filteredInquiries.map((iq) => (
-                <tr key={iq.id}>
+                <tr 
+                  key={iq.id}
+                  onClick={() => setSelectedInquiry(iq)}
+                  style={{ cursor: 'pointer', transition: 'background-color 0.15s ease' }}
+                  title="Click to view full inquiry details & discussion log"
+                >
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <div className="flex items-center gap-2" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                       <Calendar size={14} className="text-muted" style={{ flexShrink: 0 }} />
@@ -540,13 +556,20 @@ export default function Inquiries() {
                   <td>
                     <div className="flex items-center gap-2" style={{ color: 'var(--primary, #3b82f6)', fontWeight: 500 }}>
                       <Phone size={14} />
-                      <a href={`tel:${iq.contactNumber}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                      <a 
+                        href={`tel:${iq.contactNumber}`} 
+                        onClick={(e) => e.stopPropagation()} 
+                        style={{ color: 'inherit', textDecoration: 'none' }}
+                        title="Click to Call"
+                      >
                         {iq.contactNumber}
                       </a>
                     </div>
                   </td>
                   <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '280px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {iq.discussionDetails || '—'}
+                    <span style={{ borderBottom: '1px dashed var(--border-color)', paddingBottom: '1px' }}>
+                      {iq.discussionDetails || '—'}
+                    </span>
                   </td>
                   <td>{getStatusBadge(iq.status)}</td>
                   <td className="text-right">
@@ -554,7 +577,16 @@ export default function Inquiries() {
                       <button 
                         type="button" 
                         className="btn btn-sm" 
-                        onClick={() => openEditModal(iq)}
+                        onClick={(e) => { e.stopPropagation(); setSelectedInquiry(iq); }}
+                        style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '5px 8px', borderRadius: '6px' }}
+                        title="View Full Inquiry Details & Discussion Log"
+                      >
+                        <Eye size={14} />
+                      </button>
+                      <button 
+                        type="button" 
+                        className="btn btn-sm" 
+                        onClick={(e) => { e.stopPropagation(); openEditModal(iq); }}
                         style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '5px 8px', borderRadius: '6px' }}
                         title="Edit Inquiry"
                       >
@@ -563,7 +595,7 @@ export default function Inquiries() {
                       <button 
                         type="button" 
                         className="btn btn-sm" 
-                        onClick={() => setInquiryToDelete(iq)}
+                        onClick={(e) => { e.stopPropagation(); setInquiryToDelete(iq); }}
                         style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '5px 8px', borderRadius: '6px' }}
                         title="Delete Inquiry"
                       >
@@ -577,6 +609,250 @@ export default function Inquiries() {
           </tbody>
         </table>
       </div>
+
+      {/* View Full Inquiry Details & Discussion Log Modal */}
+      {selectedInquiry && createPortal(
+        <div 
+          className="modal-overlay" 
+          onClick={() => setSelectedInquiry(null)} 
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            background: 'rgba(0,0,0,0.75)', 
+            backdropFilter: 'blur(5px)', 
+            zIndex: 99999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '16px' 
+          }}
+        >
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0, y: 15 }} 
+            animate={{ scale: 1, opacity: 1, y: 0 }} 
+            className="card" 
+            style={{ 
+              maxWidth: '560px', 
+              width: '100%', 
+              padding: '24px', 
+              borderRadius: '20px', 
+              background: 'var(--card-bg, #ffffff)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', paddingBottom: '14px', borderBottom: '1px solid var(--border-color-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ 
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)', 
+                  color: '#ffffff', 
+                  width: '42px', 
+                  height: '42px', 
+                  borderRadius: '12px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 10px rgba(99, 102, 241, 0.3)'
+                }}>
+                  <FileText size={22} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>Inquiry & Discussion Log</h2>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    Complete record & communication notes
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {getStatusBadge(selectedInquiry.status)}
+                <button 
+                  type="button" 
+                  onClick={() => setSelectedInquiry(null)} 
+                  style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                  title="Close Modal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Visitor & Student Details Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--bg-secondary)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color-light)' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                  Visitor / Parent Name
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                  <User size={16} style={{ color: 'var(--primary, #3b82f6)' }} />
+                  <span>{selectedInquiry.visitorName || '—'}</span>
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--bg-secondary)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color-light)' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                  Prospective Student
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                  <UserCheck size={16} style={{ color: '#10b981' }} />
+                  <span>{selectedInquiry.studentName || '—'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact & Quick Action Buttons */}
+            <div style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)', padding: '14px', borderRadius: '14px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Phone size={18} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block' }}>CONTACT PHONE</span>
+                    <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '0.5px' }}>
+                      {selectedInquiry.contactNumber || '—'}
+                    </span>
+                  </div>
+                </div>
+
+                {selectedInquiry.contactNumber && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <a
+                      href={`https://wa.me/${selectedInquiry.contactNumber.replace(/\D/g, '').length === 10 ? '91' + selectedInquiry.contactNumber.replace(/\D/g, '') : selectedInquiry.contactNumber.replace(/\D/g, '')}?text=${encodeURIComponent(`Namaste ${selectedInquiry.visitorName || ''}, Career Xone se baat kar rahe hain.`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-sm"
+                      style={{ 
+                        background: '#22c55e', 
+                        color: '#ffffff', 
+                        border: 'none', 
+                        padding: '6px 12px', 
+                        borderRadius: '8px', 
+                        fontSize: '0.8rem', 
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        textDecoration: 'none'
+                      }}
+                      title="Open WhatsApp Chat"
+                    >
+                      <MessageCircle size={15} />
+                      <span>WhatsApp</span>
+                    </a>
+
+                    <a
+                      href={`tel:${selectedInquiry.contactNumber}`}
+                      className="btn btn-sm btn-outline"
+                      style={{ 
+                        padding: '6px 12px', 
+                        borderRadius: '8px', 
+                        fontSize: '0.8rem', 
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        textDecoration: 'none'
+                      }}
+                      title="Direct Call"
+                    >
+                      <Phone size={14} />
+                      <span>Call</span>
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopyPhone(selectedInquiry.contactNumber)}
+                      className="btn btn-sm btn-secondary"
+                      style={{ padding: '6px 10px', borderRadius: '8px' }}
+                      title="Copy Phone Number"
+                    >
+                      {copiedPhone ? <Check size={14} style={{ color: '#10b981' }} /> : <Copy size={14} />}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Full Discussion Notes & Message Log */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FileText size={14} />
+                  <span>Discussion Details & Conversation Log</span>
+                </span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  {selectedInquiry.discussionDetails ? `${selectedInquiry.discussionDetails.length} characters` : '0 characters'}
+                </span>
+              </div>
+              <div style={{ 
+                background: 'var(--bg-secondary)', 
+                padding: '16px', 
+                borderRadius: '14px', 
+                border: '1px solid var(--border-color)',
+                fontSize: '0.92rem',
+                lineHeight: '1.6',
+                color: 'var(--text-primary)',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                minHeight: '100px',
+                maxHeight: '260px',
+                overflowY: 'auto'
+              }}>
+                {selectedInquiry.discussionDetails || (
+                  <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    No discussion notes were recorded for this inquiry.
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Date & Status Meta Bar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg-secondary)', borderRadius: '10px', marginBottom: '20px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Calendar size={14} />
+                <span>Visit Date: <strong>{selectedInquiry.date ? formatDate(selectedInquiry.date) : '—'}</strong></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Clock size={14} />
+                <span>Status: <strong>{selectedInquiry.status}</strong></span>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid var(--border-color-light)' }}>
+              <button 
+                type="button" 
+                className="btn btn-sm btn-secondary" 
+                onClick={() => setSelectedInquiry(null)}
+              >
+                Close
+              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-sm btn-primary" 
+                  onClick={() => {
+                    const iq = selectedInquiry;
+                    setSelectedInquiry(null);
+                    openEditModal(iq);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Edit2 size={14} />
+                  <span>Edit Inquiry</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
 
       {/* Add / Edit Inquiry Modal */}
       {isModalOpen && (

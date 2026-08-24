@@ -37,8 +37,10 @@ import {
   History,
   Eye,
   User,
-  Copy
+  Copy,
+  PhoneCall
 } from 'lucide-react';
+import VoiceCallerSimulator from '../components/VoiceCallerSimulator';
 import { useApp } from '../context/AppContext';
 import { api, API_BASE } from '../utils/api';
 import * as XLSX from 'xlsx';
@@ -95,7 +97,20 @@ export default function SMSCenter() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Tab Management ('logs' | 'bot')
-  const [activeTab, setActiveTab] = useState('logs');
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return localStorage.getItem('cx_smscenter_tab') || 'bot';
+    } catch {
+      return 'bot';
+    }
+  });
+
+  const handleTabSwitch = (tab) => {
+    setActiveTab(tab);
+    try {
+      localStorage.setItem('cx_smscenter_tab', tab);
+    } catch {}
+  };
 
   // WhatsApp Parent Auto-Reply Bot State
   const [botConfig, setBotConfig] = useState({
@@ -570,7 +585,7 @@ export default function SMSCenter() {
       >
         <div>
           <h1>📱 SMS Center</h1>
-          <p>Track all parent notifications</p>
+          <p>Track all parent notifications & AI automated assistant</p>
         </div>
         <button
           className="btn btn-primary"
@@ -580,6 +595,140 @@ export default function SMSCenter() {
           Send Custom SMS
         </button>
       </motion.div>
+
+      {/* Primary Top Navigation Tabs */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '20px',
+        background: 'var(--bg-secondary)',
+        padding: '6px',
+        borderRadius: '14px',
+        border: '1px solid var(--border-color)',
+        flexWrap: 'wrap',
+        gap: '8px'
+      }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => handleTabSwitch('bot')}
+            style={{
+              padding: '10px 22px',
+              borderRadius: '10px',
+              border: 'none',
+              fontWeight: 800,
+              fontSize: '0.92rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: activeTab === 'bot' ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' : 'transparent',
+              color: activeTab === 'bot' ? '#ffffff' : 'var(--text-secondary)',
+              boxShadow: activeTab === 'bot' ? '0 4px 14px rgba(99, 102, 241, 0.35)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <Sparkles size={18} />
+            <span>✨ Career Xone AI Assistant</span>
+            <span style={{
+              background: botConfig.enabled ? '#22c55e' : '#ef4444',
+              color: '#ffffff',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              fontSize: '0.72rem',
+              fontWeight: 800
+            }}>
+              {botConfig.enabled ? 'ACTIVE' : 'PAUSED'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleTabSwitch('voice')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '10px',
+              border: 'none',
+              fontWeight: 800,
+              fontSize: '0.92rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: activeTab === 'voice' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
+              color: activeTab === 'voice' ? '#ffffff' : 'var(--text-secondary)',
+              boxShadow: activeTab === 'voice' ? '0 4px 14px rgba(16, 185, 129, 0.35)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <PhoneCall size={18} />
+            <span>🎙️ AI Voice Calling</span>
+            <span style={{
+              background: '#10b981',
+              color: '#ffffff',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              fontSize: '0.72rem',
+              fontWeight: 800
+            }}>
+              FREE
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleTabSwitch('logs')}
+            style={{
+              padding: '10px 22px',
+              borderRadius: '10px',
+              border: 'none',
+              fontWeight: 800,
+              fontSize: '0.92rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: activeTab === 'logs' ? 'var(--accent-blue)' : 'transparent',
+              color: activeTab === 'logs' ? '#ffffff' : 'var(--text-secondary)',
+              boxShadow: activeTab === 'logs' ? '0 4px 14px rgba(59, 130, 246, 0.35)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <MessageSquare size={18} />
+            <span>Outbound Notification Logs</span>
+            <span style={{
+              background: activeTab === 'logs' ? 'rgba(255,255,255,0.2)' : 'var(--bg-card)',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              fontSize: '0.75rem'
+            }}>
+              {stats.total}
+            </span>
+          </button>
+        </div>
+
+        {activeTab === 'bot' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingRight: '6px' }}>
+            <button
+              onClick={handleToggleBot}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.82rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: botConfig.enabled ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                color: botConfig.enabled ? '#ef4444' : '#22c55e'
+              }}
+            >
+              {botConfig.enabled ? <Pause size={14} /> : <Play size={14} />}
+              <span>{botConfig.enabled ? 'Pause Auto-Replies' : 'Resume Auto-Replies'}</span>
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* WhatsApp Local Status Banner */}
       <div className="card" style={{ marginBottom: '24px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -660,106 +809,6 @@ export default function SMSCenter() {
             </button>
           )}
         </div>
-      </div>
-
-      {/* Sub-Header Navigation Tabs */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '20px',
-        background: 'var(--bg-secondary)',
-        padding: '6px',
-        borderRadius: '12px',
-        border: '1px solid var(--border-color)',
-        flexWrap: 'wrap',
-        gap: '8px'
-      }}>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <button
-            onClick={() => setActiveTab('logs')}
-            style={{
-              padding: '8px 18px',
-              borderRadius: '8px',
-              border: 'none',
-              fontWeight: 700,
-              fontSize: '0.86rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: activeTab === 'logs' ? 'var(--accent-blue)' : 'transparent',
-              color: activeTab === 'logs' ? '#ffffff' : 'var(--text-secondary)',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <MessageSquare size={16} />
-            <span>Outbound Notification Logs</span>
-            <span style={{
-              background: activeTab === 'logs' ? 'rgba(255,255,255,0.2)' : 'var(--bg-card)',
-              padding: '2px 8px',
-              borderRadius: '10px',
-              fontSize: '0.75rem'
-            }}>
-              {stats.total}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('bot')}
-            style={{
-              padding: '8px 18px',
-              borderRadius: '8px',
-              border: 'none',
-              fontWeight: 700,
-              fontSize: '0.86rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: activeTab === 'bot' ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' : 'transparent',
-              color: activeTab === 'bot' ? '#ffffff' : 'var(--text-secondary)',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <Sparkles size={16} />
-            <span>✨ Career Xone AI Assistant</span>
-            <span style={{
-              background: botConfig.enabled ? '#22c55e' : '#ef4444',
-              color: '#ffffff',
-              padding: '2px 8px',
-              borderRadius: '10px',
-              fontSize: '0.72rem',
-              fontWeight: 800
-            }}>
-              {botConfig.enabled ? 'ACTIVE' : 'PAUSED'}
-            </span>
-          </button>
-        </div>
-
-        {activeTab === 'bot' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingRight: '6px' }}>
-            <button
-              onClick={handleToggleBot}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 700,
-                fontSize: '0.8rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: botConfig.enabled ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
-                color: botConfig.enabled ? '#ef4444' : '#22c55e'
-              }}
-            >
-              {botConfig.enabled ? <Pause size={14} /> : <Play size={14} />}
-              <span>{botConfig.enabled ? 'Pause Auto-Replies' : 'Resume Auto-Replies'}</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {activeTab === 'logs' ? (
@@ -1148,6 +1197,8 @@ export default function SMSCenter() {
         )}
       </motion.div>
         </>
+      ) : activeTab === 'voice' ? (
+        <VoiceCallerSimulator />
       ) : (
         /* 🤖 WhatsApp AI & Parent Auto-Reply Bot Tab Content */
         <motion.div
@@ -1328,26 +1379,16 @@ export default function SMSCenter() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '12px',
+                padding: '10px 14px',
                 borderRadius: '10px',
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)'
               }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>1️⃣ Attendance Auto-Reply</span>
-                    <code style={{ fontSize: '0.72rem', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', padding: '2px 6px', borderRadius: '4px' }}>
-                      '1', 'Attendance', 'Haajri'
-                    </code>
-                  </div>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                    Returns today's punch entry/exit time and monthly attendance rate.
-                  </p>
-                </div>
+                <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>1️⃣ Attendance Auto-Reply</span>
                 <button
                   onClick={() => handleUpdateBotSetting('enableAttendance', !botConfig.enableAttendance)}
                   style={{
-                    padding: '6px 12px',
+                    padding: '6px 14px',
                     borderRadius: '8px',
                     border: 'none',
                     fontWeight: 700,
@@ -1366,26 +1407,16 @@ export default function SMSCenter() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '12px',
+                padding: '10px 14px',
                 borderRadius: '10px',
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)'
               }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>2️⃣ Test Marks & Ranks</span>
-                    <code style={{ fontSize: '0.72rem', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', padding: '2px 6px', borderRadius: '4px' }}>
-                      '2', 'Marks', 'Result', 'Test'
-                    </code>
-                  </div>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                    Returns latest published exam marks, percentage, and batch rank.
-                  </p>
-                </div>
+                <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>2️⃣ Test Marks & Ranks</span>
                 <button
                   onClick={() => handleUpdateBotSetting('enableMarks', !botConfig.enableMarks)}
                   style={{
-                    padding: '6px 12px',
+                    padding: '6px 14px',
                     borderRadius: '8px',
                     border: 'none',
                     fontWeight: 700,
@@ -1404,23 +1435,13 @@ export default function SMSCenter() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '12px',
+                padding: '10px 14px',
                 borderRadius: '10px',
                 background: 'rgba(245, 158, 11, 0.08)',
                 border: '1px solid rgba(245, 158, 11, 0.25)'
               }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>3️⃣ Fee Counseling Protection</span>
-                    <code style={{ fontSize: '0.72rem', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', padding: '2px 6px', borderRadius: '4px' }}>
-                      '3', 'Fees', 'Payment'
-                    </code>
-                  </div>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                    🛡️ Auto-redirects to official counseling helpline (<strong>9673383561 / 9145481323</strong>).
-                  </p>
-                </div>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.15)', padding: '4px 8px', borderRadius: '6px' }}>
+                <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)' }}>3️⃣ Fee Counseling Protection</span>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.15)', padding: '4px 10px', borderRadius: '6px' }}>
                   PROTECTED
                 </span>
               </div>
@@ -1430,26 +1451,16 @@ export default function SMSCenter() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '12px',
+                padding: '10px 14px',
                 borderRadius: '10px',
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)'
               }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>4️⃣ Class Timetable & Schedule</span>
-                    <code style={{ fontSize: '0.72rem', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', padding: '2px 6px', borderRadius: '4px' }}>
-                      '4', 'Time', 'Timetable'
-                    </code>
-                  </div>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                    Returns daily lecture sessions and batch class timings.
-                  </p>
-                </div>
+                <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>4️⃣ Class Timetable & Schedule</span>
                 <button
                   onClick={() => handleUpdateBotSetting('enableTimetable', !botConfig.enableTimetable)}
                   style={{
-                    padding: '6px 12px',
+                    padding: '6px 14px',
                     borderRadius: '8px',
                     border: 'none',
                     fontWeight: 700,
@@ -1468,26 +1479,16 @@ export default function SMSCenter() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '12px',
+                padding: '10px 14px',
                 borderRadius: '10px',
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)'
               }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>5️⃣ Performance Report Card</span>
-                    <code style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '2px 6px', borderRadius: '4px' }}>
-                      '5', 'Report', 'Summary'
-                    </code>
-                  </div>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                    Returns comprehensive summary of attendance and test score history.
-                  </p>
-                </div>
+                <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>5️⃣ Performance Report Card</span>
                 <button
                   onClick={() => handleUpdateBotSetting('enableReport', !botConfig.enableReport)}
                   style={{
-                    padding: '6px 12px',
+                    padding: '6px 14px',
                     borderRadius: '8px',
                     border: 'none',
                     fontWeight: 700,

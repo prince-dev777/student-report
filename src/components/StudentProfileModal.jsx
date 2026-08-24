@@ -502,8 +502,8 @@ export default function StudentProfileModal({
                           🪪 FRONT SIDE
                         </div>
                         <div className="print-id-card" style={{ 
-                          width: '240px', 
-                          height: '380px', 
+                          width: '235px', 
+                          height: '375px', 
                           boxSizing: 'border-box',
                           background: 'linear-gradient(135deg, #f0f7ff 0%, #dbeafe 100%)', 
                           borderRadius: '12px', 
@@ -511,53 +511,64 @@ export default function StudentProfileModal({
                           overflow: 'hidden', 
                           display: 'flex', 
                           flexDirection: 'column',
-                          border: '1px solid #bfdbfe',
+                          border: '1.5px solid #bfdbfe',
                           position: 'relative',
                           fontFamily: "'Montserrat', sans-serif"
                         }}>
-                          <div style={{ boxSizing: 'border-box', height: '100px', width: 'calc(100% - 8px)', margin: '4px auto 0', overflow: 'hidden', background: '#fff', border: '1.5px solid #3b82f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <img src={idLogo} alt="Career Xone" style={{ width: '92%', height: '88%', objectFit: 'contain' }} />
+                          <div style={{ boxSizing: 'border-box', height: '68px', width: 'calc(100% - 10px)', margin: '5px auto 0', overflow: 'hidden', background: '#fff', border: '1.5px solid #3b82f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 6px' }}>
+                            <img src={idLogo} alt="Career Xone" style={{ width: '94%', height: '88%', objectFit: 'contain' }} />
                           </div>
                           
-                          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-45px', zIndex: 2 }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-34px', zIndex: 2 }}>
                             {student.photo ? (
-                              <img src={student.photo} alt={student.name} style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
+                              <img src={student.photo} alt={student.name} style={{ width: '70px', height: '70px', borderRadius: '50%', objectFit: 'cover', border: '3px solid white', boxShadow: '0 3px 8px rgba(0,0,0,0.15)' }} />
                             ) : (
-                              <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontSize: '2rem', color: 'var(--text-tertiary)', fontWeight: 'bold' }}>
+                              <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid white', boxShadow: '0 3px 8px rgba(0,0,0,0.15)', fontSize: '1.4rem', color: '#ffffff', fontWeight: 'bold' }}>
                                 {getInitials(student.name)}
                               </div>
                             )}
                           </div>
                           
-                          <div style={{ padding: '8px 14px 10px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div style={{ padding: '4px 10px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <div>
-                              <h3 style={{ margin: '0 0 2px 0', fontSize: '1.05rem', color: 'var(--text-primary)', fontWeight: '700' }}>{student.name}</h3>
-                              <p style={{ margin: '0 0 8px 0', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Course: {batches?.find(b => b.id === student.batch)?.name || student.batch || 'N/A'}</p>
+                              <h3 style={{ margin: '1px 0 1px 0', fontSize: '0.92rem', color: 'var(--text-primary)', fontWeight: '800', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{student.name}</h3>
+                              <p style={{ margin: '0 0 4px 0', fontSize: '0.66rem', color: '#2563eb', fontWeight: '700' }}>Course: {batches?.find(b => b.id === student.batch)?.name || student.batch || 'N/A'}</p>
                               
-                              <div style={{ textAlign: 'left', fontSize: '0.72rem', color: 'var(--text-primary)', lineHeight: '1.5' }}>
-                                <div style={{ display: 'flex' }}><strong style={{ width: '56px' }}>Roll No:</strong> <span>{student.rollNo}</span></div>
-                                <div style={{ display: 'flex' }}><strong style={{ width: '56px' }}>Parent:</strong> <span>{student.parentName || 'N/A'}</span></div>
-                                <div style={{ display: 'flex' }}><strong style={{ width: '56px' }}>Contact:</strong> <span>{student.parentPhone}</span></div>
-                                <div style={{ display: 'flex', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong style={{ width: '56px' }}>Address:</strong> <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{student.address || 'N/A'}</span></div>
+                              <div style={{ textAlign: 'left', fontSize: '0.64rem', color: 'var(--text-primary)', lineHeight: '1.38', background: 'rgba(255,255,255,0.85)', padding: '5px 8px', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '50px', color: '#475569' }}>Roll No:</strong> <span style={{ fontWeight: 800, color: '#1e3a8a' }}>{student.rollNo || '—'}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '50px', color: '#475569' }}>Parent:</strong> <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '130px' }}>{student.parentName || 'N/A'}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '50px', color: '#475569' }}>Contact:</strong> <span style={{ fontWeight: 600 }}>{student.parentPhone}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong style={{ width: '50px', color: '#475569' }}>Address:</strong> <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>{student.address || 'N/A'}</span></div>
                               </div>
                             </div>
                             
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '8px', padding: '0 4px' }}>
-                              <div style={{ textAlign: 'center' }}>
-                                <div style={{ width: '48px', height: '18px', borderBottom: '1px solid var(--border-color)', marginBottom: '2px' }}></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '2px 0', padding: '0 2px' }}>
+                              <div style={{ textAlign: 'center', width: '44px' }}>
+                                <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px' }}></div>
+                                <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Issue Auth</span>
                               </div>
-                              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                <QRCodeSVG value={String(student.rollNo || '')} size={48} level="M" />
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: '#ffffff',
+                                padding: '2px',
+                                borderRadius: '6px',
+                                border: '1px solid #bfdbfe',
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.06)'
+                              }}>
+                                <QRCodeSVG value={String(student.rollNo || '')} size={58} level="M" />
                               </div>
-                              <div style={{ textAlign: 'center' }}>
-                                <div style={{ width: '48px', height: '18px', borderBottom: '1px solid var(--border-color)', marginBottom: '2px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                                  <img src="/principal-sign.png" alt="Principal" style={{ maxHeight: '18px', maxWidth: '48px', display: 'none' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }} />
+                              <div style={{ textAlign: 'center', width: '44px' }}>
+                                <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                  <img src="/principal-sign.png" alt="Principal" style={{ maxHeight: '14px', maxWidth: '44px', display: 'none' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }} />
                                 </div>
+                                <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Principal</span>
                               </div>
                             </div>
                           </div>
                           
-                          <div style={{ background: '#3b82f6', padding: '6px', textAlign: 'center', fontSize: '0.66rem', color: '#fff', fontWeight: '700', letterSpacing: '0.5px' }}>
+                          <div style={{ background: '#3b82f6', padding: '4px', textAlign: 'center', fontSize: '0.60rem', color: '#fff', fontWeight: '800', letterSpacing: '0.5px' }}>
                             STUDENT ID: {student.id}
                           </div>
                         </div>
@@ -569,8 +580,8 @@ export default function StudentProfileModal({
                           📜 BACK SIDE (Terms & Conditions)
                         </div>
                         <div className="print-id-card" style={{ 
-                          width: '240px', 
-                          height: '380px', 
+                          width: '235px', 
+                          height: '375px', 
                           boxSizing: 'border-box',
                           background: '#ffffff', 
                           borderRadius: '12px', 
@@ -579,14 +590,14 @@ export default function StudentProfileModal({
                           display: 'flex', 
                           flexDirection: 'column', 
                           justifyContent: 'space-between',
-                          border: '1px solid #bfdbfe',
+                          border: '1.5px solid #bfdbfe',
                           position: 'relative',
                           fontFamily: "'Montserrat', sans-serif"
                         }}>
                           {/* Header */}
-                          <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', padding: '6px 8px', textAlign: 'center', color: '#fff' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.76rem', fontWeight: 800, letterSpacing: '0.5px' }}>Terms & Conditions</h4>
-                            <span style={{ fontSize: '0.50rem', opacity: 0.9 }}>Career Xone Rules & Regulations</span>
+                          <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', padding: '5px 8px', textAlign: 'center', color: '#fff' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.4px' }}>Terms & Conditions</h4>
+                            <span style={{ fontSize: '0.48rem', opacity: 0.9 }}>Career Xone Rules & Regulations</span>
                           </div>
 
                           {/* Rules Body */}

@@ -245,6 +245,7 @@ export default function Tests() {
       templateId: 'T1',
       questionsToDetect: 75,
     });
+    setManualAnswersGrid([]);
     // Subject mapping is auto-handled by useEffect when templateId resets
 
       setActiveTab('all-tests');
@@ -261,10 +262,11 @@ export default function Tests() {
       setOmrStats({});
       setScannedAnswersData({});
       setOmrImagesData({});
+      setManualAnswersGrid([]);
       return;
     }
 
-    const test = tests.find(t => t.id === testId);
+    const test = tests.find(t => t.id === testId || t._id === testId);
     if (!test) return;
 
     if (test.templateId) {
@@ -272,6 +274,33 @@ export default function Tests() {
     } else {
       setOmrTemplate('T1');
     }
+
+    // Compute question numbers for this specific test
+    const qNums = [];
+    if (test.subjectMapping && test.subjectMapping.length > 0) {
+      test.subjectMapping.forEach(m => {
+        if (m.fromQ && m.toQ) {
+          for (let i = Number(m.fromQ); i <= Number(m.toQ); i++) {
+            qNums.push(i);
+          }
+        }
+      });
+    } else {
+      const totalQ = test.questionsToDetect || 100;
+      for (let i = 1; i <= totalQ; i++) {
+        qNums.push(i);
+      }
+    }
+
+    // Initialize fresh manualAnswersGrid for this test!
+    const initialKey = Array.isArray(test.answerKey) ? test.answerKey : [];
+    const newGrid = new Array(qNums.length).fill('');
+    qNums.forEach((qNum, idx) => {
+      if (qNum && qNum <= initialKey.length) {
+        newGrid[idx] = initialKey[qNum - 1] || '';
+      }
+    });
+    setManualAnswersGrid(newGrid);
 
     // Get all active students in the selected test's course & class
     const batchStudents = students.filter(s => s.batch === test.batch && (!test.targetClass || s.class === test.targetClass) && s.status === 'active');
@@ -1105,6 +1134,15 @@ export default function Tests() {
       const updatedTest = await updateTestAnswerKey(entryTestId, tokens);
       if (!updatedTest) return;
 
+      // Update manualAnswersGrid as well for immediate consistency
+      const newGrid = new Array(questionNumbers.length).fill('');
+      questionNumbers.forEach((qNum, idx) => {
+        if (qNum && qNum <= tokens.length) {
+          newGrid[idx] = tokens[qNum - 1] || '';
+        }
+      });
+      setManualAnswersGrid(newGrid);
+
       // 2. Re-grade all students currently loaded in state
       const newMarksData = { ...marksData };
       const newOmrStats = { ...omrStats };
@@ -1231,9 +1269,20 @@ export default function Tests() {
       if (details) details.removeAttribute('open');
     }
 
-    if (manualAnswersGrid.length !== questionNumbers.length) {
-      setManualAnswersGrid(new Array(questionNumbers.length).fill(''));
+    if (!selectedEntryTest) {
+      toast.error('Please select a test first');
+      return;
     }
+
+    // Always populate the grid cleanly with the selected test's actual answer key
+    const currentKey = Array.isArray(selectedEntryTest.answerKey) ? selectedEntryTest.answerKey : [];
+    const newGrid = new Array(questionNumbers.length).fill('');
+    questionNumbers.forEach((qNum, idx) => {
+      if (qNum && qNum <= currentKey.length) {
+        newGrid[idx] = currentKey[qNum - 1] || '';
+      }
+    });
+    setManualAnswersGrid(newGrid);
     setShowManualAnswerKeyModal(true);
   };
 
@@ -2694,25 +2743,16 @@ export default function Tests() {
                           onClick={(e) => handleOpenManualEntry(e)}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                         >
-                          <BookOpen size={14} /> Enter Answer Key
+                          <BookOpen size={14} /> Enter / Edit Answer Key
                         </button>
                       </div>
                       {selectedEntryTest && selectedEntryTest.answerKey && selectedEntryTest.answerKey.length > 0 && (
                         <button 
                           type="button" 
                           className="btn btn-outline-secondary btn-sm"
-                          onClick={() => {
-                            const newGrid = new Array(questionNumbers.length).fill('');
-                            questionNumbers.forEach((qNum, idx) => {
-                              if (qNum && qNum <= selectedEntryTest.answerKey.length) {
-                                newGrid[idx] = selectedEntryTest.answerKey[qNum - 1] || '';
-                              }
-                            });
-                            setManualAnswersGrid(newGrid);
-                            setShowManualAnswerKeyModal(true);
-                          }}
+                          onClick={(e) => handleOpenManualEntry(e)}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginLeft: '6px', marginRight: '6px' }}
-                          title="Review Uploaded Answer Key"
+                          title="Review / Edit Uploaded Answer Key"
                         >
                           <Eye size={14} /> Show Answer Key
                         </button>
@@ -3384,30 +3424,53 @@ export default function Tests() {
       {/* Manual Answer Key Modal */}
       {showManualAnswerKeyModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowManualAnswerKeyModal(false)} style={{ zIndex: 9999 }}>
-          <div className="modal-content" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Manual Answer Key Entry</h3>
+          <div className="modal-content" style={{ maxWidth: '650px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  Manual Answer Key Entry
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                  Test: <strong style={{ color: '#2563eb' }}>{selectedEntryTest?.name || 'Selected Test'}</strong>
+                  {selectedEntryTest?.subject ? ` (${selectedEntryTest.subject})` : ''} • Total Qs: <strong>{questionNumbers.length}</strong>
+                </p>
+              </div>
               <button className="modal-close" onClick={() => setShowManualAnswerKeyModal(false)}>
                 <X size={18} />
               </button>
             </div>
             <div className="modal-body">
               <div className="mb-4">
-                <div className="flex justify-between items-center mb-3">
+                <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
                   <p className="text-sm text-gray-600 m-0">
-                    Type your answers below and press <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Tab</kbd> or <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Enter</kbd> to move to the next box.
+                    Type your answers below and press <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Tab</kbd> or <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Enter</kbd> to move to next box.
                   </p>
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary btn-sm" 
-                    onClick={handleManualGridPaste}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <ClipboardList size={14} /> Quick Paste
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      type="button" 
+                      className="btn btn-outline-danger btn-sm" 
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to clear all answer boxes for this test?')) {
+                          setManualAnswersGrid(new Array(questionNumbers.length).fill(''));
+                        }
+                      }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '0.78rem' }}
+                      title="Clear all entered answers"
+                    >
+                      <Trash2 size={13} /> Clear All
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary btn-sm" 
+                      onClick={handleManualGridPaste}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '0.78rem' }}
+                    >
+                      <ClipboardList size={14} /> Quick Paste
+                    </button>
+                  </div>
                 </div>
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '10px', fontSize: '0.85rem', color: '#475569' }}>
-                  <strong>💡 How to use Quick Paste:</strong> Open Notepad, write your answers separated by commas (e.g., <code>A, B, C, D...</code>), press <code>Ctrl + A</code> to select all, copy them, and click the <strong>Quick Paste</strong> button above to fill all boxes instantly!
+                  <strong>💡 How to use Quick Paste:</strong> Open Notepad, write your answers separated by commas (e.g., <code>A, B, C, D...</code>), press <code>Ctrl + A</code> to select all, copy them, and click <strong>Quick Paste</strong> to fill all boxes instantly!
                 </div>
               </div>
               
@@ -3460,7 +3523,6 @@ export default function Tests() {
                             for (let i = 1; i < inputs.length; i++) {
                               if (inputs[i].offsetTop > firstTop) {
                                 cols = i;
-                                break;
                               }
                             }
                             if (cols === 0) cols = inputs.length;

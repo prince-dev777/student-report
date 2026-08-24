@@ -59,7 +59,7 @@ async function syncToCloud() {
     }).asPromise();
     logInfo('SYNC', 'Connected to cloud DB.');
 
-    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries'];
+    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
 
     for (const collName of collections) {
       const localColl = localConn.collection(collName);
@@ -92,7 +92,7 @@ async function syncToCloud() {
         // Fetch all published tests to make sure we ONLY upload OMRs of published tests to Cloudinary!
         let publishedTestIds = new Set();
         try {
-          const testsColl = localDb.collection('tests');
+          const testsColl = localConn.collection('tests');
           const publishedTests = await testsColl.find({
             isDeleted: { $ne: true },
             $or: [{ isPublished: true }, { status: 'published' }]

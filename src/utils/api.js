@@ -10,21 +10,27 @@ const isDev = window.location.port === '5173';
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || ((isLocalhost || isElectron) ? 'http://localhost:5000/api' : 'https://student-report-ezgw.onrender.com/api');
 
-// Helper to check if backend is online
-export async function checkBackendStatus() {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds max
-    const signal = typeof AbortSignal.timeout === 'function' 
-      ? AbortSignal.timeout(15000) 
-      : controller.signal;
-    
-    const res = await fetch(`${API_BASE.replace('/api', '')}/`, { method: 'GET', signal });
-    clearTimeout(timeoutId);
-    return res.ok;
-  } catch (e) {
-    return false;
+// Helper to check if backend is online with automatic retry for smooth startup
+export async function checkBackendStatus(retries = (isElectron ? 5 : 2), delay = 800) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const signal = typeof AbortSignal.timeout === 'function' 
+        ? AbortSignal.timeout(3000) 
+        : controller.signal;
+      
+      const res = await fetch(`${API_BASE}/health`, { method: 'GET', signal });
+      clearTimeout(timeoutId);
+      if (res.ok) return true;
+    } catch (e) {
+      // If we still have retries, wait and retry
+      if (i < retries - 1) {
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
   }
+  return false;
 }
 
 export function getMediaUrl(path) {
@@ -243,4 +249,37 @@ export const api = {
     apiRequest('/whatsapp/bot-logs'),
   simulateWhatsAppBotMessage: (data) =>
     apiRequest('/whatsapp/bot/simulate', { method: 'POST', body: JSON.stringify(data) }),
+
+  // 🎙️ AI Voice Calling & Telephony
+  synthesizeVoice: (text, voice) => 
+    apiRequest('/voice-ai/synthesize', { method: 'POST', body: JSON.stringify({ text, voice }) }),
+  processVoiceChat: (data) => 
+    apiRequest('/voice-ai/chat', { method: 'POST', body: JSON.stringify(data) }),
+  getVoiceCallLogs: (limit = 50) => 
+    apiRequest(`/voice-ai/logs?limit=${limit}`),
+  logVoiceCall: (data) => 
+    apiRequest('/voice-ai/log', { method: 'POST', body: JSON.stringify(data) }),
+
+  // 📄 Test Series PDF Generation
+  generateTestSeriesPdf: async (data) => {
+    const token = localStorage.getItem('token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`${API_BASE}/test-series/generate-pdf`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      let errMsg = `Server error: ${response.status}`;
+      try {
+        const errJson = await response.json();
+        errMsg = errJson.error || errMsg;
+      } catch (_) {}
+      throw new Error(errMsg);
+    }
+    return await response.blob();
+  },
 };

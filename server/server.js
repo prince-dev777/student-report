@@ -52,8 +52,16 @@ import {
   getBiometricStatus,
   processPunchRecord,
   scanLocalSubnetForBiometricDevices,
-  recordAdmsActivity
+  recordAdmsActivity,
+  getLocalNetworkIp
 } from './services/biometricService.js';
+import {
+  synthesizeSpeech,
+  processVoiceTurn,
+  saveCallLog,
+  getCallLogs
+} from './services/voiceAiService.js';
+import { compilePdf } from './services/testSeriesPdfService.js';
 import { logInfo, logError, logWarn, getRecentLogs, getLogsDir } from './utils/logger.js';
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -75,7 +83,7 @@ export async function performRestoreFromCloud() {
     
     logInfo('RESTORE', 'Successfully connected to MongoDB Atlas Cloud.');
 
-    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries'];
+    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
     let totalRestored = 0;
 
     for (const collName of collections) {
@@ -125,6 +133,17 @@ app.use(cors());
 app.use(['/iclock', '/cdata', '/getrequest', '/devicecmd', '/fdata', '/rtlog', '/registry', '/push', '/ping'], express.text({ type: '*/*', limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Healthcheck endpoints for frontend connection auto-detection
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', time: Date.now(), db: mongoose.connection.readyState === 1 ? 'connected' : 'connecting' });
+});
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', time: Date.now() });
+});
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
 
 const dataPath = process.env.USER_DATA_PATH || __dirname;
 app.use('/uploads', express.static(path.join(dataPath, 'uploads'), {
@@ -328,13 +347,107 @@ mongoose.connect(MONGODB_URI)
   })
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// ---- ☁️ Robust Background Cloud Sync Engine ----
+// ---- ☁️ Robust In-Process Background Cloud Sync Engine ----
 let isSyncingToCloud = false;
 let pendingSyncRequested = false;
 let lastCloudSyncTime = null;
-let syncTimeoutTimer = null;
 
-function triggerBackgroundCloudSync() {
+export async function performSyncToCloud() {
+  if (mongoose.connection.readyState !== 1) {
+    logWarn('SYNC', 'Local MongoDB not ready yet. Skipping cloud sync.');
+    return false;
+  }
+  let cloudConn;
+  try {
+    cloudConn = await mongoose.createConnection(CLOUD_MONGODB_URI, {
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000
+    }).asPromise();
+
+    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
+
+    for (const collName of collections) {
+      const localColl = mongoose.connection.collection(collName);
+      const cloudColl = cloudConn.collection(collName);
+
+      const docs = await localColl.find({}).toArray();
+      if (!docs || docs.length === 0) continue;
+
+      const activeDocs = docs.filter(doc => !doc.isDeleted);
+      const deletedDocIds = docs.filter(doc => doc.isDeleted).map(doc => doc._id);
+
+      // Purge soft-deleted documents from Cloud
+      if (deletedDocIds.length > 0) {
+        await cloudColl.deleteMany({ _id: { $in: deletedDocIds } }).catch(() => {});
+      }
+
+      if (activeDocs.length === 0) continue;
+
+      // Handle OMR uploads for published test results if needed
+      if (collName === 'testresults') {
+        let publishedTestIds = new Set();
+        try {
+          const publishedTests = await mongoose.connection.collection('tests').find({
+            isDeleted: { $ne: true },
+            $or: [{ isPublished: true }, { status: 'published' }]
+          }).project({ id: 1, _id: 1 }).toArray();
+          publishedTestIds = new Set(publishedTests.map(t => String(t.id || t._id)));
+        } catch (e) {}
+
+        for (let i = 0; i < activeDocs.length; i++) {
+          const doc = activeDocs[i];
+          const testIdStr = String(doc.testId || '');
+          if (!publishedTestIds.has(testIdStr)) continue;
+
+          if (doc.omrSheetImage && doc.omrSheetImage.startsWith('/uploads/omr/')) {
+            const localFilePath = path.join(dataPath, doc.omrSheetImage);
+            if (fs.existsSync(localFilePath)) {
+              try {
+                const uploadRes = await cloudinary.uploader.upload(localFilePath, {
+                  folder: 'student_report_omr',
+                  format: 'jpg'
+                });
+                doc.omrSheetImage = uploadRes.secure_url;
+                doc.omrSheetPublicId = uploadRes.public_id;
+                await localColl.updateOne({ _id: doc._id }, { $set: { omrSheetImage: uploadRes.secure_url, omrSheetPublicId: uploadRes.public_id } });
+              } catch (uploadErr) {
+                console.warn(`Failed to upload OMR to Cloudinary for ${doc._id}:`, uploadErr.message);
+              }
+            }
+          }
+        }
+      }
+
+      // Upsert active docs to cloud
+      const bulkOps = activeDocs.map(doc => ({
+        replaceOne: {
+          filter: { _id: doc._id },
+          replacement: doc,
+          upsert: true
+        }
+      }));
+
+      await cloudColl.bulkWrite(bulkOps, { ordered: false });
+    }
+
+    lastCloudSyncTime = new Date().toISOString();
+    try {
+      fs.writeFileSync(path.join(__dirname, 'sync-status.json'), JSON.stringify({ lastSync: lastCloudSyncTime }));
+    } catch (e) {}
+
+    logInfo('SYNC', `✅ Cloud Auto-Sync completed successfully at ${lastCloudSyncTime}`);
+    return true;
+  } catch (err) {
+    logError('SYNC', '❌ Cloud Auto-Sync failed', err);
+    return false;
+  } finally {
+    if (cloudConn) {
+      try { await cloudConn.close(); } catch (e) {}
+    }
+  }
+}
+
+export function triggerBackgroundCloudSync() {
   if (isSyncingToCloud) {
     pendingSyncRequested = true;
     return;
@@ -343,55 +456,20 @@ function triggerBackgroundCloudSync() {
   isSyncingToCloud = true;
   pendingSyncRequested = false;
 
-  // Safeguard: auto-reset sync lock after 45 seconds so it NEVER gets stuck
-  if (syncTimeoutTimer) clearTimeout(syncTimeoutTimer);
-  syncTimeoutTimer = setTimeout(() => {
-    if (isSyncingToCloud) {
-      console.warn('⚠️ Cloud Sync timeout safeguard triggered (45s elapsed). Resetting sync lock.');
+  // Run in next tick asynchronously so HTTP response is not blocked
+  setImmediate(async () => {
+    try {
+      await performSyncToCloud();
+    } catch (err) {
+      console.warn('⚠️ Background Cloud Sync error:', err.message);
+    } finally {
       isSyncingToCloud = false;
-    }
-  }, 45000);
-
-  try {
-    const syncProcess = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-      cwd: __dirname,
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-      stdio: 'ignore'
-    });
-
-    let hasHandledExit = false;
-    const handleSyncComplete = (code) => {
-      if (hasHandledExit) return;
-      hasHandledExit = true;
-      if (syncTimeoutTimer) clearTimeout(syncTimeoutTimer);
-      isSyncingToCloud = false;
-
-      if (code === 0) {
-        lastCloudSyncTime = new Date().toISOString();
-        try {
-          fs.writeFileSync(path.join(__dirname, 'sync-status.json'), JSON.stringify({ lastSync: lastCloudSyncTime }));
-        } catch (e) {}
-      }
-
       if (pendingSyncRequested) {
         pendingSyncRequested = false;
         setTimeout(triggerBackgroundCloudSync, 3000);
       }
-    };
-
-    syncProcess.once('exit', handleSyncComplete);
-    syncProcess.once('close', handleSyncComplete);
-
-    syncProcess.on('error', (err) => {
-      console.warn('⚠️ Background Cloud Sync error:', err.message);
-      if (syncTimeoutTimer) clearTimeout(syncTimeoutTimer);
-      isSyncingToCloud = false;
-    });
-  } catch (err) {
-    console.warn('⚠️ Failed to fork sync-cloud.js:', err.message);
-    if (syncTimeoutTimer) clearTimeout(syncTimeoutTimer);
-    isSyncingToCloud = false;
-  }
+    }
+  });
 }
 
 // Background auto heartbeat: Automatically sync every 3 minutes
@@ -476,6 +554,7 @@ app.post('/api/superadmin/create-institute', superAdminProtect, async (req, res)
     });
     await user.save();
 
+    triggerBackgroundCloudSync();
     res.status(201).json({ message: 'Institute created successfully', institute, user: { username } });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -486,6 +565,7 @@ app.delete('/api/superadmin/institutes/:id', superAdminProtect, async (req, res)
     const instituteId = req.params.id;
     await Institute.findByIdAndUpdate(instituteId, { isDeleted: true, deletedAt: new Date() });
     await User.updateMany({ instituteId }, { isDeleted: true, deletedAt: new Date() });
+    triggerBackgroundCloudSync();
     res.json({ message: 'Institute and associated users softly deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -501,6 +581,7 @@ app.put('/api/superadmin/institutes/:id/reset-password', superAdminProtect, asyn
     
     user.password = newPassword;
     await user.save(); // Will trigger pre-save hook to hash password
+    triggerBackgroundCloudSync();
     res.json({ message: 'Password reset successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -512,6 +593,7 @@ app.put('/api/superadmin/institutes/:id/notes', superAdminProtect, async (req, r
     const instituteId = req.params.id;
     const { notes } = req.body;
     const institute = await Institute.findByIdAndUpdate(instituteId, { notes }, { new: true });
+    triggerBackgroundCloudSync();
     res.json({ message: 'Notes updated', institute });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -701,6 +783,7 @@ app.post('/api/staff/attendance', async (req, res) => {
     }
 
     await record.save();
+    triggerBackgroundCloudSync();
     res.json({ message: 'Attendance updated successfully', record });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -770,6 +853,7 @@ app.get('/api/inquiries', async (req, res) => {
 app.post('/api/inquiries/sync-cloud', async (req, res) => {
   try {
     await syncInquiriesWithCloud();
+    triggerBackgroundCloudSync();
     const inquiries = await Inquiry.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1, date: -1 }).lean();
     res.json({ message: 'Inquiries synced with cloud', inquiries });
   } catch (err) {
@@ -800,6 +884,7 @@ app.post('/api/inquiries', async (req, res) => {
     await inquiry.save();
 
     // Push immediately to cloud if online
+    triggerBackgroundCloudSync();
     syncInquiriesWithCloud().catch(() => {});
 
     res.status(201).json(inquiry);
@@ -825,6 +910,7 @@ app.put('/api/inquiries/:id', async (req, res) => {
     }
 
     // Push immediately to cloud
+    triggerBackgroundCloudSync();
     syncInquiriesWithCloud().catch(() => {});
 
     res.json(updated);
@@ -840,6 +926,7 @@ app.delete('/api/inquiries/:id', async (req, res) => {
       : { id: req.params.id };
 
     await Inquiry.findOneAndUpdate(query, { isDeleted: true, deletedAt: new Date() });
+    triggerBackgroundCloudSync();
     res.json({ message: 'Inquiry deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -919,6 +1006,7 @@ app.put('/api/settings', protect, async (req, res) => {
       institute.inquiryPasscode = req.body.inquiryPasscode;
     }
     await institute.save();
+    triggerBackgroundCloudSync();
 
     res.json({
       message: 'Settings updated successfully',
@@ -952,12 +1040,7 @@ app.get('/api/settings', protect, async (req, res) => {
 // Trigger Cloud Sync Background Task
 app.post('/api/settings/sync-to-cloud', protect, (req, res) => {
   try {
-    const syncProcess = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, // Inherit local MONGODB_URI
-      detached: true,
-      stdio: 'ignore'
-    });
-    syncProcess.unref();
+    triggerBackgroundCloudSync();
     res.json({ message: 'Cloud sync started in background' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to start cloud sync' });
@@ -1809,6 +1892,7 @@ app.post('/api/staff/attendance', async (req, res) => {
       console.error("Failed to send attendance notification:", notifyErr);
     }
 
+    triggerBackgroundCloudSync();
     res.status(201).json(record);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1999,6 +2083,7 @@ app.post('/api/students/bulk', authenticateToken, async (req, res) => {
       }
     }
 
+    triggerBackgroundCloudSync();
     res.status(201).json({ success: true, added, updated });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2072,13 +2157,7 @@ app.post('/api/students', async (req, res) => {
     responseData.parentPlainPassword = plainPassword;
 
     // Trigger immediate background Cloud Sync so Parents App has the new student credentials right away
-    try {
-      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        stdio: 'ignore'
-      });
-      syncProc.on('error', (e) => console.warn('Student add sync fork error:', e.message));
-    } catch(syncErr) {}
+    triggerBackgroundCloudSync();
 
     res.status(201).json(responseData);
   } catch (err) {
@@ -2121,13 +2200,7 @@ app.post('/api/students/:id/regenerate-parent', async (req, res) => {
     responseData.parentPlainPassword = plainPassword;
 
     // Trigger immediate background Cloud Sync
-    try {
-      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        stdio: 'ignore'
-      });
-      syncProc.on('error', (e) => console.warn('Student regen sync fork error:', e.message));
-    } catch(syncErr) {}
+    triggerBackgroundCloudSync();
 
     res.json(responseData);
   } catch (err) {
@@ -2190,6 +2263,7 @@ app.put('/api/students/:id', async (req, res) => {
       updateData,
       { new: true }
     );
+    triggerBackgroundCloudSync();
     res.json(student);
   } catch (err) {
     console.error('Error updating student:', err);
@@ -2219,13 +2293,7 @@ app.delete('/api/students/:id', async (req, res) => {
     await SMSLog.deleteMany({ studentId: { $in: studentIds } });
 
     // Trigger immediate background Cloud Sync to wipe it from Cloud immediately
-    try {
-      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        stdio: 'ignore'
-      });
-      syncProc.on('error', (e) => console.warn('Student delete sync fork error:', e.message));
-    } catch(syncErr) {}
+    triggerBackgroundCloudSync();
 
     res.json({ message: 'Student and all associated records permanently deleted successfully' });
   } catch (err) {
@@ -2496,6 +2564,7 @@ app.post('/api/attendance', async (req, res) => {
       }
     }
 
+    triggerBackgroundCloudSync();
     res.status(200).json(record);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -2516,6 +2585,7 @@ app.post('/api/sessions', authenticateToken, async (req, res) => {
   try {
     const session = new Session({ ...req.body, instituteId: req.user.instituteId });
     await session.save();
+    triggerBackgroundCloudSync();
     res.json(session);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2530,6 +2600,7 @@ app.put('/api/sessions/:id', authenticateToken, async (req, res) => {
       { new: true }
     );
     if (!session) return res.status(404).json({ error: 'Session not found' });
+    triggerBackgroundCloudSync();
     res.json(session);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2543,14 +2614,7 @@ app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
     );
     if (!session) return res.status(404).json({ error: 'Session not found' });
 
-    try {
-      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        stdio: 'ignore'
-      });
-      syncProc.on('error', (e) => console.warn('Session delete sync fork error:', e.message));
-    } catch(syncErr) {}
-
+    triggerBackgroundCloudSync();
     res.json({ message: 'Session permanently deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2571,6 +2635,7 @@ app.post('/api/inquiries', authenticateToken, async (req, res) => {
   try {
     const inquiry = new Inquiry({ ...req.body, instituteId: req.user.instituteId });
     await inquiry.save();
+    triggerBackgroundCloudSync();
     res.json(inquiry);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2585,6 +2650,7 @@ app.put('/api/inquiries/:id', authenticateToken, async (req, res) => {
       { new: true }
     );
     if (!inquiry) return res.status(404).json({ error: 'Inquiry not found' });
+    triggerBackgroundCloudSync();
     res.json(inquiry);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2598,14 +2664,7 @@ app.delete('/api/inquiries/:id', authenticateToken, async (req, res) => {
     );
     if (!inquiry) return res.status(404).json({ error: 'Inquiry not found' });
 
-    try {
-      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        stdio: 'ignore'
-      });
-      syncProc.on('error', (e) => console.warn('Inquiry delete sync fork error:', e.message));
-    } catch(syncErr) {}
-
+    triggerBackgroundCloudSync();
     res.json({ message: 'Inquiry permanently deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2627,6 +2686,7 @@ app.post('/api/tests', authenticateToken, async (req, res) => {
   try {
     const test = new Test({ ...req.body, instituteId: req.user.instituteId });
     await test.save();
+    triggerBackgroundCloudSync();
     res.status(201).json(test);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -2653,15 +2713,7 @@ app.put('/api/tests/:id', authenticateToken, async (req, res) => {
       { new: true }
     );
 
-    // Trigger immediate background Cloud Sync
-    try {
-      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        stdio: 'ignore'
-      });
-      syncProc.on('error', (e) => console.warn('Test update sync fork error:', e.message));
-    } catch(syncErr) {}
-
+    triggerBackgroundCloudSync();
     res.json(test);
   } catch (err) {
     console.error('Error updating test:', err);
@@ -2678,15 +2730,7 @@ app.delete('/api/tests/:id', authenticateToken, async (req, res) => {
     // Also permanently delete all related test results
     await TestResult.deleteMany({ testId: test.id, instituteId: req.user.instituteId });
 
-    // Trigger immediate background Cloud Sync
-    try {
-      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        stdio: 'ignore'
-      });
-      syncProc.on('error', (e) => console.warn('Test delete sync fork error:', e.message));
-    } catch(syncErr) {}
-
+    triggerBackgroundCloudSync();
     res.json({ message: 'Test and associated results permanently deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2797,6 +2841,7 @@ app.post('/api/tests/:id/regrade', authenticateToken, async (req, res) => {
       await allResults[i].save();
     }
 
+    triggerBackgroundCloudSync();
     res.json({ message: `Re-graded ${regradedCount} results successfully`, regradedCount });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -3021,20 +3066,7 @@ app.post('/api/test-results/bulk', authenticateToken, async (req, res) => {
       }
     }
 
-    // Automatically trigger cloud sync in background
-    try {
-      const syncProcess = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        cwd: __dirname,
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        detached: true,
-        stdio: 'ignore'
-      });
-      syncProcess.on('error', (err) => {
-        console.error('❌ Auto Cloud Sync process error on bulk save:', err.message);
-      });
-      syncProcess.unref();
-    } catch (syncErr) {}
-
+    triggerBackgroundCloudSync();
     res.status(201).json(saved);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -3122,23 +3154,8 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
         }
       }
     }
-    // Automatically trigger cloud sync in background
-    try {
-      const syncProcess = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        cwd: __dirname,
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, // Inherit environment including USER_DATA_PATH
-        detached: true,
-        stdio: 'ignore'
-      });
-      syncProcess.on('error', (err) => {
-        console.error('❌ Auto Cloud Sync process error:', err.message);
-      });
-      syncProcess.unref();
-      console.log('🔄 Auto Cloud Sync triggered after publishing results');
-    } catch (syncErr) {
-      console.error('❌ Failed to auto-trigger Cloud Sync:', syncErr.message);
-    }
-
+    
+    triggerBackgroundCloudSync();
     res.json({ message: `Successfully published ${publishCount} results.`, count: publishCount });
   } catch (err) {
     console.error('Publish Test Error:', err);
@@ -3510,14 +3527,7 @@ app.delete('/api/sms-logs/bulk', async (req, res) => {
 
     const result = await SMSLog.deleteMany(query);
 
-    try {
-      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        stdio: 'ignore'
-      });
-      syncProc.on('error', (e) => console.warn('SMSLog bulk delete sync fork error:', e.message));
-    } catch(syncErr) {}
-
+    triggerBackgroundCloudSync();
     res.json({ message: `Successfully deleted ${result.deletedCount || 0} SMS logs`, deletedCount: result.deletedCount });
   } catch (err) {
     console.error('Error in SMSLog bulk delete:', err);
@@ -3535,14 +3545,7 @@ app.delete('/api/sms-logs/all', async (req, res) => {
 
     const result = await SMSLog.deleteMany(query);
 
-    try {
-      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        stdio: 'ignore'
-      });
-      syncProc.on('error', (e) => console.warn('SMSLog clear all sync fork error:', e.message));
-    } catch(syncErr) {}
-
+    triggerBackgroundCloudSync();
     res.json({ message: `Cleared all ${result.deletedCount || 0} SMS logs successfully`, deletedCount: result.deletedCount });
   } catch (err) {
     console.error('Error clearing all SMS logs:', err);
@@ -3565,14 +3568,7 @@ app.delete('/api/sms-logs/:id', async (req, res) => {
     const log = await SMSLog.findOneAndDelete(query);
     if (!log) return res.status(404).json({ error: 'SMS log not found' });
 
-    try {
-      const syncProc = fork(path.join(__dirname, 'sync-cloud.js'), [], {
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        stdio: 'ignore'
-      });
-      syncProc.on('error', (e) => console.warn('SMSLog delete sync fork error:', e.message));
-    } catch(syncErr) {}
-
+    triggerBackgroundCloudSync();
     res.json({ message: 'SMS log permanently deleted successfully' });
   } catch (err) {
     console.error('Error deleting SMS log:', err);
@@ -3627,6 +3623,7 @@ app.post('/api/seed', async (req, res) => {
       await SMSLog.insertMany(smsHistory.map(h => ({ ...h, instituteId: instId })));
     }
 
+    triggerBackgroundCloudSync();
     res.json({ message: 'Database successfully seeded for your institute!' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -3642,6 +3639,7 @@ app.post('/api/reset', async (req, res) => {
     await Test.deleteMany({ instituteId: instId });
     await TestResult.deleteMany({ instituteId: instId });
     await SMSLog.deleteMany({ instituteId: instId });
+    triggerBackgroundCloudSync();
     res.json({ message: 'All database tables successfully cleared for your institute.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -4503,6 +4501,99 @@ app.post('/api/database/purge-cloudinary-unwanted', protect, async (req, res) =>
   }
 });
 
+// ==========================================
+// --- 🎙️ AI VOICE CALLER & TELEPHONY API ---
+// ==========================================
+
+// 1. Synthesize Text to Hindi/English Neural MP3
+app.post('/api/voice-ai/synthesize', async (req, res) => {
+  try {
+    const { text, voice } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, error: 'Text parameter is required' });
+    }
+    const result = await synthesizeSpeech(text, voice || 'hi-IN-SwaraNeural');
+    res.json(result);
+  } catch (err) {
+    console.error('Voice synthesis endpoint error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2. Process Two-way Voice Dialog Turn (Speech -> AI Reply Text + Audio URL)
+app.post('/api/voice-ai/chat', async (req, res) => {
+  try {
+    const { userSpeech, sessionContext, conversationHistory } = req.body;
+    const result = await processVoiceTurn({
+      userSpeech: userSpeech || '',
+      sessionContext: sessionContext || {},
+      conversationHistory: conversationHistory || []
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('Voice chat dialog turn error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 3. Get Recent Voice Call Logs
+app.get('/api/voice-ai/logs', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const logs = await getCallLogs(limit);
+    res.json({ success: true, logs });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 4. Save/Record Voice Call Session & Transcript
+app.post('/api/voice-ai/log', async (req, res) => {
+  try {
+    const callData = req.body;
+    if (!callData.phone) {
+      return res.status(400).json({ success: false, error: 'Phone number is required' });
+    }
+    const savedLog = await saveCallLog(callData);
+    res.json({ success: true, log: savedLog });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// --- 📄 TEST SERIES PDF GENERATION API ---
+// ==========================================
+app.post('/api/test-series/generate-pdf', async (req, res) => {
+  try {
+    const { examName, examId, totalQuestions, subjects, includeAnswerKey, includeSolutions, branding } = req.body;
+    if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
+      return res.status(400).json({ error: 'Subjects array is missing or empty' });
+    }
+
+    const pdfBuffer = await compilePdf({
+      examName,
+      examId,
+      totalQuestions,
+      subjects,
+      includeAnswerKey,
+      includeSolutions,
+      branding
+    });
+
+    const safeName = (examName || 'Test').replace(/\s+/g, '_');
+    const suffix = includeSolutions ? '_WithSolutions' : includeAnswerKey ? '_WithAnswerKey' : '_QuestionPaper';
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="CareerXone_${safeName}${suffix}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.end(pdfBuffer);
+  } catch (err) {
+    console.error('Test Series PDF generation error:', err);
+    res.status(500).json({ error: err.message || 'PDF Generation Failed' });
+  }
+});
+
 app.get('*', (req, res) => {
   const indexLocations = [
     path.join(__dirname, '../dist/index.html'),
@@ -4543,9 +4634,9 @@ app.get('*', (req, res) => {
 </html>`);
 });
 
-// Start listening
-app.listen(PORT, () => {
-  console.log(`🚀 Server listening at http://localhost:${PORT}`);
+// Start listening on all network interfaces (0.0.0.0)
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server listening at http://0.0.0.0:${PORT} (LAN reachable at ${getLocalNetworkIp()}:${PORT})`);
 
   // Self-ping service to prevent Render free-tier spin down (every 10 minutes)
   // Only activate when running as a cloud server (not inside Electron desktop)
@@ -4602,31 +4693,11 @@ setInterval(() => {
     }
   }
 
-  if (shouldBackup && !isSyncingAuto) {
-    isSyncingAuto = true;
+  if (shouldBackup) {
     console.log('🔄 [Scheduler] Auto-Backup triggered...');
-    
-    const child = fork('sync-cloud.js', [], {
-      cwd: __dirname,
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-      stdio: 'ignore'
-    });
-
-    child.on('error', (err) => {
-      isSyncingAuto = false;
-      console.error('❌ [Scheduler] Auto-Backup child process error:', err.message);
-    });
-    
-    child.on('close', (code) => {
-      isSyncingAuto = false;
-      if (code !== 0) {
-        console.error(`❌ [Scheduler] Auto-Backup failed with code ${code} (will retry in 10 mins)`);
-      } else {
-        console.log(`✅ [Scheduler] Auto-Backup complete!`);
-        try {
-          fs.writeFileSync(statusFile, JSON.stringify({ lastSync: new Date().toISOString() }));
-        } catch(e) {}
-      }
-    });
+    triggerBackgroundCloudSync();
+    try {
+      fs.writeFileSync(statusFile, JSON.stringify({ lastSync: new Date().toISOString() }));
+    } catch(e) {}
   }
 }, 10 * 60 * 1000); // Check every 10 minutes

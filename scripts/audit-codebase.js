@@ -30,6 +30,7 @@ function getAllFiles(dir, exts = ['.jsx', '.js']) {
     const fullPath = path.join(dir, item);
     const stat = fs.statSync(fullPath);
     if (stat.isDirectory()) {
+      if (item === 'data' || item === 'node_modules' || item === '.git') continue;
       files = files.concat(getAllFiles(fullPath, exts));
     } else if (exts.includes(path.extname(fullPath))) {
       files.push(fullPath);

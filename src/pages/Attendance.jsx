@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import {
   Fingerprint,
   LogIn,
@@ -32,8 +34,27 @@ import {
   Check,
   Zap,
   ShieldCheck,
-  Radar
+  Radar,
+  QrCode,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Minimize2,
+  Printer,
+  Sparkles,
+  Smartphone,
+  Radio,
+  CheckCircle,
+  HelpCircle,
+  CreditCard,
+  ExternalLink,
+  Flame,
+  CheckCheck,
+  Eye,
+  Camera
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import idLogo from '../assets/id-logo.png';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
@@ -52,9 +73,62 @@ import { getInitials, getAvatarClass } from '../data/sampleData';
 
 import { api, API_BASE } from '../utils/api';
 
+// Safe Web Audio API synthesizer for crisp kiosk chimes
+const playKioskSound = (type = 'entry') => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    if (type === 'entry') {
+      // Pleasant high ascending chime
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } else if (type === 'exit') {
+      // Pleasant descending double chime
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(587.33, ctx.currentTime + 0.18);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } else {
+      // Warning buzz
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+    }
+  } catch (e) {
+    console.error('Audio chime error:', e);
+  }
+};
+
 export default function Attendance() {
-  const { students, attendance, markAttendance, refreshAttendance, refreshSMSLogs } = useApp();
-  const [activeTab, setActiveTab] = useState('mark');
+  const { students, batches, attendance, markAttendance, refreshAttendance, refreshSMSLogs, user } = useApp();
+  const [activeTab, setActiveTab] = useState('kiosk');
   const [selectedStudent, setSelectedStudent] = useState('');
   const [todaySearch, setTodaySearch] = useState('');
   const [scannerState, setScannerState] = useState('default'); // 'default' | 'scanning' | 'success'
@@ -71,190 +145,79 @@ export default function Attendance() {
   const [historyEndDate, setHistoryEndDate] = useState(getTodayStr());
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all'); // 'all' | 'present' | 'late' | 'absent'
   
-  // Biometric Direct & ADMS Setup States
-  const [localIp, setLocalIp] = useState('127.0.0.1');
-  const [biometricMode, setBiometricMode] = useState('direct'); // 'direct' | 'adms'
-  const [biometricIp, setBiometricIp] = useState(() => {
-    const saved = localStorage.getItem('biometric_ip');
-    if (!saved || saved === '192.168.1.201') return '192.168.0.12';
-    return saved;
-  });
-  const [biometricPort, setBiometricPort] = useState(() => localStorage.getItem('biometric_port') || '71');
-  const [biometricTesting, setBiometricTesting] = useState(false);
-  const [biometricSyncing, setBiometricSyncing] = useState(false);
-  const [biometricAutoSync, setBiometricAutoSync] = useState(false);
-  const [biometricDeviceInfo, setBiometricDeviceInfo] = useState(null);
-  const [biometricStatus, setBiometricStatus] = useState(null);
-  const [isScanningNetwork, setIsScanningNetwork] = useState(false);
-  const [discoveredDevices, setDiscoveredDevices] = useState([]);
+  // ⚡ Live QR Scanner Kiosk Mode States
+  const [kioskCode, setKioskCode] = useState('');
+  const [kioskMode, setKioskMode] = useState('auto'); // 'auto' | 'entry' | 'exit'
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showIdCardsModal, setShowIdCardsModal] = useState(false);
+  const [showHardwareModal, setShowHardwareModal] = useState(false);
+  const [selectedIdCardBatch, setSelectedIdCardBatch] = useState('all');
+  const [idCardSearch, setIdCardSearch] = useState('');
+  const [idCardSide, setIdCardSide] = useState('duplex'); // 'duplex' | 'both' | 'front' | 'back'
+  const [idCardCardsPerPage, setIdCardCardsPerPage] = useState(4); // 4 (Large 2x2) or 6 (Compact 2x3)
+  const [lastPunch, setLastPunch] = useState(null);
+  const [lastScannedMap, setLastScannedMap] = useState({});
+  const kioskInputRef = useRef(null);
 
-  const handleAutoScanNetwork = async () => {
-    setIsScanningNetwork(true);
-    setDiscoveredDevices([]);
-    try {
-      toast.loading('🔍 Scanning local Wi-Fi for Biometric Machines...', { id: 'wifi-scan' });
-      const res = await api.scanBiometricDevices();
-      toast.dismiss('wifi-scan');
-      if (res && res.success) {
-        setDiscoveredDevices(res.devices || []);
-        if (res.devices && res.devices.length > 0) {
-          toast.success(`🎉 Found ${res.devices.length} Biometric Machine(s) on Wi-Fi!`);
-        } else {
-          toast.error('No Biometric Machines found. Ensure machine is powered ON and on same Wi-Fi.');
+  // Auto-dismiss last punch celebration after 6 seconds
+  useEffect(() => {
+    if (!lastPunch) return;
+    const timer = setTimeout(() => {
+      setLastPunch(null);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [lastPunch]);
+
+  // Fullscreen change listener
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+      setIsFullscreen(false);
+    }
+  };
+
+  // Hardware wedge auto-focus engine
+  useEffect(() => {
+    if (activeTab !== 'kiosk') return;
+    const focusKioskInput = () => {
+      if (kioskInputRef.current && document.activeElement !== kioskInputRef.current) {
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+          kioskInputRef.current.focus();
         }
       }
-    } catch (err) {
-      toast.dismiss('wifi-scan');
-      toast.error(err.message || 'Subnet scan failed');
-    } finally {
-      setIsScanningNetwork(false);
-    }
-  };
+    };
+    focusKioskInput();
+    const interval = setInterval(focusKioskInput, 1500);
 
-  const handleSelectDiscoveredDevice = async (device) => {
-    setBiometricIp(device.ip);
-    setBiometricPort(String(device.port));
-    localStorage.setItem('biometric_ip', device.ip);
-    localStorage.setItem('biometric_port', String(device.port));
-    toast.success(`⚡ Selected ${device.name} (${device.ip}:${device.port})`);
-    
-    // Auto-test connection
-    setBiometricTesting(true);
-    try {
-      const res = await api.testBiometricConnection({ ip: device.ip, port: device.port });
-      if (res && res.success) {
-        setBiometricDeviceInfo(res.deviceInfo);
-        toast.success(`🎉 Connected successfully to ${device.ip}:${device.port}!`);
-        fetchBiometricStatus();
+    const handleGlobalKeyDown = (e) => {
+      if (activeTab !== 'kiosk') return;
+      if (showIdCardsModal || showHardwareModal) return;
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      if (kioskInputRef.current) {
+        kioskInputRef.current.focus();
       }
-    } catch (e) {}
-    setBiometricTesting(false);
-  };
+    };
 
-  const fetchBiometricStatus = async () => {
-    try {
-      const status = await api.getBiometricStatus();
-      if (status) {
-        setBiometricStatus(status);
-        if (status.localIp) setLocalIp(status.localIp);
-        if (status.targetIp && status.targetIp !== '192.168.1.201') setBiometricIp(status.targetIp);
-        if (status.autoSyncEnabled !== undefined) setBiometricAutoSync(status.autoSyncEnabled);
-        if (status.deviceInfo) setBiometricDeviceInfo(status.deviceInfo);
-      }
-    } catch (e) {}
-  };
-
-  useEffect(() => {
-    fetchBiometricStatus();
-    const interval = setInterval(() => {
-      fetchBiometricStatus();
-      if (typeof refreshAttendance === 'function') refreshAttendance();
-      if (typeof refreshSMSLogs === 'function') refreshSMSLogs();
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [activeTab, refreshAttendance, refreshSMSLogs]);
-
-  const handleTestBiometric = async () => {
-    if (!biometricIp.trim()) {
-      toast.error('Please enter Biometric Machine IP');
-      return;
-    }
-    setBiometricTesting(true);
-    try {
-      localStorage.setItem('biometric_ip', biometricIp.trim());
-      localStorage.setItem('biometric_port', biometricPort.trim());
-      const res = await api.testBiometricConnection({ ip: biometricIp.trim(), port: parseInt(biometricPort, 10) || 71 });
-      if (res && res.success) {
-        setBiometricDeviceInfo(res.deviceInfo);
-        toast.success(`🎉 Connected successfully to Biometric Machine at ${biometricIp}:${biometricPort || 71}!`);
-        fetchBiometricStatus();
-      } else {
-        toast.error(res?.error || 'Connection failed');
-      }
-    } catch (err) {
-      toast.error(err.message || 'Failed to connect to Biometric Machine');
-    } finally {
-      setBiometricTesting(false);
-    }
-  };
-
-  const handleSyncBiometricNow = async () => {
-    if (!biometricIp.trim()) {
-      toast.error('Please enter Biometric Machine IP');
-      return;
-    }
-    setBiometricSyncing(true);
-    try {
-      localStorage.setItem('biometric_ip', biometricIp.trim());
-      localStorage.setItem('biometric_port', biometricPort.trim());
-      const res = await api.syncBiometricNow({ ip: biometricIp.trim(), port: parseInt(biometricPort, 10) || 71 });
-      if (res && res.success) {
-        toast.success(`🎉 ${res.message || `Synced ${res.newlyAdded} new attendance punches!`}`);
-        if (typeof refreshAttendance === 'function') await refreshAttendance();
-        if (typeof refreshSMSLogs === 'function') await refreshSMSLogs();
-        fetchBiometricStatus();
-      } else {
-        toast.error(res?.error || 'Sync failed');
-      }
-    } catch (err) {
-      toast.error(err.message || 'Failed to sync from Biometric Machine');
-    } finally {
-      setBiometricSyncing(false);
-    }
-  };
-
-  const handleSyncAllDevicesNow = async () => {
-    const targetDevices = discoveredDevices.length > 0 ? discoveredDevices : [{ ip: biometricIp.trim(), port: parseInt(biometricPort, 10) || 71, name: 'Main Machine' }];
-    setBiometricSyncing(true);
-    try {
-      toast.loading(`⚡ Syncing ${targetDevices.length} Biometric Machines simultaneously...`, { id: 'sync-all' });
-      const res = await api.syncAllBiometricDevices({ devices: targetDevices });
-      toast.dismiss('sync-all');
-      if (res && res.success) {
-        toast.success(`🎉 ${res.message || `Synced ${res.newlyAdded} new attendance logs from ${res.successfulDevices} machines!`}`);
-        if (typeof refreshAttendance === 'function') await refreshAttendance();
-        if (typeof refreshSMSLogs === 'function') await refreshSMSLogs();
-        fetchBiometricStatus();
-      } else {
-        toast.error(res?.error || 'Batch sync failed');
-      }
-    } catch (err) {
-      toast.dismiss('sync-all');
-      toast.error(err.message || 'Failed to sync machines');
-    } finally {
-      setBiometricSyncing(false);
-    }
-  };
-
-  const handleToggleAutoSync = async () => {
-    const nextState = !biometricAutoSync;
-    const targetDevices = discoveredDevices.length > 0 ? discoveredDevices : [{ ip: biometricIp.trim(), port: parseInt(biometricPort, 10) || 71 }];
-    try {
-      const res = await api.toggleBiometricAutoSync({
-        enabled: nextState,
-        ip: biometricIp.trim(),
-        port: parseInt(biometricPort, 10) || 71,
-        devices: targetDevices,
-        intervalSeconds: 15
-      });
-      setBiometricAutoSync(res.autoSyncEnabled);
-      if (res.autoSyncEnabled) {
-        toast.success(`🚀 Auto-Sync enabled! Polling ${targetDevices.length} machine(s) every 15 seconds.`);
-      } else {
-        toast.success('🛑 Auto-Sync paused.');
-      }
-      fetchBiometricStatus();
-    } catch (err) {
-      toast.error(err.message || 'Failed to toggle Auto-Sync');
-    }
-  };
-  
-  useEffect(() => {
-    fetch(`${API_BASE}/system/local-ip`)
-      .then(res => res.json())
-      .then(data => setLocalIp(data.ip || '127.0.0.1'))
-      .catch(err => console.error('Failed to get local IP:', err));
-  }, []);
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, [activeTab, showIdCardsModal, showHardwareModal]);
 
   const activeStudents = useMemo(
     () => students.filter((s) => s.status === 'active'),
@@ -439,11 +402,246 @@ export default function Attendance() {
     }
   };
 
+  // Available batches for ID card printing
+  const availableBatches = useMemo(() => {
+    const set = new Set();
+    students.forEach((s) => {
+      if (s.batch) set.add(s.batch);
+      else if (s.targetClass) set.add(s.targetClass);
+    });
+    return Array.from(set).filter(Boolean);
+  }, [students]);
+
+  // Filtered students for ID card printing modal
+  const filteredIdCardStudents = useMemo(() => {
+    return activeStudents.filter((s) => {
+      if (selectedIdCardBatch !== 'all') {
+        const b = (s.batch || s.targetClass || '').toLowerCase();
+        if (!b.includes(selectedIdCardBatch.toLowerCase()) && s.batch !== selectedIdCardBatch) {
+          return false;
+        }
+      }
+      if (idCardSearch.trim()) {
+        const q = idCardSearch.toLowerCase().trim();
+        const name = (s.name || '').toLowerCase();
+        const roll = String(s.rollNo || '').toLowerCase();
+        const phone = String(s.phone || s.parentPhone || '').toLowerCase();
+        if (!name.includes(q) && !roll.includes(q) && !phone.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [activeStudents, selectedIdCardBatch, idCardSearch]);
+
+  // 📥 Dedicated High-Resolution Native A4 PDF Generator (Direct download via jsPDF)
+  const handleSaveAsPdf = async () => {
+    let sheetElements = Array.from(document.querySelectorAll('#printable-id-cards .a4-print-sheet'));
+    
+    // If not in duplex/sheet mode, capture the card pair container
+    if (!sheetElements || sheetElements.length === 0) {
+      const container = document.getElementById('printable-id-cards');
+      if (!container) {
+        toast.error('No ID cards found to export');
+        return;
+      }
+      sheetElements = [container];
+    }
+
+    const totalPages = sheetElements.length;
+    const toastId = toast.loading(`Generating High-Resolution A4 PDF (0/${totalPages} pages)...`);
+
+    try {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
+      for (let i = 0; i < totalPages; i++) {
+        toast.loading(`Processing Page ${i + 1} of ${totalPages}...`, { id: toastId });
+        const sheet = sheetElements[i];
+
+        const canvas = await html2canvas(sheet, {
+          scale: 2.5, // 300+ DPI for high print clarity
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+        if (i > 0) {
+          pdf.addPage('a4', 'portrait');
+        }
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+      }
+
+      const batchName = selectedIdCardBatch === 'all' ? 'All_Students' : selectedIdCardBatch.replace(/\s+/g, '_');
+      const filename = `CareerXone_ID_Cards_${batchName}.pdf`;
+      pdf.save(filename);
+
+      toast.success(`✅ Saved ${totalPages} Page(s) PDF to Downloads!`, { id: toastId });
+    } catch (err) {
+      console.error('PDF Generation Error:', err);
+      toast.error(`❌ PDF Generation Failed: ${err.message}`, { id: toastId });
+    }
+  };
+
+  // 🖨️ Direct System Printer Dialog
+  const handlePrintSystem = () => {
+    document.body.classList.add('printing-id-cards');
+    requestAnimationFrame(() => {
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove('printing-id-cards');
+      }, 1500);
+    });
+  };
+
+  // ⚡ Kiosk Scan Submission Handler (USB Tabletop Scanner + Manual)
+  const handleKioskScan = (e) => {
+    if (e) e.preventDefault();
+    const raw = String(kioskCode || '').trim();
+    if (!raw) return;
+
+    setKioskCode('');
+
+    // 1. Check if raw is JSON (from formatted QR cards)
+    let extractedRoll = raw;
+    try {
+      if (raw.startsWith('{') && raw.endsWith('}')) {
+        const parsed = JSON.parse(raw);
+        extractedRoll = String(parsed.rollNo || parsed.roll || parsed.id || parsed.studentId || raw);
+      }
+    } catch (err) {}
+
+    // 2. Check if raw is URL
+    if (extractedRoll.startsWith('http://') || extractedRoll.startsWith('https://')) {
+      try {
+        const u = new URL(extractedRoll);
+        const parts = u.pathname.split('/').filter(Boolean);
+        extractedRoll = u.searchParams.get('roll') || u.searchParams.get('id') || parts[parts.length - 1] || extractedRoll;
+      } catch (err) {}
+    }
+
+    extractedRoll = extractedRoll.trim();
+
+    // 3. Find matching student (by rollNo, id, name, or phone)
+    const target = extractedRoll.toLowerCase();
+    const matchedStudent = activeStudents.find((s) => {
+      const r = String(s.rollNo || '').trim().toLowerCase();
+      const id = String(s.id || '').trim().toLowerCase();
+      const phone = String(s.phone || s.parentPhone || '').trim();
+      return r === target || id === target || phone === target;
+    }) || activeStudents.find((s) => {
+      const rNum = parseInt(s.rollNo, 10);
+      const targetNum = parseInt(extractedRoll, 10);
+      return !isNaN(rNum) && !isNaN(targetNum) && rNum === targetNum;
+    });
+
+    if (!matchedStudent) {
+      if (soundEnabled) playKioskSound('error');
+      toast.error(`❌ Student not found for Roll/QR: "${extractedRoll}"`);
+      return;
+    }
+
+    // 4. Anti-spam 15-second debounce check
+    const now = Date.now();
+    const lastScanTime = lastScannedMap[matchedStudent.id];
+    if (lastScanTime && (now - lastScanTime) < 15000) {
+      const elapsedSecs = Math.round((now - lastScanTime) / 1000);
+      toast(`⏳ ${matchedStudent.name} already scanned ${elapsedSecs}s ago!`, { icon: '⚠️' });
+      return;
+    }
+
+    // 5. Determine Entry vs Exit
+    const todayStr = getTodayStr();
+    const todayRecord = attendance.find((a) => a.studentId === matchedStudent.id && a.date === todayStr);
+
+    let determinedType = kioskMode;
+    if (kioskMode === 'auto') {
+      if (!todayRecord || !todayRecord.entryTime) {
+        determinedType = 'entry';
+      } else if (todayRecord.entryTime && !todayRecord.exitTime) {
+        const [eh, em] = todayRecord.entryTime.split(':').map(Number);
+        const cur = new Date();
+        const currentMin = cur.getHours() * 60 + cur.getMinutes();
+        const entryMin = eh * 60 + em;
+        if (currentMin - entryMin < 2) {
+          if (soundEnabled) playKioskSound('error');
+          toast(`⚠️ ${matchedStudent.name} already checked in at ${formatTime(todayRecord.entryTime)}!`, { icon: 'ℹ️' });
+          return;
+        }
+        determinedType = 'exit';
+      } else {
+        if (soundEnabled) playKioskSound('error');
+        toast.error(`⚠️ ${matchedStudent.name} has already completed both Entry & Exit today!`);
+        return;
+      }
+    } else if (kioskMode === 'entry') {
+      if (todayRecord && todayRecord.entryTime) {
+        if (soundEnabled) playKioskSound('error');
+        toast.error(`⚠️ ${matchedStudent.name} already marked Entry today at ${formatTime(todayRecord.entryTime)}!`);
+        return;
+      }
+      determinedType = 'entry';
+    } else if (kioskMode === 'exit') {
+      if (!todayRecord || !todayRecord.entryTime) {
+        if (soundEnabled) playKioskSound('error');
+        toast.error(`⚠️ Cannot mark Exit. ${matchedStudent.name} has not checked in today!`);
+        return;
+      }
+      if (todayRecord.exitTime) {
+        if (soundEnabled) playKioskSound('error');
+        toast.error(`⚠️ ${matchedStudent.name} already marked Exit today at ${formatTime(todayRecord.exitTime)}!`);
+        return;
+      }
+      determinedType = 'exit';
+    }
+
+    // Update debounce map
+    setLastScannedMap((prev) => ({ ...prev, [matchedStudent.id]: now }));
+
+    // Mark attendance
+    markAttendance(matchedStudent.id, determinedType);
+
+    // Audio confirmation
+    if (soundEnabled) playKioskSound(determinedType);
+
+    const timeFormatted = new Date().toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+
+    let dur = '';
+    if (determinedType === 'exit' && todayRecord?.entryTime) {
+      dur = calcDuration(todayRecord.entryTime, new Date().toTimeString().slice(0, 5));
+    }
+
+    setLastPunch({
+      student: matchedStudent,
+      punchType: determinedType,
+      time: timeFormatted,
+      timestamp: now,
+      duration: dur,
+      parentPhone: matchedStudent.parentPhone,
+      parentName: matchedStudent.parentName,
+    });
+
+    toast.success(`🎉 ${matchedStudent.name} (${determinedType === 'entry' ? 'ENTRY' : 'EXIT'}) Recorded!`);
+  };
+
   const tabs = [
-    { key: 'mark', label: 'Mark Attendance' },
+    { key: 'kiosk', label: '⚡ Live QR Kiosk Mode' },
+    { key: 'mark', label: 'Manual Mark' },
     { key: 'today', label: "Today's Record" },
     { key: 'history', label: 'History' },
-    { key: 'adms', label: 'Biometric Setup' },
   ];
 
   const tabVariants = {
@@ -598,7 +796,7 @@ export default function Attendance() {
           <Scan size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 10 }} />
           Attendance Management
         </h1>
-        <p>Biometric attendance tracking with automated SMS notifications</p>
+        <p>Live QR Scanner Kiosk & Smart Attendance with Instant Parent WhatsApp Alerts</p>
       </motion.div>
 
       {/* Tab Navigation */}
@@ -1509,597 +1707,2135 @@ export default function Attendance() {
             </motion.div>
           </motion.div>
         )}
-        {/* ========== TAB 4: Biometric Control Center & ADMS Setup ========== */}
-        {activeTab === 'adms' && (
+        {/* ========== TAB 4: ⚡ Live QR Scanner Kiosk Mode ========== */}
+        {activeTab === 'kiosk' && (
           <motion.div
-            key="adms"
+            key="kiosk"
             variants={tabVariants}
             initial="initial"
             animate="animate"
             exit="exit"
             className="flex flex-col gap-24"
           >
-            <div className="card" style={{ padding: 30 }}>
-              {/* Header */}
-              <div className="flex items-center justify-between gap-12 mb-20 flex-wrap">
-                <div className="flex items-center gap-12">
-                  <div style={{ padding: 12, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-blue)' }}>
-                    <Fingerprint size={28} />
+            {/* Top Kiosk Control Bar */}
+            <div className="card" style={{ padding: '18px 24px', background: 'var(--surface-color)', border: '1.5px solid var(--border-color)', borderRadius: 18 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                {/* Left: Status & Hardware Indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+                  }}>
+                    <QrCode size={24} />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0 }}>Biometric Machine Control Center</h2>
-                    <p style={{ margin: '2px 0 0', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-                      Direct Wi-Fi Socket Connection, 1-Click Punch Pulling & Real-Time ADMS Integration
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <h2 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, color: 'var(--text-primary)' }}>
+                        Live QR Scanner Kiosk Mode
+                      </h2>
+                      <span style={{
+                        background: 'rgba(16, 185, 129, 0.12)',
+                        color: '#10b981',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }} />
+                        USB SCANNER READY
+                      </span>
+                    </div>
+                    <p style={{ margin: '2px 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                      Plug & Play Tabletop Scanner Ready • Instant Auto Punch • WhatsApp Dispatched Instantly
                     </p>
+                  </div>
+                </div>
+
+                {/* Right: Mode Selector & Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  {/* Punch Mode Switcher */}
+                  <div style={{
+                    display: 'flex',
+                    background: 'var(--bg-color)',
+                    padding: 4,
+                    borderRadius: 12,
+                    border: '1.5px solid var(--border-color)'
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => setKioskMode('auto')}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: kioskMode === 'auto' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
+                        color: kioskMode === 'auto' ? '#ffffff' : 'var(--text-secondary)',
+                        boxShadow: kioskMode === 'auto' ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5
+                      }}
+                    >
+                      <Zap size={13} />
+                      <span>Smart Auto (In/Out)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setKioskMode('entry')}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: kioskMode === 'entry' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
+                        color: kioskMode === 'entry' ? '#ffffff' : 'var(--text-secondary)',
+                        boxShadow: kioskMode === 'entry' ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5
+                      }}
+                    >
+                      <LogIn size={13} />
+                      <span>Entry Only (Morning)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setKioskMode('exit')}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: kioskMode === 'exit' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'transparent',
+                        color: kioskMode === 'exit' ? '#ffffff' : 'var(--text-secondary)',
+                        boxShadow: kioskMode === 'exit' ? '0 2px 8px rgba(239, 68, 68, 0.3)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5
+                      }}
+                    >
+                      <LogOut size={13} />
+                      <span>Exit Only (Departure)</span>
+                    </button>
+                  </div>
+
+                  {/* Sound Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    title={soundEnabled ? 'Mute Confirmation Chime' : 'Unmute Confirmation Chime'}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      border: '1.5px solid var(--border-color)',
+                      background: soundEnabled ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg-color)',
+                      color: soundEnabled ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                      fontSize: '0.80rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                    <span>{soundEnabled ? 'Sound ON' : 'Muted'}</span>
+                  </button>
+
+                  {/* Print QR ID Cards Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowIdCardsModal(true)}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: 10,
+                      border: '1.5px solid rgba(139, 92, 246, 0.4)',
+                      background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%)',
+                      color: '#8b5cf6',
+                      fontSize: '0.80rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: '0 2px 8px rgba(139, 92, 246, 0.12)'
+                    }}
+                  >
+                    <Printer size={15} />
+                    <span>🪪 Print Student QR Cards</span>
+                  </button>
+
+                  {/* Hardware Guide Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowHardwareModal(true)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      border: '1.5px solid var(--border-color)',
+                      background: 'var(--surface-color)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.80rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <HelpCircle size={15} color="var(--accent-blue)" />
+                    <span>🛒 Scanner Guide</span>
+                  </button>
+
+                  {/* Fullscreen Toggle */}
+                  <button
+                    type="button"
+                    onClick={toggleFullscreen}
+                    title="Toggle Fullscreen Kiosk"
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      border: '1.5px solid var(--border-color)',
+                      background: isFullscreen ? 'var(--accent-blue)' : 'var(--bg-color)',
+                      color: isFullscreen ? '#ffffff' : 'var(--text-primary)',
+                      fontSize: '0.80rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                    <span>{isFullscreen ? 'Exit Fullscreen' : '⛶ Fullscreen'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* ---------------------------------------------------------------- */}
+            {/* HERO KIOSK ARENA: SCANNER ZONE (LEFT) & LIVE PUNCH STREAM (RIGHT) */}
+            {/* ---------------------------------------------------------------- */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.15fr) minmax(320px, 0.85fr)', gap: 24, alignItems: 'stretch' }}>
+              
+              {/* LEFT COLUMN: Digital Clock, Holographic Target & Celebration Card */}
+              <div className="flex flex-col gap-20">
+                {/* Digital LED Clock & Status Bar */}
+                <div className="card" style={{
+                  padding: '24px 28px',
+                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                  border: '1.5px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: 20,
+                  color: '#ffffff',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  {/* Subtle Background Glow */}
+                  <div style={{
+                    position: 'absolute',
+                    top: -40,
+                    right: -40,
+                    width: 140,
+                    height: 140,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%)',
+                    pointerEvents: 'none'
+                  }} />
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                    <div>
+                      <div style={{ fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase' }}>
+                        LIVE RECEPTION KIOSK TIME
+                      </div>
+                      <div style={{
+                        fontSize: '2.4rem',
+                        fontWeight: 900,
+                        fontFamily: "'Outfit', monospace, sans-serif",
+                        letterSpacing: '-0.02em',
+                        color: '#ffffff',
+                        textShadow: '0 0 20px rgba(59, 130, 246, 0.5)',
+                        marginTop: 2
+                      }}>
+                        {clockStr}
+                      </div>
+                      <div style={{ fontSize: '0.88rem', color: '#cbd5e1', fontWeight: 600 }}>
+                        {dateStr}
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 12px',
+                        borderRadius: 10,
+                        background: kioskMode === 'auto' ? 'rgba(59, 130, 246, 0.2)' : kioskMode === 'entry' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                        border: `1px solid ${kioskMode === 'auto' ? 'rgba(59, 130, 246, 0.4)' : kioskMode === 'entry' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                        color: kioskMode === 'auto' ? '#60a5fa' : kioskMode === 'entry' ? '#34d399' : '#f87171',
+                        fontSize: '0.82rem',
+                        fontWeight: 800
+                      }}>
+                        {kioskMode === 'auto' && <Zap size={14} />}
+                        {kioskMode === 'entry' && <LogIn size={14} />}
+                        {kioskMode === 'exit' && <LogOut size={14} />}
+                        <span>MODE: {kioskMode.toUpperCase()}</span>
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: 4 }}>
+                        {kioskMode === 'auto' ? 'Auto-detects In / Out' : kioskMode === 'entry' ? 'Check-In Rush' : 'Dispersal Exit'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Always-Focused Hardware Scanner Input Bar */}
+                <form onSubmit={handleKioskScan} style={{ position: 'relative' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    background: 'var(--surface-color)',
+                    padding: '8px 12px 8px 18px',
+                    borderRadius: 16,
+                    border: '2px solid var(--accent-blue)',
+                    boxShadow: '0 4px 20px rgba(59, 130, 246, 0.18)'
+                  }}>
+                    <QrCode size={22} color="var(--accent-blue)" />
+                    <input
+                      ref={kioskInputRef}
+                      type="text"
+                      value={kioskCode}
+                      onChange={(e) => setKioskCode(e.target.value)}
+                      placeholder="Flash QR code or type Roll Number (e.g. 101)..."
+                      autoFocus
+                      style={{
+                        flex: 1,
+                        background: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        fontSize: '1.05rem',
+                        fontWeight: 700,
+                        color: 'var(--text-primary)',
+                        fontFamily: 'monospace'
+                      }}
+                    />
+                    {kioskCode && (
+                      <button
+                        type="button"
+                        onClick={() => setKioskCode('')}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 4 }}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={!kioskCode.trim()}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: 10,
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: kioskCode.trim() ? 'pointer' : 'not-allowed',
+                        opacity: kioskCode.trim() ? 1 : 0.6,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        boxShadow: '0 2px 10px rgba(59, 130, 246, 0.3)'
+                      }}
+                    >
+                      <Zap size={15} />
+                      <span>Punch</span>
+                    </button>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: 6,
+                    padding: '0 8px',
+                    fontSize: '0.74rem',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                      Scanner Input Focused & Ready
+                    </span>
+                    <span>Hold ID card ~15cm from scanner</span>
+                  </div>
+                </form>
+
+                {/* Main Interactive Stage: Celebration Showcase or Idle Scanner Target */}
+                <div className="card" style={{
+                  padding: 30,
+                  minHeight: 340,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'var(--surface-color)',
+                  borderRadius: 20,
+                  border: lastPunch ? (lastPunch.punchType === 'entry' ? '2px solid #10b981' : '2px solid #3b82f6') : '1.5px dashed var(--border-color)',
+                  boxShadow: lastPunch ? (lastPunch.punchType === 'entry' ? '0 10px 30px rgba(16, 185, 129, 0.15)' : '0 10px 30px rgba(59, 130, 246, 0.15)') : 'none',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <AnimatePresence mode="wait">
+                    {lastPunch ? (
+                      <motion.div
+                        key={lastPunch.timestamp}
+                        initial={{ opacity: 0, scale: 0.9, y: 15 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: -15 }}
+                        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                        style={{ width: '100%', textAlign: 'center' }}
+                      >
+                        {/* Status Ribbon Badge */}
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                          <span style={{
+                            background: lastPunch.punchType === 'entry' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                            color: lastPunch.punchType === 'entry' ? '#10b981' : '#3b82f6',
+                            border: `1.5px solid ${lastPunch.punchType === 'entry' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(59, 130, 246, 0.4)'}`,
+                            padding: '6px 18px',
+                            borderRadius: 30,
+                            fontSize: '0.88rem',
+                            fontWeight: 900,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            boxShadow: lastPunch.punchType === 'entry' ? '0 4px 12px rgba(16, 185, 129, 0.2)' : '0 4px 12px rgba(59, 130, 246, 0.2)'
+                          }}>
+                            {lastPunch.punchType === 'entry' ? <LogIn size={16} /> : <LogOut size={16} />}
+                            <span>{lastPunch.punchType === 'entry' ? '✅ CHECK-IN ENTRY RECORDED' : '🔵 CHECK-OUT EXIT RECORDED'}</span>
+                          </span>
+                        </div>
+
+                        {/* Student Avatar & Photo */}
+                        <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14 }}>
+                          {lastPunch.student?.photo ? (
+                            <img
+                              src={lastPunch.student.photo}
+                              alt={lastPunch.student.name}
+                              style={{
+                                width: 96,
+                                height: 96,
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                border: `4px solid ${lastPunch.punchType === 'entry' ? '#10b981' : '#3b82f6'}`,
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: 96,
+                              height: 96,
+                              borderRadius: '50%',
+                              background: lastPunch.punchType === 'entry' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '2.2rem',
+                              fontWeight: 900,
+                              margin: '0 auto',
+                              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                              border: '4px solid rgba(255, 255, 255, 0.4)'
+                            }}>
+                              {getInitials(lastPunch.student.name)}
+                            </div>
+                          )}
+
+                          <div style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            right: 0,
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            background: lastPunch.punchType === 'entry' ? '#10b981' : '#3b82f6',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '2px solid var(--surface-color)',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                          }}>
+                            {lastPunch.punchType === 'entry' ? <Check size={16} /> : <LogOut size={14} />}
+                          </div>
+                        </div>
+
+                        {/* Student Name & Roll Number */}
+                        <h3 style={{ fontSize: '1.65rem', fontWeight: 900, margin: '0 0 6px', color: 'var(--text-primary)' }}>
+                          {lastPunch.student.name}
+                        </h3>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+                          <span style={{
+                            background: 'var(--bg-color)',
+                            padding: '4px 12px',
+                            borderRadius: 8,
+                            fontFamily: 'monospace',
+                            fontWeight: 800,
+                            fontSize: '0.90rem',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)'
+                          }}>
+                            Roll: #{lastPunch.student.rollNo || '—'}
+                          </span>
+
+                          <span style={{
+                            background: 'rgba(59, 130, 246, 0.1)',
+                            color: 'var(--accent-blue)',
+                            padding: '4px 12px',
+                            borderRadius: 8,
+                            fontWeight: 800,
+                            fontSize: '0.84rem'
+                          }}>
+                            {lastPunch.student.batch || lastPunch.student.targetClass || 'General Batch'}
+                          </span>
+
+                          <span style={{
+                            background: 'rgba(234, 179, 8, 0.12)',
+                            color: '#ca8a04',
+                            padding: '4px 12px',
+                            borderRadius: 8,
+                            fontWeight: 800,
+                            fontSize: '0.84rem'
+                          }}>
+                            ⏰ {lastPunch.time}
+                          </span>
+                        </div>
+
+                        {/* Duration if exit */}
+                        {lastPunch.duration && (
+                          <div style={{ fontSize: '0.86rem', color: 'var(--accent-blue)', fontWeight: 800, marginBottom: 12 }}>
+                            ⏱️ Total Time in Institute: {lastPunch.duration}
+                          </div>
+                        )}
+
+                        {/* WhatsApp Parent Notification Banner */}
+                        <div style={{
+                          background: 'rgba(16, 185, 129, 0.08)',
+                          border: '1.5px solid rgba(16, 185, 129, 0.3)',
+                          borderRadius: 12,
+                          padding: '10px 16px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          maxWidth: '90%'
+                        }}>
+                          <Smartphone size={18} color="#10b981" />
+                          <div style={{ textAlign: 'left' }}>
+                            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <CheckCheck size={14} /> Instant WhatsApp Dispatched to Parent
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                              Sent to {lastPunch.parentPhone || 'Parent Mobile'} • {lastPunch.student.parentName || 'Guardian'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Auto-Dismiss Countdown Bar */}
+                        <div style={{ width: '60%', height: 4, background: 'var(--bg-color)', borderRadius: 4, margin: '18px auto 0', overflow: 'hidden' }}>
+                          <motion.div
+                            initial={{ width: '100%' }}
+                            animate={{ width: '0%' }}
+                            transition={{ duration: 6, ease: 'linear' }}
+                            style={{ height: '100%', background: lastPunch.punchType === 'entry' ? '#10b981' : '#3b82f6' }}
+                          />
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="idle"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{ textAlign: 'center', padding: '20px 10px' }}
+                      >
+                        {/* Glowing Laser Scan Box */}
+                        <div style={{
+                          width: 140,
+                          height: 140,
+                          margin: '0 auto 20px',
+                          borderRadius: 20,
+                          border: '2px solid rgba(59, 130, 246, 0.4)',
+                          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 80%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          boxShadow: '0 0 25px rgba(59, 130, 246, 0.12)'
+                        }}>
+                          <QrCode size={72} color="var(--accent-blue)" style={{ opacity: 0.8 }} />
+
+                          {/* Animated Laser Scanning Line */}
+                          <motion.div
+                            animate={{ y: [-50, 50, -50] }}
+                            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                            style={{
+                              position: 'absolute',
+                              left: 10,
+                              right: 10,
+                              height: 3,
+                              background: 'linear-gradient(90deg, transparent 0%, #10b981 50%, transparent 100%)',
+                              boxShadow: '0 0 10px #10b981',
+                              borderRadius: 2
+                            }}
+                          />
+                        </div>
+
+                        <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px', color: 'var(--text-primary)' }}>
+                          Hold Student ID Card in front of Tabletop Scanner
+                        </h4>
+                        <p style={{ margin: '0 auto', maxWidth: 380, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          Automatic hands-free scan in &lt; 0.1s. The system will record the punch, calculate timing, and send an instant WhatsApp parent alert.
+                        </p>
+
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          marginTop: 20,
+                          background: 'var(--bg-color)',
+                          padding: '6px 16px',
+                          borderRadius: 20,
+                          border: '1px solid var(--border-color)',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle size={13} /> Plug &amp; Play USB
+                          </span>
+                          <span>•</span>
+                          <span style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Zap size={13} /> Zero Clicks
+                          </span>
+                          <span>•</span>
+                          <span style={{ color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Smartphone size={13} /> Auto WhatsApp
+                          </span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Today Attendance Mini-Counters */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                  <div className="card" style={{ padding: '14px 16px', textAlign: 'center', borderRadius: 14, background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>PRESENT TODAY</div>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#10b981', marginTop: 2 }}>{stats.present}</div>
+                  </div>
+
+                  <div className="card" style={{ padding: '14px 16px', textAlign: 'center', borderRadius: 14, background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>LATE ENTRIES</div>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#f59e0b', marginTop: 2 }}>{stats.late}</div>
+                  </div>
+
+                  <div className="card" style={{ padding: '14px 16px', textAlign: 'center', borderRadius: 14, background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>CHECKED OUT</div>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#3b82f6', marginTop: 2 }}>
+                      {todayRecords.filter(r => r.exitTime).length}
+                    </div>
+                  </div>
+
+                  <div className="card" style={{ padding: '14px 16px', textAlign: 'center', borderRadius: 14, background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>TOTAL ACTIVE</div>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 2 }}>{activeStudents.length}</div>
                   </div>
                 </div>
               </div>
 
-              {/* ---------------------------------------------------------------- */}
-              {/* UNIFIED BIOMETRIC CONTROL CENTER (AUTO-SCAN + 1-CLICK SYNC)       */}
-              {/* ---------------------------------------------------------------- */}
-              <div className="flex flex-col gap-20">
-                {/* IP Input & Action Toolbar */}
-                <div style={{
-                  background: 'var(--surface-color)',
-                  padding: '20px 24px',
-                  borderRadius: 16,
-                  border: '1px solid var(--border-color)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Wifi size={18} color="var(--accent-blue)" /> Machine Wi-Fi Connection
-                      </h3>
-
-                      <button
-                        type="button"
-                        onClick={handleAutoScanNetwork}
-                        disabled={isScanningNetwork}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: '8px',
-                          border: '1.5px solid rgba(139, 92, 246, 0.4)',
-                          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%)',
-                          color: '#8b5cf6',
-                          fontSize: '0.82rem',
-                          fontWeight: 800,
-                          cursor: isScanningNetwork ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: '0 2px 8px rgba(139, 92, 246, 0.15)'
-                        }}
-                      >
-                        <Radar size={15} className={isScanningNetwork ? 'animate-spin' : ''} />
-                        <span>{isScanningNetwork ? 'Scanning Wi-Fi (2s)...' : '🔍 Auto-Scan Wi-Fi (Find All Machines)'}</span>
-                      </button>
-                    </div>
-
-                    {/* Live PC IP Badge */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: 'rgba(59, 130, 246, 0.08)',
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      color: 'var(--accent-blue)'
+              {/* RIGHT COLUMN: Live Punch Activity Stream */}
+              <div className="card" style={{ padding: 24, display: 'flex', flexDirection: 'column', borderRadius: 20, background: 'var(--surface-color)', border: '1.5px solid var(--border-color)' }}>
+                {/* Header & Filter */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Flame size={20} color="#f59e0b" />
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                      Today's Live Punch Stream
+                    </h3>
+                    <span style={{
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      color: 'var(--accent-blue)',
+                      fontSize: '0.74rem',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: 12
                     }}>
-                      <span>🖥️ This PC IP:</span>
-                      <code style={{ fontFamily: 'monospace', fontWeight: 800 }}>{localIp}</code>
-                    </div>
+                      {todayRecords.length} Punches
+                    </span>
                   </div>
 
-                  {/* Discovered Machines Card Grid */}
-                  {discoveredDevices.length > 0 && (
-                    <div style={{
-                      background: 'rgba(59, 130, 246, 0.04)',
-                      border: '1.5px solid rgba(59, 130, 246, 0.25)',
-                      borderRadius: '12px',
-                      padding: '14px 16px',
-                      marginBottom: '16px'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                        <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Radar size={16} className={isScanningNetwork ? 'animate-spin' : ''} />
-                          <span>Connected Biometric Machines on Wi-Fi ({discoveredDevices.length} Online)</span>
-                        </div>
+                  <button
+                    type="button"
+                    onClick={() => { if (typeof refreshAttendance === 'function') refreshAttendance(); }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <RefreshCw size={12} /> Refresh
+                  </button>
+                </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <button
-                            type="button"
-                            onClick={handleSyncAllDevicesNow}
-                            disabled={biometricSyncing}
-                            style={{
-                              padding: '6px 14px',
-                              borderRadius: '8px',
-                              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                              color: '#fff',
-                              border: 'none',
-                              fontSize: '0.78rem',
-                              fontWeight: 800,
-                              cursor: biometricSyncing ? 'not-allowed' : 'pointer',
+                {/* Search Bar for Live Stream */}
+                <div style={{ position: 'relative', marginBottom: 14 }}>
+                  <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                  <input
+                    type="text"
+                    value={todaySearch}
+                    onChange={(e) => setTodaySearch(e.target.value)}
+                    placeholder="Search today's punches by name / roll..."
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px 8px 36px',
+                      borderRadius: 10,
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-color)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.84rem',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Scrollable Punches List */}
+                <div style={{ flex: 1, overflowY: 'auto', maxHeight: 480, display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
+                  {filteredTodayStudents.filter(s => s.entryTime || s.exitTime).length > 0 ? (
+                    filteredTodayStudents
+                      .filter(s => s.entryTime || s.exitTime)
+                      .map((item, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            background: 'var(--bg-color)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 12,
+                            padding: '12px 14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 12
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: '50%',
+                              background: item.status === 'present' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                              color: item.status === 'present' ? '#10b981' : '#f59e0b',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '6px',
-                              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
-                            }}
-                          >
-                            <RefreshCw size={13} className={biometricSyncing ? 'animate-spin' : ''} />
-                            <span>{biometricSyncing ? 'Syncing All Machines...' : `⚡ Sync All ${discoveredDevices.length} Machines`}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setDiscoveredDevices([])}
-                            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
-                          >
-                            Dismiss
-                          </button>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
-                        {discoveredDevices.map((dev, idx) => {
-                          const isSelected = biometricIp === dev.ip && String(biometricPort) === String(dev.port);
-                          return (
-                            <div
-                              key={idx}
-                              style={{
-                                background: isSelected ? 'rgba(16, 185, 129, 0.08)' : 'var(--surface-color)',
-                                border: isSelected ? '1.5px solid var(--accent-green)' : '1px solid var(--border-color)',
-                                borderRadius: '10px',
-                                padding: '10px 14px',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                gap: '10px'
-                              }}
-                            >
-                              <div>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span>📟</span> {dev.name}
-                                </div>
-                                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontFamily: 'monospace', marginTop: '2px' }}>
-                                  <code>{dev.ip}:{dev.port}</code> <span style={{ color: 'var(--accent-green)', fontWeight: 700 }}>• {dev.status}</span>
-                                </div>
+                              justifyContent: 'center',
+                              fontWeight: 800,
+                              fontSize: '0.85rem'
+                            }}>
+                              {getInitials(item.student.name)}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)' }}>
+                                {item.student.name}
                               </div>
-                              <div style={{ display: 'flex', gap: '6px' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleSelectDiscoveredDevice(dev)}
-                                  style={{
-                                    padding: '6px 10px',
-                                    borderRadius: '8px',
-                                    background: isSelected ? 'var(--accent-green)' : 'var(--accent-blue)',
-                                    color: '#fff',
-                                    border: 'none',
-                                    fontSize: '0.74rem',
-                                    fontWeight: 800,
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    whiteSpace: 'nowrap'
-                                  }}
-                                >
-                                  {isSelected ? <Check size={12} /> : <Zap size={12} />}
-                                  <span>{isSelected ? 'Selected' : 'Select'}</span>
-                                </button>
+                              <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>Roll #{item.student.rollNo || '—'}</span>
+                                <span>•</span>
+                                <span>{item.student.batch || item.student.targetClass || 'General'}</span>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                          </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', alignItems: 'flex-end' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        SELECTED MACHINE IP ADDRESS:
-                      </label>
-                      <input
-                        type="text"
-                        value={biometricIp}
-                        onChange={(e) => {
-                          setBiometricIp(e.target.value);
-                          localStorage.setItem('biometric_ip', e.target.value);
-                        }}
-                        placeholder="e.g. 192.168.0.12"
-                        style={{
-                          width: '100%',
-                          padding: '10px 14px',
-                          borderRadius: '10px',
-                          border: '1.5px solid var(--border-color)',
-                          background: 'var(--bg-color)',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.95rem',
-                          fontWeight: 700,
-                          fontFamily: 'monospace',
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                              {item.entryTime && (
+                                <span style={{
+                                  background: 'rgba(16, 185, 129, 0.12)',
+                                  color: '#10b981',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  padding: '2px 6px',
+                                  borderRadius: 6
+                                }}>
+                                  IN: {formatTime(item.entryTime)}
+                                </span>
+                              )}
+                              {item.exitTime && (
+                                <span style={{
+                                  background: 'rgba(59, 130, 246, 0.12)',
+                                  color: 'var(--accent-blue)',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  padding: '2px 6px',
+                                  borderRadius: 6
+                                }}>
+                                  OUT: {formatTime(item.exitTime)}
+                                </span>
+                              )}
+                            </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        MACHINE PORT:
-                      </label>
-                      <input
-                        type="number"
-                        value={biometricPort}
-                        onChange={(e) => {
-                          setBiometricPort(e.target.value);
-                          localStorage.setItem('biometric_port', e.target.value);
-                        }}
-                        placeholder="71 or 4370"
-                        style={{
-                          width: '100%',
-                          padding: '10px 14px',
-                          borderRadius: '10px',
-                          border: '1.5px solid var(--border-color)',
-                          background: 'var(--bg-color)',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.95rem',
-                          fontWeight: 700,
-                          fontFamily: 'monospace',
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={handleTestBiometric}
-                        disabled={biometricTesting || biometricSyncing}
-                        className="btn"
-                        style={{
-                          padding: '10px 16px',
-                          borderRadius: '10px',
-                          background: 'rgba(59, 130, 246, 0.12)',
-                          color: 'var(--accent-blue)',
-                          border: '1.5px solid rgba(59, 130, 246, 0.3)',
-                          fontWeight: 800,
-                          fontSize: '0.88rem',
-                          cursor: biometricTesting ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <Activity size={16} className={biometricTesting ? 'animate-spin' : ''} />
-                        <span>{biometricTesting ? 'Connecting...' : 'Test Connection'}</span>
-                      </button>
-
-                      {discoveredDevices.length > 1 ? (
-                        <button
-                          onClick={handleSyncAllDevicesNow}
-                          disabled={biometricSyncing || biometricTesting}
-                          className="btn"
-                          style={{
-                            padding: '10px 18px',
-                            borderRadius: '10px',
-                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                            color: '#ffffff',
-                            border: 'none',
-                            fontWeight: 800,
-                            fontSize: '0.88rem',
-                            cursor: biometricSyncing ? 'not-allowed' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-                          }}
-                        >
-                          <RefreshCw size={16} className={biometricSyncing ? 'animate-spin' : ''} />
-                          <span>{biometricSyncing ? 'Syncing All Machines...' : `⚡ Sync All (${discoveredDevices.length}) Machines`}</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={handleSyncBiometricNow}
-                          disabled={biometricSyncing || biometricTesting}
-                          className="btn"
-                          style={{
-                            padding: '10px 18px',
-                            borderRadius: '10px',
-                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                            color: '#ffffff',
-                            border: 'none',
-                            fontWeight: 800,
-                            fontSize: '0.88rem',
-                            cursor: biometricSyncing ? 'not-allowed' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-                          }}
-                        >
-                          <RefreshCw size={16} className={biometricSyncing ? 'animate-spin' : ''} />
-                          <span>{biometricSyncing ? 'Pulling Logs...' : '1-Click Sync Attendance'}</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Auto-Sync Switch & Status Banner */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: '16px'
-                }}>
-                  {/* Auto-Sync Card */}
-                  <div style={{
-                    background: biometricAutoSync ? 'rgba(16, 185, 129, 0.08)' : 'var(--surface-color)',
-                    border: biometricAutoSync ? '1.5px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--border-color)',
-                    borderRadius: '16px',
-                    padding: '18px 20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '12px'
-                  }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: '50%',
-                          background: biometricAutoSync ? '#10b981' : 'var(--text-secondary)',
-                          display: 'inline-block'
-                        }} />
-                        <span style={{ fontWeight: 800, fontSize: '0.92rem' }}>Continuous Background Auto-Sync</span>
-                      </div>
-                      <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                        {biometricAutoSync 
-                          ? 'Actively polling machine every 15s for instant punch arrival.' 
-                          : 'Turn ON to continuously sync attendance every 15 seconds.'}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={handleToggleAutoSync}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '10px',
-                        fontWeight: 800,
-                        fontSize: '0.82rem',
-                        border: 'none',
-                        background: biometricAutoSync ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'var(--accent-blue)',
-                        color: '#ffffff',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {biometricAutoSync ? <Pause size={14} /> : <Play size={14} />}
-                      <span>{biometricAutoSync ? 'Stop Auto-Sync' : 'Start Auto-Sync'}</span>
-                    </button>
-                  </div>
-
-                  {/* Machine Details Card */}
-                  <div style={{
-                    background: 'var(--surface-color)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '16px',
-                    padding: '18px 20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '12px'
-                  }}>
-                    <div>
-                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase' }}>
-                        DEVICE STATUS
-                      </div>
-                      <div style={{ fontSize: '1.05rem', fontWeight: 900, color: biometricDeviceInfo ? '#10b981' : 'var(--text-primary)', marginTop: '2px' }}>
-                        {biometricDeviceInfo ? '✅ Connected & Ready' : '⚪ Not Connected'}
-                      </div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                        {biometricDeviceInfo 
-                          ? `Protocol: ${biometricDeviceInfo.version || 'Realtime/FK'} | Status: ${biometricDeviceInfo.status || 'Ready'}`
-                          : 'Click "Test Connection" to verify machine communication.'}
-                      </div>
-                    </div>
-
-                    {biometricStatus?.lastSyncTime && (
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)' }}>LAST SYNC</div>
-                        <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
-                          {new Date(biometricStatus.lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            <div style={{ fontSize: '0.70rem', color: 'var(--text-tertiary)', marginTop: 3 }}>
+                              {item.exitTime ? `Duration: ${calcDuration(item.entryTime, item.exitTime)}` : 'In Institute'}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Step-by-Step Machine Configuration Guide */}
-                <div style={{
-                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)',
-                  border: '1.5px solid rgba(59, 130, 246, 0.2)',
-                  borderRadius: '16px',
-                  padding: '20px 24px',
-                  marginTop: '6px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '1.1rem' }}>⚙️</span>
-                      <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                        Real-Time Push Setup (Biometric Machine Screen Configuration)
-                      </h4>
-                    </div>
-
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: biometricStatus?.admsStatus?.totalPushesReceived > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(59, 130, 246, 0.12)',
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      fontSize: '0.78rem',
-                      fontWeight: 800,
-                      color: biometricStatus?.admsStatus?.totalPushesReceived > 0 ? '#10b981' : 'var(--accent-blue)'
-                    }}>
-                      <Activity size={13} className={biometricStatus?.admsStatus?.totalPushesReceived > 0 ? 'animate-pulse' : ''} />
-                      <span>
-                        ADMS Receiver: {biometricStatus?.admsStatus?.totalPushesReceived > 0 ? `Active (${biometricStatus.admsStatus.totalPushesReceived} pushes)` : 'Listening on Port 5000'}
-                      </span>
-                    </div>
-                  </div>
-                  <p style={{ margin: '0 0 16px', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-                    Biometric machine real-time me student ke punch directly is computer par push karegi. Kripya machine ke physical screen me ye settings verify karein:
-                  </p>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-                    <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 700 }}>1️⃣ MACHINE IP (Device IP)</div>
-                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-blue)', marginTop: '4px', fontFamily: 'monospace' }}>
-                        {biometricIp || '192.168.0.12'} (Port: {biometricPort || 71})
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Menu ➔ Comm ➔ Network ➔ IP</div>
-                    </div>
-
-                    <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '10px', border: '1.5px solid rgba(16, 185, 129, 0.4)' }}>
-                      <div style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: 800 }}>2️⃣ SERVER IP (Computer IP)</div>
-                      <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#10b981', marginTop: '4px', fontFamily: 'monospace' }}>
-                        {localIp} (Port: 5000)
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Menu ➔ Comm ➔ Cloud Server / ADMS</div>
-                    </div>
-
-                    <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 700 }}>3️⃣ PUSH / CLOUD SERVER</div>
-                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#8b5cf6', marginTop: '4px' }}>
-                        Enable / ON
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Auto-sends punch on thumb scan</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Real-time Recent Biometric Punches Stream */}
-                <div style={{
-                  background: 'var(--surface-color)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '16px',
-                  padding: '20px 24px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Zap size={18} color="#eab308" />
-                      <h4 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                        Live Biometric Punch Activity Stream
-                      </h4>
-                      <span style={{
-                        background: 'rgba(234, 179, 8, 0.12)',
-                        color: '#ca8a04',
-                        padding: '2px 8px',
-                        borderRadius: '6px',
-                        fontSize: '0.72rem',
-                        fontWeight: 800
-                      }}>
-                        Real-Time
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button
-                        type="button"
-                        onClick={() => { fetchBiometricStatus(); if (typeof refreshAttendance === 'function') refreshAttendance(); }}
-                        className="btn btn-secondary btn-sm"
-                        style={{ fontSize: '0.76rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <RefreshCw size={12} /> Refresh Stream
-                      </button>
-                    </div>
-                  </div>
-
-                  {biometricStatus?.recentPunches && biometricStatus.recentPunches.length > 0 ? (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="data-table" style={{ fontSize: '0.82rem', margin: 0 }}>
-                        <thead>
-                          <tr>
-                            <th>Student</th>
-                            <th>Roll / ID</th>
-                            <th>Punch Time</th>
-                            <th>Type</th>
-                            <th>WhatsApp Alert</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {biometricStatus.recentPunches.map((punch, pIdx) => (
-                            <tr key={pIdx}>
-                              <td>
-                                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                                  {punch.studentName || 'Unregistered Card / Roll'}
-                                </div>
-                                {punch.sessionName && (
-                                  <div style={{ fontSize: '0.70rem', color: 'var(--accent-blue)' }}>
-                                    Session: {punch.sessionName}
-                                  </div>
-                                )}
-                              </td>
-                              <td>
-                                <code style={{ fontFamily: 'monospace', fontWeight: 700, background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px' }}>
-                                  {punch.rollNumber}
-                                </code>
-                              </td>
-                              <td style={{ fontWeight: 600 }}>
-                                {punch.punchTime} <span style={{ fontSize: '0.70rem', color: 'var(--text-secondary)' }}>({punch.punchDate})</span>
-                              </td>
-                              <td>
-                                <span className={`badge ${punch.type === 'IN' ? 'badge-present' : 'badge-late'}`} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
-                                  {punch.type === 'IN' ? 'CHECK-IN' : 'CHECK-OUT'}
-                                </span>
-                              </td>
-                              <td>
-                                {punch.parentPhone ? (
-                                  <span style={{ color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}>
-                                    <CheckCircle2 size={13} /> {punch.parentPhone}
-                                  </span>
-                                ) : (
-                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>No Parent Phone</span>
-                                )}
-                              </td>
-                              <td>
-                                <span style={{ color: '#10b981', fontWeight: 800, fontSize: '0.74rem' }}>
-                                  ✅ Synced to Attendance
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                      ))
                   ) : (
                     <div style={{
                       textAlign: 'center',
-                      padding: '24px 16px',
+                      padding: '40px 16px',
                       background: 'var(--bg-color)',
-                      borderRadius: '12px',
+                      borderRadius: 14,
                       border: '1px dashed var(--border-color)',
                       color: 'var(--text-secondary)'
                     }}>
-                      <Radar size={28} style={{ opacity: 0.4, margin: '0 auto 6px' }} />
-                      <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Listening for live biometric thumb scans...</div>
-                      <div style={{ fontSize: '0.76rem', marginTop: '4px' }}>
-                        Jaise hi koi student machine par thumb scan karega, unki attendance aur WhatsApp alert yahan instantly display hogi.
+                      <QrCode size={36} style={{ opacity: 0.35, margin: '0 auto 8px' }} />
+                      <div style={{ fontWeight: 800, fontSize: '0.90rem' }}>No attendance punches recorded yet today</div>
+                      <div style={{ fontSize: '0.78rem', marginTop: 4 }}>
+                        Flash student QR cards in front of the scanner to populate the live stream.
                       </div>
                     </div>
                   )}
                 </div>
               </div>
             </div>
+
+            {/* ---------------------------------------------------------------- */}
+            {/* 🪪 MODAL: PRINTABLE OFFICIAL STUDENT ID CARDS (FRONT & BACK)   */}
+            {/* ---------------------------------------------------------------- */}
+            {showIdCardsModal && (
+              <div
+                className="id-cards-modal-overlay"
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.75)',
+                  backdropFilter: 'blur(8px)',
+                  zIndex: 9999,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 20
+                }}
+              >
+                <div
+                  className="id-cards-modal-card"
+                  style={{
+                    background: '#0f172a',
+                    borderRadius: 20,
+                    width: '100%',
+                    maxWidth: 1080,
+                    maxHeight: '92vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    border: '1.5px solid rgba(255, 255, 255, 0.18)',
+                    boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {/* Modal Header */}
+                  <div
+                    className="id-cards-modal-header"
+                    style={{
+                      padding: '18px 24px',
+                      background: '#1e293b',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 12
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ padding: 10, borderRadius: 12, background: 'rgba(139, 92, 246, 0.25)', color: '#a78bfa' }}>
+                        <Printer size={24} />
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#ffffff' }}>
+                          Print Official Student ID Cards (Front &amp; Back)
+                        </h3>
+                        <p style={{ margin: '3px 0 0', fontSize: '0.80rem', color: '#cbd5e1', fontWeight: 500 }}>
+                          Official ID cards with photo, scannable Roll Number QR code, institute branding, and terms (A4 sheet ready)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button
+                        type="button"
+                        onClick={handleSaveAsPdf}
+                        style={{
+                          padding: '9px 18px',
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontWeight: 800,
+                          fontSize: '0.86rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+                        }}
+                      >
+                        <Download size={16} />
+                        <span>📥 Save as PDF (A4)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handlePrintSystem}
+                        style={{
+                          padding: '9px 16px',
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontWeight: 800,
+                          fontSize: '0.86rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)'
+                        }}
+                      >
+                        <Printer size={16} />
+                        <span>🖨️ Print Dialog</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowIdCardsModal(false)}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filter & Side Selector Toolbar */}
+                  <div
+                    className="id-cards-modal-toolbar"
+                    style={{
+                      padding: '12px 24px',
+                      background: '#0f172a',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 14,
+                      flexWrap: 'wrap'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', flex: 1 }}>
+                      {/* Batch Selector */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <label style={{ fontSize: '0.80rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em' }}>BATCH:</label>
+                        <select
+                          value={selectedIdCardBatch}
+                          onChange={(e) => setSelectedIdCardBatch(e.target.value)}
+                          style={{
+                            padding: '7px 12px',
+                            borderRadius: 8,
+                            border: '1px solid rgba(255, 255, 255, 0.25)',
+                            background: '#1e293b',
+                            color: '#ffffff',
+                            fontSize: '0.82rem',
+                            fontWeight: 700,
+                            outline: 'none',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <option value="all">All Batches ({activeStudents.length} Students)</option>
+                          {availableBatches.map((b, i) => (
+                            <option key={i} value={b}>{b}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Search Bar */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 170, flex: 1, maxWidth: 220, position: 'relative' }}>
+                        <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: 10, pointerEvents: 'none' }} />
+                        <input
+                          type="text"
+                          value={idCardSearch}
+                          onChange={(e) => setIdCardSearch(e.target.value)}
+                          placeholder="Search name / roll..."
+                          style={{
+                            width: '100%',
+                            padding: '7px 12px 7px 32px',
+                            borderRadius: 8,
+                            border: '1px solid rgba(255, 255, 255, 0.25)',
+                            background: '#1e293b',
+                            color: '#ffffff',
+                            fontSize: '0.82rem',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+
+                      {/* Side Switcher Buttons */}
+                      <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIdCardSide('duplex')}
+                          style={{
+                            padding: '5px 11px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.76rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardSide === 'duplex' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
+                            color: idCardSide === 'duplex' ? '#ffffff' : '#94a3b8',
+                            boxShadow: idCardSide === 'duplex' ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none'
+                          }}
+                        >
+                          📄 Duplex A4 (Front ➔ Back Sheets)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIdCardSide('both')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.76rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardSide === 'both' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
+                            color: idCardSide === 'both' ? '#ffffff' : '#94a3b8'
+                          }}
+                        >
+                          🎴 Side-by-Side (Pairs)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIdCardSide('front')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.76rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardSide === 'front' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
+                            color: idCardSide === 'front' ? '#ffffff' : '#94a3b8'
+                          }}
+                        >
+                          🪪 Front Only
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIdCardSide('back')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.76rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardSide === 'back' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
+                            color: idCardSide === 'back' ? '#ffffff' : '#94a3b8'
+                          }}
+                        >
+                          📜 Back Only
+                        </button>
+                      </div>
+
+                      {/* Cards Per Sheet Density Toggle (Only for Duplex Mode) */}
+                      {idCardSide === 'duplex' && (
+                        <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
+                          <button
+                            type="button"
+                            onClick={() => setIdCardCardsPerPage(4)}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: 6,
+                              border: 'none',
+                              fontSize: '0.74rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              background: idCardCardsPerPage === 4 ? '#3b82f6' : 'transparent',
+                              color: idCardCardsPerPage === 4 ? '#ffffff' : '#94a3b8'
+                            }}
+                          >
+                            📑 4 Cards / Sheet (Large 2×2)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIdCardCardsPerPage(6)}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: 6,
+                              border: 'none',
+                              fontSize: '0.74rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              background: idCardCardsPerPage === 6 ? '#3b82f6' : 'transparent',
+                              color: idCardCardsPerPage === 6 ? '#ffffff' : '#94a3b8'
+                            }}
+                          >
+                            📑 6 Cards / Sheet (Compact 2×3)
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{
+                      fontSize: '0.80rem',
+                      fontWeight: 800,
+                      color: '#60a5fa',
+                      background: 'rgba(59, 130, 246, 0.18)',
+                      border: '1px solid rgba(59, 130, 246, 0.35)',
+                      padding: '5px 12px',
+                      borderRadius: 20,
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {idCardSide === 'duplex'
+                        ? `${filteredIdCardStudents.length} Students (${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage)} A4 Sheets / ${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage) * 2} Pages)`
+                        : `Showing ${filteredIdCardStudents.length} Students (${idCardSide === 'both' ? filteredIdCardStudents.length * 2 : filteredIdCardStudents.length} Cards)`}
+                    </div>
+                  </div>
+
+                  {/* ID Cards Printable Sheet Grid */}
+                  <div style={{ flex: 1, overflowY: 'auto', padding: 24, background: '#090d16' }}>
+                    <div id="printable-id-cards">
+                      {/* ================= MODE 1: DUPLEX A4 SHEETS ================= */}
+                      {idCardSide === 'duplex' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 36, alignItems: 'center' }}>
+                          {Array.from({ length: Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage) }).map((_, sheetIdx) => {
+                            const chunk = filteredIdCardStudents.slice(sheetIdx * idCardCardsPerPage, sheetIdx * idCardCardsPerPage + idCardCardsPerPage);
+                            
+                            // Mirrored chunk for horizontal flip on 2-column grid
+                            const rows = idCardCardsPerPage / 2;
+                            const mirroredChunk = [];
+                            for (let r = 0; r < rows; r++) {
+                              const s1 = chunk[r * 2] || null;
+                              const s2 = chunk[r * 2 + 1] || null;
+                              mirroredChunk.push(s2);
+                              mirroredChunk.push(s1);
+                            }
+
+                            const isCompact = idCardCardsPerPage === 6;
+                            const cardWidth = isCompact ? '230px' : '270px';
+                            const cardHeight = isCompact ? '360px' : '430px';
+                            const gridCols = isCompact ? 'repeat(2, 230px)' : 'repeat(2, 270px)';
+                            const gridGap = isCompact ? '16px 36px' : '24px 44px';
+
+                            return (
+                              <div key={sheetIdx} style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center', width: '100%' }}>
+                                {/* Front Sheet Container */}
+                                <div style={{ width: '100%', maxWidth: '794px' }}>
+                                  {/* Screen Header Banner (OUTSIDE .a4-print-sheet) */}
+                                  <div
+                                    style={{
+                                      background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                                      color: '#ffffff',
+                                      padding: '8px 16px',
+                                      borderRadius: '10px 10px 0 0',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      fontSize: '0.82rem',
+                                      fontWeight: 800
+                                    }}
+                                  >
+                                    <span>📄 SHEET {sheetIdx + 1} • PAGE {sheetIdx * 2 + 1} — FRONT FACES (STUDENTS {sheetIdx * idCardCardsPerPage + 1} TO {sheetIdx * idCardCardsPerPage + chunk.length})</span>
+                                    <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>A4 Duplex Front Side</span>
+                                  </div>
+
+                                  {/* Page A: FRONT SHEET (PURE A4 PRINT CONTENT) */}
+                                  <div
+                                    className="a4-print-sheet"
+                                    style={{
+                                      background: '#ffffff',
+                                      borderRadius: '0 0 12px 12px',
+                                      padding: '24px 30px',
+                                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                                      width: '100%',
+                                      minHeight: '1123px',
+                                      boxSizing: 'border-box',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      justifyContent: 'center',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <div
+                                      className="a4-print-grid"
+                                      style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: gridCols,
+                                        gap: gridGap,
+                                        justifyContent: 'center'
+                                      }}
+                                    >
+                                      {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
+                                        const st = chunk[slotIdx] || null;
+                                        return (
+                                          <div key={slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
+                                            {st ? (
+                                              <div
+                                                className="print-id-card"
+                                                style={{
+                                                  width: cardWidth,
+                                                  height: cardHeight,
+                                                  boxSizing: 'border-box',
+                                                  background: 'linear-gradient(135deg, #f0f7ff 0%, #dbeafe 100%)',
+                                                  borderRadius: '12px',
+                                                  boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+                                                  overflow: 'hidden',
+                                                  display: 'flex',
+                                                  flexDirection: 'column',
+                                                  justifyContent: 'space-between',
+                                                  border: '1.5px solid #bfdbfe',
+                                                  position: 'relative',
+                                                  fontFamily: "'Montserrat', sans-serif"
+                                                }}
+                                              >
+                                                {/* Top Header Logo */}
+                                                <div style={{
+                                                  boxSizing: 'border-box',
+                                                  height: isCompact ? '60px' : '74px',
+                                                  width: 'calc(100% - 10px)',
+                                                  margin: '5px auto 0',
+                                                  overflow: 'hidden',
+                                                  background: '#ffffff',
+                                                  border: '1.5px solid #2563eb',
+                                                  borderRadius: '8px',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  padding: '2px 8px'
+                                                }}>
+                                                  <img src={idLogo} alt="Career Xone" style={{ width: '94%', height: '88%', objectFit: 'contain' }} />
+                                                </div>
+
+                                                {/* Student Avatar / Photo */}
+                                                <div style={{ display: 'flex', justifyContent: 'center', marginTop: isCompact ? '-30px' : '-38px', zIndex: 2 }}>
+                                                  {st.photo ? (
+                                                    <img
+                                                      src={st.photo}
+                                                      alt={st.name}
+                                                      style={{
+                                                        width: isCompact ? '62px' : '78px',
+                                                        height: isCompact ? '62px' : '78px',
+                                                        borderRadius: '50%',
+                                                        objectFit: 'cover',
+                                                        border: '3px solid #ffffff',
+                                                        boxShadow: '0 3px 8px rgba(0,0,0,0.15)'
+                                                      }}
+                                                    />
+                                                  ) : (
+                                                    <div style={{
+                                                      width: isCompact ? '62px' : '78px',
+                                                      height: isCompact ? '62px' : '78px',
+                                                      borderRadius: '50%',
+                                                      background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                                                      display: 'flex',
+                                                      alignItems: 'center',
+                                                      justifyContent: 'center',
+                                                      border: '3px solid #ffffff',
+                                                      boxShadow: '0 3px 8px rgba(0,0,0,0.15)',
+                                                      fontSize: isCompact ? '1.2rem' : '1.5rem',
+                                                      color: '#ffffff',
+                                                      fontWeight: 800
+                                                    }}>
+                                                      {getInitials(st.name)}
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                                {/* Student Details */}
+                                                <div style={{ padding: `0 ${isCompact ? '8px' : '12px'}`, textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                                  <div>
+                                                    <h3 style={{ margin: '1px 0 1px 0', fontSize: isCompact ? '0.86rem' : '0.98rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                      {st.name}
+                                                    </h3>
+                                                    <p style={{ margin: '0 0 4px 0', fontSize: isCompact ? '0.64rem' : '0.72rem', color: '#2563eb', fontWeight: 700 }}>
+                                                      Course: {batches?.find(b => b.id === st.batch)?.name || st.batch || st.targetClass || 'General'}
+                                                    </p>
+
+                                                    {/* Info Table Box */}
+                                                    <div style={{
+                                                      background: 'rgba(255, 255, 255, 0.88)',
+                                                      borderRadius: '6px',
+                                                      border: '1px solid #bfdbfe',
+                                                      padding: isCompact ? '4px 8px' : '6px 10px',
+                                                      textAlign: 'left',
+                                                      fontSize: isCompact ? '0.60rem' : '0.68rem',
+                                                      color: '#0f172a',
+                                                      lineHeight: 1.38
+                                                    }}>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
+                                                        <strong style={{ width: isCompact ? '48px' : '56px', color: '#475569' }}>Roll No:</strong>
+                                                        <span style={{ fontWeight: 800, color: '#1e3a8a' }}>{st.rollNo || '—'}</span>
+                                                      </div>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
+                                                        <strong style={{ width: isCompact ? '48px' : '56px', color: '#475569' }}>Parent:</strong>
+                                                        <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isCompact ? '130px' : '160px' }}>{st.parentName || 'N/A'}</span>
+                                                      </div>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
+                                                        <strong style={{ width: isCompact ? '48px' : '56px', color: '#475569' }}>Contact:</strong>
+                                                        <span style={{ fontWeight: 600 }}>{st.parentPhone || st.phone || 'N/A'}</span>
+                                                      </div>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                        <strong style={{ width: isCompact ? '48px' : '56px', color: '#475569' }}>Address:</strong>
+                                                        <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isCompact ? '130px' : '160px' }}>{st.address || 'N/A'}</span>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+
+                                                  {/* Bottom Bar: Signatures & Scannable QR (Enlarged & Sharp) */}
+                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '3px 0', padding: '0 2px' }}>
+                                                    <div style={{ textAlign: 'center', width: isCompact ? '42px' : '50px' }}>
+                                                      <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px' }}></div>
+                                                      <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Issue Auth</span>
+                                                    </div>
+
+                                                    {/* Prominent High-Scan QR Code */}
+                                                    <div style={{
+                                                      display: 'flex',
+                                                      alignItems: 'center',
+                                                      justifyContent: 'center',
+                                                      background: '#ffffff',
+                                                      padding: '2px',
+                                                      borderRadius: '6px',
+                                                      border: '1px solid #bfdbfe',
+                                                      boxShadow: '0 2px 5px rgba(0,0,0,0.06)'
+                                                    }}>
+                                                      <QRCodeSVG value={String(st.rollNo || st.id)} size={isCompact ? 54 : 66} level="M" />
+                                                    </div>
+
+                                                    <div style={{ textAlign: 'center', width: isCompact ? '42px' : '50px' }}>
+                                                      <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                                        <img
+                                                          src="/principal-sign.png"
+                                                          alt="Principal"
+                                                          style={{ maxHeight: '14px', maxWidth: '44px', display: 'none' }}
+                                                          onError={(e) => e.target.style.display = 'none'}
+                                                          onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }}
+                                                        />
+                                                      </div>
+                                                      <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Principal</span>
+                                                    </div>
+                                                  </div>
+                                                </div>
+
+                                                {/* Footer Ribbon */}
+                                                <div style={{
+                                                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                                  padding: isCompact ? '4px' : '5px',
+                                                  textAlign: 'center',
+                                                  fontSize: isCompact ? '0.58rem' : '0.66rem',
+                                                  color: '#ffffff',
+                                                  fontWeight: 800,
+                                                  letterSpacing: '0.5px'
+                                                }}>
+                                                  STUDENT ID: {st.id}
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="print-id-card-empty" style={{ width: cardWidth, height: cardHeight, visibility: 'hidden' }} />
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Back Sheet Container */}
+                                <div style={{ width: '100%', maxWidth: '794px' }}>
+                                  {/* Screen Header Banner (OUTSIDE .a4-print-sheet) */}
+                                  <div
+                                    style={{
+                                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                                      color: '#ffffff',
+                                      padding: '8px 16px',
+                                      borderRadius: '10px 10px 0 0',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      fontSize: '0.82rem',
+                                      fontWeight: 800
+                                    }}
+                                  >
+                                    <span>📜 SHEET {sheetIdx + 1} • PAGE {sheetIdx * 2 + 2} — BACK FACES (TERMS &amp; CONDITIONS — MIRRORED DUPLEX ALIGNED)</span>
+                                    <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>A4 Duplex Back (Reverse Side)</span>
+                                  </div>
+
+                                  {/* Page B: BACK SHEET (PURE A4 PRINT CONTENT) */}
+                                  <div
+                                    className="a4-print-sheet"
+                                    style={{
+                                      background: '#ffffff',
+                                      borderRadius: '0 0 12px 12px',
+                                      padding: '24px 30px',
+                                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                                      width: '100%',
+                                      minHeight: '1123px',
+                                      boxSizing: 'border-box',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      justifyContent: 'center',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <div
+                                      className="a4-print-grid"
+                                      style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: gridCols,
+                                        gap: gridGap,
+                                        justifyContent: 'center'
+                                      }}
+                                    >
+                                      {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
+                                        const st = mirroredChunk[slotIdx] || null;
+                                        return (
+                                          <div key={slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
+                                            {st ? (
+                                              <div
+                                                className="print-id-card"
+                                                style={{
+                                                  width: cardWidth,
+                                                  height: cardHeight,
+                                                  boxSizing: 'border-box',
+                                                  background: '#ffffff',
+                                                  borderRadius: '12px',
+                                                  boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+                                                  overflow: 'hidden',
+                                                  display: 'flex',
+                                                  flexDirection: 'column',
+                                                  justifyContent: 'space-between',
+                                                  border: '1.5px solid #bfdbfe',
+                                                  position: 'relative',
+                                                  fontFamily: "'Montserrat', sans-serif"
+                                                }}
+                                              >
+                                                {/* Header Ribbon */}
+                                                <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', padding: isCompact ? '5px 8px' : '7px 10px', textAlign: 'center', color: '#ffffff' }}>
+                                                  <h4 style={{ margin: 0, fontSize: isCompact ? '0.74rem' : '0.84rem', fontWeight: 800, letterSpacing: '0.4px' }}>Terms &amp; Conditions</h4>
+                                                  <span style={{ fontSize: isCompact ? '0.48rem' : '0.56rem', opacity: 0.9 }}>Career Xone Rules &amp; Regulations</span>
+                                                </div>
+
+                                                {/* Rules Body */}
+                                                <div style={{ padding: isCompact ? '5px 8px' : '7px 10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                                  <ul style={{
+                                                    margin: 0,
+                                                    paddingLeft: 0,
+                                                    listStyle: 'none',
+                                                    fontSize: isCompact ? '0.46rem' : '0.54rem',
+                                                    color: '#1e293b',
+                                                    lineHeight: isCompact ? '1.24' : '1.34',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: isCompact ? '2px' : '3px',
+                                                    textAlign: 'left'
+                                                  }}>
+                                                    <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                                      <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                                      <span>Student should carry the ID card and produce it on demand.</span>
+                                                    </li>
+                                                    <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                                      <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                                      <span>Be ensured to update the Entry card before the Expiry date.</span>
+                                                    </li>
+                                                    <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                                      <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                                      <span>Reach class before time; parent's permission needed to leave early.</span>
+                                                    </li>
+                                                    <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                                      <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                                      <span>All students should wear proper uniform with shoes.</span>
+                                                    </li>
+                                                    <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                                      <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                                      <span>Student should maintain decency and decorum of institute.</span>
+                                                    </li>
+                                                    <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                                      <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                                      <span>Student found guilty of any misbehaviour will be rusticated.</span>
+                                                    </li>
+                                                    <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                                      <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                                      <span>Use or carry of Mobile Phone is strictly prohibited inside campus.</span>
+                                                    </li>
+                                                    <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                                      <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                                      <span>To issue a New ID Card in case of Lost/Damage ₹200/- will be charged.</span>
+                                                    </li>
+                                                    <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                                      <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                                      <span>If found outside premises, please deposit at Reception Counter.</span>
+                                                    </li>
+                                                    <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                                      <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                                      <span>Unhealthy culture affecting academic reputation will be strictly dealt with.</span>
+                                                    </li>
+                                                  </ul>
+
+                                                  {/* Emergency Helpline Box */}
+                                                  <div style={{
+                                                    background: '#f0f9ff',
+                                                    border: '1px solid #bae6fd',
+                                                    borderRadius: '6px',
+                                                    padding: '3px 6px',
+                                                    fontSize: isCompact ? '0.48rem' : '0.58rem',
+                                                    color: '#0369a1',
+                                                    textAlign: 'center',
+                                                    lineHeight: '1.2',
+                                                    marginTop: '2px'
+                                                  }}>
+                                                    <strong>Reception:</strong> 9673383561 / 9145481323 | Gondia (MH)
+                                                  </div>
+                                                </div>
+
+                                                {/* Bottom Ribbon */}
+                                                <div style={{ background: '#1e3a8a', padding: isCompact ? '4px' : '5px', textAlign: 'center', fontSize: isCompact ? '0.52rem' : '0.62rem', color: '#ffffff', fontWeight: 800, letterSpacing: '0.5px' }}>
+                                                  CAREER XONE • ACADEMIC EXCELLENCE
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="print-id-card-empty" style={{ width: cardWidth, height: cardHeight, visibility: 'hidden' }} />
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* ================= MODES 2, 3, 4: PAIRS / FRONT ONLY / BACK ONLY ================= */}
+                      {idCardSide !== 'duplex' && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 24,
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {filteredIdCardStudents.map((st) => (
+                            <div
+                              key={st.id}
+                              className="print-id-card-pair"
+                              style={{
+                                display: 'flex',
+                                gap: 20,
+                                flexWrap: 'wrap',
+                                justifyContent: 'center',
+                                alignItems: 'flex-start'
+                              }}
+                            >
+                              {/* FRONT SIDE */}
+                              {(idCardSide === 'both' || idCardSide === 'front') && (
+                                <div
+                                  className="print-id-card"
+                                  style={{
+                                    width: '270px',
+                                    height: '430px',
+                                    boxSizing: 'border-box',
+                                    background: 'linear-gradient(135deg, #f0f7ff 0%, #dbeafe 100%)',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    border: '1.5px solid #bfdbfe',
+                                    position: 'relative',
+                                    fontFamily: "'Montserrat', sans-serif"
+                                  }}
+                                >
+                                  {/* Top Header Logo */}
+                                  <div style={{
+                                    boxSizing: 'border-box',
+                                    height: '74px',
+                                    width: 'calc(100% - 10px)',
+                                    margin: '5px auto 0',
+                                    overflow: 'hidden',
+                                    background: '#ffffff',
+                                    border: '1.5px solid #2563eb',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '2px 8px'
+                                  }}>
+                                    <img src={idLogo} alt="Career Xone" style={{ width: '94%', height: '88%', objectFit: 'contain' }} />
+                                  </div>
+
+                                  {/* Student Avatar / Photo */}
+                                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-38px', zIndex: 2 }}>
+                                    {st.photo ? (
+                                      <img
+                                        src={st.photo}
+                                        alt={st.name}
+                                        style={{
+                                          width: '78px',
+                                          height: '78px',
+                                          borderRadius: '50%',
+                                          objectFit: 'cover',
+                                          border: '3px solid #ffffff',
+                                          boxShadow: '0 3px 8px rgba(0,0,0,0.15)'
+                                        }}
+                                      />
+                                    ) : (
+                                      <div style={{
+                                        width: '78px',
+                                        height: '78px',
+                                        borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: '3px solid #ffffff',
+                                        boxShadow: '0 3px 8px rgba(0,0,0,0.15)',
+                                        fontSize: '1.5rem',
+                                        color: '#ffffff',
+                                        fontWeight: 800
+                                      }}>
+                                        {getInitials(st.name)}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Student Details */}
+                                  <div style={{ padding: '0 12px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    <div>
+                                      <h3 style={{ margin: '1px 0 1px 0', fontSize: '0.98rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {st.name}
+                                      </h3>
+                                      <p style={{ margin: '0 0 4px 0', fontSize: '0.72rem', color: '#2563eb', fontWeight: 700 }}>
+                                        Course: {batches?.find(b => b.id === st.batch)?.name || st.batch || st.targetClass || 'General'}
+                                      </p>
+
+                                      {/* Info Table Box */}
+                                      <div style={{
+                                        background: 'rgba(255, 255, 255, 0.88)',
+                                        borderRadius: '6px',
+                                        border: '1px solid #bfdbfe',
+                                        padding: '6px 10px',
+                                        textAlign: 'left',
+                                        fontSize: '0.68rem',
+                                        color: '#0f172a',
+                                        lineHeight: 1.38
+                                      }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
+                                          <strong style={{ width: '56px', color: '#475569' }}>Roll No:</strong>
+                                          <span style={{ fontWeight: 800, color: '#1e3a8a' }}>{st.rollNo || '—'}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
+                                          <strong style={{ width: '56px', color: '#475569' }}>Parent:</strong>
+                                          <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{st.parentName || 'N/A'}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
+                                          <strong style={{ width: '56px', color: '#475569' }}>Contact:</strong>
+                                          <span style={{ fontWeight: 600 }}>{st.parentPhone || st.phone || 'N/A'}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                          <strong style={{ width: '56px', color: '#475569' }}>Address:</strong>
+                                          <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{st.address || 'N/A'}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Bottom Bar: Signatures & Scannable QR (Enlarged) */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '3px 0', padding: '0 2px' }}>
+                                      <div style={{ textAlign: 'center', width: '50px' }}>
+                                        <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px' }}></div>
+                                        <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Issue Auth</span>
+                                      </div>
+
+                                      {/* High Scan QR */}
+                                      <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: '#ffffff',
+                                        padding: '2px',
+                                        borderRadius: '6px',
+                                        border: '1px solid #bfdbfe',
+                                        boxShadow: '0 2px 5px rgba(0,0,0,0.06)'
+                                      }}>
+                                        <QRCodeSVG value={String(st.rollNo || st.id)} size={66} level="M" />
+                                      </div>
+
+                                      <div style={{ textAlign: 'center', width: '50px' }}>
+                                        <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                          <img
+                                            src="/principal-sign.png"
+                                            alt="Principal"
+                                            style={{ maxHeight: '14px', maxWidth: '44px', display: 'none' }}
+                                            onError={(e) => e.target.style.display = 'none'}
+                                            onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }}
+                                          />
+                                        </div>
+                                        <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Principal</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Footer Ribbon */}
+                                  <div style={{
+                                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                    padding: '5px',
+                                    textAlign: 'center',
+                                    fontSize: '0.66rem',
+                                    color: '#ffffff',
+                                    fontWeight: 800,
+                                    letterSpacing: '0.5px'
+                                  }}>
+                                    STUDENT ID: {st.id}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* BACK SIDE (Terms & Conditions) */}
+                              {(idCardSide === 'both' || idCardSide === 'back') && (
+                                <div
+                                  className="print-id-card"
+                                  style={{
+                                    width: '270px',
+                                    height: '430px',
+                                    boxSizing: 'border-box',
+                                    background: '#ffffff',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    border: '1.5px solid #bfdbfe',
+                                    position: 'relative',
+                                    fontFamily: "'Montserrat', sans-serif"
+                                  }}
+                                >
+                                  {/* Header Ribbon */}
+                                  <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', padding: '7px 10px', textAlign: 'center', color: '#ffffff' }}>
+                                    <h4 style={{ margin: 0, fontSize: '0.84rem', fontWeight: 800, letterSpacing: '0.4px' }}>Terms &amp; Conditions</h4>
+                                    <span style={{ fontSize: '0.56rem', opacity: 0.9 }}>Career Xone Rules &amp; Regulations</span>
+                                  </div>
+
+                                  {/* Rules Body */}
+                                  <div style={{ padding: '7px 10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    <ul style={{
+                                      margin: 0,
+                                      paddingLeft: 0,
+                                      listStyle: 'none',
+                                      fontSize: '0.54rem',
+                                      color: '#1e293b',
+                                      lineHeight: '1.34',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: '3px',
+                                      textAlign: 'left'
+                                    }}>
+                                      <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                        <span>Student should carry the ID card and produce it on demand.</span>
+                                      </li>
+                                      <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                        <span>Be ensured to update the Entry card before the Expiry date.</span>
+                                      </li>
+                                      <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                        <span>Reach class before time; parent's permission needed to leave early.</span>
+                                      </li>
+                                      <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                        <span>All students should wear proper uniform with shoes.</span>
+                                      </li>
+                                      <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                        <span>Student should maintain decency and decorum of institute.</span>
+                                      </li>
+                                      <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                        <span>Student found guilty of any misbehaviour will be rusticated.</span>
+                                      </li>
+                                      <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                        <span>Use or carry of Mobile Phone is strictly prohibited inside campus.</span>
+                                      </li>
+                                      <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                        <span>To issue a New ID Card in case of Lost/Damage ₹200/- will be charged.</span>
+                                      </li>
+                                      <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                        <span>If found outside premises, please deposit at Reception Counter.</span>
+                                      </li>
+                                      <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
+                                        <span>Unhealthy culture affecting academic reputation will be strictly dealt with.</span>
+                                      </li>
+                                    </ul>
+
+                                    {/* Emergency Helpline Box */}
+                                    <div style={{
+                                      background: '#f0f9ff',
+                                      border: '1px solid #bae6fd',
+                                      borderRadius: '6px',
+                                      padding: '3px 6px',
+                                      fontSize: '0.58rem',
+                                      color: '#0369a1',
+                                      textAlign: 'center',
+                                      lineHeight: '1.2',
+                                      marginTop: '2px'
+                                    }}>
+                                      <strong>Reception:</strong> 9673383561 / 9145481323 | Gondia (MH)
+                                    </div>
+                                  </div>
+
+                                  {/* Bottom Ribbon */}
+                                  <div style={{ background: '#1e3a8a', padding: '5px', textAlign: 'center', fontSize: '0.62rem', color: '#ffffff', fontWeight: 800, letterSpacing: '0.5px' }}>
+                                    CAREER XONE • ACADEMIC EXCELLENCE
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ---------------------------------------------------------------- */}
+            {/* 🛒 MODAL: RECOMMENDED SCANNER HARDWARE GUIDE                    */}
+            {/* ---------------------------------------------------------------- */}
+            {showHardwareModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.75)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 20
+              }}>
+                <div style={{
+                  background: '#0f172a',
+                  borderRadius: 20,
+                  width: '100%',
+                  maxWidth: 620,
+                  padding: 28,
+                  border: '1.5px solid rgba(255, 255, 255, 0.18)',
+                  boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
+                  position: 'relative'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowHardwareModal(false)}
+                    style={{
+                      position: 'absolute',
+                      top: 20,
+                      right: 20,
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                      padding: '6px 8px',
+                      borderRadius: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <X size={18} />
+                  </button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+                    <div style={{ padding: 12, borderRadius: 14, background: 'rgba(16, 185, 129, 0.25)', color: '#34d399' }}>
+                      <Zap size={28} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#ffffff' }}>
+                        Recommended Tabletop QR Scanner
+                      </h3>
+                      <p style={{ margin: '3px 0 0', fontSize: '0.84rem', color: '#cbd5e1' }}>
+                        100% Plug &amp; Play USB Hardware (Zero Drivers, Zero Setup)
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Main Recommended Product Card */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.5) 0%, rgba(15, 23, 42, 0.85) 100%)',
+                    border: '1.5px solid #3b82f6',
+                    borderRadius: 16,
+                    padding: '20px',
+                    marginBottom: 16
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                      <div>
+                        <span style={{
+                          background: '#3b82f6',
+                          color: '#ffffff',
+                          fontSize: '0.72rem',
+                          fontWeight: 900,
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em'
+                        }}>
+                          ⭐ TOP RECOMMENDED
+                        </span>
+                        <h4 style={{ margin: '10px 0 6px', fontSize: '1.15rem', fontWeight: 900, color: '#ffffff' }}>
+                          Shreyans 1D 2D QR Hands-Free Desktop Barcode Scanner (Table Top Plug &amp; Play)
+                        </h4>
+                        <div style={{ fontSize: '0.88rem', color: '#cbd5e1', fontWeight: 600 }}>
+                          Approx Price: <strong style={{ color: '#34d399', fontSize: '1.05rem', fontWeight: 900 }}>₹3,199</strong> on Amazon India
+                        </div>
+                      </div>
+                    </div>
+
+                    <ul style={{ margin: '14px 0 18px', paddingLeft: 20, fontSize: '0.84rem', color: '#cbd5e1', lineHeight: 1.7 }}>
+                      <li><strong style={{ color: '#ffffff' }}>Hands-Free 360° Omnidirectional Beam:</strong> Students just flash their card in front of the scanner.</li>
+                      <li><strong style={{ color: '#ffffff' }}>Loud Confirmation Beep:</strong> Instant audible confirmation on every scan.</li>
+                      <li><strong style={{ color: '#ffffff' }}>Zero Drivers Required:</strong> Standard USB HID keyboard wedge. Just plug into any USB port and it starts typing automatically!</li>
+                      <li><strong style={{ color: '#ffffff' }}>Scans from Paper &amp; Phone:</strong> Reads printed ID cards and phone screen QR codes in 0.1s.</li>
+                    </ul>
+
+                    <a
+                      href="https://www.amazon.in/dp/B09DT15V4B"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        color: '#ffffff',
+                        padding: '11px 20px',
+                        borderRadius: 10,
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        textDecoration: 'none',
+                        boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+                      }}
+                    >
+                      <ExternalLink size={16} />
+                      <span>Search &amp; Buy on Amazon India</span>
+                    </a>
+                  </div>
+
+                  {/* Alternative Recommendation */}
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: 14,
+                    padding: '14px 18px',
+                    fontSize: '0.84rem',
+                    color: '#cbd5e1'
+                  }}>
+                    <strong style={{ color: '#ffffff' }}>Alternative Models:</strong>
+                    <div style={{ marginTop: 6, lineHeight: 1.6 }}>
+                      • <strong style={{ color: '#ffffff' }}>Retsol PD3000 / PD3500 2D Tabletop Barcode Scanner</strong> (~₹3,499)
+                      <br />
+                      • <strong style={{ color: '#ffffff' }}>Honeywell HF680 2D Hands-Free Scanner</strong> (~₹5,999)
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Print CSS Injection */}
+            <style>{`
+              @media print {
+                @page {
+                  size: A4 portrait;
+                  margin: 6mm 6mm;
+                }
+                body, html {
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background: #ffffff !important;
+                  overflow: visible !important;
+                  height: auto !important;
+                  min-height: 100% !important;
+                  width: 100% !important;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+                body.printing-id-cards #root > *:not(.id-cards-modal-overlay),
+                body.printing-id-cards .sidebar,
+                body.printing-id-cards .topbar,
+                body.printing-id-cards header,
+                body.printing-id-cards nav,
+                body.printing-id-cards .no-print,
+                body.printing-id-cards .id-cards-modal-header,
+                body.printing-id-cards .id-cards-modal-toolbar {
+                  display: none !important;
+                }
+                body.printing-id-cards #root,
+                body.printing-id-cards .app-layout,
+                body.printing-id-cards .main-content,
+                body.printing-id-cards div {
+                  overflow: visible !important;
+                  height: auto !important;
+                  max-height: none !important;
+                  filter: none !important;
+                  backdrop-filter: none !important;
+                  transform: none !important;
+                }
+                body.printing-id-cards .id-cards-modal-overlay {
+                  position: static !important;
+                  background: #ffffff !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
+                  width: 100% !important;
+                  height: auto !important;
+                  max-height: none !important;
+                  overflow: visible !important;
+                  display: block !important;
+                  filter: none !important;
+                  backdrop-filter: none !important;
+                  z-index: auto !important;
+                }
+                body.printing-id-cards .id-cards-modal-card {
+                  position: static !important;
+                  background: #ffffff !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                  border-radius: 0 !important;
+                  width: 100% !important;
+                  max-width: none !important;
+                  height: auto !important;
+                  max-height: none !important;
+                  overflow: visible !important;
+                  display: block !important;
+                }
+                body.printing-id-cards #printable-id-cards {
+                  position: static !important;
+                  width: 100% !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background: #ffffff !important;
+                  display: block !important;
+                  overflow: visible !important;
+                }
+                .a4-print-sheet {
+                  page-break-after: always !important;
+                  break-after: page !important;
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                  width: 100% !important;
+                  max-width: 198mm !important;
+                  min-height: 280mm !important;
+                  box-sizing: border-box !important;
+                  margin: 0 auto !important;
+                  padding: 2mm 0 !important;
+                  background: #ffffff !important;
+                  display: flex !important;
+                  flex-direction: column !important;
+                  justify-content: flex-start !important;
+                }
+                .a4-print-header-banner {
+                  display: none !important;
+                }
+                .a4-print-grid {
+                  display: grid !important;
+                  grid-template-columns: repeat(2, 94mm) !important;
+                  gap: 4mm 6mm !important;
+                  justify-content: center !important;
+                  align-content: start !important;
+                }
+                .a4-card-slot {
+                  display: flex !important;
+                  justify-content: center !important;
+                  align-items: center !important;
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                }
+                .print-id-card-pair {
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                  display: flex !important;
+                  gap: 16px !important;
+                  margin-bottom: 20px !important;
+                  justify-content: center !important;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+                .print-id-card {
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                  box-shadow: none !important;
+                  border: 1.5px solid #94a3b8 !important;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+                .print-id-card-empty {
+                  width: 240px !important;
+                  height: 380px !important;
+                  visibility: hidden !important;
+                }
+              }
+            `}</style>
           </motion.div>
         )}
       </AnimatePresence>

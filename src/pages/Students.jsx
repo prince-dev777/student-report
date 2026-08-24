@@ -65,31 +65,118 @@ export default function Students() {
     }
   };
 
-  const uniqueClasses = Array.from(new Set(paginatedStudents.map(s => s.class))).filter(Boolean);
+  // Consolidated full student list for instantaneous filters & full dataset exports
+  const allStudentsList = useMemo(() => {
+    if (Array.isArray(students) && students.length > 0) return students;
+    return paginatedStudents || [];
+  }, [students, paginatedStudents]);
+
+  // Dynamic unique classes from all students in database + standard classes + batches
+  const uniqueClasses = useMemo(() => {
+    const classSet = new Set();
+    // Standard classes
+    ['8th', '9th', '10th', '11th', '12th', 'Dropper', 'Target', 'Foundation'].forEach(c => classSet.add(c));
+    // All student classes
+    allStudentsList.forEach(s => {
+      if (s.class && String(s.class).trim()) {
+        classSet.add(String(s.class).trim());
+      }
+    });
+    // Batch configured classes
+    (batches || []).forEach(b => {
+      if (b.class && String(b.class).trim()) {
+        classSet.add(String(b.class).trim());
+      }
+    });
+    return Array.from(classSet).filter(Boolean).sort((a, b) => {
+      const numA = parseInt(a, 10);
+      const numB = parseInt(b, 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [allStudentsList, batches]);
+
+  // Dynamic courses / batches from config + student records
+  const dynamicBatches = useMemo(() => {
+    const map = new Map();
+    (batches || []).forEach(b => {
+      if (b && (b.id || b.name)) {
+        const id = b.id || b.name;
+        map.set(id, { id, name: b.name || formatBatchName(id, batches) });
+      }
+    });
+    allStudentsList.forEach(s => {
+      const bVal = s.batch || s.targetClass;
+      if (bVal && !map.has(bVal)) {
+        const formatted = formatBatchName(bVal, batches);
+        map.set(bVal, { id: bVal, name: formatted });
+      }
+    });
+    return Array.from(map.values());
+  }, [batches, allStudentsList]);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
   const [createdStudentCreds, setCreatedStudentCreds] = useState(null);
 
-  // Filter out courses and classes and sort by Roll No ascending
-  const filteredStudents = paginatedStudents
-    .filter(student => {
-      const matchesCourse = selectedCourse === 'all' || student.batch === selectedCourse;
-      const matchesClass = selectedClass === 'all' || student.class === selectedClass;
-      return matchesCourse && matchesClass;
-    })
-    .sort((a, b) => {
-      const rollA = a.rollNo ? String(a.rollNo) : '';
-      const rollB = b.rollNo ? String(b.rollNo) : '';
-      return rollA.localeCompare(rollB, undefined, { numeric: true });
-    });
+  // Helper matching functions for courses and classes
+  const isCourseMatch = useCallback((studentBatch, filterVal) => {
+    if (filterVal === 'all') return true;
+    if (!studentBatch) return false;
+    const sRaw = String(studentBatch).trim().toLowerCase();
+    const fRaw = String(filterVal).trim().toLowerCase();
+    if (sRaw === fRaw) return true;
+    const formattedStudent = formatBatchName(studentBatch, batches).toLowerCase();
+    const formattedFilter = formatBatchName(filterVal, batches).toLowerCase();
+    return formattedStudent === fRaw || formattedStudent === formattedFilter;
+  }, [batches]);
+
+  const isClassMatch = useCallback((studentClass, filterVal) => {
+    if (filterVal === 'all') return true;
+    if (!studentClass) return false;
+    return String(studentClass).trim().toLowerCase() === String(filterVal).trim().toLowerCase();
+  }, []);
+
+  // Filtered students for full export & pagination
+  const filteredStudents = useMemo(() => {
+    // If we have full student directory in AppContext, filter from allStudentsList
+    const source = (allStudentsList && allStudentsList.length > 0) ? allStudentsList : paginatedStudents;
+    return source
+      .filter(student => {
+        const matchesCourse = isCourseMatch(student.batch || student.targetClass, selectedCourse);
+        const matchesClass = isClassMatch(student.class, selectedClass);
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const nameMatch = (student.name || '').toLowerCase().includes(q);
+          const rollMatch = String(student.rollNo || '').toLowerCase().includes(q);
+          const phoneMatch = String(student.parentPhone || student.phone || '').includes(q);
+          const idMatch = String(student.id || '').toLowerCase().includes(q);
+          return matchesCourse && matchesClass && (nameMatch || rollMatch || phoneMatch || idMatch);
+        }
+        return matchesCourse && matchesClass;
+      })
+      .sort((a, b) => {
+        const rollA = a.rollNo ? String(a.rollNo) : '';
+        const rollB = b.rollNo ? String(b.rollNo) : '';
+        return rollA.localeCompare(rollB, undefined, { numeric: true });
+      });
+  }, [allStudentsList, paginatedStudents, selectedCourse, selectedClass, searchQuery, isCourseMatch, isClassMatch]);
 
   // Accurate Active / Inactive stats from real database
-  const activeCount = (students && students.length > 0)
-    ? students.filter(s => s.status === 'active').length
+  const activeCount = (allStudentsList && allStudentsList.length > 0)
+    ? allStudentsList.filter(s => s.status === 'active').length
     : paginatedStudents.filter(s => s.status === 'active').length;
-  const inactiveCount = Math.max(0, (totalCount > 0 ? totalCount : (students || []).length) - activeCount);
+  const inactiveCount = Math.max(0, (allStudentsList && allStudentsList.length > 0 ? allStudentsList.length : totalCount) - activeCount);
+
+  // Pagination for display table
+  const pageSize = 50;
+  const activeTotalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
+  const displayedStudents = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredStudents.slice(start, start + pageSize);
+  }, [filteredStudents, currentPage]);
 
   const handleAddClick = () => {
     setEditingStudent(null);
@@ -106,19 +193,21 @@ export default function Students() {
   };
 
   const handleDownloadExcel = () => {
-    if (!paginatedStudents || paginatedStudents.length === 0) return;
+    if (!filteredStudents || filteredStudents.length === 0) {
+      alert('No students found matching current filters to export');
+      return;
+    }
     
-    // Only export the currently filtered students based on batch/class selections
-    // To export ALL, they just select "All Courses" and "All Classes"
+    // Export ALL students matching the current filters across the whole institute
     const worksheetData = filteredStudents.map((s, index) => ({
       'S.No': index + 1,
       'Roll No': s.rollNo || '',
       'Student Name': s.name,
       'Parent Name': s.parentName || '',
-      'Mobile No': s.parentPhone || '',
+      'Mobile No': s.parentPhone || s.phone || '',
       'Class': s.class || '',
-      'Batch/Course': batches.find(b => b.id === s.batch)?.name || s.batch || '',
-      'Status': 'Active'
+      'Batch/Course': formatBatchName(s.batch || s.targetClass, batches),
+      'Status': s.status === 'active' ? 'Active' : (s.status || 'Active')
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -128,15 +217,18 @@ export default function Students() {
       { wch: 25 },
       { wch: 25 },
       { wch: 15 },
-      { wch: 10 },
-      { wch: 15 },
+      { wch: 12 },
+      { wch: 20 },
       { wch: 10 }
     ];
     worksheet['!cols'] = colWidths;
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
-    XLSX.writeFile(workbook, `Students_Export_${new Date().toISOString().slice(0,10)}.xlsx`);
+    
+    const courseSuffix = selectedCourse !== 'all' ? `_${formatBatchName(selectedCourse, batches).replace(/[\s/\\?%*:|"<>]/g, '_')}` : '';
+    const classSuffix = selectedClass !== 'all' ? `_Class_${selectedClass}` : '';
+    XLSX.writeFile(workbook, `Students_Export${courseSuffix}${classSuffix}_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
   const handleEditClick = (student) => {
@@ -278,9 +370,10 @@ export default function Students() {
 
           <div className="flex items-center gap-8">
             <button 
-              onClick={exportStudents}
+              onClick={handleDownloadExcel}
               className="btn btn-secondary"
               style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '38px', padding: '0 12px', border: '1px solid #cbd5e1' }}
+              disabled={filteredStudents.length === 0}
             >
               <Download size={16} /> Export Excel
             </button>
@@ -288,11 +381,14 @@ export default function Students() {
             <select 
               className="form-select"
               value={selectedCourse}
-              onChange={(e) => setSelectedCourse(e.target.value)}
-              style={{ minWidth: '150px' }}
+              onChange={(e) => {
+                setSelectedCourse(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={{ minWidth: '160px' }}
             >
-              <option value="all">All Courses</option>
-              {batches.map((b) => (
+              <option value="all">All Courses / Batches</option>
+              {dynamicBatches.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
@@ -300,8 +396,11 @@ export default function Students() {
             <select 
               className="form-select"
               value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              style={{ minWidth: '150px' }}
+              onChange={(e) => {
+                setSelectedClass(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={{ minWidth: '140px' }}
             >
               <option value="all">All Classes</option>
               {uniqueClasses.map((c, i) => (
@@ -314,7 +413,7 @@ export default function Students() {
 
       {/* Student List Table */}
       <div className="table-container card">
-        {filteredStudents.length > 0 ? (
+        {displayedStudents.length > 0 ? (
           <table className="data-table">
             <thead>
               <tr>
@@ -330,7 +429,7 @@ export default function Students() {
               </tr>
             </thead>
             <tbody style={{ opacity: isFetching ? 0.4 : 1, transition: 'opacity 0.3s ease', pointerEvents: isFetching ? 'none' : 'auto' }}>
-              {(isFetching && filteredStudents.length === 0) ? (
+              {(isFetching && displayedStudents.length === 0) ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={`skel-${idx}`}>
                     <td colSpan="9">
@@ -338,7 +437,7 @@ export default function Students() {
                     </td>
                   </tr>
                 ))
-              ) : filteredStudents.map((student, idx) => {
+              ) : displayedStudents.map((student, idx) => {
                 const attPercent = calcAttendancePercent(attendance, student.id);
                 let attColor = 'badge-success';
                 if (attPercent < 60) attColor = 'badge-danger';
@@ -377,7 +476,7 @@ export default function Students() {
                         </div>
                       </div>
                     </td>
-                    <td>{getCourseName(student.batch)}</td>
+                    <td>{formatBatchName(student.batch || student.targetClass, batches)}</td>
                     <td>{student.class || '-'}</td>
                     <td>{student.parentName}</td>
                     <td>{student.parentPhone}</td>
@@ -424,10 +523,10 @@ export default function Students() {
       </div>
 
       {/* Pagination Controls */}
-      {totalPages > 1 && (
+      {activeTotalPages > 1 && (
         <div className="flex justify-between items-center mt-16" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '12px 24px', borderRadius: '12px' }}>
           <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
-            Showing page {currentPage} of {totalPages} (Total {totalCount} students)
+            Showing page {currentPage} of {activeTotalPages} (Total {filteredStudents.length} students)
           </div>
           <div className="flex gap-8">
             <button 
@@ -439,8 +538,8 @@ export default function Students() {
             </button>
             <button 
               className="btn btn-secondary" 
-              disabled={currentPage === totalPages || isFetching}
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === activeTotalPages || isFetching}
+              onClick={() => setCurrentPage(prev => Math.min(activeTotalPages, prev + 1))}
             >
               Next <ChevronRight size={16} />
             </button>

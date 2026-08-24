@@ -52,7 +52,7 @@ async function restoreFromCloud() {
     
     localConn = await getLocalConnection();
 
-    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries'];
+    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
     let totalRestored = 0;
 
     for (const collName of collections) {

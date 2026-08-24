@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { batches } from '../data/sampleData';
 import { generateId, getTodayStr, getCurrentTime, calculateRanks } from '../utils/helpers';
 import { sendAttendanceSMS, sendTestResultSMS, sendCustomSMS } from '../utils/smsService';
@@ -40,62 +40,84 @@ export function AppProvider({ children }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const { user } = useAuth();
+  const initRanRef = useRef(false);
 
   // Sync / Load data on startup
   useEffect(() => {
+    if (initRanRef.current) return;
+    initRanRef.current = true;
+
+    async function loadServerData() {
+      const studentsRes = await api.getStudents(1, 10000);
+      const serverStudents = studentsRes.students || [];
+      
+      if (serverStudents.length === 0) {
+        console.log('🌱 Database is empty. Starting fresh...');
+        setStudents([]);
+        setAttendance([]);
+        setTests([]);
+        setTestResults([]);
+        setSMSHistory([]);
+        setSessions([]);
+        setInquiries([]);
+      } else {
+        const serverAttendance = await api.getAttendance();
+        const serverTests = await api.getTests();
+        const serverResults = await api.getTestResults();
+        const serverSMS = await api.getSMSLogs();
+        
+        let serverSessions = [];
+        let serverInquiries = [];
+        try {
+          serverSessions = await api.getSessions();
+          serverInquiries = await api.getInquiries();
+        } catch(e) { console.warn('Failed to load new schemas', e); }
+
+        const validIds = new Set(serverStudents.map((s) => s.id));
+        setStudents(serverStudents);
+        setAttendance(Array.isArray(serverAttendance) ? serverAttendance : []);
+        setTests(serverTests);
+        setTestResults(serverResults.filter((r) => validIds.has(r.studentId)));
+        setSMSHistory(Array.isArray(serverSMS) ? serverSMS : []);
+        setSessions(serverSessions);
+        setInquiries(serverInquiries);
+      }
+    }
+
     async function initData() {
       const isOnline = await checkBackendStatus();
       setBackendOnline(isOnline);
 
       if (isOnline) {
         try {
-          const studentsRes = await api.getStudents(1, 10000);
-          const serverStudents = studentsRes.students || [];
-          
-          // If database is completely empty
-          if (serverStudents.length === 0) {
-            console.log('🌱 Database is empty. Starting fresh...');
-            setStudents([]);
-            setAttendance([]);
-            setTests([]);
-            setTestResults([]);
-            setSMSHistory([]);
-            setSessions([]);
-            setInquiries([]);
-          } else {
-            // Load all from server
-            const serverAttendance = await api.getAttendance();
-            const serverTests = await api.getTests();
-            const serverResults = await api.getTestResults();
-            const serverSMS = await api.getSMSLogs();
-            
-            let serverSessions = [];
-            let serverInquiries = [];
-            try {
-              serverSessions = await api.getSessions();
-              serverInquiries = await api.getInquiries();
-            } catch(e) { console.warn('Failed to load new schemas', e); }
-
-            const validIds = new Set(serverStudents.map((s) => s.id));
-            setStudents(serverStudents);
-            setAttendance(Array.isArray(serverAttendance) ? serverAttendance : []);
-            setTests(serverTests);
-            setTestResults(serverResults.filter((r) => validIds.has(r.studentId)));
-            setSMSHistory(Array.isArray(serverSMS) ? serverSMS : []);
-            setSessions(serverSessions);
-            setInquiries(serverInquiries);
-            
-            toast.success('Synced successfully!');
-          }
+          await loadServerData();
         } catch (e) {
           console.error('❌ [DEBUG] Failed to load from server. Error:', e.message);
-          console.error('❌ [DEBUG] Full error:', e);
           loadFallbackData();
         }
       } else {
         console.log('⚠️ [DEBUG] Backend offline. Loading from localStorage...');
         loadFallbackData();
-        toast('Demo Mode: Backend offline. Using LocalStorage.', { icon: 'ℹ️' });
+        toast('Offline Mode: Using LocalStorage.', { id: 'backend-status-toast', icon: 'ℹ️' });
+
+        // Background retry loop: if backend was spinning up, auto-sync when ready
+        let attempts = 0;
+        const retryTimer = setInterval(async () => {
+          attempts++;
+          if (attempts > 5) {
+            clearInterval(retryTimer);
+            return;
+          }
+          const ready = await checkBackendStatus(1, 0);
+          if (ready) {
+            clearInterval(retryTimer);
+            setBackendOnline(true);
+            try {
+              await loadServerData();
+              toast.success('Connected & Synced with Backend!', { id: 'backend-status-toast' });
+            } catch (e) {}
+          }
+        }, 2500);
       }
       setLoading(false);
     }
@@ -368,7 +390,7 @@ export function AppProvider({ children }) {
     if (backendOnline) {
       try {
         const updatedTest = await api.updateTest(testId, { answerKey });
-        setTests((prev) => prev.map((t) => (t.id === testId ? updatedTest : t)));
+        setTests((prev) => prev.map((t) => (t.id === testId || t._id === testId ? { ...t, ...updatedTest, answerKey } : t)));
         toast.success('Answer Key updated successfully!');
         return updatedTest;
       } catch (err) {
@@ -377,10 +399,10 @@ export function AppProvider({ children }) {
       }
     } else {
       setTests((prev) =>
-        prev.map((t) => (t.id === testId ? { ...t, answerKey } : t))
+        prev.map((t) => (t.id === testId || t._id === testId ? { ...t, answerKey } : t))
       );
       toast.success('Answer Key updated locally!');
-      return null;
+      return { id: testId, answerKey };
     }
   }, [backendOnline]);
 
@@ -669,8 +691,40 @@ export function AppProvider({ children }) {
     }
   }, [backendOnline]);
 
+  const refreshAllData = useCallback(async () => {
+    try {
+      const studentsRes = await api.getStudents(1, 10000);
+      const serverStudents = studentsRes.students || [];
+      const serverAttendance = await api.getAttendance();
+      const serverTests = await api.getTests();
+      const serverResults = await api.getTestResults();
+      const serverSMS = await api.getSMSLogs();
+      
+      let serverSessions = [];
+      let serverInquiries = [];
+      try {
+        serverSessions = await api.getSessions();
+        serverInquiries = await api.getInquiries();
+      } catch(e) {}
+
+      const validIds = new Set(serverStudents.map((s) => s.id));
+      setStudents(serverStudents);
+      setAttendance(Array.isArray(serverAttendance) ? serverAttendance : []);
+      setTests(serverTests);
+      setTestResults(serverResults.filter((r) => validIds.has(r.studentId)));
+      setSMSHistory(Array.isArray(serverSMS) ? serverSMS : []);
+      setSessions(serverSessions);
+      setInquiries(serverInquiries);
+      return true;
+    } catch (e) {
+      console.error('Failed to refresh all data:', e);
+      return false;
+    }
+  }, []);
+
   const value = {
     students,
+    refreshAllData,
     attendance,
     setAttendance,
     refreshAttendance,

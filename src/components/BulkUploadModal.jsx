@@ -96,8 +96,9 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
         }
 
         // Smart Course Mapping Logic
-        const batchString = String(row.course || row.batch || '').trim().toLowerCase().replace(/[\s-]/g, '');
-        let batchId = batches[0]?.id; // Default
+        const rawBatch = String(row.course || row.batch || '').trim();
+        const batchString = rawBatch.toLowerCase().replace(/[\s-]/g, '');
+        let batchId = rawBatch || batches[0]?.id || 'General';
 
         if (batchString.includes('jeemain')) {
           const matched = batches.find(b => b.name.toLowerCase().replace(/[\s-]/g, '').includes('jeemain'));
@@ -111,10 +112,13 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
         } else if (batchString.includes('mhcet') || batchString.includes('cet')) {
           const matched = batches.find(b => b.name.toLowerCase().replace(/[\s-]/g, '').includes('cet'));
           if (matched) batchId = matched.id;
-        } else {
-          // Fallback to exact or partial match
-          const matched = batches.find(b => b.name.toLowerCase().replace(/[\s-]/g, '') === batchString);
-          if (matched) batchId = matched.id;
+        } else if (batchString) {
+          const matched = batches.find(b => b.name.toLowerCase().replace(/[\s-]/g, '') === batchString || b.id.toLowerCase() === batchString);
+          if (matched) {
+            batchId = matched.id;
+          } else {
+            batchId = rawBatch;
+          }
         }
 
         payload.push({

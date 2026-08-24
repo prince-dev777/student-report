@@ -42,6 +42,7 @@ try {
 // In-memory interaction logs (stores latest 200 bot chats for UI)
 const botLogs = [];
 const lastRepliedTimeMap = new Map();
+const userSessionStudentMap = new Map(); // phone -> { student, timestamp }
 const sentBotTexts = new Set(); // Tracks outgoing bot messages to prevent self-trigger loops
 const COOLDOWN_MS = 1500; // 1.5 seconds per sender
 
@@ -216,9 +217,13 @@ export async function handleIncomingWhatsAppMessage(client, msg) {
       return;
     }
 
-    const targetChatId = remoteId || (isSelfChat ? myWid : fromId);
+    let targetChatId = remoteId || fromId || (isSelfChat ? myWid : '');
     const cleanNumber = isSelfChat ? myPhone : (cleanPhone(senderRaw) || remotePhone || fromPhone);
     if (!cleanNumber || cleanNumber.length < 6) return;
+
+    if (cleanNumber && (targetChatId.includes('@lid') || targetChatId.includes(':'))) {
+      targetChatId = `${cleanNumber.length === 10 ? '91' + cleanNumber : cleanNumber}@c.us`;
+    }
 
     // Loop protection signatures
     if (
@@ -234,14 +239,14 @@ export async function handleIncomingWhatsAppMessage(client, msg) {
       return;
     }
 
-    // Anti-loop rate limiting
+    // Anti-loop rate limiting: only debounce identical duplicate text within 2 seconds
     const now = Date.now();
-    const lastReplied = lastRepliedTimeMap.get(cleanNumber) || 0;
-    if (now - lastReplied < COOLDOWN_MS) {
-      logWarn('WHATSAPP_AI', `⏳ Cooldown active for ${cleanNumber}. Skipping duplicate.`);
+    const lastData = lastRepliedTimeMap.get(cleanNumber) || { time: 0, text: '' };
+    if (lastData.text === bodyText && (now - lastData.time < 2000)) {
+      logWarn('WHATSAPP_AI', `⏳ Duplicate message ignored for ${cleanNumber}: "${bodyText}"`);
       return;
     }
-    lastRepliedTimeMap.set(cleanNumber, now);
+    lastRepliedTimeMap.set(cleanNumber, { time: now, text: bodyText });
 
     logInfo('WHATSAPP_AI', `📩 Processing AI Query from ${cleanNumber}${isSelfChat ? ' (Self-Test)' : ''}: "${bodyText.slice(0, 80)}"`);
 
@@ -257,25 +262,118 @@ export async function handleIncomingWhatsAppMessage(client, msg) {
       ]
     };
 
-    const students = await Student.find(studentQuery).limit(3);
+    let students = await Student.find(studentQuery).limit(3);
+    let hasExplicitRollQuery = false;
+    let replyText = null;
 
-    let replyText = '';
+    let explicitNotFoundRollOrName = null;
+
+    // If not linked by phone, check if user provided a Roll Number in text
+    if (!students || students.length === 0) {
+      const rollMatch = bodyText.match(/\b(?:roll\s*no\.?|roll\s*number|rollno|roll|id)\s*[:\-#]?\s*([0-9a-zA-Z]+)\b/i) ||
+                        bodyText.match(/^\s*([0-9]{1,8})\s*$/);
+      if (rollMatch) {
+        const potentialRoll = rollMatch[1].trim();
+        const foundByRoll = await Student.findOne({
+          isDeleted: { $ne: true },
+          $or: [
+            { rollNo: potentialRoll },
+            { rollNo: potentialRoll.replace(/^0+/, '') },
+            { rollNo: String(parseInt(potentialRoll, 10)) },
+            { id: potentialRoll }
+          ]
+        });
+        if (foundByRoll) {
+          students = [foundByRoll];
+          hasExplicitRollQuery = true;
+          userSessionStudentMap.set(cleanNumber, { student: foundByRoll, timestamp: Date.now() });
+        } else {
+          explicitNotFoundRollOrName = potentialRoll;
+        }
+      }
+    }
+
+    // If still not found by roll, search if user mentioned a student's full or first name in text (e.g. "Prince", "Prince Kumar")
+    if ((!students || students.length === 0) && !explicitNotFoundRollOrName) {
+      const cleanWords = bodyText.replace(/[^a-zA-Z\s]/g, ' ').trim().split(/\s+/).filter(w => w.length >= 3 && !/^(kya|hai|mere|mera|meri|bete|beta|beti|bacha|bachha|bache|bachi|batao|bata|sakta|dekhna|janna|please|sir|madam|coaching|class|test|marks|report|result|attendance|kaun|kab|kahan|kaise|hello|menu|fees|course)$/i.test(w));
+      
+      if (cleanWords.length >= 1 && cleanWords.length <= 3) {
+        const nameQuery = cleanWords.join(' ');
+        const matchingStudents = await Student.find({
+          isDeleted: { $ne: true },
+          name: { $regex: new RegExp(nameQuery, 'i') }
+        }).limit(5);
+
+        if (matchingStudents && matchingStudents.length === 1) {
+          students = matchingStudents;
+          userSessionStudentMap.set(cleanNumber, { student: matchingStudents[0], timestamp: Date.now() });
+        } else if (matchingStudents && matchingStudents.length > 1) {
+          replyText = `🔍 *${matchingStudents.length} Students Mile:* Kripya student ka Roll Number likhkar bhejein:\n` +
+            matchingStudents.map(s => `• *${s.name}* ➔ \`ROLL ${s.rollNo}\``).join('\n');
+        }
+      }
+    }
+
+    // If still not found, check conversation session memory (within 2 hours)
+    if (!students || students.length === 0) {
+      const activeSession = userSessionStudentMap.get(cleanNumber);
+      if (activeSession && (Date.now() - activeSession.timestamp < 2 * 3600 * 1000)) {
+        students = [activeSession.student];
+      }
+    }
+
     let studentName = '';
     let rollNo = '';
 
-    if (students && students.length > 0) {
-      const student = students[0];
-      studentName = student.name;
-      rollNo = student.rollNo;
-      replyText = await generateSmartStudentReply(student, bodyText, cleanNumber);
-    } else {
-      studentName = pushName ? `${pushName} (Guest)` : 'Guest / Inquiry';
-      replyText = await generateSmartGuestReply(bodyText, cleanNumber);
+    if (!replyText) {
+      if (students && students.length > 0) {
+        const student = students[0];
+        studentName = student.name;
+        rollNo = student.rollNo;
+        userSessionStudentMap.set(cleanNumber, { student, timestamp: Date.now() });
+
+        // If user specifically searched / provided this roll number, show their 360° Academic Summary immediately!
+        if (hasExplicitRollQuery) {
+          replyText = await getReportSummaryReply(student);
+        } else {
+          replyText = await generateSmartStudentReply(student, bodyText, cleanNumber);
+        }
+      } else if (explicitNotFoundRollOrName) {
+        const p1 = botConfig.counselingPhone1 || '9673383561';
+        replyText = `❌ *Student Record Nahi Mila*
+
+Roll Number \`${explicitNotFoundRollOrName}\` hamare registered database me nahi mila.
+
+🔍 *Kripya check karein:*
+1. Student ka sahi **Roll Number** (jaise: \`340\`)
+2. Ya student ka **Full Name** (jaise: \`Prince Kumar\`) likhkar bhejein.
+
+📞 Direct Helpdesk: *+91 ${p1}*`;
+      } else {
+        studentName = pushName ? `${pushName} (Guest)` : 'Guest / Inquiry';
+        replyText = await generateSmartGuestReply(bodyText, cleanNumber);
+      }
     }
 
     if (replyText) {
       markBotSent(replyText); // Remember AI text to prevent loop
-      await client.sendMessage(targetChatId, replyText);
+      
+      let finalSendChatId = targetChatId;
+      if (!finalSendChatId || finalSendChatId.includes('@lid') || finalSendChatId.includes(':')) {
+        const digits = cleanNumber.replace(/\D/g, '');
+        finalSendChatId = `${digits.length === 10 ? '91' + digits : digits}@c.us`;
+      }
+
+      try {
+        if (typeof msg.reply === 'function' && !isSelfChat) {
+          await msg.reply(replyText);
+        } else {
+          await client.sendMessage(finalSendChatId, replyText);
+        }
+      } catch (sendErr) {
+        logWarn('WHATSAPP_AI', `Failed to send via primary route, falling back to finalSendChatId: ${sendErr.message}`);
+        await client.sendMessage(finalSendChatId, replyText);
+      }
       logInfo('WHATSAPP_AI', `📤 Replied to ${cleanNumber} [Student: ${studentName || 'Guest'}]: "${replyText.slice(0, 80)}..."`);
       recordBotLog({
         phone: cleanNumber,
@@ -291,7 +389,278 @@ export async function handleIncomingWhatsAppMessage(client, msg) {
   }
 }
 
-// 5. Ultra-Smart NLP Student & Parent Contextual Reply Generator
+// =========================================================================================
+// 🧠 MASTER CONTEXTUAL SENTENCE COMPREHENSION & MULTI-LAYER NLP INTENT ENGINE
+// Understands full sentences, natural Hindi/Hinglish speech, parent inquiries, and complex clauses
+// =========================================================================================
+
+const SEMANTIC_INTENTS = {
+  ATTENDANCE: {
+    id: 'ATTENDANCE',
+    stems: [
+      'attend', 'attendance', 'present', 'absent', 'haajri', 'hajri', 'checkin', 'checkout',
+      'entry', 'exit', 'punch', 'biometric', 'thumb', 'aaya', 'aayi', 'aaye', 'aayen',
+      'gaya', 'gayi', 'gaye', 'pahucha', 'pahuncha', 'pahuch', 'pahunch', 'in time', 'out time',
+      'gate pass', 'scan', 'nikla', 'nikli', 'chhoot', 'chhutti kab', 'ghar kab'
+    ],
+    phrases: [
+      'coaching me hai kya', 'coaching me hai', 'class me hai kya', 'class me hai',
+      'center me hai kya', 'institute me hai kya', 'aaj gaya hai kya', 'aaj gayi hai kya',
+      'aaj pahuncha kya', 'entry hui kya', 'punch hua kya', 'kitne baje aaya', 'kitne baje nikla',
+      'kitne baje chhutti', 'ghar kab aayega', 'ghar kab bhejoge', 'aaj present hai',
+      'aaj absent kyu', 'absent dikha raha hai', 'biometric laga kya', 'thumb laga kya',
+      'live status', 'aaj ki haajri', 'monthly attendance', 'attendance percentage'
+    ],
+    relationTriggers: ['beta', 'beti', 'bacha', 'bachha', 'bache', 'bachi', 'ladka', 'ladki', 'ward', 'student'],
+    relationContexts: ['coaching', 'class', 'aaya', 'gaya', 'hai', 'kahan', 'kidhar', 'pahuncha']
+  },
+
+  TEST_MARKS: {
+    id: 'TEST_MARKS',
+    stems: [
+      'test', 'marks', 'mark', 'result', 'score', 'number', 'rank', 'exam', 'pariksha',
+      'paper', 'mock', 'omr', 'percentile', 'percentage', 'highest', 'topper', 'cutoff',
+      'physics', 'chemistry', 'biology', 'maths', 'zoology', 'botany', 'answer key', 'solution'
+    ],
+    phrases: [
+      'kitne number aaye', 'kitne marks mile', 'test ka score', 'rank kya hai',
+      'class me kya rank', 'kaisa perform kiya', 'performance kaisa hai', 'result kaisa raha',
+      'omr test ka marks', 'sunday test result', 'physics me kitne', 'chemistry me kitne',
+      'bio me kitne', 'maths me kitne', 'highest score kitna', 'test series result',
+      'marks sheet', 'score card', 'latest test'
+    ]
+  },
+
+  TIMETABLE: {
+    id: 'TIMETABLE',
+    stems: [
+      'timetable', 'schedule', 'routine', 'timing', 'lecture', 'batch time', 'holiday',
+      'chhutti', 'chutti', 'khula', 'band', 'sunday test time', 'subah', 'shaam', 'evening', 'morning'
+    ],
+    phrases: [
+      'aaj coaching khula hai', 'aaj coaching khula hai kya', 'aaj class hai kya',
+      'aaj chhutti hai kya', 'kal class hai kya', 'kal chhutti hai kya', 'kitne baje aana hai',
+      'kitne baje se class', 'kab se kab tak', 'lecture timing', 'class routine', 'batch schedule',
+      'physics ki class kab', 'chemistry ki class kab', 'bio ki class kab', 'maths ki class kab',
+      'doubt counter timing', 'sunday test kitne baje'
+    ]
+  },
+
+  LEAVE: {
+    id: 'LEAVE',
+    stems: [
+      'leave', 'bimar', 'bimari', 'tabiyat', 'tabiat', 'fever', 'bukhar', 'hospital',
+      'doctor', 'out of station', 'shadi', 'wedding', 'function', 'emergency', 'urgent',
+      'gaon', 'application', 'absent application'
+    ],
+    phrases: [
+      'aaj nahi aayega', 'aaj nahi aa payega', 'aaj nahi aayegi', 'aaj nahi aa sakti',
+      'tabiyat kharab hai', 'bukhar aa gaya', 'hospital jana hai', 'gaon gaye hain',
+      'do din nahi aayega', 'kal nahi aayega', 'chhutti chahiye', 'leave note kar lo',
+      'absent rahega', 'attend nahi kar payega'
+    ]
+  },
+
+  MENTORSHIP: {
+    id: 'MENTORSHIP',
+    stems: [
+      'focus', 'dhyan', 'weak', 'kamzor', 'padhta nahi', 'padhti nahi', 'phone',
+      'distract', 'distraction', 'tension', 'dar', 'ptm', 'meeting', 'rohit sir',
+      'mentor', 'mentorship', 'counseling', 'guidance', 'backlog', 'strategy'
+    ],
+    phrases: [
+      'marks kam aa rahe hain', 'padhai me dhyan nahi de raha', 'padhta nahi hai',
+      'phone chalata rehta hai', 'focus nahi kar pa raha', 'rohit jha sir se milna hai',
+      'director sir se baat', 'teacher se baat karni hai', 'parents meeting kab hai',
+      'ptm kab hai', 'physics me bahut weak hai', 'chemistry samajh nahi aati',
+      'doubt clear nahi ho rahe', 'extra class mil sakti hai', 'backlog kaise karein'
+    ]
+  },
+
+  REPORT: {
+    id: 'REPORT',
+    stems: [
+      'report', 'summary', 'progress', 'overall', 'dashboard', 'profile', 'card',
+      'performance report', 'status', 'review', 'kaisa padh raha', 'kaisa chal raha'
+    ],
+    phrases: [
+      'bete ke bare me batao', 'bache ke bare me batao', 'meri beti ke bare me batao',
+      'student ke bare me batao', 'report card bhejo', 'progress card do',
+      'overall performance', 'pura detail bhejo', 'kaisa padh raha hai', 'academic summary'
+    ]
+  },
+
+  FEES: {
+    id: 'FEES',
+    stems: [
+      'fee', 'fees', 'payment', 'installment', 'kist', 'paisa', 'cost', 'charge',
+      'due', 'dues', 'balance', 'receipt', 'slip', 'concession', 'discount', 'qr code', 'bank'
+    ],
+    phrases: [
+      'fees kitni hai', 'fee structure kya hai', 'kitna paisa lagega', 'installment me de sakte hain',
+      'kist me payment', 'baki fees kitni hai', 'due date kab hai', 'fee receipt bhejo',
+      'payment kaise karein', 'online payment link', 'qr code bhejo'
+    ]
+  },
+
+  SCHOLARSHIP: {
+    id: 'SCHOLARSHIP',
+    stems: [
+      'cxsat', 'scholarship', 'waiver', 'scholarship test', 'sunday test', 'free admission', 'concession test'
+    ],
+    phrases: [
+      'scholarship test kab hai', 'cxsat kya hai', '100% scholarship kaise milegi',
+      'scholarship form', 'test me discount kitna', 'sunday scholarship test'
+    ]
+  },
+
+  COURSES: {
+    id: 'COURSES',
+    stems: [
+      'course', 'courses', 'program', 'programmes', 'foundation', 'dropper', 'repeater',
+      '11th', '12th', 'class 11', 'class 12', 'mht cet', 'crash course'
+    ],
+    phrases: [
+      'kaun se courses hain', 'jee ke courses', 'neet ke courses', 'foundation batch',
+      'dropper batch kab shuru', '11th admission', '12th admission', 'mht cet batch'
+    ]
+  },
+
+  TOPPERS: {
+    id: 'TOPPERS',
+    stems: [
+      'topper', 'toppers', 'selection', 'selections', 'iit bombay', 'aiims', 'mbbs',
+      'rank 1', 'highest score', 'history', 'track record', 'faculty', 'teachers'
+    ],
+    phrases: [
+      'topper kaun hai', 'pichhle saal kitne select huye', 'iit me kitne bache gaye',
+      'aiims me kitne doctor bane', 'highest marks kitna tha', 'rohit jha sir ka result',
+      'teachers kaise hain', 'faculty team'
+    ]
+  },
+
+  LOCATION: {
+    id: 'LOCATION',
+    stems: [
+      'location', 'address', 'map', 'google map', 'landmark', 'hospital', 'station',
+      'hostel', 'mess', 'transport', 'van', 'bus'
+    ],
+    phrases: [
+      'coaching kahan par hai', 'gondia me address', 'google maps link', 'ananya hospital ke pass',
+      'railway station se kitni dur', 'hostel suvidha hai kya', 'mess suvidha', 'van facility'
+    ]
+  },
+
+  STUDY_MATERIAL: {
+    id: 'STUDY_MATERIAL',
+    stems: [
+      'dpp', 'module', 'modules', 'notes', 'homework', 'assignment', 'book', 'books',
+      'study material', 'formula sheet', 'ncert', 'question bank'
+    ],
+    phrases: [
+      'dpp mila kya', 'study material kab मिलेगा', 'modules kahan milenge',
+      'notes download', 'homework kya mila hai', 'formula book'
+    ]
+  },
+
+  SOCIAL: {
+    id: 'SOCIAL',
+    stems: ['youtube', 'instagram', 'facebook', 'insta', 'fb', 'channel', 'video', 'videos', 'website'],
+    phrases: ['youtube link', 'instagram handle', 'online videos', 'official website']
+  },
+
+  CONTACT: {
+    id: 'CONTACT',
+    stems: ['contact', 'phone', 'call', 'number', 'helpline', 'reception', 'office', 'director number'],
+    phrases: ['reception ka number', 'director sir ka number', 'kisse baat karein', 'office helpline']
+  },
+
+  GREETINGS: {
+    id: 'GREETINGS',
+    stems: ['namaste', 'pranam', 'good morning', 'hello', 'hi', 'hey', 'radhe radhe', 'ram ram', 'menu', 'start', 'help'],
+    phrases: ['good morning', 'good afternoon', 'good evening', 'namaste sir', 'ram ram ji']
+  },
+
+  THANKS: {
+    id: 'THANKS',
+    stems: ['thank', 'thanks', 'shukriya', 'dhanyawad', 'ok', 'okay', 'theek hai', 'thik hai', 'got it', 'samajh gaya'],
+    phrases: ['thank you sir', 'ok sir', 'bahut badhiya', 'theek hai sir']
+  }
+};
+
+// 🧠 Advanced Sentence Semantic Intent Classifier
+function classifySentenceIntent(normalizedQuery, rawQuery, isStudentContext = true) {
+  const q = normalizedQuery.toLowerCase();
+  const raw = rawQuery.toLowerCase();
+  
+  const scores = {};
+  for (const intentKey of Object.keys(SEMANTIC_INTENTS)) {
+    scores[intentKey] = 0;
+  }
+
+  // 1. Check exact phrase matches (Highest Weight: 10)
+  for (const [key, intent] of Object.entries(SEMANTIC_INTENTS)) {
+    if (intent.phrases) {
+      for (const phrase of intent.phrases) {
+        if (q.includes(phrase) || raw.includes(phrase)) {
+          scores[key] += 10;
+        }
+      }
+    }
+  }
+
+  // 2. Check keyword stems (Weight: 2.5 per match)
+  for (const [key, intent] of Object.entries(SEMANTIC_INTENTS)) {
+    if (intent.stems) {
+      for (const stem of intent.stems) {
+        const regex = new RegExp('\\b' + stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+        if (regex.test(q) || regex.test(raw)) {
+          scores[key] += 2.5;
+        }
+      }
+    }
+  }
+
+  // 3. Domain-Specific Disambiguation Boosters
+  if (/\b(iit|aiims|neet\s*topper|jee\s*topper|selection|selections|kitne\s*select|kitne\s*gaye|result\s*kaisa|history|record)\b/i.test(raw)) {
+    scores.TOPPERS += 15;
+  }
+
+  if (/\b(bare\s*me|kaisa\s*padh|kaisa\s*chal|profile|summary|overall\s*report|performance\s*report|details\s*bhejo)\b/i.test(q)) {
+    scores.REPORT += 12;
+  }
+
+  // 4. Relational context booster for parent questions (e.g. "Mera beta coaching me hai kya")
+  const hasRelation = /\b(beta|beti|bacha|bachha|bache|bachi|ladka|ladki|ward|student|son|daughter)\b/i.test(q) ||
+                      /\b(beta|beti|bacha|bachha|bache|bachi|ladka|ladki|ward|student|son|daughter)\b/i.test(raw);
+  
+  if (hasRelation) {
+    if (q.includes('coaching') || q.includes('class') || q.includes('pahuncha') || q.includes('aaya') || q.includes('entry') || q.includes('nikla')) {
+      scores.ATTENDANCE += 8;
+    }
+    if (q.includes('marks') || q.includes('number') || q.includes('score') || q.includes('test')) {
+      scores.TEST_MARKS += 8;
+    }
+    if (q.includes('bare me') || q.includes('batao') || q.includes('bata sakta') || q.includes('kaisa hai') || q.includes('report')) {
+      scores.REPORT += 8;
+    }
+  }
+
+  // Find maximum scoring intent
+  let topIntent = 'MENU';
+  let maxScore = 0;
+
+  for (const [intentKey, score] of Object.entries(scores)) {
+    if (score > maxScore) {
+      maxScore = score;
+      topIntent = intentKey;
+    }
+  }
+
+  return { intent: maxScore >= 2.5 ? topIntent : 'MENU', score: maxScore };
+}
+
+// 5. Ultra-Smart NLP Student & Parent Contextual Reply Generator (Handles 1000s of Natural Questions)
 export async function generateSmartStudentReply(student, rawQuery, phone) {
   const q = normalizeQuery(rawQuery);
   const coaching = botConfig.coachingName || 'Career Xone';
@@ -305,106 +674,104 @@ export async function generateSmartStudentReply(student, rawQuery, phone) {
     }
   }
 
-  // 1️⃣ STRICT FEE / PAYMENT POLICY: Redirect immediately to Official Counseling Helpline
-  const feeRegex = /\b(fee|fees|payment|installment|kist|paisa|rupee|charges|cost|kitna\s*paisa|due|dues|balance|discount|scholarship)\b/i;
-  if (feeRegex.test(q) || q === '3') {
+  // Perform Master Contextual Sentence Comprehension
+  const { intent, score } = classifySentenceIntent(q, rawQuery, true);
+
+  // Intent 1: Attendance / Presence
+  if (intent === 'ATTENDANCE' || q === '1') {
+    if (botConfig.enableAttendance) return await getAttendanceReply(student);
+  }
+
+  // Intent 2: Test Marks & Results
+  if (intent === 'TEST_MARKS' || q === '2') {
+    if (botConfig.enableMarks) return await getTestMarksReply(student);
+  }
+
+  // Intent 3: Timetable & Schedule
+  if (intent === 'TIMETABLE' || q === '3') {
+    if (botConfig.enableTimetable) return await getTimetableReply(student);
+  }
+
+  // Intent 4: Fee Structure & Payments
+  if (intent === 'FEES' || q === '4') {
     return getFeeCounselingReply(student);
   }
 
-  // 2️⃣ LEAVE APPLICATION / ILLNESS INTIMATION: Auto-Acknowledgement & Concern
-  const leaveRegex = /\b(leave\s*application|bimar|tabiyat|tabiat|fever|bukhar|hospital|out\s*of\s*station|nahi\s*aayega|aaj\s*nahi\s*aayega|chutti\s*hai|chutti\s*chahiye)\b/i;
-  if (leaveRegex.test(q)) {
+  // Intent 5: Leave Application / Illness
+  if (intent === 'LEAVE') {
     return getLeaveIntimationReply(student);
   }
 
-  // 3️⃣ PARENT COUNSELING & CONCERN (Marks kam kyu aaye, padhai me dhyan, etc.)
-  const worryRegex = /\b(kam\s*marks|focus|dhyan\s*nahi|improve|weak|padhta\s*nahi|problem|tension|dar\s*lag\s*raha)\b/i;
-  if (worryRegex.test(q)) {
+  // Intent 6: Academic Guidance & Mentorship
+  if (intent === 'MENTORSHIP') {
     return getParentCounselingGuidanceReply(student);
   }
 
-  // 4️⃣ SYLLABUS, HOMEWORK & NOTES QUERY
-  const studyRegex = /\b(syllabus|homework|notes|assignment|study\s*material|curriculum|kya\s*padhaya|doubt)\b/i;
-  if (studyRegex.test(q)) {
-    return getSyllabusHomeworkReply(student);
+  // Intent 7: 360 Degree Academic Summary Report
+  if (intent === 'REPORT' || q === '5') {
+    if (botConfig.enableReport) return await getReportSummaryReply(student);
   }
 
-  // 5️⃣ LOCATION, ADDRESS & MAP GUIDE
-  const locationRegex = /\b(location|address|kahan\s*hai|kidhar\s*hai|landmark|route|map|direction)\b/i;
-  if (locationRegex.test(q)) {
-    return getLocationGuideReply();
-  }
-
-  // 6️⃣ TIMETABLE & BATCH TIMINGS
-  const timeRegex = /\b(timetable|time\s*table|schedule|routine|kab\s*hai|timing|class\s*timing|lecture|batch\s*time)\b/i;
-  if (botConfig.enableTimetable && (timeRegex.test(q) || q === '4')) {
-    return await getTimetableReply(student);
-  }
-
-  // 7️⃣ COACHING SELECTIONS, TOPPERS & TRACK RECORD (IIT Bombay, NEET MBBS, CXSAT Scholarship)
+  // Intent 8: Specific Topper Lookup
   const matchedTopper = findTopperByName(rawQuery);
   if (matchedTopper) {
     return getInstituteTrackRecordReply(matchedTopper);
   }
 
-  // 8️⃣ SCHOLARSHIP & CXSAT TEST
-  const scholarshipRegex = /\b(cxsat|scholarship|discount|waiver|concession|scholarship\s*test)\b/i;
-  if (scholarshipRegex.test(q)) {
-    return getScholarshipDetailedReply();
-  }
-
-  // 9️⃣ COURSES & BATCHES OVERVIEW
-  const courseRegex = /\b(course|courses|program|foundation|mht\s*cet|dropper|repeater|11th\s*batch|12th\s*batch)\b/i;
-  if (courseRegex.test(q)) {
-    return getCoursesDetailedReply();
-  }
-
-  // 🔟 SOCIAL MEDIA & CHANNELS
-  const socialRegex = /\b(youtube|instagram|facebook|insta|fb|channel|video|videos)\b/i;
-  if (socialRegex.test(q)) {
-    return getSocialMediaReply();
-  }
-
-  const trackRecordRegex = /\b(selection|topper|toppers|iit\s*bombay|iit\s*roorkee|aiims|mbbs|past\s*result|previous\s*result|kaun\s*select|selection\s*rate|vidarbha|rohit\s*jha|doctor\s*faculty|history)\b/i;
-  if (trackRecordRegex.test(q)) {
+  // Intent 9: Coaching Track Record & Selections
+  if (intent === 'TOPPERS') {
     return getInstituteTrackRecordReply();
   }
 
-  // 1️⃣1️⃣ TEST MARKS & RESULTS (For student's own internal marks)
-  const testRegex = /\b(test|marks|result|score|kitne\s*number|number\s*kitne|rank|exam|pariksha|paper|mock|test\s*series)\b/i;
-  if (botConfig.enableMarks && (testRegex.test(q) || q === '2')) {
-    return await getTestMarksReply(student);
+  // Intent 10: Scholarship / CXSAT Test
+  if (intent === 'SCHOLARSHIP') {
+    return getScholarshipDetailedReply();
   }
 
-  // 1️⃣2️⃣ ATTENDANCE (Punch entry/exit, present/absent)
-  const attendanceRegex = /\b(attend|attendance|present|absent|haajri|hajri|checkin|checkout|entry|punch|aaya|aayi|gaya|gayi|in\s*time|time\s*in)\b/i;
-  if (botConfig.enableAttendance && (attendanceRegex.test(q) || q === '1' || (q.includes('aaj') && !q.includes('time') && !q.includes('class')))) {
-    return await getAttendanceReply(student);
+  // Intent 11: Courses & Programmes
+  if (intent === 'COURSES') {
+    return getCoursesDetailedReply();
   }
 
-  // 1️⃣3️⃣ HELPDESK & DIRECT TEACHER/OFFICE CONTACT (Priority before generic acknowledgement)
-  const helpRegex = /\b(help|helpdesk|contact|phone|call|director|teacher|director\s*sir|madad|reception|office|center|helpline|kisse\s*baat\s*karein)\b/i;
-  if (botConfig.enableHelp && (helpRegex.test(q) || q === '6')) {
-    return getHelpDeskReply(student);
+  // Intent 12: Location & Campus Map
+  if (intent === 'LOCATION') {
+    return getLocationGuideReply();
   }
 
-  // 1️⃣4️⃣ POLITE ACKNOWLEDGEMENTS & GRATITUDE
-  const thanksRegex = /\b(thank|thanks|shukriya|dhanyawad|ok|okay|thik\s*hai|theek|good|great|nice|super|shandar|good\s*morning|namaste)\b/i;
-  if (thanksRegex.test(q)) {
-    return `🙏 *Most welcome Sir/Madam!*
-
-Aapko *${student.name}* ke baare me koi aur update chahiye ho, toh kabhi bhi *MENU* likhkar bhej sakte hain.
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+  // Intent 13: Study Material / DPP / Notes
+  if (intent === 'STUDY_MATERIAL') {
+    return getSyllabusHomeworkReply(student);
   }
 
-  // 1️⃣5️⃣ PERFORMANCE SUMMARY REPORT
-  const reportRegex = /\b(report|summary|progress|performance|overall|dashboard|profile|card)\b/i;
-  if (botConfig.enableReport && (reportRegex.test(q) || q === '5')) {
-    return await getReportSummaryReply(student);
+  // Intent 14: Social Media Channels
+  if (intent === 'SOCIAL') {
+    return getSocialMediaReply();
   }
 
-  // DEFAULT / INTENT 0: Main Interactive AI Menu
+  // Intent 15: Helpdesk & Direct Contact
+  if (intent === 'CONTACT' || q === '6') {
+    if (botConfig.enableHelp) return getHelpDeskReply(student);
+  }
+
+  // Intent 16: Thanks / Acknowledgement
+  if (intent === 'THANKS' && q !== 'menu') {
+    return `🙏 *Most welcome!*
+
+Aapko *${student.name}* ke baare me koi aur update chahiye ho, toh kabhi bhi *MENU* likhkar bhej sakte hain.`;
+  }
+
+  // Intent 17: General Greetings
+  if (intent === 'GREETINGS' && q !== 'menu') {
+    return `👋 *Namaste!*
+
+Aap *${student.name}* (Roll No: *${student.rollNo}*) ke baare me kya janna chahte hain?
+• 1️⃣ *Attendance* (Live Haajri)
+• 2️⃣ *Marks* (Latest Test Score & Rank)
+• 3️⃣ *Timetable* (Daily Lectures)
+• 4️⃣ *Report* (Complete 360° Summary)`;
+  }
+
+  // DEFAULT FALLBACK: Interactive Main Menu
   return getMainSmartMenu(student, coaching);
 }
 
@@ -415,34 +782,25 @@ function getFeeCounselingReply(student) {
   const addr = botConfig.campusAddress || 'Hadditoli Road, Near Ananya Hospital, Gondia, Maharashtra 441601';
   const mapUrl = botConfig.googleMapsUrl || 'https://maps.app.goo.gl/ECzbg6DcixL7ZxpW7';
 
-  return `🎓 *Career Xone Admission & Fee Counseling Desk*
+  return `🎓 *Career Xone Fee Counseling Helpdesk*
+*${student ? student.name : 'Student'}* ke fee structure, installment schedule, aur scholarship concession ki details hamare counselors provide karte hain:
 
-Namaste Sir/Madam!
-*${student ? student.name : 'Student'}* ke fee structure, installment plans, aur scholarship concessions ki poori jankari hamare senior academic counselors dwara personally provide ki jaati hai.
-
-📞 *Kripya hamari direct counseling desk par call karein:*
+📞 *Direct Counseling Desk:*
 • 📱 *+91 ${p1}*
 • 📱 *+91 ${p2}*
 
-⏰ *Counseling Timings:* 08:00 AM - 08:00 PM (Monday to Saturday)
-📍 *Campus Address:*
-${addr}
-🗺️ *Location Map:* ${mapUrl}
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+⏰ *Timings:* 08:00 AM - 08:00 PM (Mon-Sat)
+📍 *Campus Address:* ${addr}
+🗺️ *Location:* ${mapUrl}`;
 }
 
 // 📝 Leave Application / Illness Notification Response
 function getLeaveIntimationReply(student) {
   return `📝 *LEAVE INTIMATION RECORDED*
-
-Namaste Sir/Madam!
 Humne *${student.name}* (Roll No: *${student.rollNo}*) ke leave / absence ki jankari system me note kar li hai aur batch faculty ko notify kar diya gaya hai.
 
 🌸 *Umeed hai ${student.name} jaldi theek ho jayenge!*
-Aaj ke missed topics ke notes aur daily doubt session ke liye student coaching aane par batch faculty se direct connect kar sakte hain.
-
-_Career Xone AI Assistant • Student Care Desk_ 🎓✨`;
+Missed topics ke notes ke liye student coaching aane par batch faculty se connect kar sakte hain.`;
 }
 
 // 💡 Parent Guidance for Student Performance & Focus
@@ -451,20 +809,15 @@ function getParentCounselingGuidanceReply(student) {
   const p2 = botConfig.counselingPhone2 || '9145481323';
 
   return `🤝 *STUDENT ACADEMIC & MENTORSHIP SUPPORT*
-
-Namaste Sir/Madam!
-Har student ki learning speed alag hoti hai. *${student.name}* ke test analysis aur study schedule ko improve karne ke liye hamare senior mentors special doubt & strategy sessions conduct karte hain.
+*${student.name}* ke test analysis aur study schedule ko improve karne ke liye hamare senior mentors special doubt & strategy sessions conduct karte hain.
 
 🎯 *Action Plan:*
 1. Daily 4:00 PM - 6:00 PM open faculty doubt desk.
 2. Personalized weak-topic question sets.
 3. 1-on-1 discussion with Director / HOD.
 
-📞 *Parent-Teacher Discussion ke liye call karein:*
-• 📱 *+91 ${p1}*
-• 📱 *+91 ${p2}*
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+📞 *Direct Mentorship Contact:*
+• 📱 *+91 ${p1}* / *+91 ${p2}*`;
 }
 
 // 📚 Syllabus, Notes & Homework Guide
@@ -477,9 +830,7 @@ function getSyllabusHomeworkReply(student) {
 • *Doubt Clearing Desk:* Available Monday to Saturday (04:00 PM - 06:00 PM).
 • *Upcoming Weekend Test:* OMR-based test series conducted every Sunday.
 
-💡 Agar kisi specific chapter ke notes chahiye, toh student reception / teacher desk se collect kar sakte hain.
-
-_Career Xone AI Assistant_ 🎓`;
+💡 Agar kisi specific chapter ke notes chahiye, toh student reception / teacher desk se collect kar sakte hain.`;
 }
 
 // 📍 Campus Location & Address Guide
@@ -505,9 +856,7 @@ ${mapUrl}
 📞 *Helpline Numbers:*
 • 📱 *+91 ${p1}*
 • 📱 *+91 ${p2}*
-📧 *Email:* ${email}
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+📧 *Email:* ${email}`;
 }
 
 // 🏆 Complete Hall of Fame & Historical Toppers Knowledge Base (JEE & NEET)
@@ -637,9 +986,7 @@ function getInstituteTrackRecordReply(topperMatch = null) {
 🏆 *Exam:* ${topperMatch.exam}
 🏛️ *Selection / College:* *${topperMatch.college}*
 ${topperMatch.score ? `🎯 *Score / Percentile:* *${topperMatch.score}*\n` : ''}🎖️ *Achievement:* ${topperMatch.tag || 'Premier College Selection'}
-🎓 *Institute:* Career Xone (Mentored by Rohit Jha Sir & Team)
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+🎓 *Institute:* Career Xone (Mentored by Rohit Jha Sir & Team)`;
     } else {
       return `🌟 *CAREER XONE NEET TOPPER*
 
@@ -647,9 +994,7 @@ _Career Xone AI Assistant • Empowering Students_ 🎓✨`;
 🏆 *Exam:* ${topperMatch.exam}
 🎯 *Marks Scored:* *${topperMatch.score}*
 🏥 *Status:* *${topperMatch.status}*
-🎓 *Institute:* Career Xone (Mentored by Rohit Jha Sir & Team)
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+🎓 *Institute:* Career Xone (Mentored by Rohit Jha Sir & Team)`;
     }
   }
 
@@ -675,9 +1020,7 @@ Sunday Scholarship Test conducts every weekend (Up to 100% Fee Waiver).
 📞 *Admissions & Scholarship Desk:*
 • 📱 *+91 ${p1}*
 • 📱 *+91 ${p2}*
-🌐 *Website:* https://cxjeeneet.com
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+🌐 *Website:* https://cxjeeneet.com`;
 }
 
 // 📚 Courses, Batches & Academic Programs Overview
@@ -708,9 +1051,7 @@ function getCoursesDetailedReply() {
 
 📞 *Batch Registration & Admission Helpline:*
 • 📱 *+91 ${p1}*
-• 📱 *+91 ${p2}*
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+• 📱 *+91 ${p2}*`;
 }
 
 // 🎁 CXSAT Scholarship Test Details
@@ -735,9 +1076,7 @@ _Talent Ko Milega Sahi Mancha — Financial constraints won't stop talent!_
 📞 *Sunday Test Registration Desk:*
 • 📱 *+91 ${p1}*
 • 📱 *+91 ${p2}*
-🌐 *Website:* https://cxjeeneet.com
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+🌐 *Website:* https://cxjeeneet.com`;
 }
 
 // 🌐 Official Social Media & Online Handles
@@ -756,29 +1095,58 @@ https://www.instagram.com/career_xone_gondia
 https://www.facebook.com/CareerXone
 
 🌐 *Official Website:*
-https://cxjeeneet.com
+https://cxjeeneet.com`;
+}
 
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+// Helper: Format Student Target Course / Batch intelligently (e.g. "11th JEE (Main & Advanced)", "12th NEET (Medical Target)")
+function formatStudentCourseBatch(student) {
+  if (!student) return 'JEE / NEET Target Batch';
+  const c = (student.class || '').trim();
+  const b = (student.batch || '').trim();
+
+  // 1. Analyze class field (which contains human course strings like '11th jee 1st batch ( 26-28 )', '12TH NEET 25-27', 'j1', 'n1')
+  if (c) {
+    const cl = c.toLowerCase();
+    if (cl.includes('jee') && (cl.includes('11') || cl.includes('11th'))) return '11th JEE (Main & Advanced)';
+    if (cl.includes('jee') && (cl.includes('12') || cl.includes('12th'))) return '12th JEE (Main & Advanced)';
+    if (cl.includes('neet') && (cl.includes('11') || cl.includes('11th'))) return '11th NEET (Medical Target)';
+    if (cl.includes('neet') && (cl.includes('12') || cl.includes('12th'))) return '12th NEET (Medical Target)';
+    if (cl === 'j1' || cl === 'j2' || cl === 'jee' || cl.startsWith('jee')) return 'JEE (Main & Advanced)';
+    if (cl === 'n1' || cl === 'n2' || cl === 'neet' || cl.startsWith('neet')) return 'NEET (Medical Target)';
+    if (cl.includes('cet') || cl.includes('mht')) return 'MHT-CET Target Batch';
+    if (cl.includes('foundation') || cl.includes('8th') || cl.includes('9th') || cl.includes('10th')) return `${c} Foundation`;
+
+    // If it's another non-system class name, strip internal bracket ranges
+    if (!cl.startsWith('batch') && cl !== 'default' && cl !== '--') {
+      return c.replace(/\(\s*\d+-\d+\s*\)/g, '').trim();
+    }
+  }
+
+  // 2. Analyze batch field (if not internal 'batch-1', 'batch-2', etc.)
+  if (b && !/^batch[-_\s]*\d+$/i.test(b) && b.toLowerCase() !== 'batch' && b.toLowerCase() !== 'default') {
+    const bl = b.toLowerCase();
+    if (bl.includes('jee')) return 'JEE (Main & Advanced)';
+    if (bl.includes('neet')) return 'NEET (Medical Target)';
+    if (bl.includes('cet')) return 'MHT-CET Target Batch';
+    return b;
+  }
+
+  return 'NEET / JEE Target Batch';
 }
 
 // 📱 Main Interactive AI Menu
 function getMainSmartMenu(student, coaching) {
-  return `👋 *Namaste Sir/Madam!*
-Welcome to *${coaching} AI Assistant* — Personalized Portal for *${student.name}*.
+  const courseBatch = formatStudentCourseBatch(student);
+  return `🎓 *${coaching} Student Portal* • *${student.name}*
+🎫 *Roll No:* *${student.rollNo || '--'}* | 🎯 *Target:* *${courseBatch}*
 
-👤 *Student:* *${student.name}*
-🎫 *Roll No:* *${student.rollNo || '--'}*
-🏷️ *Batch:* *${student.batch || '--'}*
-
-📌 *Kripya kisi bhi jankari ke liye number ya text reply karein:*
-1️⃣ *1* ya *ATTENDANCE* ➔ Live Entry/Exit & Monthly Attendance
-2️⃣ *2* ya *TEST MARKS* ➔ Latest Exam Score & Batch Rank
-3️⃣ *3* ya *FEES* ➔ Fee Counseling Desk & Direct Numbers
-4️⃣ *4* ya *TIMETABLE* ➔ Daily Lecture & Batch Timings
+📌 *Kripya number ya topic reply karein:*
+1️⃣ *1* ya *ATTENDANCE* ➔ Live Haajri & Monthly %
+2️⃣ *2* ya *MARKS* ➔ Latest Exam Score & Rank
+3️⃣ *3* ya *TIMETABLE* ➔ Daily Lectures & Timings
+4️⃣ *4* ya *FEES* ➔ Fee Counseling Helpdesk
 5️⃣ *5* ya *REPORT* ➔ Complete Performance Report
-6️⃣ *6* ya *HELP* ➔ Coaching Helpline & Director Desk
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+6️⃣ *6* ya *HELP* ➔ Direct Helplines`;
 }
 
 // 📊 Live Attendance Report
@@ -832,8 +1200,7 @@ ${todayStatusText}
 • Present Days: *${presentDays}* / *${totalDays || 1}* Days
 • Attendance Rate: *${pct}%*
 
-_Reply *MENU* to see all options._
-_Career Xone AI Assistant_ 🎓`;
+_Reply *MENU* for all options._`;
   } catch (err) {
     return `📊 *Attendance Report for ${student.name}:* Enrolled in Batch *${student.batch}*. Regular biometric records are active. Reply *MENU* for more options.`;
   }
@@ -854,8 +1221,7 @@ async function getTestMarksReply(student) {
       return `📝 *Test Performance for ${student.name}:*
 Abhi tak koi published exam record available nahi hai. Naye test ke marks calculate hote hi yahan instant update honge.
 
-_Reply *MENU* for all options._
-_Career Xone AI Assistant_ 🎓`;
+_Reply *MENU* for all options._`;
     }
 
     const latest = results[0];
@@ -878,8 +1244,7 @@ _Career Xone AI Assistant_ 🎓`;
 🥇 *Batch Rank:* *${rankStr}${totalStudents}*
 💡 *Result Status:* ${latest.percentage >= 40 ? 'Passed ✅ (Good Effort)' : 'Needs Focused Practice ⚠️'}
 
-_Reply *MENU* for all options._
-_Career Xone AI Assistant_ 🎓`;
+_Reply *MENU* for all options._`;
   } catch (err) {
     return `📝 *Test Marks for ${student.name}:* Records are active. Reply *MENU* for more options.`;
   }
@@ -906,15 +1271,14 @@ async function getTimetableReply(student) {
 
     return `⏰ *CLASS TIMETABLE & SCHEDULE*
 👤 *Student:* *${student.name}*
-🏷️ *Batch:* *${student.batch}* ${student.class ? `(Class ${student.class})` : ''}
+🎯 *Course / Target:* *${formatStudentCourseBatch(student)}*
 
 📅 *Daily Lectures & Timings:*
 ${sessionLines}
 
-_Reply *MENU* for all options._
-_Career Xone AI Assistant_ 🎓`;
+_Reply *MENU* for all options._`;
   } catch (err) {
-    return `⏰ *Batch Details:* ${student.name} is in Batch *${student.batch}*. Reply *MENU* for options.`;
+    return `⏰ *Batch Details:* ${student.name} is in *${formatStudentCourseBatch(student)}*. Reply *MENU* for options.`;
   }
 }
 
@@ -933,14 +1297,13 @@ async function getReportSummaryReply(student) {
     return `📋 *COMPLETE ACADEMIC REPORT*
 👤 *Student:* *${student.name}*
 🎫 *Roll No:* *${student.rollNo}*
-🏷️ *Batch:* *${student.batch}*
+🎯 *Course / Target:* *${formatStudentCourseBatch(student)}*
 
 📈 *Overall Attendance:* *${attPct}%* (${presentCount} Days Present)
 📝 *Latest Exam Score:* ${latestResult ? `*${latestResult.marks}/${latestResult.totalMarks}* (${latestResult.percentage.toFixed(1)}%)` : 'Active'}
 🌟 *Institute:* ${botConfig.coachingName || 'Career Xone'}
 
-_Reply *MENU* to see all options._
-_Career Xone AI Assistant_ 🎓`;
+_Reply *MENU* to see all options._`;
   } catch (err) {
     return `📋 *Summary for ${student.name}:* Enrolled in Batch ${student.batch}. Reply *MENU* for options.`;
   }
@@ -977,92 +1340,95 @@ export async function generateSmartGuestReply(rawQuery, phone) {
   const p1 = botConfig.counselingPhone1 || '9673383561';
   const p2 = botConfig.counselingPhone2 || '9145481323';
 
-  // 1️⃣ Greetings & Warm Welcome (e.g. "Good morning", "Hello", "Hi", "Namaste")
-  const greetingRegex = /\b(good\s*morning|good\s*afternoon|good\s*evening|hello|hi|hey|namaste|namaskar|pranam|ram\s*ram)\b/i;
-  if (greetingRegex.test(q)) {
-    return `👋 *Namaste & Welcome to ${coaching}!*
-
-Aapka swagat hai! Hum aapki kya sahayata kar sakte hain?
-📌 *Aap in vishayon par reply karke jankari le sakte hain:*
-1️⃣ *COURSES* ➔ 11th, 12th, NEET, JEE & Foundation
-2️⃣ *FEES* ➔ Fee Counseling Desk & Installment Options
-3️⃣ *SCHOLARSHIP* ➔ Sunday CXSAT Test (Upto 100% Waiver)
-4️⃣ *RESULTS* ➔ Toppers, AIIMS & IIT Selections
-5️⃣ *LOCATION* ➔ Campus Address & Google Maps Link
-6️⃣ *CONTACT* ➔ Direct Helplines: +91 ${p1} / +91 ${p2}
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
-  }
-
-  // 2️⃣ Polite Acknowledgements & Gratitude (e.g. "Ok sir", "Thank you", "Theek hai", "Ji sir")
-  const ackRegex = /\b(ok|okay|ok\s*sir|theek\s*hai|thik\s*hai|thik\s*h|theek\s*h|thank|thanks|shukriya|dhanyawad|ji\s*sir|achha|acha|samajh\s*gaya|got\s*it)\b/i;
-  if (ackRegex.test(q)) {
-    return `🙏 *Most welcome Sir/Madam!*
-
-Career Xone ke courses, admissions, scholarship test ya campus visit ke baare me koi aur jankari chahiye ho, toh batayein.
-
-📞 *Direct Counseling Desk:* *+91 ${p1}* / *+91 ${p2}*
-
-_Career Xone AI Assistant • Student Care Desk_ 🎓✨`;
-  }
-
-  // 3️⃣ Fee / Payment / Installments inquiry (Includes typo 'fess', 'fee', 'kist', etc.)
-  const feeRegex = /\b(fee|fees|payment|installment|kist|paisa|cost|admission|charge|charges|kitna\s*lagega)\b/i;
-  if (feeRegex.test(q)) {
-    return getFeeCounselingReply(null);
-  }
-
-  // 4️⃣ Direct Contact Number / Helpline / Phone inquiry
-  const contactRegex = /\b(contact|phone|call|number|helpline|reception|office|director|madad|kisse\s*baat\s*karein|baat\s*karni\s*hai)\b/i;
-  if (contactRegex.test(q)) {
-    return getHelpDeskReply(null);
-  }
-
-  // 5️⃣ CXSAT Scholarship Test
-  const scholarshipRegex = /\b(cxsat|scholarship|discount|waiver|concession|scholarship\s*test)\b/i;
-  if (scholarshipRegex.test(q)) {
-    return getScholarshipDetailedReply();
-  }
-
-  // 6️⃣ Courses & Classroom Batches
-  const courseRegex = /\b(course|courses|program|foundation|mht\s*cet|dropper|repeater|11th|12th|class\s*11|class\s*12)\b/i;
-  if (courseRegex.test(q)) {
-    return getCoursesDetailedReply();
-  }
-
-  // 7️⃣ Social Media / YouTube / Instagram
-  const socialRegex = /\b(youtube|instagram|facebook|insta|fb|channel|video|videos)\b/i;
-  if (socialRegex.test(q)) {
-    return getSocialMediaReply();
-  }
-
-  // 8️⃣ Specific Topper / Results inquiry
+  // Check specific topper search first
   const matchedTopper = findTopperByName(rawQuery);
   if (matchedTopper) {
     return getInstituteTrackRecordReply(matchedTopper);
   }
 
-  const trackRecordRegex = /\b(selection|topper|toppers|iit\s*bombay|iit\s*roorkee|aiims|mbbs|past\s*result|previous\s*result|kaun\s*select|selection\s*rate|vidarbha|rohit\s*jha|doctor\s*faculty|result|neet|jee|topper\s*list)\b/i;
-  if (trackRecordRegex.test(q)) {
+  // Perform Sentence Comprehension
+  const { intent } = classifySentenceIntent(q, rawQuery, false);
+
+  // 1. Student Academic Inquiry from Unlinked Phone (Prompts for Roll No or Name)
+  const isStudentRelated = ['ATTENDANCE', 'TEST_MARKS', 'TIMETABLE', 'LEAVE', 'MENTORSHIP', 'REPORT'].includes(intent) ||
+                           /\b(student|students|bete|beta|beti|bacha|bachha|bache|bachey|baccha|bacche|bachi|bachhi|ward|ladka|ladki|balak|son|daughter|kid|child|attendance|marks|result|report|progress|card|haajri|hajri|score)\b/i.test(q) ||
+                           /mere\s*(bete|beta|beti|bacha|bachha|bache|bachi|student)|(bete|beta|beti|bacha|bachha|bache|bachi|student)\s*ke\s*bare|kaisa\s*(padh|chal)/i.test(rawQuery);
+
+  if (isStudentRelated) {
+    return `🌸 *Namaste Sir/Madam!*
+
+Aapka yeh WhatsApp number hamare database me kisi registered student se direct link nahi mila.
+
+🔍 *Student ka live academic report (Haajri, Test Marks, Rank) dekhne ke liye:*
+👉 Kripya student ka **Roll Number** (jaise: \`340\`) ya student ka **Full Name** (jaise: \`Prince Kumar\`) likhkar bhejein!
+
+Hum turant unka complete academic report share kar denge.`;
+  }
+
+  // 2. Fees Inquiry
+  if (intent === 'FEES') {
+    return getFeeCounselingReply(null);
+  }
+
+  // 3. Scholarship CXSAT Test Inquiry
+  if (intent === 'SCHOLARSHIP') {
+    return getScholarshipDetailedReply();
+  }
+
+  // 4. Courses & Batches Inquiry
+  if (intent === 'COURSES' || intent === 'STUDY_MATERIAL') {
+    return getCoursesDetailedReply();
+  }
+
+  // 5. Track Record, Selections & Faculty
+  if (intent === 'TOPPERS') {
     return getInstituteTrackRecordReply();
   }
 
-  // 9️⃣ Location / Address inquiry
-  if (q.includes('location') || q.includes('address') || q.includes('map') || q.includes('kahan') || q.includes('kidhar')) {
+  // 6. Location, Address & Hostel/Transport
+  if (intent === 'LOCATION') {
     return getLocationGuideReply();
   }
 
-  // 🔟 Smart Concise Fallback Menu (No repetitive essays!)
-  return `👋 *Career Xone AI Assistant*
+  // 7. Contact Numbers & Office Helpdesk
+  if (intent === 'CONTACT') {
+    return getHelpDeskReply(null);
+  }
 
-Aapki query samajhne me thodi dikkat hui. Kripya kisi bhi jankari ke liye vishay reply karein:
+  // 8. Social Media & Online Handles
+  if (intent === 'SOCIAL') {
+    return getSocialMediaReply();
+  }
+
+  // 9. Polite Acknowledgements & Gratitude
+  if (intent === 'THANKS') {
+    return `🙏 *Most welcome!*
+
+Career Xone ke courses, admissions, scholarship test ya campus visit ke baare me koi aur jankari chahiye ho, toh batayein.
+
+📞 *Direct Counseling Desk:* *+91 ${p1}* / *+91 ${p2}*`;
+  }
+
+  // 10. Greetings & Warm Welcome
+  if (intent === 'GREETINGS') {
+    return `👋 *Welcome to ${coaching}!*
+
+Aap in vishayon par reply karke jankari le sakte hain:
+1️⃣ *COURSES* ➔ 11th, 12th, NEET, JEE & Foundation
+2️⃣ *FEES* ➔ Fee Counseling Desk & Installments
+3️⃣ *SCHOLARSHIP* ➔ Sunday CXSAT Test (Upto 100%)
+4️⃣ *RESULTS* ➔ Toppers, AIIMS & IIT Selections
+5️⃣ *LOCATION* ➔ Campus Address & Google Maps
+6️⃣ *CONTACT* ➔ Direct Helplines: +91 ${p1} / +91 ${p2}`;
+  }
+
+  // 11. Smart Concise Fallback Menu
+  return `Aap in vishayon par reply karke jankari le sakte hain:
 
 1️⃣ *COURSES* ➔ JEE, NEET, Foundation & Droppers
 2️⃣ *FEES* ➔ Fee Structure & Installment Helpdesk
 3️⃣ *SCHOLARSHIP* ➔ Sunday CXSAT Test (Upto 100%)
 4️⃣ *RESULTS* ➔ Toppers & IIT/AIIMS Selections
 5️⃣ *LOCATION* ➔ Campus Address & Google Maps
-6️⃣ *CONTACT* ➔ +91 ${p1} / +91 ${p2}
-
-_Career Xone AI Assistant • Empowering Students_ 🎓✨`;
+6️⃣ *CONTACT* ➔ +91 ${p1} / +91 ${p2}`;
 }

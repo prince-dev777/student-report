@@ -1755,71 +1755,29 @@ h4 { font-size: 1.1rem; }
 
 @media print {
   @page { 
-    margin: 0; 
-    size: 250px 390px; 
+    margin: 6mm 6mm; 
+    size: A4 portrait; 
   }
   
   body, html {
     margin: 0 !important;
     padding: 0 !important;
-    height: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
     width: 100% !important;
-    background: transparent !important;
-    overflow: hidden !important;
+    background: #ffffff !important;
+    overflow: visible !important;
   }
   
-  /* Hide the main app root */
   #root {
-    display: none !important;
-  }
-  
-  /* Hide all elements by default (using display:none to save space) */
-  body > *:not(.modal-overlay) {
-    display: none !important;
-  }
-  
-  .modal-overlay {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    background: transparent !important;
-  }
-  
-  .modal-overlay * {
-    visibility: hidden !important;
-  }
-  
-  .print-id-container, .print-id-container * {
-    visibility: visible !important;
-  }
-  
-  .print-id-container {
-    position: fixed !important;
-    left: 20px !important;
-    top: 20px !important;
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 20px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  .print-id-card {
-    position: relative !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    width: 240px !important;
-    height: 380px !important;
-    box-sizing: border-box !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
+  .no-print {
+    display: none !important;
   }
 }
+
 

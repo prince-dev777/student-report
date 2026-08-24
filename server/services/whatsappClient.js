@@ -64,15 +64,15 @@ function killLeftoverChromium() {
       
       const processes = JSON.parse(out);
       for (const proc of Array.isArray(processes) ? processes : [processes]) {
-        if (proc && proc.CommandLine && proc.CommandLine.includes('wwebjs_auth')) {
-          console.log(`[WhatsAppClient] Killing zombie Chrome (PID: ${proc.ProcessId})`);
+        if (proc && proc.CommandLine && (proc.CommandLine.includes('wwebjs_auth') || proc.CommandLine.includes('.wwebjs_cache') || proc.CommandLine.includes('--headless'))) {
+          console.log(`[WhatsAppClient] Killing zombie headless Chrome (PID: ${proc.ProcessId})`);
           try {
             execSync('taskkill /F /PID ' + proc.ProcessId);
           } catch (e) {}
         }
       }
     } catch (e) {
-      console.log('[WhatsAppClient] Failed to kill zombie Chrome processes:', e.message);
+      console.log('[WhatsAppClient] Failed to scan/kill zombie Chrome processes:', e.message);
     }
     resolve();
   });
@@ -174,7 +174,7 @@ export function initializeWhatsAppClient() {
       }),
       webVersionCache: {
         type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1014111620-alpha.html',
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1045814658-alpha.html'
       },
       puppeteer: puppeteerOptions
     });
@@ -202,14 +202,36 @@ export function initializeWhatsAppClient() {
     });
 
     // 🤖 Hook WhatsApp Parent Auto-Reply Bot (catches incoming messages & self-test chats)
-    client.on('message_create', async (msg) => {
+    const processedMsgIds = new Set();
+    const processMsgSafe = async (msg, eventName) => {
       try {
+        if (!msg || !msg.id) {
+          console.log(`[WhatsAppBot][${eventName}] ⚠️ Received null/no-id message, skipping.`);
+          return;
+        }
+        const msgId = msg.id._serialized || msg.id.id || `${msg.from}_${msg.timestamp}`;
+        console.log(`[WhatsAppBot][${eventName}] 📨 RAW EVENT: from=${msg.from} to=${msg.to} body="${(msg.body||'').slice(0,50)}" fromMe=${msg.fromMe} id=${msgId}`);
+        if (processedMsgIds.has(msgId)) {
+          console.log(`[WhatsAppBot][${eventName}] 🔁 Duplicate msg ${msgId}, skipping.`);
+          return;
+        }
+        processedMsgIds.add(msgId);
+        if (processedMsgIds.size > 500) {
+          const first = processedMsgIds.values().next().value;
+          processedMsgIds.delete(first);
+        }
+
+        console.log(`[WhatsAppBot][${eventName}] ✅ Passing to handleIncomingWhatsAppMessage...`);
         const { handleIncomingWhatsAppMessage } = await import('./whatsappBotService.js');
         await handleIncomingWhatsAppMessage(client, msg);
+        console.log(`[WhatsAppBot][${eventName}] ✅ handleIncomingWhatsAppMessage completed for ${msgId}`);
       } catch (botErr) {
-        console.error('[WhatsAppBot] Error handling message:', botErr.message);
+        console.error(`[WhatsAppBot][${eventName}] ❌ Error handling message:`, botErr.message, botErr.stack);
       }
-    });
+    };
+
+    client.on('message', (msg) => processMsgSafe(msg, 'message'));
+    client.on('message_create', (msg) => processMsgSafe(msg, 'message_create'));
 
     client.on('authenticated', () => {
       console.log('[WhatsAppClient] WhatsApp Client authenticated.');

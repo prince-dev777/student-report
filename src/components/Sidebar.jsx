@@ -49,7 +49,7 @@ const systemMenuItems = [
 ];
 
 export default function Sidebar() {
-  const { sidebarOpen, setSidebarOpen, smsHistory, sidebarCollapsed, setSidebarCollapsed, loading } = useApp();
+  const { sidebarOpen, setSidebarOpen, smsHistory, sidebarCollapsed, setSidebarCollapsed, loading, refreshAllData } = useApp();
   const { user } = useAuth();
   const location = useLocation();
   const [lastSeenSmsCount, setLastSeenSmsCount] = useState(0);
@@ -127,6 +127,10 @@ export default function Sidebar() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to restore');
+      
+      if (typeof refreshAllData === 'function') {
+        await refreshAllData();
+      }
       
       toast.success(data.message || 'Restore successful!', { id: tid });
     } catch (err) {

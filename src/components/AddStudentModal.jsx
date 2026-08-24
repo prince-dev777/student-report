@@ -4,13 +4,51 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { batches as fallbackBatches } from '../data/sampleData';
+import { formatBatchName } from '../utils/helpers';
 
 export default function AddStudentModal({ isEdit, studentData, onClose, onSave }) {
   const { students, batches = fallbackBatches } = useApp();
+
+  // Dynamic list of batches from config + student records
+  const dynamicBatches = React.useMemo(() => {
+    const map = new Map();
+    (batches || fallbackBatches || []).forEach(b => {
+      if (b && (b.id || b.name)) {
+        const id = b.id || b.name;
+        map.set(id, { id, name: b.name || formatBatchName(id, batches) });
+      }
+    });
+    (students || []).forEach(s => {
+      const bVal = s.batch || s.targetClass;
+      if (bVal && !map.has(bVal)) {
+        map.set(bVal, { id: bVal, name: formatBatchName(bVal, batches) });
+      }
+    });
+    return Array.from(map.values());
+  }, [batches, students]);
+
+  // Unique classes for suggestions
+  const uniqueClasses = React.useMemo(() => {
+    const classSet = new Set();
+    ['8th', '9th', '10th', '11th', '12th', 'Dropper', 'Target', 'Foundation'].forEach(c => classSet.add(c));
+    (students || []).forEach(s => {
+      if (s.class && String(s.class).trim()) classSet.add(String(s.class).trim());
+    });
+    (batches || []).forEach(b => {
+      if (b.class && String(b.class).trim()) classSet.add(String(b.class).trim());
+    });
+    return Array.from(classSet).filter(Boolean).sort((a, b) => {
+      const numA = parseInt(a, 10);
+      const numB = parseInt(b, 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [students, batches]);
+
   const [form, setForm] = useState({
     name: '',
     rollNo: '',
-    batch: batches[0]?.id || '',
+    batch: dynamicBatches[0]?.id || 'batch-4',
     class: '',
     parentName: '',
     parentPhone: '',
@@ -231,14 +269,14 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Course</label>
+                    <label className="form-label">Course / Batch</label>
                     <select
                       name="batch"
                       value={form.batch}
                       onChange={handleChange}
                       className="form-select"
                     >
-                      {batches.map((b) => (
+                      {dynamicBatches.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.name}
                         </option>
@@ -250,11 +288,17 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
                     <input
                       type="text"
                       name="class"
+                      list="available-classes-list"
                       value={form.class}
                       onChange={handleChange}
                       className="form-input"
                       placeholder="e.g. 12th"
                     />
+                    <datalist id="available-classes-list">
+                      {uniqueClasses.map((c, idx) => (
+                        <option key={idx} value={c} />
+                      ))}
+                    </datalist>
                   </div>
                 </div>
 

@@ -98,6 +98,21 @@ function createWindow() {
   const isDev = !app.isPackaged;
 
   if (isDev) {
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (input.key === 'F5' || (input.control && input.key.toLowerCase() === 'r')) {
+        mainWindow.webContents.reloadIgnoringCache();
+      }
+      if (input.control && input.shift && input.key.toLowerCase() === 'i') {
+        mainWindow.webContents.toggleDevTools();
+      }
+    });
+
+    try {
+      mainWindow.webContents.session.clearCache();
+      mainWindow.webContents.session.clearStorageData({
+        storages: ['serviceworkers', 'cachestorage', 'shadercache', 'websql', 'indexdb']
+      });
+    } catch(e) {}
     mainWindow.loadURL('http://localhost:5173');
   } else {
     // Load from local Express server to avoid file:// cross-origin issues
@@ -301,6 +316,54 @@ app.whenReady().then(async () => {
       console.warn('shell.showItemInFolder error:', e);
     }
     return false;
+  });
+
+  // 🖨️ Dedicated High-Resolution Native A4 PDF Generator
+  ipcMain.handle('print:toPDF', async (event, htmlContent, defaultName) => {
+    try {
+      const printWin = new BrowserWindow({
+        show: false,
+        width: 1200,
+        height: 1600,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+
+      await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+      
+      // Allow fonts, styles and base64 images to settle
+      await new Promise(r => setTimeout(r, 600));
+
+      const pdfData = await printWin.webContents.printToPDF({
+        margins: { top: 0.1, bottom: 0.1, left: 0.1, right: 0.1 },
+        pageSize: 'A4',
+        printBackground: true,
+        preferCSSPageSize: true
+      });
+
+      printWin.close();
+
+      const { filePath } = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save Student ID Cards PDF',
+        defaultPath: path.join(app.getPath('downloads'), defaultName || 'CareerXone_StudentIDCards.pdf'),
+        filters: [{ name: 'PDF Documents (*.pdf)', extensions: ['pdf'] }]
+      });
+
+      if (filePath) {
+        fs.writeFileSync(filePath, pdfData);
+        try {
+          const { shell } = require('electron');
+          shell.openPath(filePath);
+        } catch (e) {}
+        return { success: true, filePath };
+      }
+      return { success: false, cancelled: true };
+    } catch (err) {
+      console.error('printToPDF error:', err);
+      return { success: false, error: err.message };
+    }
   });
 
   await startServer();
