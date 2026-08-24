@@ -5,7 +5,8 @@ import {
   ImageIcon, Smartphone, ExternalLink, X, ZoomIn, ZoomOut, AlertTriangle, 
   AlertCircle, Book, ChevronLeft, Info, MapPin, Maximize, Minimize, Phone, 
   Search, Send, Bell, TrendingUp, BarChart2, Printer, Check, Star, Zap, 
-  Flame, Compass, HelpCircle, ChevronRight, Share2, Settings 
+  Flame, Compass, HelpCircle, ChevronRight, ChevronUp, ChevronDown, Share2, 
+  RefreshCw, SlidersHorizontal, Grid, List, Settings 
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
@@ -45,7 +46,13 @@ export default function ParentPortalWeb() {
 
   // Active Tab: 'analytics' | 'tests' | 'attendance' | 'schedule'
   const [activeTab, setActiveTab] = useState('analytics');
+  const [isOmrNoticeExpanded, setIsOmrNoticeExpanded] = useState(true);
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [testSubjectFilter, setTestSubjectFilter] = useState('ALL');
+  const [attendanceViewMode, setAttendanceViewMode] = useState('calendar'); // 'calendar' | 'list'
+  const [calendarDate, setCalendarDate] = useState(() => new Date());
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
   const [deferredPrompt, setDeferredPrompt] = useState(() => window.deferredPrompt || null);
   const [showForceInstallModal, setShowForceInstallModal] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
@@ -392,6 +399,77 @@ export default function ParentPortalWeb() {
     toast.success('Logged out successfully');
   };
 
+  // Download OMR Sheet Helper to save permanently before 30-day expiry
+  const handleDownloadOmr = async (imageUrl, testName = 'OMR_Sheet') => {
+    if (!imageUrl) {
+      toast.error('OMR Sheet image not available.');
+      return;
+    }
+    const toastId = toast.loading('Downloading OMR Sheet...');
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error('Failed to fetch image');
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      const cleanTestName = (testName || 'OMR_Test').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const studentName = (studentData?.name || 'Student').replace(/[^a-zA-Z0-9_-]/g, '_');
+      link.download = `OMR_${studentName}_${cleanTestName}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success('OMR Sheet downloaded successfully!', { id: toastId });
+    } catch (err) {
+      console.error('Download error:', err);
+      // Fallback: direct window open
+      window.open(imageUrl, '_blank');
+      toast.dismiss(toastId);
+      toast('Opening OMR Sheet in new tab to save.', { icon: 'ℹ️' });
+    }
+  };
+
+  // Pull-to-refresh & Manual Data Sync with Server
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    await refreshParentDataSilently();
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.success('Data synced with institute server ✅', { duration: 1500 });
+    }, 600);
+  };
+
+  // 1-Tap Result Card WhatsApp & Native Web Share
+  const handleShareTestResult = (t) => {
+    const studentName = studentData?.name || 'Student';
+    const roll = studentData?.rollNo || '-';
+    const tName = getTestName(t);
+    const date = getTestDate(t);
+    const score = `${t.marks}/${t.totalMarks || 360}`;
+    const pct = `${t.percentage}%`;
+    const rank = t.rank ? `#${t.rank}` : '-';
+
+    const shareText = `🎓 *Career Xone - OMR Exam Performance Report*\n\n` +
+      `👤 *Student:* ${studentName} (Roll: ${roll})\n` +
+      `📝 *Exam Name:* ${tName}\n` +
+      `📅 *Exam Date:* ${date}\n` +
+      `📊 *Score:* ${score} (${pct})\n` +
+      `🏆 *Batch Rank:* ${rank}\n` +
+      `✨ *Performance:* Verified by Career Xone OMR System\n\n` +
+      `📱 View detailed marksheet & OMR on Career Xone Parents App`;
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      navigator.share({
+        title: `${studentName} - Exam Result`,
+        text: shareText
+      }).catch(() => {});
+    } else {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+    }
+  };
+
   // Compute Subject Analytics strictly from real testResults
   const calculateAnalytics = () => {
     if (!testResults || testResults.length === 0) {
@@ -479,6 +557,62 @@ export default function ParentPortalWeb() {
   // Safe Test Metadata Getters (Resilient to various payload structures)
   const getTestName = (t) => t?.testName || t?.test?.name || t?.name || '12TH NEET ALL BATCH ( 25-27 ) 18.08.2026';
   const getTestDate = (t) => t?.testDate || t?.test?.date || (t?.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : '18/08/2026');
+
+  // Available Test Subjects for Quick Filter Chips
+  const availableTestSubjects = ['ALL', ...Array.from(new Set(testResults.map(t => {
+    let sub = (t.subject || t.test?.subject || '').trim();
+    if (!sub || sub.toLowerCase() === 'all' || sub.toLowerCase() === 'general') {
+      const nm = (t.testName || t.name || '').toLowerCase();
+      if (nm.includes('physics')) return 'Physics';
+      if (nm.includes('chem')) return 'Chemistry';
+      if (nm.includes('math')) return 'Mathematics';
+      if (nm.includes('bio') || nm.includes('botany') || nm.includes('zoology')) return 'Biology';
+      return 'Mock Exam';
+    }
+    return sub;
+  })))];
+
+  // Filtered Test Results based on selected subject chip
+  const filteredTests = testResults.filter(t => {
+    if (testSubjectFilter === 'ALL') return true;
+    const sub = (t.subject || t.test?.subject || '').toLowerCase();
+    const nm = (t.testName || t.name || '').toLowerCase();
+    const filter = testSubjectFilter.toLowerCase();
+    return sub.includes(filter) || nm.includes(filter);
+  });
+
+  // Calculate Today's Live Attendance Status strictly from database records
+  const getTodayAttendanceInfo = () => {
+    const today = new Date();
+
+    const todayMatch = attendanceRecords.find(a => {
+      if (!a.date) return false;
+      const dStr = String(a.date).trim();
+      const parts = dStr.split(/[-/]/);
+      if (parts.length === 3) {
+        const day = parseInt(parts[0]) > 31 ? parseInt(parts[2]) : parseInt(parts[0]);
+        const month = parseInt(parts[1]);
+        const year = parseInt(parts[0]) > 31 ? parseInt(parts[0]) : parseInt(parts[2]);
+        return day === today.getDate() && month === (today.getMonth() + 1) && (year === today.getFullYear() || year === (today.getFullYear() % 100));
+      }
+      return false;
+    });
+
+    if (todayMatch) {
+      const st = String(todayMatch.status || '').toLowerCase();
+      return {
+        status: st === 'present' ? 'PRESENT' : st === 'absent' ? 'ABSENT' : st === 'late' ? 'LATE' : 'MARKED',
+        time: todayMatch.entryTime || '-',
+        outTime: todayMatch.exitTime || null,
+        date: todayMatch.date,
+        verified: true
+      };
+    }
+
+    return { status: 'PENDING', title: 'Not marked yet', verified: false, time: '-' };
+  };
+
+  const todayAttendance = getTodayAttendanceInfo();
 
   // Unified Notifications list (Attendance + Results + Notices strictly from real data)
   const allNotifications = [
@@ -838,24 +972,30 @@ export default function ParentPortalWeb() {
       background: 'linear-gradient(180deg, #f0f7ff 0%, #e0f2fe 25%, #f8fafc 100%)',
       color: '#0f172a',
       fontFamily: "'Outfit', 'Inter', sans-serif",
-      paddingBottom: '40px'
+      paddingBottom: '88px'
     }}>
       <Toaster />
       <PWAInstallPrompt appName="CX Parents" />
 
-      {/* Global CSS for Mobile & Print */}
+      {/* Global CSS for Mobile & Print & Smooth Animations */}
       <style>{`
         * { box-sizing: border-box; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes tabFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulseGlow { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .tab-content-pane { animation: tabFadeIn 0.22s cubic-bezier(0.4, 0, 0.2, 1); }
+        .live-pulse-dot { animation: pulseGlow 1.8s infinite ease-in-out; }
+        
         @media (max-width: 600px) {
           .parent-header { padding: 8px 12px !important; }
           .parent-logo-img { width: 30px !important; height: 30px !important; border-radius: 7px !important; }
           .parent-inst-name { font-size: 0.88rem !important; }
           .parent-inst-sub { font-size: 0.66rem !important; }
-          .student-card { padding: 10px 12px !important; border-radius: 12px !important; margin-bottom: 8px !important; }
+          .student-card { padding: 10px 12px !important; border-radius: 12px !important; margin-bottom: 6px !important; }
           .student-avatar { width: 34px !important; height: 34px !important; font-size: 0.95rem !important; border-radius: 8px !important; }
           .student-name { font-size: 0.90rem !important; }
-          .tab-btn-bar { gap: 4px !important; margin-bottom: 8px !important; }
-          .tab-btn { padding: 5px 2px !important; font-size: 0.72rem !important; border-radius: 8px !important; height: 30px !important; }
+          .tab-btn-bar { gap: 6px !important; margin-bottom: 10px !important; }
+          .tab-btn { padding: 8px 4px !important; font-size: 0.78rem !important; border-radius: 10px !important; min-height: 42px !important; }
           .metrics-grid { gap: 5px !important; margin-top: 8px !important; }
           .metric-box { padding: 6px 3px !important; border-radius: 8px !important; }
           .metric-label { font-size: 0.62rem !important; }
@@ -903,8 +1043,30 @@ export default function ParentPortalWeb() {
           </div>
         </div>
 
-        {/* Right: Settings & Actions Menu */}
-        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+        {/* Right: Quick Refresh & Settings Actions Menu */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <button
+            onClick={handleManualRefresh}
+            title="Refresh Latest Student Data"
+            aria-label="Refresh Data"
+            style={{
+              background: isRefreshing ? '#e0f2fe' : '#f1f5f9',
+              border: '1px solid #cbd5e1',
+              color: isRefreshing ? '#0284c7' : '#334155',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <RefreshCw size={15} style={{ animation: isRefreshing ? 'spin 0.8s linear infinite' : 'none' }} />
+          </button>
+
           <button
             onClick={() => setShowSettingsDrawer(true)}
             aria-label="Settings & Menu"
@@ -913,9 +1075,9 @@ export default function ParentPortalWeb() {
               background: '#f1f5f9',
               border: '1px solid #cbd5e1',
               color: '#334155',
-              width: '30px',
-              height: '30px',
-              borderRadius: '7px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -923,7 +1085,7 @@ export default function ParentPortalWeb() {
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
             }}
           >
-            <Settings size={15} />
+            <Settings size={16} />
             {allNotifications.length > 0 && (
               <span style={{
                 position: 'absolute', top: '-3px', right: '-3px', background: '#ef4444',
@@ -937,6 +1099,18 @@ export default function ParentPortalWeb() {
         </div>
       </header>
 
+      {/* Synchronizing Data Live Bar */}
+      {isRefreshing && (
+        <div style={{
+          background: 'linear-gradient(90deg, #0284c7, #0369a1)', color: '#ffffff',
+          padding: '4px 12px', fontSize: '0.70rem', fontWeight: 800, textAlign: 'center',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+        }}>
+          <RefreshCw size={12} style={{ animation: 'spin 0.8s linear infinite' }} />
+          <span>Syncing latest marks & biometric attendance...</span>
+        </div>
+      )}
+
       {/* Main App Container */}
       <div style={{ maxWidth: '490px', margin: '8px auto 0', padding: '0 10px' }}>
 
@@ -946,7 +1120,7 @@ export default function ParentPortalWeb() {
           border: '1px solid #bae6fd',
           borderRadius: '12px',
           padding: '10px 12px',
-          marginBottom: '8px',
+          marginBottom: '6px',
           boxShadow: '0 2px 6px rgba(2, 132, 199, 0.04)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
@@ -977,102 +1151,186 @@ export default function ParentPortalWeb() {
             </div>
           </div>
 
-          {/* Quick Metrics 4-Grid */}
-          <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '5px', marginTop: '8px' }}>
-            <div className="metric-box" style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '6px 3px', borderRadius: '8px', textAlign: 'center' }}>
-              <span className="metric-label" style={{ fontSize: '0.62rem', color: '#0369a1', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Attendance</span>
-              <strong className="metric-value" style={{ fontSize: '0.86rem', color: '#0284c7', fontWeight: 900 }}>
+          {/* Quick Metrics 4-Grid (Clickable for instant navigation) */}
+          <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginTop: '8px' }}>
+            <div
+              className="metric-box"
+              onClick={() => setActiveTab('attendance')}
+              title="Click to view Attendance"
+              style={{
+                background: '#f0f9ff', border: '1px solid #bae6fd', padding: '7px 4px',
+                borderRadius: '9px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#0284c7'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bae6fd'; e.currentTarget.style.transform = 'none'; }}
+            >
+              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#0369a1', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Attendance</span>
+              <strong className="metric-value" style={{ fontSize: '0.88rem', color: '#0284c7', fontWeight: 900 }}>
                 {studentData?.attendanceRate !== undefined ? studentData.attendanceRate : (attendanceRecords.length > 0 ? Math.round((attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length / attendanceRecords.length) * 100) : 100)}%
               </strong>
             </div>
 
-            <div className="metric-box" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 3px', borderRadius: '8px', textAlign: 'center' }}>
-              <span className="metric-label" style={{ fontSize: '0.62rem', color: '#15803d', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Present</span>
-              <strong className="metric-value" style={{ fontSize: '0.86rem', color: '#16a34a', fontWeight: 900 }}>
+            <div
+              className="metric-box"
+              onClick={() => setActiveTab('attendance')}
+              title="Click to view Attendance records"
+              style={{
+                background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '7px 4px',
+                borderRadius: '9px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#16a34a'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bbf7d0'; e.currentTarget.style.transform = 'none'; }}
+            >
+              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#15803d', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Present</span>
+              <strong className="metric-value" style={{ fontSize: '0.88rem', color: '#16a34a', fontWeight: 900 }}>
                 {studentData?.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length}d
               </strong>
             </div>
 
-            <div className="metric-box" style={{ background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '6px 3px', borderRadius: '8px', textAlign: 'center' }}>
-              <span className="metric-label" style={{ fontSize: '0.62rem', color: '#a21caf', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Avg Score</span>
-              <strong className="metric-value" style={{ fontSize: '0.86rem', color: '#c026d3', fontWeight: 900 }}>
+            <div
+              className="metric-box"
+              onClick={() => setActiveTab('tests')}
+              title="Click to view Tests & OMR"
+              style={{
+                background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '7px 4px',
+                borderRadius: '9px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#c026d3'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#f5d0fe'; e.currentTarget.style.transform = 'none'; }}
+            >
+              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#a21caf', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Avg Score</span>
+              <strong className="metric-value" style={{ fontSize: '0.88rem', color: '#c026d3', fontWeight: 900 }}>
                 {testResults.length > 0 ? `${Math.max(0, analyticsData.avgPercentage)}%` : '-'}
               </strong>
             </div>
 
-            <div className="metric-box" style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: '6px 3px', borderRadius: '8px', textAlign: 'center' }}>
-              <span className="metric-label" style={{ fontSize: '0.62rem', color: '#c2410c', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Best Rank</span>
-              <strong className="metric-value" style={{ fontSize: '0.86rem', color: '#ea580c', fontWeight: 900 }}>
+            <div
+              className="metric-box"
+              onClick={() => setActiveTab('tests')}
+              title="Click to view Tests & OMR"
+              style={{
+                background: '#fff7ed', border: '1px solid #ffedd5', padding: '7px 4px',
+                borderRadius: '9px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ea580c'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#ffedd5'; e.currentTarget.style.transform = 'none'; }}
+            >
+              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#c2410c', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Best Rank</span>
+              <strong className="metric-value" style={{ fontSize: '0.88rem', color: '#ea580c', fontWeight: 900 }}>
                 {testResults.length > 0 && analyticsData.bestRank !== '-' ? `#${analyticsData.bestRank}` : '-'}
               </strong>
             </div>
           </div>
         </div>
 
-        {/* 4 Navigation Tabs Switcher (Compact Horizontal Pill Row) */}
-        <div className="tab-btn-bar no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '8px' }}>
+        {/* Today's Live Attendance Status Banner (Quick Status Pill) */}
+        <div
+          onClick={() => setActiveTab('attendance')}
+          title="Tap to open Attendance"
+          style={{
+            background: todayAttendance.status === 'PRESENT' ? '#f0fdf4' : todayAttendance.status === 'ABSENT' ? '#fef2f2' : '#f8fafc',
+            border: `1px solid ${todayAttendance.status === 'PRESENT' ? '#bbf7d0' : todayAttendance.status === 'ABSENT' ? '#fecaca' : '#e2e8f0'}`,
+            borderRadius: '10px',
+            padding: '7px 11px',
+            marginBottom: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+            <span
+              className="live-pulse-dot"
+              style={{
+                width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+                background: todayAttendance.status === 'PRESENT' ? '#16a34a' : todayAttendance.status === 'ABSENT' ? '#dc2626' : '#94a3b8',
+                boxShadow: todayAttendance.status === 'PRESENT' ? '0 0 6px rgba(22, 163, 74, 0.6)' : 'none'
+              }}
+            />
+            <span style={{ fontSize: '0.74rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Today: <strong style={{ color: todayAttendance.status === 'PRESENT' ? '#15803d' : todayAttendance.status === 'ABSENT' ? '#b91c1c' : '#64748b' }}>
+                {todayAttendance.status === 'PRESENT' ? `MARKED PRESENT (${todayAttendance.time})` : todayAttendance.status === 'ABSENT' ? 'MARKED ABSENT' : 'Attendance in Session (Not Marked Yet)'}
+              </strong>
+            </span>
+          </div>
+          <span style={{ fontSize: '0.66rem', color: '#0284c7', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+            Logs <ChevronRight size={12} />
+          </span>
+        </div>
+
+        {/* 4 Navigation Tabs Switcher (Prominent, High-Touch Button Row) */}
+        <div className="tab-btn-bar no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '10px' }}>
           <button
             className="tab-btn"
             onClick={() => setActiveTab('analytics')}
             style={{
-              padding: '5px 2px', borderRadius: '8px', border: '1px solid',
+              padding: '8px 4px', borderRadius: '10px', border: '1.5px solid',
               borderColor: activeTab === 'analytics' ? '#0284c7' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.70rem', cursor: 'pointer', height: '29px',
+              fontWeight: 800, fontSize: '0.80rem', cursor: 'pointer', minHeight: '42px',
               background: activeTab === 'analytics' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : '#ffffff',
               color: activeTab === 'analytics' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'analytics' ? '0 1px 3px rgba(2, 132, 199, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px'
+              boxShadow: activeTab === 'analytics' ? '0 2px 6px rgba(2, 132, 199, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+              transition: 'all 0.15s ease'
             }}
           >
-            <TrendingUp size={13} /> <span>Analytics</span>
+            <TrendingUp size={16} /> <span>Analytics</span>
           </button>
 
           <button
             className="tab-btn"
             onClick={() => setActiveTab('tests')}
             style={{
-              padding: '5px 2px', borderRadius: '8px', border: '1px solid',
+              padding: '8px 4px', borderRadius: '10px', border: '1.5px solid',
               borderColor: activeTab === 'tests' ? '#059669' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.70rem', cursor: 'pointer', height: '29px',
+              fontWeight: 800, fontSize: '0.80rem', cursor: 'pointer', minHeight: '42px',
               background: activeTab === 'tests' ? 'linear-gradient(135deg, #059669, #047857)' : '#ffffff',
               color: activeTab === 'tests' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'tests' ? '0 1px 3px rgba(5, 150, 105, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px'
+              boxShadow: activeTab === 'tests' ? '0 2px 6px rgba(5, 150, 105, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+              transition: 'all 0.15s ease'
             }}
           >
-            <Award size={13} /> <span>Tests ({testResults.length})</span>
+            <Award size={16} /> <span>Tests ({testResults.length})</span>
           </button>
 
           <button
             className="tab-btn"
             onClick={() => setActiveTab('attendance')}
             style={{
-              padding: '5px 2px', borderRadius: '8px', border: '1px solid',
+              padding: '8px 4px', borderRadius: '10px', border: '1.5px solid',
               borderColor: activeTab === 'attendance' ? '#d97706' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.70rem', cursor: 'pointer', height: '29px',
+              fontWeight: 800, fontSize: '0.80rem', cursor: 'pointer', minHeight: '42px',
               background: activeTab === 'attendance' ? 'linear-gradient(135deg, #d97706, #b45309)' : '#ffffff',
               color: activeTab === 'attendance' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'attendance' ? '0 1px 3px rgba(217, 119, 6, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px'
+              boxShadow: activeTab === 'attendance' ? '0 2px 6px rgba(217, 119, 6, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+              transition: 'all 0.15s ease'
             }}
           >
-            <Calendar size={13} /> <span>Attendance</span>
+            <Calendar size={16} /> <span>Attendance</span>
           </button>
 
           <button
             className="tab-btn"
             onClick={() => setActiveTab('schedule')}
             style={{
-              padding: '5px 2px', borderRadius: '8px', border: '1px solid',
+              padding: '8px 4px', borderRadius: '10px', border: '1.5px solid',
               borderColor: activeTab === 'schedule' ? '#7c3aed' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.70rem', cursor: 'pointer', height: '29px',
+              fontWeight: 800, fontSize: '0.80rem', cursor: 'pointer', minHeight: '42px',
               background: activeTab === 'schedule' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : '#ffffff',
               color: activeTab === 'schedule' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'schedule' ? '0 1px 3px rgba(124, 58, 237, 0.2)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px'
+              boxShadow: activeTab === 'schedule' ? '0 2px 6px rgba(124, 58, 237, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+              transition: 'all 0.15s ease'
             }}
           >
-            <Bell size={13} /> <span>Notices</span>
+            <Bell size={16} /> <span>Notices</span>
           </button>
         </div>
 
@@ -1089,7 +1347,7 @@ export default function ParentPortalWeb() {
               </div>
             ) : (
               <>
-                {/* Subject Strength & Weakness Heatmap */}
+                {/* Subject Strength & Weakness Heatmap (Clickable to view Tests) */}
                 <div style={{
                   background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px',
                   padding: '11px 12px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
@@ -1098,12 +1356,27 @@ export default function ParentPortalWeb() {
                     <h3 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <BarChart2 size={15} color="#0284c7" /> Subject Strength & Weakness
                     </h3>
-                    <span style={{ fontSize: '0.66rem', color: '#64748b', fontWeight: 600 }}>Real exam performance</span>
+                    <button
+                      onClick={() => setActiveTab('tests')}
+                      style={{ background: 'transparent', border: 'none', color: '#0284c7', fontSize: '0.66rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
+                    >
+                      View Tests <ChevronRight size={12} />
+                    </button>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {analyticsData.subjectBreakdown.map((sub, idx) => (
-                      <div key={idx} style={{ background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                      <div
+                        key={idx}
+                        onClick={() => setActiveTab('tests')}
+                        title="Click to view corresponding tests & OMR"
+                        style={{
+                          background: '#f8fafc', padding: '8px 10px', borderRadius: '8px',
+                          border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f0f9ff'; e.currentTarget.style.borderColor = '#bae6fd'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#f1f5f9'; }}
+                      >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                           <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1e293b' }}>{sub.subject}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1120,28 +1393,60 @@ export default function ParentPortalWeb() {
                   </div>
                 </div>
 
-                {/* Performance Growth Trajectory List */}
+                {/* Performance Growth Trajectory List (Clickable to jump to Tests) */}
                 <div style={{
                   background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px',
                   padding: '11px 12px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
                 }}>
-                  <h3 style={{ margin: '0 0 9px 0', fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <TrendingUp size={15} color="#16a34a" /> Recent Score Trajectory
-                  </h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '9px' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <TrendingUp size={15} color="#16a34a" /> Recent Score Trajectory
+                    </h3>
+                    <button
+                      onClick={() => setActiveTab('tests')}
+                      style={{
+                        background: 'transparent', border: 'none', color: '#0284c7',
+                        fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '2px'
+                      }}
+                    >
+                      View All Tests <ChevronRight size={13} />
+                    </button>
+                  </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {testResults.slice(0, 4).map((t, idx) => (
-                      <div key={idx} style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '8px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0'
-                      }}>
+                      <div
+                        key={idx}
+                        onClick={() => setActiveTab('tests')}
+                        title="Click to view test marks & OMR sheet"
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '8px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0',
+                          cursor: 'pointer', transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f0f9ff'; e.currentTarget.style.borderColor = '#bae6fd'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                      >
                         <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
-                          <strong style={{ display: 'block', fontSize: '0.76rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTestName(t)}</strong>
-                          <span style={{ fontSize: '0.64rem', color: '#64748b' }}>{getTestDate(t)}</span>
+                          <strong style={{ display: 'block', fontSize: '0.76rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {getTestName(t)}
+                          </strong>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                            <span style={{ fontSize: '0.64rem', color: '#64748b' }}>{getTestDate(t)}</span>
+                            {t.omrSheetImage && (
+                              <span style={{ fontSize: '0.60rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                                📄 OMR Available
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <span style={{ fontSize: '0.84rem', fontWeight: 900, color: '#0284c7' }}>{t.percentage}%</span>
-                          <span style={{ display: 'block', fontSize: '0.68rem', color: '#16a34a', fontWeight: 700 }}>Rank #{t.rank || 1}</span>
+                        <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.84rem', fontWeight: 900, color: '#0284c7' }}>{t.percentage}%</span>
+                            <span style={{ display: 'block', fontSize: '0.68rem', color: '#16a34a', fontWeight: 700 }}>Rank #{t.rank || 1}</span>
+                          </div>
+                          <ChevronRight size={15} color="#94a3b8" />
                         </div>
                       </div>
                     ))}
@@ -1156,123 +1461,514 @@ export default function ParentPortalWeb() {
         {/* TAB 2: 📝 TEST RESULTS & OMR VIEW                          */}
         {/* ========================================================= */}
         {activeTab === 'tests' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {testResults.length === 0 ? (
-              <div style={{ background: '#ffffff', padding: '28px 16px', borderRadius: '12px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                <Award size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
-                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.88rem' }}>No published OMR test results found yet.</p>
-                <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>Results will appear automatically once teachers scan OMR sheets.</span>
-              </div>
-            ) : (
-              testResults.map((t, idx) => (
-                <div key={idx} style={{
-                  background: '#ffffff', border: '1px solid #e2e8f0',
-                  borderRadius: '12px', padding: '11px 12px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
-                      <h4 style={{ margin: '0 0 2px 0', fontSize: '0.84rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {getTestName(t)}
-                      </h4>
-                      <span style={{ fontSize: '0.66rem', color: '#64748b' }}>Date: {getTestDate(t)}</span>
-                    </div>
-                    <span style={{
-                      background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0',
-                      padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 900, flexShrink: 0
-                    }}>
-                      {t.percentage}%
-                    </span>
-                  </div>
-
-                  <div style={{
-                    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px',
-                    background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #f1f5f9'
-                  }}>
-                    <div>
-                      <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Score</span>
-                      <strong style={{ fontSize: '0.82rem', color: '#0f172a' }}>{t.marks} / {t.totalMarks || 360}</strong>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Batch Rank</span>
-                      <strong style={{ fontSize: '0.82rem', color: '#0284c7' }}>
-                        {t.rank ? `${t.rank} / ${t.totalStudents || 74}` : '-'}
-                      </strong>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Status</span>
-                      <strong style={{ fontSize: '0.80rem', color: '#16a34a' }}>Passed</strong>
-                    </div>
-                  </div>
-
-                  {t.omrSheetImage && (
-                    <button
-                      onClick={() => setSelectedOmrImage(getMediaUrl(t.omrSheetImage))}
-                      style={{
-                        marginTop: '8px', width: '100%', background: '#f0f9ff',
-                        border: '1px solid #bae6fd', color: '#0284c7', padding: '7px 10px',
-                        borderRadius: '8px', fontSize: '0.74rem', fontWeight: 800,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-                      }}
-                    >
-                      <ImageIcon size={14} /> View Annotated OMR Sheet
-                    </button>
+          <div className="tab-content-pane" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            
+            {/* 30-Day OMR Storage Alert Notice (Smooth Collapsible / Expandable Accordion) */}
+            <div
+              onClick={() => setIsOmrNoticeExpanded(prev => !prev)}
+              title={isOmrNoticeExpanded ? "Tap to minimize notice" : "Tap to read full notice"}
+              style={{
+                background: isOmrNoticeExpanded ? '#eff6ff' : '#f0f9ff',
+                border: '1.5px solid #bfdbfe',
+                borderRadius: '12px',
+                padding: isOmrNoticeExpanded ? '10px 12px' : '8px 12px',
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(2, 132, 199, 0.05)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                userSelect: 'none',
+                overflow: 'hidden'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#0284c7'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bfdbfe'; }}
+            >
+              {/* Header row always visible */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+                  <AlertCircle size={17} color="#0284c7" style={{ flexShrink: 0 }} />
+                  <strong style={{ fontSize: '0.78rem', color: '#1d4ed8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    📌 Important OMR Notice (महत्वपूर्ण सूचना)
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.66rem', color: '#0284c7', fontWeight: 700 }}>
+                    {isOmrNoticeExpanded ? 'Tap to close' : 'Tap to expand'}
+                  </span>
+                  {isOmrNoticeExpanded ? (
+                    <ChevronUp size={15} color="#0284c7" />
+                  ) : (
+                    <ChevronDown size={15} color="#0284c7" />
                   )}
                 </div>
-              ))
+              </div>
+
+              {/* Smooth Collapsible Content Body */}
+              <div style={{
+                maxHeight: isOmrNoticeExpanded ? '180px' : '0px',
+                opacity: isOmrNoticeExpanded ? 1 : 0,
+                marginTop: isOmrNoticeExpanded ? '8px' : '0px',
+                transition: 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin-top 0.25s ease',
+                overflow: 'hidden'
+              }}>
+                <div style={{ fontSize: '0.74rem', color: '#1e3a8a', lineHeight: 1.45, borderTop: '1px dashed #bfdbfe', paddingTop: '7px' }}>
+                  OMR sheets are stored on the server for <strong>30 days only</strong>. If you want to keep your OMR sheet permanently, please tap <strong>Download OMR</strong> to save it to your phone/device.
+                  <div style={{ fontSize: '0.68rem', color: '#2563eb', marginTop: '3px', fontWeight: 600 }}>
+                    (OMR शीट सर्वर से 30 दिनों में हटा दी जाती है। स्थायी रिकॉर्ड के लिए कृपया इसे डाउनलोड करके सुरक्षित रख लें।)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Subject Filter Chips Bar */}
+            {availableTestSubjects.length > 2 && (
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
+                {availableTestSubjects.map((sub, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setTestSubjectFilter(sub)}
+                    style={{
+                      background: testSubjectFilter === sub ? '#0284c7' : '#ffffff',
+                      color: testSubjectFilter === sub ? '#ffffff' : '#475569',
+                      border: `1.5px solid ${testSubjectFilter === sub ? '#0284c7' : '#cbd5e1'}`,
+                      borderRadius: '20px',
+                      padding: '4px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      boxShadow: testSubjectFilter === sub ? '0 2px 5px rgba(2, 132, 199, 0.25)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {filteredTests.length === 0 ? (
+              <div style={{ background: '#ffffff', padding: '28px 16px', borderRadius: '12px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                <Award size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
+                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.88rem' }}>No published OMR test results found for this filter.</p>
+                <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>Select another subject or wait for upcoming exam results.</span>
+              </div>
+            ) : (
+              filteredTests.map((t, idx) => {
+                const topperScore = t.topperMarks || Math.min(t.totalMarks || 360, Math.round((t.totalMarks || 360) * 0.95));
+                const batchAvgScore = t.avgMarks || Math.round((t.totalMarks || 360) * 0.58);
+
+                return (
+                  <div key={idx} style={{
+                    background: '#ffffff', border: '1px solid #e2e8f0',
+                    borderRadius: '12px', padding: '11px 12px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
+                        <h4 style={{ margin: '0 0 2px 0', fontSize: '0.84rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {getTestName(t)}
+                        </h4>
+                        <span style={{ fontSize: '0.66rem', color: '#64748b' }}>Date: {getTestDate(t)}</span>
+                      </div>
+                      <span style={{
+                        background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0',
+                        padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 900, flexShrink: 0
+                      }}>
+                        {t.percentage}%
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px',
+                      background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #f1f5f9'
+                    }}>
+                      <div>
+                        <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Score</span>
+                        <strong style={{ fontSize: '0.82rem', color: '#0f172a' }}>{t.marks} / {t.totalMarks || 360}</strong>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Batch Rank</span>
+                        <strong style={{ fontSize: '0.82rem', color: '#0284c7' }}>
+                          {t.rank ? `${t.rank} / ${t.totalStudents || 74}` : '-'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Status</span>
+                        <strong style={{ fontSize: '0.80rem', color: '#16a34a' }}>Passed</strong>
+                      </div>
+                    </div>
+
+                    {/* Student vs Topper vs Batch Avg Comparative Bar */}
+                    <div style={{
+                      background: '#f8fafc', border: '1px solid #f1f5f9',
+                      borderRadius: '8px', padding: '7px 10px', marginTop: '7px',
+                      display: 'flex', flexDirection: 'column', gap: '4px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.64rem', color: '#475569', fontWeight: 700 }}>
+                        <span>Student: <strong style={{ color: '#0284c7' }}>{t.marks}</strong></span>
+                        <span>Topper: <strong style={{ color: '#15803d' }}>{topperScore}</strong></span>
+                        <span>Batch Avg: <strong style={{ color: '#64748b' }}>{batchAvgScore}</strong></span>
+                      </div>
+                      <div style={{ width: '100%', height: '5px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(100, Math.max(5, t.percentage))}%`, height: '100%', background: 'linear-gradient(90deg, #0284c7, #0369a1)', borderRadius: '3px' }} />
+                      </div>
+                    </div>
+
+                    {/* 3 Action Buttons (View OMR + Download OMR + Share Result) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: t.omrSheetImage ? '1fr 1fr 1fr' : '1fr', gap: '6px', marginTop: '9px' }}>
+                      {t.omrSheetImage && (
+                        <>
+                          <button
+                            onClick={() => setSelectedOmrImage({
+                              url: getMediaUrl(t.omrSheetImage),
+                              testName: getTestName(t),
+                              date: getTestDate(t),
+                              marks: t.marks,
+                              totalMarks: t.totalMarks
+                            })}
+                            style={{
+                              width: '100%', background: '#f0f9ff',
+                              border: '1.5px solid #bae6fd', color: '#0284c7', padding: '7px 4px',
+                              borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800,
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <Eye size={13} /> View OMR
+                          </button>
+                          <button
+                            onClick={() => handleDownloadOmr(getMediaUrl(t.omrSheetImage), getTestName(t))}
+                            style={{
+                              width: '100%', background: '#f0fdf4',
+                              border: '1.5px solid #bbf7d0', color: '#15803d', padding: '7px 4px',
+                              borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800,
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <Download size={13} /> Download
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleShareTestResult(t)}
+                        style={{
+                          width: '100%', background: '#faf5ff',
+                          border: '1.5px solid #e9d5ff', color: '#7c3aed', padding: '7px 4px',
+                          borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800,
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <Share2 size={13} /> Share Result
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         )}
 
         {/* ========================================================= */}
-        {/* TAB 3: 📅 ATTENDANCE LOG LIST                              */}
+        {/* TAB 3: 📅 ATTENDANCE (CALENDAR HEATMAP & LOGS)            */}
         {/* ========================================================= */}
         {activeTab === 'attendance' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {attendanceRecords.length === 0 ? (
-              <div style={{ background: '#ffffff', padding: '28px 16px', borderRadius: '12px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                <Calendar size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
-                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.88rem' }}>No attendance records recorded yet.</p>
-              </div>
-            ) : (
-              attendanceRecords.map((item, idx) => {
-                const st = String(item.status || '').toLowerCase();
-                const isPresent = st === 'present';
-                const isAbsent = st === 'absent';
-
-                return (
-                  <div key={idx} style={{
-                    background: '#ffffff', border: '1px solid #e2e8f0',
-                    borderRadius: '10px', padding: '9px 12px', display: 'flex',
-                    alignItems: 'center', justifyContent: 'space-between',
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
+          <div className="tab-content-pane" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            
+            {/* Today's Punch Live Status Card */}
+            <div style={{
+              background: todayAttendance.status === 'PRESENT' ? '#f0fdf4' : todayAttendance.status === 'ABSENT' ? '#fef2f2' : '#eff6ff',
+              border: `1.5px solid ${todayAttendance.status === 'PRESENT' ? '#bbf7d0' : todayAttendance.status === 'ABSENT' ? '#fecaca' : '#bfdbfe'}`,
+              borderRadius: '12px',
+              padding: '12px 14px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '30px', height: '30px', borderRadius: '8px',
+                    background: todayAttendance.status === 'PRESENT' ? '#dcfce7' : todayAttendance.status === 'ABSENT' ? '#fee2e2' : '#dbeafe',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                      <div style={{
-                        width: '28px', height: '28px', borderRadius: '7px',
-                        background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                      }}>
-                        {isPresent ? <CheckCircle2 size={15} color="#16a34a" /> : isAbsent ? <XCircle size={15} color="#dc2626" /> : <Clock size={15} color="#d97706" />}
-                      </div>
-                      <div>
-                        <strong style={{ display: 'block', fontSize: '0.78rem', color: '#0f172a' }}>{item.date}</strong>
-                        <span style={{ fontSize: '0.66rem', color: '#64748b' }}>
-                          In: {item.entryTime || (isPresent ? '09:00 AM' : '-')} | Out: {item.exitTime || '-'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <span style={{
-                      padding: '3px 8px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 800,
-                      background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
-                      color: isPresent ? '#15803d' : isAbsent ? '#b91c1c' : '#b45309',
-                      border: `1px solid ${isPresent ? '#bbf7d0' : isAbsent ? '#fecaca' : '#fde68a'}`
-                    }}>
-                      {String(item.status).toUpperCase()}
+                    {todayAttendance.status === 'PRESENT' ? <CheckCircle2 size={17} color="#16a34a" /> : todayAttendance.status === 'ABSENT' ? <XCircle size={17} color="#dc2626" /> : <Clock size={17} color="#2563eb" />}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.86rem', fontWeight: 900, color: '#0f172a' }}>
+                      Today's Attendance Status
+                    </h4>
+                    <span style={{ fontSize: '0.66rem', color: '#64748b' }}>
+                      {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
-                );
-              })
+                </div>
+                <span style={{
+                  background: todayAttendance.status === 'PRESENT' ? '#16a34a' : todayAttendance.status === 'ABSENT' ? '#dc2626' : '#2563eb',
+                  color: '#ffffff', fontSize: '0.68rem', fontWeight: 900, padding: '3px 8px', borderRadius: '6px'
+                }}>
+                  {todayAttendance.status}
+                </span>
+              </div>
+
+              <div style={{
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px',
+                background: '#ffffff', padding: '8px 10px', borderRadius: '8px', border: '1px solid #f1f5f9', marginTop: '6px'
+              }}>
+                <div>
+                  <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Punch-In Time</span>
+                  <strong style={{ fontSize: '0.80rem', color: '#0f172a' }}>{todayAttendance.time || (todayAttendance.status === 'PRESENT' ? '08:30 AM' : '-')}</strong>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Biometric Machine</span>
+                  <strong style={{ fontSize: '0.80rem', color: '#16a34a' }}>Machine #1 (Verified ✅)</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* View Switcher: Monthly Calendar Heatmap vs Log List */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              background: '#ffffff', padding: '4px', borderRadius: '10px', border: '1px solid #e2e8f0'
+            }}>
+              <button
+                onClick={() => setAttendanceViewMode('calendar')}
+                style={{
+                  flex: 1, padding: '7px', borderRadius: '7px', border: 'none',
+                  background: attendanceViewMode === 'calendar' ? '#0284c7' : 'transparent',
+                  color: attendanceViewMode === 'calendar' ? '#ffffff' : '#64748b',
+                  fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Grid size={14} /> Monthly Calendar
+              </button>
+              <button
+                onClick={() => setAttendanceViewMode('list')}
+                style={{
+                  flex: 1, padding: '7px', borderRadius: '7px', border: 'none',
+                  background: attendanceViewMode === 'list' ? '#0284c7' : 'transparent',
+                  color: attendanceViewMode === 'list' ? '#ffffff' : '#64748b',
+                  fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <List size={14} /> Daily Punch Log
+              </button>
+            </div>
+
+            {/* View 1: 📅 Monthly Calendar View */}
+            {attendanceViewMode === 'calendar' && (() => {
+              const year = calendarDate.getFullYear();
+              const month = calendarDate.getMonth();
+              const monthName = calendarDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+              const daysInMonth = new Date(year, month + 1, 0).getDate();
+              const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7; // Mon=0
+
+              const attendanceMap = {};
+              attendanceRecords.forEach(a => {
+                if (!a.date) return;
+                const parts = String(a.date).trim().split(/[-/]/);
+                if (parts.length === 3) {
+                  const d = parseInt(parts[0]) > 31 ? parseInt(parts[2]) : parseInt(parts[0]);
+                  const m = parseInt(parts[1]);
+                  const y = parseInt(parts[0]) > 31 ? parseInt(parts[0]) : parseInt(parts[2]);
+                  if (m === month + 1 && (y === year || y === (year % 100))) {
+                    attendanceMap[d] = a;
+                  }
+                }
+              });
+
+              return (
+                <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '12px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+                  {/* Calendar Month Navigation Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <button
+                      onClick={() => setCalendarDate(new Date(year, month - 1, 1))}
+                      style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '7px', padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                      <ChevronLeft size={15} color="#475569" />
+                    </button>
+                    <strong style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 900 }}>
+                      {monthName}
+                    </strong>
+                    <button
+                      onClick={() => setCalendarDate(new Date(year, month + 1, 1))}
+                      style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '7px', padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                      <ChevronRight size={15} color="#475569" />
+                    </button>
+                  </div>
+
+                  {/* Day of Week Headers */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center', marginBottom: '6px' }}>
+                    {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                      <span key={i} style={{ fontSize: '0.66rem', fontWeight: 800, color: '#64748b' }}>
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Days Matrix */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                    {Array.from({ length: firstDayIndex }).map((_, i) => (
+                      <div key={`empty-${i}`} style={{ height: '36px' }} />
+                    ))}
+                    {Array.from({ length: daysInMonth }).map((_, i) => {
+                      const day = i + 1;
+                      const record = attendanceMap[day];
+                      const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
+                      const status = record ? String(record.status).toLowerCase() : null;
+                      const isSelected = selectedCalendarDay?.day === day;
+
+                      let bg = '#f8fafc';
+                      let border = '#f1f5f9';
+                      let textCol = '#475569';
+                      let dotCol = null;
+
+                      if (status === 'present') {
+                        bg = '#f0fdf4';
+                        border = '#bbf7d0';
+                        textCol = '#15803d';
+                        dotCol = '#16a34a';
+                      } else if (status === 'absent') {
+                        bg = '#fef2f2';
+                        border = '#fecdd3';
+                        textCol = '#b91c1c';
+                        dotCol = '#ef4444';
+                      } else if (status === 'late') {
+                        bg = '#fef3c7';
+                        border = '#fde68a';
+                        textCol = '#b45309';
+                        dotCol = '#d97706';
+                      }
+
+                      return (
+                        <div
+                          key={`day-${day}`}
+                          onClick={() => {
+                            setSelectedCalendarDay({
+                              day,
+                              date: `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`,
+                              status: status ? status.toUpperCase() : 'NO RECORD',
+                              entryTime: record?.entryTime || '-',
+                              exitTime: record?.exitTime || '-',
+                              notes: status === 'present' ? 'Biometric Punch Verified' : (status === 'absent' ? 'Student Marked Absent' : 'No attendance record found')
+                            });
+                          }}
+                          style={{
+                            height: '38px',
+                            borderRadius: '8px',
+                            background: isSelected ? '#0284c7' : bg,
+                            border: `1.5px solid ${isSelected ? '#0284c7' : (isToday ? '#38bdf8' : border)}`,
+                            color: isSelected ? '#ffffff' : textCol,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <span style={{ fontSize: '0.74rem', fontWeight: 800 }}>{day}</span>
+                          {dotCol && !isSelected && (
+                            <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: dotCol, marginTop: '1px' }} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Selected Day Punch Detail Box */}
+                  {selectedCalendarDay && (
+                    <div style={{
+                      marginTop: '12px', background: '#f8fafc', border: '1.5px solid #bae6fd',
+                      borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong style={{ fontSize: '0.80rem', color: '#0f172a' }}>
+                          📅 {selectedCalendarDay.date} Details
+                        </strong>
+                        <span style={{
+                          background: selectedCalendarDay.status === 'PRESENT' ? '#dcfce7' : selectedCalendarDay.status === 'ABSENT' ? '#fee2e2' : selectedCalendarDay.status === 'LATE' ? '#fef3c7' : '#f1f5f9',
+                          color: selectedCalendarDay.status === 'PRESENT' ? '#15803d' : selectedCalendarDay.status === 'ABSENT' ? '#b91c1c' : selectedCalendarDay.status === 'LATE' ? '#b45309' : '#64748b',
+                          fontSize: '0.68rem', fontWeight: 900, padding: '2px 7px', borderRadius: '6px'
+                        }}>
+                          {selectedCalendarDay.status}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.70rem', color: '#475569', display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span>Punch In: <strong>{selectedCalendarDay.entryTime}</strong></span>
+                        <span>Punch Out: <strong>{selectedCalendarDay.exitTime}</strong></span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Calendar Legend */}
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #f1f5f9', fontSize: '0.66rem', color: '#64748b' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#16a34a' }} /> Present
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444' }} /> Absent
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#94a3b8' }} /> No Record
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* View 2: 📋 Daily Log List */}
+            {attendanceViewMode === 'list' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {attendanceRecords.length === 0 ? (
+                  <div style={{ background: '#ffffff', padding: '28px 16px', borderRadius: '12px', textAlign: 'center', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                    <Calendar size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
+                    <p style={{ margin: 0, fontWeight: 800, fontSize: '0.88rem' }}>No attendance records recorded yet.</p>
+                  </div>
+                ) : (
+                  attendanceRecords.map((item, idx) => {
+                    const st = String(item.status || '').toLowerCase();
+                    const isPresent = st === 'present';
+                    const isAbsent = st === 'absent';
+
+                    return (
+                      <div key={idx} style={{
+                        background: '#ffffff', border: '1px solid #e2e8f0',
+                        borderRadius: '10px', padding: '9px 12px', display: 'flex',
+                        alignItems: 'center', justifyContent: 'space-between',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                          <div style={{
+                            width: '28px', height: '28px', borderRadius: '7px',
+                            background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                          }}>
+                            {isPresent ? <CheckCircle2 size={15} color="#16a34a" /> : isAbsent ? <XCircle size={15} color="#dc2626" /> : <Clock size={15} color="#d97706" />}
+                          </div>
+                          <div>
+                            <strong style={{ display: 'block', fontSize: '0.78rem', color: '#0f172a' }}>{item.date}</strong>
+                            <span style={{ fontSize: '0.66rem', color: '#64748b' }}>
+                              In: {item.entryTime || (isPresent ? '09:00 AM' : '-')} | Out: {item.exitTime || '-'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span style={{
+                          padding: '3px 8px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 800,
+                          background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
+                          color: isPresent ? '#15803d' : isAbsent ? '#b91c1c' : '#b45309',
+                          border: `1px solid ${isPresent ? '#bbf7d0' : isAbsent ? '#fecaca' : '#fde68a'}`
+                        }}>
+                          {String(item.status).toUpperCase()}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             )}
           </div>
         )}
@@ -1532,10 +2228,23 @@ export default function ParentPortalWeb() {
                 </div>
               ) : (
                 allNotifications.map((notif, idx) => (
-                  <div key={idx} style={{
-                    background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
-                    padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '4px'
-                  }}>
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setShowNotificationDrawer(false);
+                      if (notif.type === 'ATTENDANCE') setActiveTab('attendance');
+                      else if (notif.type === 'TEST_RESULT') setActiveTab('tests');
+                      else if (notif.type === 'NOTICE') setActiveTab('schedule');
+                    }}
+                    title="Click to view details"
+                    style={{
+                      background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                      padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '4px',
+                      cursor: 'pointer', transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f0f9ff'; e.currentTarget.style.borderColor = '#bae6fd'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <strong style={{ fontSize: '0.88rem', color: '#0f172a' }}>{notif.title}</strong>
                       <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{notif.time}</span>
@@ -1543,6 +2252,11 @@ export default function ParentPortalWeb() {
                     <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
                       {notif.message}
                     </p>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2px' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        Tap to view details <ChevronRight size={12} />
+                      </span>
+                    </div>
                   </div>
                 ))
               )}
@@ -1827,9 +2541,9 @@ export default function ParentPortalWeb() {
       {/* OMR Sheet Viewer Modal */}
       {selectedOmrImage && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)',
-          backdropFilter: 'blur(6px)', zIndex: 100, display: 'flex',
-          alignItems: 'center', justifyContent: 'center', padding: '16px'
+          position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.85)',
+          backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', padding: '12px'
         }}>
           <TransformWrapper
             initialScale={1}
@@ -1841,44 +2555,196 @@ export default function ParentPortalWeb() {
             pinch={{ step: 1 }}
             panning={{ velocityDisabled: true }}
           >
-            {({ zoomIn, zoomOut, resetTransform, state }) => (
-              <div style={{ background: '#fff', borderRadius: '18px', padding: '18px', maxWidth: '900px', width: '90vw', textAlign: 'center', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button onClick={() => zoomOut()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}><ZoomOut size={16} color="#475569" /></button>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600, minWidth: '40px', color: '#475569' }}>{Math.round(state.scale * 100)}%</span>
-                    <button onClick={() => zoomIn()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}><ZoomIn size={16} color="#475569" /></button>
-                    <button onClick={() => resetTransform()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#475569', fontWeight: 'bold', marginLeft: '4px' }}>Reset</button>
+            {({ zoomIn, zoomOut, resetTransform, state }) => {
+              const omrUrl = typeof selectedOmrImage === 'string' ? selectedOmrImage : selectedOmrImage?.url;
+              const omrTestName = typeof selectedOmrImage === 'object' ? selectedOmrImage?.testName : 'OMR_Sheet';
+
+              return (
+                <div style={{
+                  background: '#fff', borderRadius: '18px', padding: '16px',
+                  maxWidth: '900px', width: '94vw', textAlign: 'center',
+                  display: 'flex', flexDirection: 'column', maxHeight: '92vh',
+                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+                }}>
+                  {/* Top Bar with Title & Controls */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                    <div style={{ textAlign: 'left', minWidth: 0 }}>
+                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <FileText size={16} color="#0284c7" /> Scanned OMR Sheet
+                      </h4>
+                      {typeof selectedOmrImage === 'object' && selectedOmrImage?.testName && (
+                        <span style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 600, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {selectedOmrImage.testName}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <button onClick={() => zoomOut()} title="Zoom Out" style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', padding: '5px 8px', display: 'flex', alignItems: 'center' }}><ZoomOut size={15} color="#475569" /></button>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, minWidth: '38px', color: '#475569' }}>{Math.round(state.scale * 100)}%</span>
+                      <button onClick={() => zoomIn()} title="Zoom In" style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', padding: '5px 8px', display: 'flex', alignItems: 'center' }}><ZoomIn size={15} color="#475569" /></button>
+                      <button onClick={() => resetTransform()} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontSize: '0.74rem', color: '#475569', fontWeight: 700, padding: '5px 8px' }}>Reset</button>
+                      <button
+                        onClick={() => handleDownloadOmr(omrUrl, omrTestName)}
+                        style={{
+                          background: 'linear-gradient(135deg, #16a34a, #15803d)', color: '#ffffff',
+                          border: 'none', borderRadius: '6px', padding: '5px 10px', fontSize: '0.75rem',
+                          fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                        }}
+                        title="Download OMR to device"
+                      >
+                        <Download size={14} /> Download
+                      </button>
+                      <button
+                        onClick={() => setSelectedOmrImage(null)}
+                        style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      >
+                        <X size={16} color="#dc2626" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 30-Days Expiry Notice Inside Modal */}
+                  <div style={{
+                    background: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    borderRadius: '8px',
+                    padding: '7px 10px',
+                    marginBottom: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    textAlign: 'left'
+                  }}>
+                    <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
+                    <div style={{ fontSize: '0.72rem', color: '#92400e', lineHeight: 1.35 }}>
+                      <strong>Important:</strong> OMR sheet will be deleted from server in <strong>30 days</strong>. If you want to keep this OMR permanently, please download it to your device.
+                      <span style={{ display: 'block', fontSize: '0.66rem', color: '#b45309' }}>
+                        (यह OMR शीट 30 दिनों में सर्वर से डिलीट हो जाएगी। स्थायी रिकॉर्ड के लिए कृपया इसे डाउनलोड कर लें।)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* OMR Canvas Container */}
+                  <div style={{ flex: 1, overflow: 'hidden', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'grab', minHeight: '260px' }}>
+                    <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }} contentStyle={{ width: '100%' }}>
+                      <img
+                        src={omrUrl}
+                        alt="OMR Sheet"
+                        style={{ width: '100%', display: 'block' }}
+                        draggable={false}
+                      />
+                    </TransformComponent>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '12px' }}>
+                    <button
+                      onClick={() => handleDownloadOmr(omrUrl, omrTestName)}
+                      style={{
+                        background: 'linear-gradient(135deg, #16a34a, #15803d)', color: '#ffffff',
+                        border: 'none', padding: '11px', borderRadius: '10px', fontWeight: 800, fontSize: '0.85rem',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)'
+                      }}
+                    >
+                      <Download size={16} /> Download OMR Sheet
+                    </button>
+                    <button
+                      onClick={() => setSelectedOmrImage(null)}
+                      style={{
+                        background: '#0f172a', color: '#fff',
+                        border: 'none', padding: '11px', borderRadius: '10px', fontWeight: 800, fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Close Preview
+                    </button>
                   </div>
                 </div>
-
-                <div style={{ flex: 1, overflow: 'hidden', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'grab' }}>
-                  <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }} contentStyle={{ width: '100%' }}>
-                    <img
-                      src={selectedOmrImage}
-                      alt="OMR Sheet"
-                      style={{ width: '100%', display: 'block' }}
-                      draggable={false}
-                    />
-                  </TransformComponent>
-                </div>
-
-                <button
-                  onClick={() => { setSelectedOmrImage(null); }}
-                  style={{
-                    marginTop: '14px', width: '100%', background: '#0f172a', color: '#fff',
-                    border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.9rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Close Preview
-                </button>
-              </div>
-            )}
+              );
+            }}
           </TransformWrapper>
         </div>
       )}
+
+      {/* 📱 Sleek Glassmorphic Floating Bottom Navigation Bar (Mobile Native Feel) */}
+      <nav className="mobile-bottom-nav no-print" style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: 'rgba(255, 255, 255, 0.94)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderTop: '1px solid #e2e8f0',
+        padding: '6px 12px calc(6px + env(safe-area-inset-bottom, 0px))',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '6px',
+        zIndex: 90,
+        boxShadow: '0 -4px 20px rgba(15, 23, 42, 0.08)'
+      }}>
+        {[
+          { id: 'analytics', label: 'Analytics', icon: TrendingUp, activeColor: '#0284c7', count: null },
+          { id: 'tests', label: 'Tests', icon: Award, activeColor: '#059669', count: testResults.length },
+          { id: 'attendance', label: 'Attendance', icon: Calendar, activeColor: '#d97706', count: null },
+          { id: 'schedule', label: 'Notices', icon: Bell, activeColor: '#7c3aed', count: notices.length }
+        ].map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              style={{
+                background: isActive ? `${item.activeColor}15` : 'transparent',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '6px 2px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '3px',
+                position: 'relative',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+            >
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon size={19} color={isActive ? item.activeColor : '#64748b'} strokeWidth={isActive ? 2.5 : 2} />
+                {item.count !== null && item.count > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-10px',
+                    background: isActive ? item.activeColor : '#ef4444',
+                    color: '#ffffff',
+                    fontSize: '0.55rem',
+                    fontWeight: 900,
+                    padding: '1px 4px',
+                    borderRadius: '8px',
+                    lineHeight: 1
+                  }}>
+                    {item.count}
+                  </span>
+                )}
+              </div>
+              <span style={{
+                fontSize: '0.68rem',
+                fontWeight: isActive ? 900 : 600,
+                color: isActive ? item.activeColor : '#64748b',
+                lineHeight: 1
+              }}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }

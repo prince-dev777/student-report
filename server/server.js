@@ -3507,6 +3507,7 @@ app.put('/api/notifications/:id/read', async (req, res) => {
       { new: true }
     );
     if (!notification) return res.status(404).json({ error: 'Notification not found' });
+    triggerBackgroundCloudSync();
     res.json(notification);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -3531,6 +3532,7 @@ app.post('/api/sms-logs', async (req, res) => {
     }
     const log = new SMSLog({ ...body, instituteId: req.user.instituteId });
     await log.save();
+    triggerBackgroundCloudSync();
     res.status(201).json(log);
   } catch (err) {
     res.status(400).json({ error: err.message });
