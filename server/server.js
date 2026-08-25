@@ -63,6 +63,20 @@ import {
 } from './services/voiceAiService.js';
 import { compilePdf } from './services/testSeriesPdfService.js';
 import { logInfo, logError, logWarn, getRecentLogs, getLogsDir } from './utils/logger.js';
+import { connectLocalDb, isLocalDbReady } from './db/localDb.js';
+import { connectCloudDb, isCloudDbAvailable } from './db/cloudDb.js';
+import { 
+  performFullSync, 
+  pullAndRestoreFromCloud, 
+  triggerBackgroundSync, 
+  startPeriodicSync, 
+  dualDelete, 
+  mirrorWrite, 
+  registerSSEBroadcaster 
+} from './db/syncEngine.js';
+import { uploadStudentPhoto, uploadInstituteLogo, uploadOMRScan } from './services/cloudinaryService.js';
+import { generateDatabaseSnapshot } from './services/jsonBackupService.js';
+
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config({ path: path.join(__dirname, '.env.production') });
@@ -72,56 +86,9 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27018/studen
 const CLOUD_MONGODB_URI = process.env.CLOUD_MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 const JWT_SECRET = process.env.JWT_SECRET || '8f5b8a6d4e2c9a1f3c7e6b5d4a9f8e2d1c3b5a4f7e6d8c9b0a1f2e3d4c5b6a7f';
 
-export async function performRestoreFromCloud() {
-  logInfo('RESTORE', 'Starting Cloud Data Restoration...');
-  let cloudConn;
-  try {
-    cloudConn = await mongoose.createConnection(CLOUD_MONGODB_URI, {
-      serverSelectionTimeoutMS: 15000,
-      connectTimeoutMS: 15000
-    }).asPromise();
-    
-    logInfo('RESTORE', 'Successfully connected to MongoDB Atlas Cloud.');
-
-    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
-    let totalRestored = 0;
-
-    for (const collName of collections) {
-      try {
-        const cloudColl = cloudConn.useDb('test').db.collection(collName);
-        const localColl = mongoose.connection.collection(collName);
-
-        const docs = await cloudColl.find({}).toArray();
-        if (!docs || docs.length === 0) {
-          logInfo('RESTORE', `Collection [${collName}]: 0 documents found in cloud. Skipping.`);
-          continue;
-        }
-
-        const bulkOps = docs.map(doc => ({
-          replaceOne: {
-            filter: { _id: doc._id },
-            replacement: doc,
-            upsert: true
-          }
-        }));
-
-        const result = await localColl.bulkWrite(bulkOps, { ordered: false });
-        totalRestored += docs.length;
-        logInfo('RESTORE', `Collection [${collName}]: Restored ${docs.length} records (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
-      } catch (collErr) {
-        logWarn('RESTORE', `Warning on collection [${collName}]: ${collErr.message}`);
-      }
-    }
-
-    logInfo('RESTORE', `✅ Data Restoration Completed Successfully! Total records restored: ${totalRestored}`);
-    return { success: true, totalRestored };
-  } catch (err) {
-    logError('RESTORE', 'Data Restoration Failed', err);
-    throw err;
-  } finally {
-    if (cloudConn) await cloudConn.close().catch(() => {});
-  }
-}
+export const performRestoreFromCloud = pullAndRestoreFromCloud;
+export const performSyncToCloud = performFullSync;
+export const triggerBackgroundCloudSync = triggerBackgroundSync;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -387,171 +354,6 @@ mongoose.connect(MONGODB_URI)
   })
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// Direct immediate delete from Cloud Atlas helper
-export async function deleteFromCloudDirectly(collName, filter) {
-  try {
-    const cloudConn = await mongoose.createConnection(CLOUD_MONGODB_URI, {
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 8000
-    }).asPromise();
-    const cloudColl = cloudConn.useDb('test').db.collection(collName);
-    const res = await cloudColl.deleteMany(filter);
-    await cloudConn.close();
-    logInfo('SYNC', `Deleted ${res.deletedCount} docs directly from Cloud Atlas [${collName}]`);
-  } catch (err) {
-    logWarn('SYNC', `Direct cloud delete notice on [${collName}]: ${err.message}`);
-  }
-}
-
-// ---- ☁️ Robust In-Process Background Cloud Sync Engine ----
-let isSyncingToCloud = false;
-let pendingSyncRequested = false;
-let lastCloudSyncTime = null;
-
-export async function performSyncToCloud() {
-  if (mongoose.connection.readyState !== 1) {
-    logWarn('SYNC', 'Local MongoDB not ready yet. Skipping cloud sync.');
-    return false;
-  }
-  let cloudConn;
-  try {
-    cloudConn = await mongoose.createConnection(CLOUD_MONGODB_URI, {
-      serverSelectionTimeoutMS: 15000,
-      connectTimeoutMS: 15000
-    }).asPromise();
-
-    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
-
-    let totalSynced = 0;
-    for (const collName of collections) {
-      try {
-        const localColl = mongoose.connection.collection(collName);
-        const cloudColl = cloudConn.useDb('test').db.collection(collName);
-
-        const docs = await localColl.find({}).toArray();
-        if (!docs || docs.length === 0) continue;
-
-        const activeDocs = docs.filter(doc => !doc.isDeleted);
-        const deletedDocIds = docs.filter(doc => doc.isDeleted).map(doc => doc._id);
-
-        // Purge soft-deleted documents from Cloud
-        if (deletedDocIds.length > 0) {
-          await cloudColl.deleteMany({ _id: { $in: deletedDocIds } }).catch(() => {});
-        }
-
-        // Purge any documents on Cloud that were permanently removed from Local DB
-        try {
-          const localIdsSet = new Set(activeDocs.map(d => String(d._id)));
-          const cloudDocs = await cloudColl.find({}, { projection: { _id: 1 } }).toArray();
-          const orphansToDelete = cloudDocs
-            .filter(cd => !localIdsSet.has(String(cd._id)))
-            .map(cd => cd._id);
-          if (orphansToDelete.length > 0) {
-            await cloudColl.deleteMany({ _id: { $in: orphansToDelete } }).catch(() => {});
-            logInfo('SYNC', `Purged ${orphansToDelete.length} removed documents from Cloud [${collName}]`);
-          }
-        } catch (purgeErr) {
-          logWarn('SYNC', `Orphan purge notice on [${collName}]: ${purgeErr.message}`);
-        }
-
-        if (activeDocs.length === 0) continue;
-
-        // Handle OMR uploads for published test results if needed
-        if (collName === 'testresults') {
-          let publishedTestIds = new Set();
-          try {
-            const publishedTests = await mongoose.connection.collection('tests').find({
-              isDeleted: { $ne: true },
-              $or: [{ isPublished: true }, { status: 'published' }]
-            }).project({ id: 1, _id: 1 }).toArray();
-            publishedTestIds = new Set(publishedTests.map(t => String(t.id || t._id)));
-          } catch (e) {}
-
-          for (let i = 0; i < activeDocs.length; i++) {
-            const doc = activeDocs[i];
-            const testIdStr = String(doc.testId || '');
-            if (!publishedTestIds.has(testIdStr)) continue;
-
-            if (doc.omrSheetImage && doc.omrSheetImage.startsWith('/uploads/omr/')) {
-              const localFilePath = path.join(dataPath, doc.omrSheetImage);
-              if (fs.existsSync(localFilePath)) {
-                try {
-                  const uploadRes = await cloudinary.uploader.upload(localFilePath, {
-                    folder: 'student_report_omr',
-                    format: 'jpg'
-                  });
-                  doc.omrSheetImage = uploadRes.secure_url;
-                  doc.omrSheetPublicId = uploadRes.public_id;
-                  await localColl.updateOne({ _id: doc._id }, { $set: { omrSheetImage: uploadRes.secure_url, omrSheetPublicId: uploadRes.public_id } });
-                } catch (uploadErr) {
-                  console.warn(`Failed to upload OMR to Cloudinary for ${doc._id}:`, uploadErr.message);
-                }
-              }
-            }
-          }
-        }
-
-        // Upsert active docs to cloud
-        const bulkOps = activeDocs.map(doc => ({
-          replaceOne: {
-            filter: { _id: doc._id },
-            replacement: doc,
-            upsert: true
-          }
-        }));
-
-        await cloudColl.bulkWrite(bulkOps, { ordered: false });
-        totalSynced += activeDocs.length;
-      } catch (collErr) {
-        logWarn('SYNC', `Warning on syncing collection [${collName}]: ${collErr.message}`);
-      }
-    }
-
-    lastCloudSyncTime = new Date().toISOString();
-    try {
-      fs.writeFileSync(path.join(__dirname, 'sync-status.json'), JSON.stringify({ lastSync: lastCloudSyncTime }));
-    } catch (e) {}
-
-    logInfo('SYNC', `✅ Cloud Auto-Sync completed successfully at ${lastCloudSyncTime} (${totalSynced} records synced)`);
-    return { success: true, totalSynced };
-  } catch (err) {
-    logError('SYNC', '❌ Cloud Auto-Sync failed', err);
-    return { success: false, error: err.message };
-  } finally {
-    if (cloudConn) {
-      try { await cloudConn.close(); } catch (e) {}
-    }
-  }
-}
-
-export function triggerBackgroundCloudSync() {
-  if (isSyncingToCloud) {
-    pendingSyncRequested = true;
-    return;
-  }
-
-  isSyncingToCloud = true;
-  pendingSyncRequested = false;
-
-  // Run in next tick asynchronously so HTTP response is not blocked
-  setImmediate(async () => {
-    try {
-      await performSyncToCloud();
-    } catch (err) {
-      console.warn('⚠️ Background Cloud Sync error:', err.message);
-    } finally {
-      isSyncingToCloud = false;
-      if (pendingSyncRequested) {
-        pendingSyncRequested = false;
-        setTimeout(triggerBackgroundCloudSync, 3000);
-      }
-    }
-  });
-}
-
-// Background auto heartbeat: Automatically sync every 3 minutes
-setInterval(triggerBackgroundCloudSync, 180000);
-
 // ---- 🔄 SSE Live-Sync: Real-time data update notifications to all connected frontends ----
 const sseClients = new Set();
 
@@ -562,29 +364,15 @@ function broadcastSSE(event, data = {}) {
   }
 }
 
-// ---- 🔄 Auto-Pull: Automatically restore from cloud every 5 minutes ----
-let isAutoPulling = false;
+// Register SSE broadcaster with SyncEngine
+registerSSEBroadcaster(broadcastSSE);
 
-async function autoRestoreFromCloud() {
-  if (isAutoPulling || mongoose.connection.readyState !== 1) return;
-  isAutoPulling = true;
-  try {
-    const result = await performRestoreFromCloud();
-    if (result && result.totalRestored > 0) {
-      logInfo('AUTO-PULL', `✅ Auto-pulled ${result.totalRestored} records from cloud. Notifying frontends...`);
-      broadcastSSE('data-updated', { source: 'auto-pull', totalRestored: result.totalRestored, timestamp: new Date().toISOString() });
-    }
-  } catch (err) {
-    logWarn('AUTO-PULL', `Auto-pull skipped: ${err.message}`);
-  } finally {
-    isAutoPulling = false;
-  }
-}
+// Start Periodic Sync and Snapshot loop
+startPeriodicSync(180000); // Sync every 3 mins
 
-// Run auto-pull every 5 minutes (300000ms)
-setInterval(autoRestoreFromCloud, 300000);
-// Also run first auto-pull 30 seconds after server start
-setTimeout(autoRestoreFromCloud, 30000);
+// Auto JSON database snapshot every 15 mins and on startup
+setTimeout(() => { generateDatabaseSnapshot(dataPath).catch(() => {}); }, 15000);
+setInterval(() => { generateDatabaseSnapshot(dataPath).catch(() => {}); }, 900000);
 
 // ---- 🔐 Auth API ----
 // Registration endpoint removed for security. 
@@ -2230,28 +2018,19 @@ app.post('/api/students/bulk-delete', async (req, res) => {
       if (s.parentUserId) parentUsernames.push(s.parentUserId);
     });
 
-    // 1. Delete locally from Local MongoDB
-    const result = await Student.deleteMany(query);
-    if (allIds.length > 0) {
-      await Attendance.deleteMany({ studentId: { $in: allIds } });
-      await TestResult.deleteMany({ studentId: { $in: allIds } });
-      await SMSLog.deleteMany({ studentId: { $in: allIds } });
-    }
-    if (parentUsernames.length > 0) {
-      await User.deleteMany({ username: { $in: parentUsernames } });
-    }
-
-    // 2. Direct Delete immediately from Cloud Atlas
-    await Promise.allSettled([
-      deleteFromCloudDirectly('students', query),
-      allIds.length > 0 ? deleteFromCloudDirectly('attendances', { studentId: { $in: allIds } }) : Promise.resolve(),
-      allIds.length > 0 ? deleteFromCloudDirectly('testresults', { studentId: { $in: allIds } }) : Promise.resolve(),
-      allIds.length > 0 ? deleteFromCloudDirectly('smslogs', { studentId: { $in: allIds } }) : Promise.resolve(),
-      parentUsernames.length > 0 ? deleteFromCloudDirectly('users', { username: { $in: parentUsernames } }) : Promise.resolve()
+    const result = await dualDelete('students', query, [
+      ...(allIds.length > 0 ? [
+        { collection: 'attendances', filter: { studentId: { $in: allIds } } },
+        { collection: 'testresults', filter: { studentId: { $in: allIds } } },
+        { collection: 'smslogs', filter: { studentId: { $in: allIds } } }
+      ] : []),
+      ...(parentUsernames.length > 0 ? [
+        { collection: 'users', filter: { username: { $in: parentUsernames } } }
+      ] : [])
     ]);
 
     triggerBackgroundCloudSync();
-    res.json({ success: true, deletedCount: result.deletedCount });
+    res.json({ success: true, deletedCount: result.localDeleted });
   } catch (err) {
     console.error('Error in bulk student delete:', err);
     res.status(500).json({ error: err.message });
@@ -2290,6 +2069,16 @@ app.post('/api/students', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const parentPasswordHash = await bcrypt.hash(String(plainPassword), salt);
 
+    // Upload photo to Cloudinary if provided
+    let photoUrl = req.body.photo || '';
+    if (photoUrl && typeof photoUrl === 'string' && !photoUrl.startsWith('http')) {
+      try {
+        photoUrl = await uploadStudentPhoto(photoUrl, rollNo) || photoUrl;
+      } catch (photoErr) {
+        console.warn('Student photo upload warning:', photoErr.message);
+      }
+    }
+
     const studentData = { ...req.body };
     delete studentData._id;
     delete studentData.__v;
@@ -2298,6 +2087,7 @@ app.post('/api/students', async (req, res) => {
     const student = new Student({
       ...studentData,
       rollNo,
+      photo: photoUrl,
       instituteId: req.user.instituteId,
       id: generateServerId('STU'),
       parentUserId,
@@ -2305,6 +2095,9 @@ app.post('/api/students', async (req, res) => {
       parentPasswordPlain: plainPassword
     });
     await student.save();
+
+    // Mirror write to Cloud Atlas immediately
+    mirrorWrite('students', student.toObject()).catch(() => {});
 
     // Trigger WhatsApp Welcome Alert
     if (student.parentPhone && student.parentPhone.trim() !== '') {
@@ -2364,6 +2157,8 @@ app.post('/api/students/:id/regenerate-parent', async (req, res) => {
     student.parentPasswordPlain = plainPassword;
     await student.save();
 
+    mirrorWrite('students', student.toObject()).catch(() => {});
+
     const responseData = student.toObject();
     responseData.parentPlainPassword = plainPassword;
 
@@ -2376,7 +2171,6 @@ app.post('/api/students/:id/regenerate-parent', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 app.put('/api/students/:id', async (req, res) => {
   try {
@@ -2407,6 +2201,16 @@ app.put('/api/students/:id', async (req, res) => {
       updateData.rollNo = String(updateData.rollNo).trim();
     }
 
+    // Upload new photo to Cloudinary if changed/provided
+    if (updateData.photo && typeof updateData.photo === 'string' && !updateData.photo.startsWith('http')) {
+      try {
+        const cloudUrl = await uploadStudentPhoto(updateData.photo, updateData.rollNo || studentToUpdate.rollNo);
+        if (cloudUrl) updateData.photo = cloudUrl;
+      } catch (photoErr) {
+        console.warn('Photo upload warning on update:', photoErr.message);
+      }
+    }
+
     // Check parentUserId uniqueness if updated
     if (req.body.parentUserId && String(req.body.parentUserId).trim()) {
       const parentUserIdClean = String(req.body.parentUserId).trim();
@@ -2431,6 +2235,8 @@ app.put('/api/students/:id', async (req, res) => {
       updateData,
       { new: true }
     );
+
+    mirrorWrite('students', student.toObject()).catch(() => {});
     triggerBackgroundCloudSync();
     res.json(student);
   } catch (err) {
@@ -2455,34 +2261,15 @@ app.delete('/api/students/:id', async (req, res) => {
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
     const studentIds = [student.id, String(student._id), String(student.rollNo)].filter(Boolean);
-    const studentObjectId = student._id;
 
-    // 1. Delete locally from Local MongoDB
-    await Student.deleteOne({ _id: studentObjectId });
-    await Attendance.deleteMany({ studentId: { $in: studentIds } });
-    await TestResult.deleteMany({ studentId: { $in: studentIds } });
-    await SMSLog.deleteMany({ studentId: { $in: studentIds } });
-    if (student.parentUserId) {
-      await User.deleteMany({ username: student.parentUserId });
-    }
-
-    // 2. Direct Delete immediately from Cloud Atlas
-    await Promise.allSettled([
-      deleteFromCloudDirectly('students', {
-        $or: [
-          { _id: studentObjectId },
-          { id: { $in: studentIds } },
-          { rollNo: String(student.rollNo) }
-        ]
-      }),
-      deleteFromCloudDirectly('attendances', { studentId: { $in: studentIds } }),
-      deleteFromCloudDirectly('testresults', { studentId: { $in: studentIds } }),
-      deleteFromCloudDirectly('smslogs', { studentId: { $in: studentIds } }),
-      student.parentUserId ? deleteFromCloudDirectly('users', { username: student.parentUserId }) : Promise.resolve()
+    await dualDelete('students', { _id: student._id }, [
+      { collection: 'attendances', filter: { studentId: { $in: studentIds } } },
+      { collection: 'testresults', filter: { studentId: { $in: studentIds } } },
+      { collection: 'smslogs', filter: { studentId: { $in: studentIds } } },
+      ...(student.parentUserId ? [{ collection: 'users', filter: { username: student.parentUserId } }] : [])
     ]);
 
     triggerBackgroundCloudSync();
-
     res.json({ message: 'Student and all associated records permanently deleted successfully' });
   } catch (err) {
     console.error('Error deleting student:', err);
@@ -2848,12 +2635,10 @@ app.put('/api/inquiries/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/inquiries/:id', authenticateToken, async (req, res) => {
   try {
-    const inquiry = await Inquiry.findOneAndDelete(
-      { id: req.params.id, instituteId: req.user.instituteId }
-    );
+    const inquiry = await Inquiry.findOne({ id: req.params.id, instituteId: req.user.instituteId });
     if (!inquiry) return res.status(404).json({ error: 'Inquiry not found' });
 
-    await deleteFromCloudDirectly('inquiries', { $or: [{ _id: inquiry._id }, { id: inquiry.id }] });
+    await dualDelete('inquiries', { _id: inquiry._id });
     triggerBackgroundCloudSync();
     res.json({ message: 'Inquiry permanently deleted successfully' });
   } catch (err) {
@@ -2886,6 +2671,7 @@ app.post('/api/tests', authenticateToken, async (req, res) => {
       instituteId: instId 
     });
     await test.save();
+    mirrorWrite('tests', test.toObject()).catch(() => {});
     triggerBackgroundCloudSync();
     res.status(201).json(test);
   } catch (err) {
@@ -2914,6 +2700,7 @@ app.put('/api/tests/:id', authenticateToken, async (req, res) => {
       { new: true }
     );
 
+    mirrorWrite('tests', test.toObject()).catch(() => {});
     triggerBackgroundCloudSync();
     res.json(test);
   } catch (err) {
@@ -2924,16 +2711,12 @@ app.put('/api/tests/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/tests/:id', authenticateToken, async (req, res) => {
   try {
-    const test = await Test.findOneAndDelete(
-      buildTestLookup(req.params.id, req.user.instituteId)
-    );
+    const testLookup = buildTestLookup(req.params.id, req.user.instituteId);
+    const test = await Test.findOne(testLookup);
     if (!test) return res.status(404).json({ error: 'Test not found' });
-    // Also permanently delete all related test results
-    await TestResult.deleteMany({ testId: test.id, instituteId: req.user.instituteId });
 
-    await Promise.allSettled([
-      deleteFromCloudDirectly('tests', { $or: [{ _id: test._id }, { id: test.id }] }),
-      deleteFromCloudDirectly('testresults', { testId: test.id })
+    await dualDelete('tests', { _id: test._id }, [
+      { collection: 'testresults', filter: { testId: test.id } }
     ]);
 
     triggerBackgroundCloudSync();
