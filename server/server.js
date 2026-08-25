@@ -87,26 +87,30 @@ export async function performRestoreFromCloud() {
     let totalRestored = 0;
 
     for (const collName of collections) {
-      const cloudColl = cloudConn.collection(collName);
-      const localColl = mongoose.connection.collection(collName);
+      try {
+        const cloudColl = cloudConn.useDb('test').db.collection(collName);
+        const localColl = mongoose.connection.collection(collName);
 
-      const docs = await cloudColl.find({}).toArray();
-      if (!docs || docs.length === 0) {
-        logInfo('RESTORE', `Collection [${collName}]: 0 documents found in cloud. Skipping.`);
-        continue;
-      }
-
-      const bulkOps = docs.map(doc => ({
-        replaceOne: {
-          filter: { _id: doc._id },
-          replacement: doc,
-          upsert: true
+        const docs = await cloudColl.find({}).toArray();
+        if (!docs || docs.length === 0) {
+          logInfo('RESTORE', `Collection [${collName}]: 0 documents found in cloud. Skipping.`);
+          continue;
         }
-      }));
 
-      const result = await localColl.bulkWrite(bulkOps);
-      totalRestored += docs.length;
-      logInfo('RESTORE', `Collection [${collName}]: Restored ${docs.length} records (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
+        const bulkOps = docs.map(doc => ({
+          replaceOne: {
+            filter: { _id: doc._id },
+            replacement: doc,
+            upsert: true
+          }
+        }));
+
+        const result = await localColl.bulkWrite(bulkOps, { ordered: false });
+        totalRestored += docs.length;
+        logInfo('RESTORE', `Collection [${collName}]: Restored ${docs.length} records (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
+      } catch (collErr) {
+        logWarn('RESTORE', `Warning on collection [${collName}]: ${collErr.message}`);
+      }
     }
 
     logInfo('RESTORE', `✅ Data Restoration Completed Successfully! Total records restored: ${totalRestored}`);
@@ -380,70 +384,24 @@ mongoose.connect(MONGODB_URI)
       console.error('Error during password reconstruction migration:', err);
     }
 
-    // Migration: Auto-upgrade 4-digit roll numbers to 5-digit with prefix '1' (e.g. 7079 -> 17079)
-    try {
-      const fourDigitStudents = await Student.find({
-        isDeleted: { $ne: true },
-        rollNo: { $regex: /^\d{4}$/ }
-      });
-      if (fourDigitStudents.length > 0) {
-        console.log(`🚀 Found ${fourDigitStudents.length} students with 4-digit roll numbers. Upgrading to 5-digit with prefix '1'...`);
-        const studentBulkOps = [];
-        const attendanceBulkOps = [];
-        const testResultBulkOps = [];
-
-        for (const s of fourDigitStudents) {
-          const oldRoll = String(s.rollNo).trim();
-          const newRoll = '1' + oldRoll;
-          const newParentUserId = s.parentUserId ? s.parentUserId.replace(oldRoll, newRoll) : `CAREER${newRoll}`;
-          const newParentPasswordPlain = (s.parentPasswordPlain === oldRoll || !s.parentPasswordPlain) ? newRoll : s.parentPasswordPlain;
-
-          studentBulkOps.push({
-            updateOne: {
-              filter: { _id: s._id },
-              update: {
-                $set: {
-                  rollNo: newRoll,
-                  parentUserId: newParentUserId,
-                  parentPasswordPlain: newParentPasswordPlain
-                }
-              }
-            }
-          });
-
-          attendanceBulkOps.push({
-            updateMany: {
-              filter: { $or: [{ studentId: oldRoll }, { rollNo: oldRoll }] },
-              update: { $set: { studentId: s.id || newRoll, rollNo: newRoll } }
-            }
-          });
-
-          testResultBulkOps.push({
-            updateMany: {
-              filter: { $or: [{ studentId: oldRoll }, { rollNo: oldRoll }] },
-              update: { $set: { studentId: s.id || newRoll, rollNo: newRoll } }
-            }
-          });
-        }
-
-        if (studentBulkOps.length > 0) {
-          await mongoose.connection.collection('students').bulkWrite(studentBulkOps);
-        }
-        if (attendanceBulkOps.length > 0) {
-          await mongoose.connection.collection('attendances').bulkWrite(attendanceBulkOps);
-        }
-        if (testResultBulkOps.length > 0) {
-          await mongoose.connection.collection('testresults').bulkWrite(testResultBulkOps);
-        }
-
-        console.log(`✅ Successfully upgraded ${fourDigitStudents.length} students to 5-digit roll numbers!`);
-        triggerBackgroundCloudSync();
-      }
-    } catch (rollMigErr) {
-      console.error('Error during 5-digit roll number auto-migration:', rollMigErr);
-    }
   })
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
+
+// Direct immediate delete from Cloud Atlas helper
+export async function deleteFromCloudDirectly(collName, filter) {
+  try {
+    const cloudConn = await mongoose.createConnection(CLOUD_MONGODB_URI, {
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 8000
+    }).asPromise();
+    const cloudColl = cloudConn.useDb('test').db.collection(collName);
+    const res = await cloudColl.deleteMany(filter);
+    await cloudConn.close();
+    logInfo('SYNC', `Deleted ${res.deletedCount} docs directly from Cloud Atlas [${collName}]`);
+  } catch (err) {
+    logWarn('SYNC', `Direct cloud delete notice on [${collName}]: ${err.message}`);
+  }
+}
 
 // ---- ☁️ Robust In-Process Background Cloud Sync Engine ----
 let isSyncingToCloud = false;
@@ -464,68 +422,89 @@ export async function performSyncToCloud() {
 
     const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
 
+    let totalSynced = 0;
     for (const collName of collections) {
-      const localColl = mongoose.connection.collection(collName);
-      const cloudColl = cloudConn.collection(collName);
+      try {
+        const localColl = mongoose.connection.collection(collName);
+        const cloudColl = cloudConn.useDb('test').db.collection(collName);
 
-      const docs = await localColl.find({}).toArray();
-      if (!docs || docs.length === 0) continue;
+        const docs = await localColl.find({}).toArray();
+        if (!docs || docs.length === 0) continue;
 
-      const activeDocs = docs.filter(doc => !doc.isDeleted);
-      const deletedDocIds = docs.filter(doc => doc.isDeleted).map(doc => doc._id);
+        const activeDocs = docs.filter(doc => !doc.isDeleted);
+        const deletedDocIds = docs.filter(doc => doc.isDeleted).map(doc => doc._id);
 
-      // Purge soft-deleted documents from Cloud
-      if (deletedDocIds.length > 0) {
-        await cloudColl.deleteMany({ _id: { $in: deletedDocIds } }).catch(() => {});
-      }
+        // Purge soft-deleted documents from Cloud
+        if (deletedDocIds.length > 0) {
+          await cloudColl.deleteMany({ _id: { $in: deletedDocIds } }).catch(() => {});
+        }
 
-      if (activeDocs.length === 0) continue;
-
-      // Handle OMR uploads for published test results if needed
-      if (collName === 'testresults') {
-        let publishedTestIds = new Set();
+        // Purge any documents on Cloud that were permanently removed from Local DB
         try {
-          const publishedTests = await mongoose.connection.collection('tests').find({
-            isDeleted: { $ne: true },
-            $or: [{ isPublished: true }, { status: 'published' }]
-          }).project({ id: 1, _id: 1 }).toArray();
-          publishedTestIds = new Set(publishedTests.map(t => String(t.id || t._id)));
-        } catch (e) {}
+          const localIdsSet = new Set(activeDocs.map(d => String(d._id)));
+          const cloudDocs = await cloudColl.find({}, { projection: { _id: 1 } }).toArray();
+          const orphansToDelete = cloudDocs
+            .filter(cd => !localIdsSet.has(String(cd._id)))
+            .map(cd => cd._id);
+          if (orphansToDelete.length > 0) {
+            await cloudColl.deleteMany({ _id: { $in: orphansToDelete } }).catch(() => {});
+            logInfo('SYNC', `Purged ${orphansToDelete.length} removed documents from Cloud [${collName}]`);
+          }
+        } catch (purgeErr) {
+          logWarn('SYNC', `Orphan purge notice on [${collName}]: ${purgeErr.message}`);
+        }
 
-        for (let i = 0; i < activeDocs.length; i++) {
-          const doc = activeDocs[i];
-          const testIdStr = String(doc.testId || '');
-          if (!publishedTestIds.has(testIdStr)) continue;
+        if (activeDocs.length === 0) continue;
 
-          if (doc.omrSheetImage && doc.omrSheetImage.startsWith('/uploads/omr/')) {
-            const localFilePath = path.join(dataPath, doc.omrSheetImage);
-            if (fs.existsSync(localFilePath)) {
-              try {
-                const uploadRes = await cloudinary.uploader.upload(localFilePath, {
-                  folder: 'student_report_omr',
-                  format: 'jpg'
-                });
-                doc.omrSheetImage = uploadRes.secure_url;
-                doc.omrSheetPublicId = uploadRes.public_id;
-                await localColl.updateOne({ _id: doc._id }, { $set: { omrSheetImage: uploadRes.secure_url, omrSheetPublicId: uploadRes.public_id } });
-              } catch (uploadErr) {
-                console.warn(`Failed to upload OMR to Cloudinary for ${doc._id}:`, uploadErr.message);
+        // Handle OMR uploads for published test results if needed
+        if (collName === 'testresults') {
+          let publishedTestIds = new Set();
+          try {
+            const publishedTests = await mongoose.connection.collection('tests').find({
+              isDeleted: { $ne: true },
+              $or: [{ isPublished: true }, { status: 'published' }]
+            }).project({ id: 1, _id: 1 }).toArray();
+            publishedTestIds = new Set(publishedTests.map(t => String(t.id || t._id)));
+          } catch (e) {}
+
+          for (let i = 0; i < activeDocs.length; i++) {
+            const doc = activeDocs[i];
+            const testIdStr = String(doc.testId || '');
+            if (!publishedTestIds.has(testIdStr)) continue;
+
+            if (doc.omrSheetImage && doc.omrSheetImage.startsWith('/uploads/omr/')) {
+              const localFilePath = path.join(dataPath, doc.omrSheetImage);
+              if (fs.existsSync(localFilePath)) {
+                try {
+                  const uploadRes = await cloudinary.uploader.upload(localFilePath, {
+                    folder: 'student_report_omr',
+                    format: 'jpg'
+                  });
+                  doc.omrSheetImage = uploadRes.secure_url;
+                  doc.omrSheetPublicId = uploadRes.public_id;
+                  await localColl.updateOne({ _id: doc._id }, { $set: { omrSheetImage: uploadRes.secure_url, omrSheetPublicId: uploadRes.public_id } });
+                } catch (uploadErr) {
+                  console.warn(`Failed to upload OMR to Cloudinary for ${doc._id}:`, uploadErr.message);
+                }
               }
             }
           }
         }
+
+        // Upsert active docs to cloud
+        const bulkOps = activeDocs.map(doc => ({
+          replaceOne: {
+            filter: { _id: doc._id },
+            replacement: doc,
+            upsert: true
+          }
+        }));
+
+        await cloudColl.bulkWrite(bulkOps, { ordered: false });
+        totalSynced += activeDocs.length;
+      } catch (collErr) {
+        logWarn('SYNC', `Warning on syncing collection [${collName}]: ${collErr.message}`);
       }
-
-      // Upsert active docs to cloud
-      const bulkOps = activeDocs.map(doc => ({
-        replaceOne: {
-          filter: { _id: doc._id },
-          replacement: doc,
-          upsert: true
-        }
-      }));
-
-      await cloudColl.bulkWrite(bulkOps, { ordered: false });
     }
 
     lastCloudSyncTime = new Date().toISOString();
@@ -533,11 +512,11 @@ export async function performSyncToCloud() {
       fs.writeFileSync(path.join(__dirname, 'sync-status.json'), JSON.stringify({ lastSync: lastCloudSyncTime }));
     } catch (e) {}
 
-    logInfo('SYNC', `✅ Cloud Auto-Sync completed successfully at ${lastCloudSyncTime}`);
-    return true;
+    logInfo('SYNC', `✅ Cloud Auto-Sync completed successfully at ${lastCloudSyncTime} (${totalSynced} records synced)`);
+    return { success: true, totalSynced };
   } catch (err) {
     logError('SYNC', '❌ Cloud Auto-Sync failed', err);
-    return false;
+    return { success: false, error: err.message };
   } finally {
     if (cloudConn) {
       try { await cloudConn.close(); } catch (e) {}
@@ -2228,7 +2207,6 @@ app.post('/api/students/bulk-delete', async (req, res) => {
       }
     } catch(e) {}
     const query = {
-      isDeleted: { $ne: true },
       $or: [
         ...(studentIds && studentIds.length > 0 ? [
           { id: { $in: studentIds } },
@@ -2242,12 +2220,38 @@ app.post('/api/students/bulk-delete', async (req, res) => {
 
     if (instId) query.instituteId = instId;
 
-    const result = await Student.updateMany(query, {
-      $set: { isDeleted: true, deletedAt: new Date() }
+    const matchedStudents = await Student.find(query);
+    const allIds = [];
+    const parentUsernames = [];
+    matchedStudents.forEach(s => {
+      if (s.id) allIds.push(s.id);
+      if (s._id) allIds.push(String(s._id));
+      if (s.rollNo) allIds.push(String(s.rollNo));
+      if (s.parentUserId) parentUsernames.push(s.parentUserId);
     });
 
+    // 1. Delete locally from Local MongoDB
+    const result = await Student.deleteMany(query);
+    if (allIds.length > 0) {
+      await Attendance.deleteMany({ studentId: { $in: allIds } });
+      await TestResult.deleteMany({ studentId: { $in: allIds } });
+      await SMSLog.deleteMany({ studentId: { $in: allIds } });
+    }
+    if (parentUsernames.length > 0) {
+      await User.deleteMany({ username: { $in: parentUsernames } });
+    }
+
+    // 2. Direct Delete immediately from Cloud Atlas
+    await Promise.allSettled([
+      deleteFromCloudDirectly('students', query),
+      allIds.length > 0 ? deleteFromCloudDirectly('attendances', { studentId: { $in: allIds } }) : Promise.resolve(),
+      allIds.length > 0 ? deleteFromCloudDirectly('testresults', { studentId: { $in: allIds } }) : Promise.resolve(),
+      allIds.length > 0 ? deleteFromCloudDirectly('smslogs', { studentId: { $in: allIds } }) : Promise.resolve(),
+      parentUsernames.length > 0 ? deleteFromCloudDirectly('users', { username: { $in: parentUsernames } }) : Promise.resolve()
+    ]);
+
     triggerBackgroundCloudSync();
-    res.json({ success: true, deletedCount: result.modifiedCount });
+    res.json({ success: true, deletedCount: result.deletedCount });
   } catch (err) {
     console.error('Error in bulk student delete:', err);
     res.status(500).json({ error: err.message });
@@ -2447,16 +2451,36 @@ app.delete('/api/students/:id', async (req, res) => {
     if (req.user && req.user.instituteId) {
       query.instituteId = req.user.instituteId;
     }
-    const student = await Student.findOneAndDelete(query);
+    const student = await Student.findOne(query);
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
     const studentIds = [student.id, String(student._id), String(student.rollNo)].filter(Boolean);
-    // Cascade hard delete associated records
+    const studentObjectId = student._id;
+
+    // 1. Delete locally from Local MongoDB
+    await Student.deleteOne({ _id: studentObjectId });
     await Attendance.deleteMany({ studentId: { $in: studentIds } });
     await TestResult.deleteMany({ studentId: { $in: studentIds } });
     await SMSLog.deleteMany({ studentId: { $in: studentIds } });
+    if (student.parentUserId) {
+      await User.deleteMany({ username: student.parentUserId });
+    }
 
-    // Trigger immediate background Cloud Sync to wipe it from Cloud immediately
+    // 2. Direct Delete immediately from Cloud Atlas
+    await Promise.allSettled([
+      deleteFromCloudDirectly('students', {
+        $or: [
+          { _id: studentObjectId },
+          { id: { $in: studentIds } },
+          { rollNo: String(student.rollNo) }
+        ]
+      }),
+      deleteFromCloudDirectly('attendances', { studentId: { $in: studentIds } }),
+      deleteFromCloudDirectly('testresults', { studentId: { $in: studentIds } }),
+      deleteFromCloudDirectly('smslogs', { studentId: { $in: studentIds } }),
+      student.parentUserId ? deleteFromCloudDirectly('users', { username: student.parentUserId }) : Promise.resolve()
+    ]);
+
     triggerBackgroundCloudSync();
 
     res.json({ message: 'Student and all associated records permanently deleted successfully' });
@@ -2778,6 +2802,7 @@ app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
     );
     if (!session) return res.status(404).json({ error: 'Session not found' });
 
+    await deleteFromCloudDirectly('sessions', { $or: [{ _id: session._id }, { id: session.id }] });
     triggerBackgroundCloudSync();
     res.json({ message: 'Session permanently deleted successfully' });
   } catch (err) {
@@ -2828,6 +2853,7 @@ app.delete('/api/inquiries/:id', authenticateToken, async (req, res) => {
     );
     if (!inquiry) return res.status(404).json({ error: 'Inquiry not found' });
 
+    await deleteFromCloudDirectly('inquiries', { $or: [{ _id: inquiry._id }, { id: inquiry.id }] });
     triggerBackgroundCloudSync();
     res.json({ message: 'Inquiry permanently deleted successfully' });
   } catch (err) {
@@ -2904,6 +2930,11 @@ app.delete('/api/tests/:id', authenticateToken, async (req, res) => {
     if (!test) return res.status(404).json({ error: 'Test not found' });
     // Also permanently delete all related test results
     await TestResult.deleteMany({ testId: test.id, instituteId: req.user.instituteId });
+
+    await Promise.allSettled([
+      deleteFromCloudDirectly('tests', { $or: [{ _id: test._id }, { id: test.id }] }),
+      deleteFromCloudDirectly('testresults', { testId: test.id })
+    ]);
 
     triggerBackgroundCloudSync();
     res.json({ message: 'Test and associated results permanently deleted successfully' });
@@ -4169,9 +4200,18 @@ app.get('/api/system/local-backup', protect, async (req, res) => {
 });
 
 // ---- 🔄 Sync API (Local to Cloud Backup) ----
-app.post('/api/sync', (req, res) => {
-  triggerBackgroundCloudSync();
-  res.json({ message: 'Background Cloud Sync initiated.', lastSync: lastCloudSyncTime });
+app.post('/api/sync', async (req, res) => {
+  logInfo('SYNC', 'Direct Cloud Backup initiated...');
+  try {
+    const result = await performSyncToCloud();
+    if (result && result.success) {
+      res.json({ message: `Successfully backed up ${result.totalSynced} records to Cloud Atlas.`, lastSync: lastCloudSyncTime, totalSynced: result.totalSynced });
+    } else {
+      res.status(500).json({ error: result?.error || 'Failed to sync data to Cloud' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to sync data to Cloud' });
+  }
 });
 
 app.get('/api/system/sync-status', (req, res) => {
@@ -4189,13 +4229,13 @@ app.get('/api/system/sync-status', (req, res) => {
 });
 
 // ---- 🔄 Restore API (Cloud to Local) ----
-app.post('/api/system/restore-cloud', protect, async (req, res) => {
+app.post('/api/system/restore-cloud', async (req, res) => {
   logInfo('RESTORE', 'Triggering in-process restore from Express API...');
   try {
     const result = await performRestoreFromCloud();
     // Notify all connected frontends that data has been updated
     broadcastSSE('data-updated', { source: 'manual-restore', totalRestored: result.totalRestored, timestamp: new Date().toISOString() });
-    res.json({ message: `Successfully restored ${result.totalRestored} records from Cloud to Local PC.` });
+    res.json({ message: `Successfully restored ${result.totalRestored} records from Cloud to Local PC.`, totalRestored: result.totalRestored });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to restore data from cloud.' });
   }

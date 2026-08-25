@@ -146,19 +146,6 @@ export function AppProvider({ children }) {
 
     function loadFallbackData() {
       let localStudents = loadLocalData('students', []);
-      localStudents = localStudents.map((s) => {
-        const r = String(s.rollNo || '').trim();
-        if (/^\d{1,4}$/.test(r)) {
-          const newRoll = r.length === 4 ? `1${r}` : `1${r.padStart(4, '0')}`;
-          return {
-            ...s,
-            rollNo: newRoll,
-            parentUserId: s.parentUserId ? s.parentUserId.replace(r, newRoll) : `CAREER${newRoll}`
-          };
-        }
-        return s;
-      });
-
       const validIds = new Set(localStudents.map((s) => s.id));
       
       setStudents(localStudents);

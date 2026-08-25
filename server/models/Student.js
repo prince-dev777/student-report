@@ -22,8 +22,8 @@ const studentSchema = new mongoose.Schema({
   deletedAt: { type: Date, default: null }
 }, { timestamps: true });
 
-// Ensure parentUserId is unique if populated
-studentSchema.index({ parentUserId: 1 }, { unique: true, sparse: true });
+// Index for parentUserId lookup
+studentSchema.index({ parentUserId: 1 }, { sparse: true });
 
 // TTL Index for Soft Deletes (7 days = 604800 seconds)
 studentSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 604800 });

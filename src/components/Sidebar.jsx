@@ -117,7 +117,7 @@ export default function Sidebar() {
     if (!confirmRestore) return;
     
     setIsRestoring(true);
-    const tid = toast.loading('Restoring data from Cloud... Please wait.');
+    const tid = toast.loading('Restoring data from Cloud Atlas... Please wait.');
     try {
       const response = await fetch(`${API_BASE}/system/restore-cloud`, {
         method: 'POST',
@@ -131,8 +131,13 @@ export default function Sidebar() {
       if (typeof refreshAllData === 'function') {
         await refreshAllData();
       }
+
+      try {
+        const info = await api.getBackupInfo();
+        setBackupInfo(info);
+      } catch(e) {}
       
-      toast.success(data.message || 'Restore successful!', { id: tid });
+      toast.success(data.message || '✅ Restore successful!', { id: tid });
     } catch (err) {
       toast.error(err.message || 'Restore failed. Check internet connection.', { id: tid });
     } finally {
@@ -145,10 +150,17 @@ export default function Sidebar() {
     if (!confirmSync) return;
     
     setIsSyncing(true);
-    const tid = toast.loading('Syncing data to Cloud...');
+    const tid = toast.loading('Backing up data to Cloud Atlas...');
     try {
       const res = await api.syncDataToCloud();
-      toast.success(res.message || 'Sync successful!', { id: tid });
+      if (typeof refreshAllData === 'function') {
+        await refreshAllData();
+      }
+      try {
+        const info = await api.getBackupInfo();
+        setBackupInfo(info);
+      } catch(e) {}
+      toast.success(res.message || '✅ Cloud Backup successful!', { id: tid });
     } catch (err) {
       toast.error(err.message || 'Sync failed. Check internet connection.', { id: tid });
     } finally {

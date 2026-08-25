@@ -56,28 +56,32 @@ async function restoreFromCloud() {
     let totalRestored = 0;
 
     for (const collName of collections) {
-      const cloudColl = cloudConn.collection(collName);
-      const localColl = localConn.collection(collName);
+      try {
+        const cloudColl = cloudConn.useDb('test').db.collection(collName);
+        const localColl = localConn.collection(collName);
 
-      // Fetch all documents from Cloud
-      const docs = await cloudColl.find({}).toArray();
-      if (docs.length === 0) {
-        logInfo('RESTORE', `Collection [${collName}]: 0 documents found in Cloud. Skipping.`);
-        continue;
-      }
-
-      // Upsert to Local
-      const bulkOps = docs.map(doc => ({
-        replaceOne: {
-          filter: { _id: doc._id },
-          replacement: doc,
-          upsert: true
+        // Fetch all documents from Cloud
+        const docs = await cloudColl.find({}).toArray();
+        if (docs.length === 0) {
+          logInfo('RESTORE', `Collection [${collName}]: 0 documents found in Cloud. Skipping.`);
+          continue;
         }
-      }));
 
-      const result = await localColl.bulkWrite(bulkOps);
-      totalRestored += docs.length;
-      logInfo('RESTORE', `Collection [${collName}]: Restored ${docs.length} documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
+        // Upsert to Local
+        const bulkOps = docs.map(doc => ({
+          replaceOne: {
+            filter: { _id: doc._id },
+            replacement: doc,
+            upsert: true
+          }
+        }));
+
+        const result = await localColl.bulkWrite(bulkOps, { ordered: false });
+        totalRestored += docs.length;
+        logInfo('RESTORE', `Collection [${collName}]: Restored ${docs.length} documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
+      } catch (collErr) {
+        logWarn('RESTORE', `Warning on collection [${collName}]: ${collErr.message}`);
+      }
     }
 
     logInfo('RESTORE', `✅ Data Restoration Completed Successfully! Total records restored: ${totalRestored}`);
