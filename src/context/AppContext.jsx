@@ -38,6 +38,8 @@ export function AppProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [startupSyncing, setStartupSyncing] = useState(true);
+  const [startupSyncText, setStartupSyncText] = useState('Initializing Database & Cloud Connection...');
   
   const { user } = useAuth();
   const initRanRef = useRef(false);
@@ -81,15 +83,31 @@ export function AppProvider({ children }) {
         setSMSHistory(Array.isArray(serverSMS) ? serverSMS : []);
         setSessions(serverSessions);
         setInquiries(serverInquiries);
+
+        // Update local storage backup
+        try {
+          localStorage.setItem('edutrack_students', JSON.stringify(serverStudents));
+          localStorage.setItem('edutrack_tests', JSON.stringify(serverTests));
+        } catch(e) {}
       }
     }
 
     async function initData() {
+      setStartupSyncing(true);
+      setStartupSyncText('Connecting to Local & Cloud Database...');
+
       const isOnline = await checkBackendStatus();
       setBackendOnline(isOnline);
 
       if (isOnline) {
         try {
+          setStartupSyncText('Syncing latest student records from Cloud Atlas...');
+          // Trigger background pull from cloud if available
+          try {
+            await api.pullCloudData().catch(() => {});
+          } catch(e) {}
+
+          setStartupSyncText('Loading updated student dossiers & roll numbers...');
           await loadServerData();
         } catch (e) {
           console.error('❌ [DEBUG] Failed to load from server. Error:', e.message);
@@ -98,7 +116,7 @@ export function AppProvider({ children }) {
       } else {
         console.log('⚠️ [DEBUG] Backend offline. Loading from localStorage...');
         loadFallbackData();
-        toast('Offline Mode: Using LocalStorage.', { id: 'backend-status-toast', icon: 'ℹ️' });
+        toast('Offline Mode: Operating from local offline storage.', { id: 'backend-status-toast', icon: 'ℹ️' });
 
         // Background retry loop: if backend was spinning up, auto-sync when ready
         let attempts = 0;
@@ -114,12 +132,16 @@ export function AppProvider({ children }) {
             setBackendOnline(true);
             try {
               await loadServerData();
-              toast.success('Connected & Synced with Backend!', { id: 'backend-status-toast' });
+              toast.success('Connected & Synced with Cloud Database!', { id: 'backend-status-toast' });
             } catch (e) {}
           }
         }, 2500);
       }
-      setLoading(false);
+
+      setTimeout(() => {
+        setStartupSyncing(false);
+        setLoading(false);
+      }, 600);
     }
 
     function loadFallbackData() {
@@ -149,6 +171,33 @@ export function AppProvider({ children }) {
     }
 
     initData();
+
+    // Auto-sync on network reconnect
+    const handleOnline = async () => {
+      console.log('🌐 Network Reconnected! Triggering Auto-Cloud Sync...');
+      toast.loading('Internet Reconnected: Syncing data to Cloud...', { id: 'cloud-auto-sync' });
+      try {
+        await api.bidirectionalSync();
+        await loadServerData();
+        toast.success('✅ Cloud Database Synchronized!', { id: 'cloud-auto-sync' });
+      } catch(e) {
+        toast.dismiss('cloud-auto-sync');
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+
+    // Periodic Background Auto-Sync (Every 60 Seconds)
+    const periodicSync = setInterval(() => {
+      if (navigator.onLine) {
+        api.syncDataToCloud().catch(() => {});
+      }
+    }, 60000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      clearInterval(periodicSync);
+    };
   }, []);
 
   // Save local fallbacks so Demo Mode always has the latest data
@@ -823,6 +872,8 @@ export function AppProvider({ children }) {
     batches,
     backendOnline,
     loading,
+    startupSyncing,
+    startupSyncText,
     sidebarOpen,
     setSidebarOpen,
     sidebarCollapsed,

@@ -156,6 +156,8 @@ export default function Attendance() {
   const [idCardSearch, setIdCardSearch] = useState('');
   const [idCardSide, setIdCardSide] = useState('duplex'); // 'duplex' | 'both' | 'front' | 'back'
   const [idCardCardsPerPage, setIdCardCardsPerPage] = useState(4); // 4 (Large 2x2) or 6 (Compact 2x3)
+  const [idCardPreviewPage, setIdCardPreviewPage] = useState(1);
+  const [idCardShowAll, setIdCardShowAll] = useState(false);
   const [lastPunch, setLastPunch] = useState(null);
   const [lastScannedMap, setLastScannedMap] = useState({});
   const kioskInputRef = useRef(null);
@@ -412,27 +414,69 @@ export default function Attendance() {
     return Array.from(set).filter(Boolean);
   }, [students]);
 
-  // Filtered students for ID card printing modal
+  // Filtered students for ID card printing modal (Exact Roll Priority & 0ms Zero-Lag Indexing)
   const filteredIdCardStudents = useMemo(() => {
-    return activeStudents.filter((s) => {
-      if (selectedIdCardBatch !== 'all') {
+    const rawQ = idCardSearch.trim();
+
+    let pool = activeStudents;
+    if (selectedIdCardBatch !== 'all') {
+      const bSel = selectedIdCardBatch.toLowerCase();
+      pool = pool.filter((s) => {
         const b = (s.batch || s.targetClass || '').toLowerCase();
-        if (!b.includes(selectedIdCardBatch.toLowerCase()) && s.batch !== selectedIdCardBatch) {
-          return false;
-        }
+        return b === bSel || b.includes(bSel);
+      });
+    }
+
+    if (!rawQ) return pool;
+
+    const qLower = rawQ.toLowerCase();
+    const isNumeric = /^\d+$/.test(rawQ);
+
+    if (isNumeric) {
+      // 1. Exact Roll Number Match (e.g. searching '17988' matches ONLY student 17988)
+      const exactMatches = pool.filter((s) => {
+        const r = String(s.rollNo || '').trim();
+        const id = String(s.id || '').trim();
+        return r === rawQ || id === rawQ;
+      });
+      if (exactMatches.length > 0) {
+        return exactMatches;
       }
-      if (idCardSearch.trim()) {
-        const q = idCardSearch.toLowerCase().trim();
-        const name = (s.name || '').toLowerCase();
-        const roll = String(s.rollNo || '').toLowerCase();
-        const phone = String(s.phone || s.parentPhone || '').toLowerCase();
-        if (!name.includes(q) && !roll.includes(q) && !phone.includes(q)) {
-          return false;
-        }
-      }
-      return true;
+
+      // 2. Prefix match for incomplete roll numbers (e.g. '17')
+      return pool.filter((s) => {
+        const r = String(s.rollNo || '').trim();
+        const p = String(s.parentPhone || s.phone || '').trim();
+        return r.startsWith(rawQ) || p.includes(rawQ);
+      });
+    }
+
+    // Text / Name Search (Substring in name or exact ID)
+    return pool.filter((s) => {
+      const name = (s.name || '').toLowerCase();
+      const id = String(s.id || '').toLowerCase();
+      const roll = String(s.rollNo || '').toLowerCase();
+      return name.includes(qLower) || id.includes(qLower) || roll === qLower;
     });
   }, [activeStudents, selectedIdCardBatch, idCardSearch]);
+
+  // Reset page when batch or search changes
+  useEffect(() => {
+    setIdCardPreviewPage(1);
+  }, [selectedIdCardBatch, idCardSearch]);
+
+  // Preview Pagination Constants
+  const PREVIEW_PAGE_SIZE = 24; // 6 sheets in 4-card mode, 4 sheets in 6-card mode
+  const totalIdCardPages = Math.ceil(filteredIdCardStudents.length / PREVIEW_PAGE_SIZE) || 1;
+
+  // Displayed students for butter-smooth 60fps screen rendering
+  const displayedIdCardStudents = useMemo(() => {
+    if (idCardSearch.trim() || idCardShowAll || filteredIdCardStudents.length <= PREVIEW_PAGE_SIZE) {
+      return filteredIdCardStudents;
+    }
+    const start = (idCardPreviewPage - 1) * PREVIEW_PAGE_SIZE;
+    return filteredIdCardStudents.slice(start, start + PREVIEW_PAGE_SIZE);
+  }, [filteredIdCardStudents, idCardSearch, idCardShowAll, idCardPreviewPage]);
 
   // 📥 Dedicated High-Resolution Native A4 PDF Generator (Direct download via jsPDF)
   const handleSaveAsPdf = async () => {
@@ -2813,7 +2857,7 @@ export default function Attendance() {
                             onClick={() => setIdCardCardsPerPage(6)}
                             style={{
                               padding: '5px 10px',
-                              borderRadius: 6,
+                          borderRadius: 6,
                               border: 'none',
                               fontSize: '0.74rem',
                               fontWeight: 800,
@@ -2826,21 +2870,84 @@ export default function Attendance() {
                           </button>
                         </div>
                       )}
-                    </div>
 
-                    <div style={{
-                      fontSize: '0.80rem',
-                      fontWeight: 800,
-                      color: '#60a5fa',
-                      background: 'rgba(59, 130, 246, 0.18)',
-                      border: '1px solid rgba(59, 130, 246, 0.35)',
-                      padding: '5px 12px',
-                      borderRadius: 20,
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {idCardSide === 'duplex'
-                        ? `${filteredIdCardStudents.length} Students (${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage)} A4 Sheets / ${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage) * 2} Pages)`
-                        : `Showing ${filteredIdCardStudents.length} Students (${idCardSide === 'both' ? filteredIdCardStudents.length * 2 : filteredIdCardStudents.length} Cards)`}
+                      {/* Pagination Controls for Ultra-Fast Zero-Lag Screen Rendering */}
+                      {totalIdCardPages > 1 && !idCardSearch.trim() && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1e293b', padding: '3px 8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
+                          <button
+                            type="button"
+                            disabled={idCardPreviewPage <= 1 || idCardShowAll}
+                            onClick={() => setIdCardPreviewPage(p => Math.max(1, p - 1))}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 4,
+                              border: 'none',
+                              background: idCardPreviewPage > 1 && !idCardShowAll ? '#3b82f6' : '#334155',
+                              color: '#ffffff',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              cursor: idCardPreviewPage > 1 && !idCardShowAll ? 'pointer' : 'not-allowed'
+                            }}
+                          >
+                            ◀ Prev
+                          </button>
+                          
+                          <span style={{ fontSize: '0.74rem', color: '#e2e8f0', fontWeight: 700 }}>
+                            {idCardShowAll ? 'All Cards Rendered' : `Page ${idCardPreviewPage} / ${totalIdCardPages} (${displayedIdCardStudents.length} Cards)`}
+                          </span>
+
+                          <button
+                            type="button"
+                            disabled={idCardPreviewPage >= totalIdCardPages || idCardShowAll}
+                            onClick={() => setIdCardPreviewPage(p => Math.min(totalIdCardPages, p + 1))}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 4,
+                              border: 'none',
+                              background: idCardPreviewPage < totalIdCardPages && !idCardShowAll ? '#3b82f6' : '#334155',
+                              color: '#ffffff',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              cursor: idCardPreviewPage < totalIdCardPages && !idCardShowAll ? 'pointer' : 'not-allowed'
+                            }}
+                          >
+                            Next ▶
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setIdCardShowAll(!idCardShowAll)}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 4,
+                              border: 'none',
+                              background: idCardShowAll ? '#10b981' : '#475569',
+                              color: '#ffffff',
+                              fontSize: '0.70rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              marginLeft: 4
+                            }}
+                          >
+                            {idCardShowAll ? '⚡ Fast View' : '👁️ View All'}
+                          </button>
+                        </div>
+                      )}
+
+                      <div style={{
+                        fontSize: '0.80rem',
+                        fontWeight: 800,
+                        color: '#60a5fa',
+                        background: 'rgba(59, 130, 246, 0.18)',
+                        border: '1px solid rgba(59, 130, 246, 0.35)',
+                        padding: '5px 12px',
+                        borderRadius: 20,
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {idCardSide === 'duplex'
+                          ? `${filteredIdCardStudents.length} Students (${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage)} A4 Sheets / ${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage) * 2} Pages)`
+                          : `Showing ${filteredIdCardStudents.length} Students (${idCardSide === 'both' ? filteredIdCardStudents.length * 2 : filteredIdCardStudents.length} Cards)`}
+                      </div>
                     </div>
                   </div>
 
@@ -2850,8 +2957,8 @@ export default function Attendance() {
                       {/* ================= MODE 1: DUPLEX A4 SHEETS ================= */}
                       {idCardSide === 'duplex' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 36, alignItems: 'center' }}>
-                          {Array.from({ length: Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage) }).map((_, sheetIdx) => {
-                            const chunk = filteredIdCardStudents.slice(sheetIdx * idCardCardsPerPage, sheetIdx * idCardCardsPerPage + idCardCardsPerPage);
+                          {Array.from({ length: Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage) }).map((_, sheetIdx) => {
+                            const chunk = displayedIdCardStudents.slice(sheetIdx * idCardCardsPerPage, sheetIdx * idCardCardsPerPage + idCardCardsPerPage);
                             
                             // Mirrored chunk for horizontal flip on 2-column grid
                             const rows = idCardCardsPerPage / 2;
@@ -3270,7 +3377,7 @@ export default function Attendance() {
                             justifyContent: 'center'
                           }}
                         >
-                          {filteredIdCardStudents.map((st) => (
+                          {displayedIdCardStudents.map((st) => (
                             <div
                               key={st.id}
                               className="print-id-card-pair"

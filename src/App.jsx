@@ -33,8 +33,89 @@ import GlobalScannerDeskListener from './components/GlobalScannerDeskListener';
 import { useApp } from './context/AppContext';
 
 function AppLayout() {
-  const { sidebarCollapsed } = useApp();
+  const { sidebarCollapsed, startupSyncing, startupSyncText } = useApp();
   
+  if (startupSyncing) {
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0f172a 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 99999,
+        color: '#f8fafc',
+        fontFamily: "'Inter', sans-serif"
+      }}>
+        <div style={{
+          background: 'rgba(30, 41, 59, 0.7)',
+          border: '1px solid rgba(59, 130, 246, 0.25)',
+          borderRadius: '24px',
+          padding: '40px 48px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          maxWidth: '460px',
+          width: '90%',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(59, 130, 246, 0.15)',
+          backdropFilter: 'blur(16px)',
+          textAlign: 'center'
+        }}>
+          {/* Animated Cloud / Sync Icon */}
+          <div style={{
+            position: 'relative',
+            width: '76px',
+            height: '76px',
+            borderRadius: '20px',
+            background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 8px 24px rgba(37, 99, 235, 0.4)',
+            marginBottom: '20px'
+          }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'cxSpin 3s linear infinite' }}>
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+          </div>
+
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.02em', margin: '0 0 6px 0', color: '#ffffff' }}>
+            CAREER XONE <span style={{ color: '#60a5fa' }}>PRO</span>
+          </h2>
+          <p style={{ fontSize: '0.80rem', color: '#94a3b8', margin: '0 0 24px 0', fontWeight: 600 }}>
+            Cloud Database Sync & Realtime Link Active
+          </p>
+
+          {/* Progress loader */}
+          <div style={{ width: '100%', height: '6px', background: 'rgba(51, 65, 85, 0.5)', borderRadius: '3px', overflow: 'hidden', marginBottom: '16px' }}>
+            <div style={{
+              width: '65%',
+              height: '100%',
+              background: 'linear-gradient(90deg, #3b82f6, #60a5fa, #93c5fd)',
+              borderRadius: '3px',
+              animation: 'cxPulseBar 1.5s ease-in-out infinite'
+            }} />
+          </div>
+
+          <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            🔄 {startupSyncText}
+          </span>
+        </div>
+
+        <style>{`
+          @keyframes cxSpin { 100% { transform: rotate(360deg); } }
+          @keyframes cxPulseBar {
+            0% { transform: translateX(-100%); width: 40%; }
+            50% { width: 80%; }
+            100% { transform: translateX(200%); width: 40%; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div className={`app-layout ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <GlobalScannerDeskListener />

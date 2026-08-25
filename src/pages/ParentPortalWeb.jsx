@@ -1553,8 +1553,10 @@ export default function ParentPortalWeb() {
               </div>
             ) : (
               filteredTests.map((t, idx) => {
-                const topperScore = t.topperMarks || Math.min(t.totalMarks || 360, Math.round((t.totalMarks || 360) * 0.95));
-                const batchAvgScore = t.avgMarks || Math.round((t.totalMarks || 360) * 0.58);
+                const studentScore = Number(t.marks) || 0;
+                const topperScore = t.topperMarks != null ? Math.max(Number(t.topperMarks), studentScore) : studentScore;
+                const batchAvgScore = t.avgMarks != null ? Number(t.avgMarks) : studentScore;
+                const totalStudentsCount = t.totalStudents || (t.rank ? Math.max(Number(t.rank), 1) : 1);
 
                 return (
                   <div key={idx} style={{
@@ -1587,7 +1589,7 @@ export default function ParentPortalWeb() {
                       <div>
                         <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Batch Rank</span>
                         <strong style={{ fontSize: '0.82rem', color: '#0284c7' }}>
-                          {t.rank ? `${t.rank} / ${t.totalStudents || 74}` : '-'}
+                          {t.rank ? `${t.rank} / ${totalStudentsCount}` : '-'}
                         </strong>
                       </div>
                       <div>
@@ -1603,7 +1605,7 @@ export default function ParentPortalWeb() {
                       display: 'flex', flexDirection: 'column', gap: '4px'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.64rem', color: '#475569', fontWeight: 700 }}>
-                        <span>Student: <strong style={{ color: '#0284c7' }}>{t.marks}</strong></span>
+                        <span>Student: <strong style={{ color: '#0284c7' }}>{studentScore}</strong></span>
                         <span>Topper: <strong style={{ color: '#15803d' }}>{topperScore}</strong></span>
                         <span>Batch Avg: <strong style={{ color: '#64748b' }}>{batchAvgScore}</strong></span>
                       </div>

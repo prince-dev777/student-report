@@ -234,6 +234,29 @@ async function attachTestDetailsToResults(results, instituteId) {
     if (t._id) testsById.set(t._id.toString(), t.toObject());
   });
 
+  // Calculate real topper and batch average across all published results for these tests
+  const allTestResults = testIds.length > 0
+    ? await TestResult.find({
+        isDeleted: { $ne: true },
+        testId: { $in: testIds },
+        status: { $in: ['Published', 'published'] }
+      })
+    : [];
+
+  const testStatsMap = {};
+  for (const r of allTestResults) {
+    const tId = r.testId;
+    if (!testStatsMap[tId]) {
+      testStatsMap[tId] = { maxMarks: -Infinity, totalMarksSum: 0, count: 0 };
+    }
+    const marks = Number(r.marks) || 0;
+    if (marks > testStatsMap[tId].maxMarks) {
+      testStatsMap[tId].maxMarks = marks;
+    }
+    testStatsMap[tId].totalMarksSum += marks;
+    testStatsMap[tId].count += 1;
+  }
+
   return results.map((result) => {
     const resObj = typeof result.toObject === 'function' ? result.toObject() : result;
     const foundTest = testsById.get(result.testId) || {
@@ -244,13 +267,28 @@ async function attachTestDetailsToResults(results, instituteId) {
       totalMarks: result.totalMarks || 360,
       batch: 'All'
     };
+
+    const stats = testStatsMap[result.testId] || {
+      maxMarks: Number(resObj.marks) || 0,
+      totalMarksSum: Number(resObj.marks) || 0,
+      count: 1
+    };
+
+    const studentMarks = Number(resObj.marks) || 0;
+    const realTopper = stats.maxMarks !== -Infinity ? Math.max(stats.maxMarks, studentMarks) : studentMarks;
+    const realAvg = stats.count > 0 ? Math.round(stats.totalMarksSum / stats.count) : studentMarks;
+    const realTotalStudents = stats.count || resObj.totalStudents || 1;
+
     return {
       ...resObj,
       test: foundTest,
       testName: foundTest.name || resObj.testName || '12TH NEET ALL BATCH ( 25-27 ) 18.08.2026',
       testDate: foundTest.date || resObj.testDate || (resObj.createdAt ? new Date(resObj.createdAt).toLocaleDateString('en-IN') : '18/08/2026'),
       subject: foundTest.subject || resObj.subject || 'NEET Complete',
-      totalMarks: resObj.totalMarks || foundTest.totalMarks || 360
+      totalMarks: resObj.totalMarks || foundTest.totalMarks || 360,
+      topperMarks: realTopper,
+      avgMarks: realAvg,
+      totalStudents: realTotalStudents
     };
   });
 }
@@ -1411,36 +1449,7 @@ app.post('/api/parent/login', async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(50);
 
-    const testIds = rawTestResults.map(r => r.testId);
-    const tests = await Test.find({ 
-      isDeleted: { $ne: true },  
-      $or: [
-        { id: { $in: testIds } },
-        { _id: { $in: testIds.filter(id => mongoose.Types.ObjectId.isValid(id)) } }
-      ]
-    });
-    const testMap = {};
-    tests.forEach(t => { 
-      if (t.id) testMap[t.id] = t; 
-      if (t._id) testMap[t._id.toString()] = t;
-    });
-
-    const enrichedResults = rawTestResults.map(r => {
-      const t = testMap[r.testId] || {};
-      return {
-        id: r.id,
-        testId: r.testId,
-        testName: t.name || '12TH NEET ALL BATCH ( 25-27 ) 18.08.2026',
-        subject: t.subject || 'NEET Complete',
-        testDate: t.date || (r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN') : '18/08/2026'),
-        marks: r.marks,
-        totalMarks: r.totalMarks || t.totalMarks || 360,
-        percentage: r.percentage,
-        rank: r.rank,
-        totalStudents: r.totalStudents || 74,
-        omrSheetImage: r.omrSheetImage
-      };
-    });
+    const enrichedResults = await attachTestDetailsToResults(rawTestResults, student.instituteId);
 
     const totalAtt = attendanceRecords.length;
     const presentAtt = attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length;
