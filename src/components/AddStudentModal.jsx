@@ -66,8 +66,8 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
 
   useEffect(() => {
     if (isAutoGenerate && !isEdit) {
-      // Find max roll number, starting from 1000
-      let maxRoll = 999;
+      // Find max roll number, starting from 17000 (5-digit standard)
+      let maxRoll = 17000;
       if (students && students.length > 0) {
         students.forEach(s => {
           const rollInt = parseInt(s.rollNo, 10);

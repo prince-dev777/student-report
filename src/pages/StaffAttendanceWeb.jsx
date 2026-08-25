@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, CheckCircle2, XCircle, Clock, Search, Filter, 
-  Calendar, RefreshCw, LogOut, LogIn, CheckCheck, UserCheck, ShieldAlert 
+  Calendar, RefreshCw, LogOut, LogIn, CheckCheck, UserCheck, ShieldAlert,
+  QrCode, Camera, ScanLine, Sparkles, Volume2, VolumeX, Smartphone, Radio
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
@@ -20,6 +21,18 @@ export default function StaffAttendanceWeb() {
   const [courseFilter, setCourseFilter] = useState('ALL');
   const [classFilter, setClassFilter] = useState('ALL');
   const [savingId, setSavingId] = useState(null);
+
+  // ⚡ Live Scanner & View Mode States
+  const [viewTab, setViewTab] = useState('roster'); // 'roster' | 'scanner'
+  const [scannerType, setScannerType] = useState('camera'); // 'camera' | 'hardware'
+  const [kioskCode, setKioskCode] = useState('');
+  const [lastScannedItem, setLastScannedItem] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const videoRef = React.useRef(null);
+  const streamRef = React.useRef(null);
+  const scanIntervalRef = React.useRef(null);
 
   // Passcode Auth with Backend Token
   const [passcode, setPasscode] = useState('');
@@ -324,6 +337,173 @@ export default function StaffAttendanceWeb() {
     }
   };
 
+  // 🔊 Sound chime for punch feedback
+  const playPunchSound = (type = 'success') => {
+    if (!soundEnabled) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      if (type === 'success') {
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+      } else {
+        osc.frequency.setValueAtTime(220, ctx.currentTime);
+        osc.frequency.setValueAtTime(160, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      }
+    } catch (e) {}
+  };
+
+  // ⚡ Process Code from Camera Scanner or Hardware 2D Gun
+  const handleProcessScanCode = async (rawInput) => {
+    const raw = String(rawInput || '').trim();
+    if (!raw) return;
+
+    setKioskCode('');
+
+    // 1. JSON extraction from QR cards
+    let extractedRoll = raw;
+    try {
+      if (raw.startsWith('{') && raw.endsWith('}')) {
+        const parsed = JSON.parse(raw);
+        extractedRoll = String(parsed.rollNo || parsed.roll || parsed.id || parsed.studentId || raw);
+      }
+    } catch (e) {}
+
+    // 2. URL extraction
+    if (extractedRoll.startsWith('http://') || extractedRoll.startsWith('https://')) {
+      try {
+        const u = new URL(extractedRoll);
+        const parts = u.pathname.split('/').filter(Boolean);
+        extractedRoll = u.searchParams.get('roll') || u.searchParams.get('id') || parts[parts.length - 1] || extractedRoll;
+      } catch (e) {}
+    }
+    extractedRoll = extractedRoll.trim().toLowerCase();
+
+    // 3. Match student
+    const matched = students.find(s => {
+      const r = String(s.rollNo || '').trim().toLowerCase();
+      const id = String(s.id || '').trim().toLowerCase();
+      const phone = String(s.parentPhone || s.parentPhone2 || '').trim();
+      return r === extractedRoll || id === extractedRoll || phone === extractedRoll;
+    }) || students.find(s => {
+      const numA = parseInt(s.rollNo, 10);
+      const numB = parseInt(extractedRoll, 10);
+      return !isNaN(numA) && !isNaN(numB) && numA === numB;
+    });
+
+    if (!matched) {
+      playPunchSound('error');
+      toast.error(`❌ Student Not Found for Code: "${rawInput}"`);
+      return;
+    }
+
+    // 4. Anti-spam debounce (5s)
+    const now = Date.now();
+    if (lastScannedItem?.student?.id === matched.id && (now - (lastScannedItem?.timestampMs || 0)) < 5000) {
+      toast(`⏳ ${matched.name} was already punched a moment ago!`, { icon: '⚠️' });
+      return;
+    }
+
+    // 5. Determine Check-In vs Check-Out
+    const currentStatus = getStudentStatus(matched.id).status;
+    const nextStatus = (currentStatus === 'IN' || currentStatus === 'PRESENT') ? 'OUT' : 'IN';
+
+    playPunchSound('success');
+    setLastScannedItem({
+      student: matched,
+      status: nextStatus,
+      timeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      timestampMs: now
+    });
+
+    await handleMarkStatus(matched, nextStatus);
+  };
+
+  // Camera Scanner Lifecycle
+  useEffect(() => {
+    if (viewTab !== 'scanner' || scannerType !== 'camera' || !isAuthenticated) {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+      }
+      setIsCameraActive(false);
+      return;
+    }
+
+    let isSubscribed = true;
+
+    async function startCamera() {
+      setCameraError(null);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        if (!isSubscribed) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.setAttribute('playsinline', 'true');
+          await videoRef.current.play();
+          setIsCameraActive(true);
+        }
+
+        // Initialize BarcodeDetector if supported
+        if ('BarcodeDetector' in window) {
+          const barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code', 'code_128', 'ean_13', 'code_39'] });
+          scanIntervalRef.current = setInterval(async () => {
+            if (videoRef.current && videoRef.current.readyState === 4) {
+              try {
+                const barcodes = await barcodeDetector.detect(videoRef.current);
+                if (barcodes && barcodes.length > 0) {
+                  const detectedVal = barcodes[0].rawValue;
+                  if (detectedVal) {
+                    handleProcessScanCode(detectedVal);
+                  }
+                }
+              } catch (detectErr) {}
+            }
+          }, 350);
+        }
+      } catch (camErr) {
+        console.warn('Camera stream error:', camErr);
+        setCameraError('Camera access unavailable. Using Hardware 2D Gun / Manual input mode.');
+        setScannerType('hardware');
+      }
+    }
+
+    startCamera();
+
+    return () => {
+      isSubscribed = false;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+      }
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+      }
+    };
+  }, [viewTab, scannerType, isAuthenticated]);
+
   // Mark all unmarked students as Checked-In
   const handleMarkAllPresent = async () => {
     const confirmMark = window.confirm(`Are you sure you want to Check In all unmarked students for ${selectedDate}?`);
@@ -469,6 +649,313 @@ const getCourseName = (batch) => {
 
       {/* Main Content */}
       <main style={styles.main}>
+        {/* Navigation Tabs: Roster vs 2D/Camera Scanner */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '18px' }}>
+          <div style={{ display: 'flex', gap: '8px', background: '#e2e8f0', padding: '4px', borderRadius: '12px' }}>
+            <button
+              onClick={() => setViewTab('roster')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '9px',
+                border: 'none',
+                background: viewTab === 'roster' ? '#ffffff' : 'transparent',
+                color: viewTab === 'roster' ? '#0f172a' : '#64748b',
+                fontWeight: 800,
+                fontSize: '0.86rem',
+                cursor: 'pointer',
+                boxShadow: viewTab === 'roster' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Users size={16} color={viewTab === 'roster' ? '#2563eb' : '#64748b'} />
+              Student Roster
+            </button>
+            
+            <button
+              onClick={() => setViewTab('scanner')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '9px',
+                border: 'none',
+                background: viewTab === 'scanner' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : 'transparent',
+                color: viewTab === 'scanner' ? '#ffffff' : '#64748b',
+                fontWeight: 800,
+                fontSize: '0.86rem',
+                cursor: 'pointer',
+                boxShadow: viewTab === 'scanner' ? '0 2px 10px rgba(124, 58, 237, 0.3)' : 'none',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <QrCode size={16} color={viewTab === 'scanner' ? '#ffffff' : '#64748b'} />
+              ⚡ 2D / QR Scanner Desk
+            </button>
+          </div>
+
+          {viewTab === 'scanner' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                title="Toggle Beep Sound"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '10px',
+                  padding: '7px 12px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  color: soundEnabled ? '#059669' : '#94a3b8',
+                  cursor: 'pointer'
+                }}
+              >
+                {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                {soundEnabled ? 'Sound ON' : 'Muted'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ========================================================= */}
+        {/* ⚡ TAB 2: LIVE 2D QR / CAMERA ATTENDANCE SCANNER DESK      */}
+        {/* ========================================================= */}
+        {viewTab === 'scanner' ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+            {/* Left Box: Scanner Viewfinder & Hardware Input */}
+            <div style={{ background: '#ffffff', borderRadius: '18px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(124, 58, 237, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7c3aed' }}>
+                    <ScanLine size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Live Attendance Scanner</h3>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>Flash QR card or scan barcode</p>
+                  </div>
+                </div>
+
+                {/* Scanner Type Switch: Camera vs 2D Gun */}
+                <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '2px' }}>
+                  <button
+                    onClick={() => setScannerType('camera')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '5px 10px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      background: scannerType === 'camera' ? '#7c3aed' : 'transparent',
+                      color: scannerType === 'camera' ? '#ffffff' : '#64748b',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Camera size={13} /> Camera
+                  </button>
+                  <button
+                    onClick={() => setScannerType('hardware')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '5px 10px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      background: scannerType === 'hardware' ? '#7c3aed' : 'transparent',
+                      color: scannerType === 'hardware' ? '#ffffff' : '#64748b',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Radio size={13} /> 2D Gun
+                  </button>
+                </div>
+              </div>
+
+              {/* Hardware Barcode & Roll Input Bar */}
+              <form onSubmit={(e) => { e.preventDefault(); handleProcessScanCode(kioskCode); }} style={{ marginBottom: '14px' }}>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Scan Barcode / 2D Gun / Type 5-Digit Roll..."
+                    value={kioskCode}
+                    onChange={(e) => setKioskCode(e.target.value)}
+                    autoFocus
+                    style={{
+                      width: '100%',
+                      padding: '12px 42px 12px 14px',
+                      borderRadius: '12px',
+                      border: '2px solid #7c3aed',
+                      background: 'rgba(124, 58, 237, 0.03)',
+                      color: '#0f172a',
+                      fontSize: '0.95rem',
+                      fontWeight: 800,
+                      outline: 'none',
+                      boxShadow: '0 0 0 3px rgba(124, 58, 237, 0.1)'
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    style={{
+                      position: 'absolute',
+                      right: '6px',
+                      top: '6px',
+                      bottom: '6px',
+                      padding: '0 12px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#7c3aed',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Punch
+                  </button>
+                </div>
+              </form>
+
+              {/* Camera Scanner Viewfinder */}
+              {scannerType === 'camera' && (
+                <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', maxHeight: '280px', borderRadius: '14px', overflow: 'hidden', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <video
+                    ref={videoRef}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    autoPlay
+                    playsInline
+                    muted
+                  />
+                  {/* Viewfinder Target Frame */}
+                  <div style={{
+                    position: 'absolute',
+                    width: '65%',
+                    height: '65%',
+                    border: '2.5px solid #a855f7',
+                    borderRadius: '16px',
+                    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)',
+                    pointerEvents: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    padding: '8px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ width: '16px', height: '16px', borderTop: '3px solid #38bdf8', borderLeft: '3px solid #38bdf8' }}></span>
+                      <span style={{ width: '16px', height: '16px', borderTop: '3px solid #38bdf8', borderRight: '3px solid #38bdf8' }}></span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ width: '16px', height: '16px', borderBottom: '3px solid #38bdf8', borderLeft: '3px solid #38bdf8' }}></span>
+                      <span style={{ width: '16px', height: '16px', borderBottom: '3px solid #38bdf8', borderRight: '3px solid #38bdf8' }}></span>
+                    </div>
+                  </div>
+
+                  <div style={{ position: 'absolute', bottom: '10px', background: 'rgba(0,0,0,0.65)', color: '#ffffff', padding: '4px 12px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 600, backdropFilter: 'blur(4px)' }}>
+                    {isCameraActive ? '📷 Align Student QR Card in Box' : 'Initializing Camera...'}
+                  </div>
+                </div>
+              )}
+
+              {cameraError && (
+                <div style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: '0.78rem' }}>
+                  {cameraError}
+                </div>
+              )}
+            </div>
+
+            {/* Right Box: Celebration Punch Showcase & Live Punch Feed */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Latest Punched Student Showcase Card */}
+              {lastScannedItem ? (
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  key={lastScannedItem.student.id + lastScannedItem.timestampMs}
+                  style={{
+                    background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)',
+                    borderRadius: '18px',
+                    padding: '20px',
+                    color: '#ffffff',
+                    boxShadow: '0 10px 25px rgba(4, 120, 87, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px'
+                  }}
+                >
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '16px',
+                    background: 'rgba(255,255,255,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.4rem',
+                    fontWeight: 900,
+                    border: '2px solid rgba(255,255,255,0.4)',
+                    overflow: 'hidden'
+                  }}>
+                    {lastScannedItem.student.photo ? (
+                      <img src={lastScannedItem.student.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      lastScannedItem.student.name?.substring(0, 2).toUpperCase()
+                    )}
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.25)', padding: '3px 10px', borderRadius: '12px', fontSize: '0.74rem', fontWeight: 800, marginBottom: '4px' }}>
+                      <CheckCircle2 size={13} /> {lastScannedItem.status === 'IN' ? 'CHECKED IN' : 'CHECKED OUT'}
+                    </div>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 900, margin: '2px 0' }}>{lastScannedItem.student.name}</h3>
+                    <div style={{ fontSize: '0.80rem', opacity: 0.9 }}>
+                      Roll No: <strong>{lastScannedItem.student.rollNo}</strong> • {lastScannedItem.student.batch || 'General'}
+                    </div>
+                    <div style={{ fontSize: '0.74rem', opacity: 0.8, marginTop: '2px' }}>
+                      Time: {lastScannedItem.timeStr} • Instant WhatsApp Sent 📱
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <div style={{ background: '#ffffff', borderRadius: '18px', padding: '24px', border: '1px dashed #cbd5e1', textAlign: 'center', color: '#64748b' }}>
+                  <Sparkles size={32} color="#a855f7" style={{ margin: '0 auto 8px' }} />
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>Ready to Scan</h4>
+                  <p style={{ fontSize: '0.80rem', margin: 0 }}>Flash student QR code or scan with 2D gun to mark attendance instantly.</p>
+                </div>
+              )}
+
+              {/* Today's Live Attendance Stats Strip */}
+              <div style={{ background: '#ffffff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                <div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Total</span>
+                  <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: '2px 0 0' }}>{totalStudents}</h4>
+                </div>
+                <div style={{ width: '1px', background: '#e2e8f0' }}></div>
+                <div>
+                  <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>Checked In</span>
+                  <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#059669', margin: '2px 0 0' }}>{checkedInCount}</h4>
+                </div>
+                <div style={{ width: '1px', background: '#e2e8f0' }}></div>
+                <div>
+                  <span style={{ fontSize: '0.72rem', color: '#d97706', fontWeight: 600 }}>Unmarked</span>
+                  <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#d97706', margin: '2px 0 0' }}>{unmarkedCount}</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {viewTab === 'roster' && (
+          <>
       {/* Responsive CSS for Laptop (4-Col Full) vs Mobile (2x2 Compact) */}
       <style>{`
         .staff-stats-grid {
@@ -823,6 +1310,8 @@ const getCourseName = (batch) => {
               );
             })}
           </div>
+        )}
+        </>
         )}
       </main>
     </div>

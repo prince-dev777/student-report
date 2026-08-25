@@ -123,7 +123,20 @@ export function AppProvider({ children }) {
     }
 
     function loadFallbackData() {
-      const localStudents = loadLocalData('students', []);
+      let localStudents = loadLocalData('students', []);
+      localStudents = localStudents.map((s) => {
+        const r = String(s.rollNo || '').trim();
+        if (/^\d{1,4}$/.test(r)) {
+          const newRoll = r.length === 4 ? `1${r}` : `1${r.padStart(4, '0')}`;
+          return {
+            ...s,
+            rollNo: newRoll,
+            parentUserId: s.parentUserId ? s.parentUserId.replace(r, newRoll) : `CAREER${newRoll}`
+          };
+        }
+        return s;
+      });
+
       const validIds = new Set(localStudents.map((s) => s.id));
       
       setStudents(localStudents);
@@ -243,6 +256,33 @@ export function AppProvider({ children }) {
     toast.success('Student removed locally!');
   }, [backendOnline]);
 
+  const deleteStudentsBulk = useCallback(async (ids) => {
+    if (!Array.isArray(ids) || ids.length === 0) return;
+    const idSet = new Set(ids);
+
+    if (backendOnline) {
+      try {
+        await api.deleteStudentsBulk(ids);
+        setStudents((prev) => prev.filter((s) => !idSet.has(s.id)));
+        setAttendance((prev) => prev.filter((a) => !idSet.has(a.studentId)));
+        setTestResults((prev) => prev.filter((r) => !idSet.has(r.studentId)));
+        setSMSHistory((prev) => prev.filter((sms) => !idSet.has(sms.studentId)));
+        toast.success(`✅ Deleted ${ids.length} students successfully!`);
+        return;
+      } catch (err) {
+        console.error('Failed to bulk delete students:', err);
+        toast.error('Failed to delete students in bulk');
+        return;
+      }
+    }
+
+    setStudents((prev) => prev.filter((s) => !idSet.has(s.id)));
+    setAttendance((prev) => prev.filter((a) => !idSet.has(a.studentId)));
+    setTestResults((prev) => prev.filter((r) => !idSet.has(r.studentId)));
+    setSMSHistory((prev) => prev.filter((sms) => !idSet.has(sms.studentId)));
+    toast.success(`Removed ${ids.length} students locally!`);
+  }, [backendOnline]);
+
   const regenerateParentCredentials = useCallback(async (id) => {
     if (backendOnline) {
       try {
@@ -347,17 +387,19 @@ export function AppProvider({ children }) {
   const addTest = useCallback(async (testData) => {
     const newTest = {
       ...testData,
-      id: generateId('TEST'),
+      id: testData.id || generateId('TEST'),
     };
 
     if (backendOnline) {
       try {
         const saved = await api.createTest(newTest);
-        setTests((prev) => [saved, ...prev]);
-        toast.success(`✅ Scheduled test saved!`);
+        setTests((prev) => [saved, ...prev.filter(t => (t.id !== saved.id && t._id !== saved._id))]);
+        toast.success(`✅ Scheduled test "${saved.name}" saved to Database!`);
         return saved;
       } catch (err) {
-        toast.error('Failed to save test');
+        console.error('Failed to save test via API:', err);
+        toast.error(`Database Save Error: ${err.message || 'Server error'}`);
+        throw err;
       }
     }
 
@@ -788,6 +830,7 @@ export function AppProvider({ children }) {
     addStudent,
     updateStudent,
     deleteStudent,
+    deleteStudentsBulk,
     regenerateParentCredentials,
     markAttendance,
     addTest,

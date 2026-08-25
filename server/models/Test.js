@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const testSchema = new mongoose.Schema({
   instituteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institute', required: true },
-  id: { type: String, required: true },
+  id: { type: String, required: true, default: () => `TEST_${Date.now()}_${Math.random().toString(36).substring(2, 7)}` },
   name: { type: String, required: true },
   subject: { type: String, required: true },
   date: { type: String, required: true },

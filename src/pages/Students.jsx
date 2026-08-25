@@ -29,12 +29,15 @@ const AnimatedCounter = ({ to }) => {
 };
 
 export default function Students() {
-  const { students, batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent } = useApp();
+  const { students, batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent, deleteStudentsBulk } = useApp();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedClass, setSelectedClass] = useState('all');
   const [studentToDelete, setStudentToDelete] = useState(null);
+  const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   // Pagination State
   const [paginatedStudents, setPaginatedStudents] = useState([]);
@@ -65,20 +68,16 @@ export default function Students() {
     }
   };
 
-  // Consolidated full student list for instantaneous filters & full dataset exports
   const allStudentsList = useMemo(() => {
     if (Array.isArray(students) && students.length > 0) return students;
     return paginatedStudents || [];
   }, [students, paginatedStudents]);
 
-  // Dynamic unique classes from all students in database (only classes where students actually exist)
   const uniqueClasses = useMemo(() => {
     const classSet = new Set();
     allStudentsList.forEach(s => {
       const cls = String(s.class || '').trim();
-      if (cls) {
-        classSet.add(cls);
-      }
+      if (cls) classSet.add(cls);
     });
     return Array.from(classSet).filter(Boolean).sort((a, b) => {
       const numA = parseInt(a, 10);
@@ -88,7 +87,6 @@ export default function Students() {
     });
   }, [allStudentsList]);
 
-  // Dynamic courses / batches from student records (only batches where students actually exist)
   const dynamicBatches = useMemo(() => {
     const map = new Map();
     allStudentsList.forEach(s => {
@@ -98,36 +96,37 @@ export default function Students() {
         map.set(bVal, { id: bVal, name: formatted || bVal });
       }
     });
-    return Array.from(map.values());
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [allStudentsList, batches]);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [bulkModalOpen, setBulkModalOpen] = useState(false);
-  const [editingStudent, setEditingStudent] = useState(null);
-  const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
-  const [createdStudentCreds, setCreatedStudentCreds] = useState(null);
+  const normalizeKey = useCallback((val) => {
+    if (!val) return '';
+    return String(val).toLowerCase().replace(/[\s\-_]/g, '');
+  }, []);
 
-  // Helper matching functions for courses and classes
   const isCourseMatch = useCallback((studentBatch, filterVal) => {
-    if (filterVal === 'all') return true;
+    if (!filterVal || filterVal === 'all') return true;
     if (!studentBatch) return false;
-    const sRaw = String(studentBatch).trim().toLowerCase();
-    const fRaw = String(filterVal).trim().toLowerCase();
-    if (sRaw === fRaw) return true;
-    const formattedStudent = formatBatchName(studentBatch, batches).toLowerCase();
-    const formattedFilter = formatBatchName(filterVal, batches).toLowerCase();
-    return formattedStudent === fRaw || formattedStudent === formattedFilter;
-  }, [batches]);
+    if (studentBatch === filterVal) return true;
+    const normStudent = normalizeKey(studentBatch);
+    const normFilter = normalizeKey(filterVal);
+    if (normStudent === normFilter) return true;
+    if (normStudent.includes(normFilter) || normFilter.includes(normStudent)) return true;
+    const batchObj = batches.find(b => b.id === filterVal || b.name === filterVal);
+    if (batchObj) {
+      const normObjName = normalizeKey(batchObj.name);
+      if (normStudent === normObjName || normStudent.includes(normObjName) || normObjName.includes(normStudent)) return true;
+    }
+    return false;
+  }, [batches, normalizeKey]);
 
   const isClassMatch = useCallback((studentClass, filterVal) => {
-    if (filterVal === 'all') return true;
+    if (!filterVal || filterVal === 'all') return true;
     if (!studentClass) return false;
     return String(studentClass).trim().toLowerCase() === String(filterVal).trim().toLowerCase();
   }, []);
 
-  // Filtered students for full export & pagination
   const filteredStudents = useMemo(() => {
-    // If we have full student directory in AppContext, filter from allStudentsList
     const source = (allStudentsList && allStudentsList.length > 0) ? allStudentsList : paginatedStudents;
     return source
       .filter(student => {
@@ -150,19 +149,23 @@ export default function Students() {
       });
   }, [allStudentsList, paginatedStudents, selectedCourse, selectedClass, searchQuery, isCourseMatch, isClassMatch]);
 
-  // Accurate Active / Inactive stats from real database
   const activeCount = (allStudentsList && allStudentsList.length > 0)
     ? allStudentsList.filter(s => s.status === 'active').length
     : paginatedStudents.filter(s => s.status === 'active').length;
   const inactiveCount = Math.max(0, (allStudentsList && allStudentsList.length > 0 ? allStudentsList.length : totalCount) - activeCount);
 
-  // Pagination for display table
   const pageSize = 50;
   const activeTotalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
   const displayedStudents = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredStudents.slice(start, start + pageSize);
   }, [filteredStudents, currentPage]);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [createdStudentCreds, setCreatedStudentCreds] = useState(null);
+  const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
 
   const handleAddClick = () => {
     setEditingStudent(null);
@@ -178,13 +181,54 @@ export default function Students() {
     fetchData(1, searchQuery);
   };
 
+  const handleToggleSelectAll = () => {
+    const allInViewSelected = displayedStudents.length > 0 && displayedStudents.every(s => selectedStudentIds.has(s.id));
+    const next = new Set(selectedStudentIds);
+    if (allInViewSelected) {
+      displayedStudents.forEach(s => next.delete(s.id));
+    } else {
+      displayedStudents.forEach(s => next.add(s.id));
+    }
+    setSelectedStudentIds(next);
+  };
+
+  const handleToggleSelectOne = (id) => {
+    const next = new Set(selectedStudentIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedStudentIds(next);
+  };
+
+  const handleSelectAllFiltered = () => {
+    const next = new Set(selectedStudentIds);
+    filteredStudents.forEach(s => next.add(s.id));
+    setSelectedStudentIds(next);
+  };
+
+  const handleExecuteBulkDelete = async () => {
+    if (selectedStudentIds.size === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const idsArray = Array.from(selectedStudentIds);
+      await deleteStudentsBulk(idsArray);
+      setSelectedStudentIds(new Set());
+      setShowBulkDeleteModal(false);
+      fetchData(currentPage, searchQuery);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   const handleDownloadExcel = () => {
     if (!filteredStudents || filteredStudents.length === 0) {
       alert('No students found matching current filters to export');
       return;
     }
-    
-    // Export ALL students matching the current filters across the whole institute
     const worksheetData = filteredStudents.map((s, index) => ({
       'S.No': index + 1,
       'Roll No': s.rollNo || '',
@@ -195,26 +239,10 @@ export default function Students() {
       'Batch/Course': formatBatchName(s.batch || s.targetClass, batches),
       'Status': s.status === 'active' ? 'Active' : (s.status || 'Active')
     }));
-
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-    const colWidths = [
-      { wch: 6 },
-      { wch: 15 },
-      { wch: 25 },
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 12 },
-      { wch: 20 },
-      { wch: 10 }
-    ];
-    worksheet['!cols'] = colWidths;
-
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
-    
-    const courseSuffix = selectedCourse !== 'all' ? `_${formatBatchName(selectedCourse, batches).replace(/[\s/\\?%*:|"<>]/g, '_')}` : '';
-    const classSuffix = selectedClass !== 'all' ? `_Class_${selectedClass}` : '';
-    XLSX.writeFile(workbook, `Students_Export${courseSuffix}${classSuffix}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    XLSX.writeFile(workbook, `Students_Export_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
   const handleEditClick = (student) => {
@@ -253,28 +281,6 @@ export default function Students() {
     return course ? course.name : 'Unknown';
   };
 
-  const exportStudents = () => {
-    if (filteredStudents.length === 0) {
-      alert('No students to export');
-      return;
-    }
-    const headers = ['Roll No,Name,Course,Class,Parent Name,Parent Phone,Attendance,Status'];
-    const rows = filteredStudents.map(s => {
-      const att = calcAttendancePercent(s.id, attendance);
-      const courseName = getCourseName(s.batch);
-      const status = s.status || 'Active';
-      return `${s.rollNo || ''},"${s.name}","${courseName}","${s.class || ''}","${s.parentName || ''}","${s.parentPhone || ''}",${att}%,${status}`;
-    });
-    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "students_directory.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   return (
     <motion.div 
       className="page-container animate-fade"
@@ -282,7 +288,6 @@ export default function Students() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Header */}
       <div className="page-header flex justify-between items-center flex-wrap gap-16">
         <div>
           <h1 className="page-title">Students Directory</h1>
@@ -291,7 +296,7 @@ export default function Students() {
         <div style={{ display: 'flex', gap: '12px' }}>
             <button className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }} onClick={handleDownloadExcel} disabled={filteredStudents.length === 0}>
               <Download size={16} />
-              Export Excel
+              Export
             </button>
             <button className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }} onClick={handleBulkAddClick}>
               <FileSpreadsheet size={16} />
@@ -304,7 +309,6 @@ export default function Students() {
         </div>
       </div>
 
-      {/* Stats row */}
       <div className="stat-cards-grid">
         <div className="stat-card blue">
           <div className="stat-card-top">
@@ -337,7 +341,6 @@ export default function Students() {
         </div>
       </div>
 
-      {/* Filter panel */}
       <div className="card mb-24">
         <div className="flex justify-between items-center flex-wrap gap-16">
           <div className="topbar-search" style={{ position: 'relative' }}>
@@ -355,14 +358,6 @@ export default function Students() {
           </div>
 
           <div className="flex items-center gap-8">
-            <button 
-              onClick={handleDownloadExcel}
-              className="btn btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '38px', padding: '0 12px', border: '1px solid #cbd5e1' }}
-              disabled={filteredStudents.length === 0}
-            >
-              <Download size={16} /> Export Excel
-            </button>
             <SlidersHorizontal size={16} className="text-secondary" />
             <select 
               className="form-select"
@@ -397,12 +392,126 @@ export default function Students() {
         </div>
       </div>
 
-      {/* Student List Table */}
+      <AnimatePresence>
+        {selectedStudentIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: -10 }}
+            style={{
+              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+              border: '2px solid #ef4444',
+              borderRadius: '16px',
+              padding: '14px 22px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '14px',
+              boxShadow: '0 12px 30px rgba(0, 0, 0, 0.45), 0 0 20px rgba(239, 68, 68, 0.25)',
+              color: '#ffffff'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              <span style={{
+                background: '#ef4444',
+                color: '#ffffff',
+                fontWeight: 900,
+                fontSize: '0.85rem',
+                padding: '6px 14px',
+                borderRadius: '24px',
+                letterSpacing: '0.8px',
+                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
+              }}>
+                {selectedStudentIds.size} SELECTED
+              </span>
+              
+              <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f8fafc' }}>
+                Students selected for batch action
+              </span>
+
+              {filteredStudents.length > selectedStudentIds.size && (
+                <button
+                  type="button"
+                  onClick={handleSelectAllFiltered}
+                  style={{
+                    background: '#2563eb',
+                    border: '1px solid #60a5fa',
+                    color: '#ffffff',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    padding: '6px 14px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 6px rgba(37, 99, 235, 0.35)'
+                  }}
+                >
+                  ⚡ Select All {filteredStudents.length} Students
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setSelectedStudentIds(new Set())}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  color: '#ffffff',
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
+                  padding: '7px 16px',
+                  borderRadius: '10px',
+                  cursor: 'pointer'
+                }}
+              >
+                ✕ Deselect All
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBulkDeleteModal(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.88rem',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 20px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 16px rgba(239, 68, 68, 0.5)'
+                }}
+              >
+                <Trash2 size={17} />
+                Delete Selected ({selectedStudentIds.size})
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="table-container card">
         {displayedStudents.length > 0 ? (
           <table className="data-table">
             <thead>
               <tr>
+                <th style={{ width: '40px', textAlign: 'center' }}>
+                  <input 
+                    type="checkbox"
+                    checked={displayedStudents.length > 0 && displayedStudents.every(s => selectedStudentIds.has(s.id))}
+                    onChange={handleToggleSelectAll}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#ef4444' }}
+                    title="Select / Deselect all students on this page"
+                  />
+                </th>
                 <th>Roll No</th>
                 <th>Student</th>
                 <th>Course</th>
@@ -418,7 +527,7 @@ export default function Students() {
               {(isFetching && displayedStudents.length === 0) ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={`skel-${idx}`}>
-                    <td colSpan="9">
+                    <td colSpan="10">
                       <div style={{ height: '40px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', animation: 'pulse 1.5s infinite ease-in-out' }}></div>
                     </td>
                   </tr>
@@ -428,6 +537,7 @@ export default function Students() {
                 let attColor = 'badge-success';
                 if (attPercent < 60) attColor = 'badge-danger';
                 else if (attPercent < 80) attColor = 'badge-late';
+                const isSelected = selectedStudentIds.has(student.id);
 
                 return (
                   <motion.tr 
@@ -435,11 +545,19 @@ export default function Students() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: Math.min(idx * 0.05, 0.5) }}
-                    style={{ cursor: 'pointer' }}
+                    style={{ cursor: 'pointer', background: isSelected ? 'rgba(239, 68, 68, 0.08)' : undefined }}
                     onClick={() => setSelectedStudentForProfile(student)}
                     title="Click to view student profile history"
                   >
-                    <td>{student.rollNo}</td>
+                    <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleSelectOne(student.id)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#ef4444' }}
+                      />
+                    </td>
+                    <td><strong style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}>{student.rollNo}</strong></td>
                     <td>
                       <div className="flex items-center gap-12">
                         {student.photo ? (
@@ -508,7 +626,6 @@ export default function Students() {
         )}
       </div>
 
-      {/* Pagination Controls */}
       {activeTotalPages > 1 && (
         <div className="flex justify-between items-center mt-16" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '12px 24px', borderRadius: '12px' }}>
           <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
@@ -533,7 +650,6 @@ export default function Students() {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
       {modalOpen && (
         <AddStudentModal
           isEdit={!!editingStudent}
@@ -543,7 +659,6 @@ export default function Students() {
         />
       )}
 
-      {/* Student Profile Details Modal */}
       {selectedStudentForProfile && (
         <StudentProfileModal
           student={selectedStudentForProfile}
@@ -555,7 +670,6 @@ export default function Students() {
         />
       )}
 
-      {/* Parent Credentials Modal */}
       {createdStudentCreds && createPortal(
         <div className="modal-overlay" onClick={() => setCreatedStudentCreds(null)}>
           <div className="modal-content" style={{ maxWidth: '400px' }}>
@@ -598,7 +712,7 @@ export default function Students() {
         </div>,
         document.body
       )}
-      {/* Delete Student Confirmation Modal */}
+
       {studentToDelete && createPortal(
         <div className="modal-overlay" onClick={() => setStudentToDelete(null)} style={{ zIndex: 99999 }}>
           <div className="modal-content" style={{ maxWidth: '420px', padding: '24px' }} onClick={e => e.stopPropagation()}>
@@ -640,7 +754,70 @@ export default function Students() {
         document.body
       )}
 
-      {/* Bulk Upload Modal */}
+      {showBulkDeleteModal && createPortal(
+        <div className="modal-overlay" onClick={() => !isBulkDeleting && setShowBulkDeleteModal(false)} style={{ zIndex: 99999 }}>
+          <div className="modal-content" style={{ maxWidth: '460px', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Trash2 size={28} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ef4444' }}>
+                  Bulk Delete Confirmation
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                  Permanently delete <strong>{selectedStudentIds.size}</strong> selected students from database?
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              borderRadius: '12px',
+              padding: '12px 16px',
+              fontSize: '0.82rem',
+              color: 'var(--text-secondary)',
+              marginBottom: '20px',
+              lineHeight: 1.5
+            }}>
+              ⚠️ This will remove these {selectedStudentIds.size} student records, their parent credentials, and sync to Cloud Atlas.
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button 
+                type="button"
+                className="btn btn-secondary btn-sm" 
+                disabled={isBulkDeleting}
+                onClick={() => setShowBulkDeleteModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                className="btn btn-sm" 
+                disabled={isBulkDeleting}
+                style={{
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '8px 18px',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onClick={handleExecuteBulkDelete}
+              >
+                <Trash2 size={16} />
+                {isBulkDeleting ? 'Deleting...' : `Confirm Delete (${selectedStudentIds.size})`}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <BulkUploadModal 
         isOpen={bulkModalOpen} 
         onClose={() => setBulkModalOpen(false)} 

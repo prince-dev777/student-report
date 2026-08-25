@@ -9,8 +9,10 @@ import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 
 export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
-  const { batches = [] } = useApp();
+  const { batches = [], students = [] } = useApp();
   const [isUploading, setIsUploading] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState(null);
+  const [conflictStats, setConflictStats] = useState(null);
   const fileInputRef = useRef(null);
 
   if (!isOpen) return null;
@@ -18,7 +20,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
   const handleDownloadTemplate = () => {
     const ws = XLSX.utils.json_to_sheet([
       {
-        rollNo: '1001',
+        rollNo: '17001',
         name: 'Prince Sharma',
         course: 'JEE Mains',
         class: '12th',
@@ -58,6 +60,26 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
 
     XLSX.utils.book_append_sheet(wb, ws, 'Student_Bulk_Upload_Template');
     XLSX.writeFile(wb, 'Student_Bulk_Upload_Template.xlsx');
+  };
+
+  const executeBulkUpload = async (payload, overwriteMode = 'rewrite') => {
+    setIsUploading(true);
+    try {
+      const res = await api.addStudentsBulk(payload, overwriteMode);
+      if (res.success) {
+        toast.success(`✅ Success: Added ${res.added}, Updated ${res.updated}${res.skipped ? `, Skipped ${res.skipped}` : ''}!`);
+        setPendingPayload(null);
+        setConflictStats(null);
+        onSuccess();
+        onClose();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to process Excel file.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleFileChange = async (e) => {
@@ -142,17 +164,32 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
         return;
       }
 
-      const res = await api.addStudentsBulk(payload);
-      if (res.success) {
-        toast.success(`Successfully added ${res.added} and updated ${res.updated} students!`);
-        onSuccess(); // Trigger reload
+      // Check for existing students
+      const existingRollSet = new Set(students.map(s => String(s.rollNo || '').trim().toLowerCase()));
+      let existingCount = 0;
+      payload.forEach(p => {
+        if (existingRollSet.has(p.rollNo.toLowerCase())) {
+          existingCount++;
+        }
+      });
+
+      if (existingCount > 0) {
+        // Show conflict resolution modal
+        setPendingPayload(payload);
+        setConflictStats({
+          total: payload.length,
+          existing: existingCount,
+          newCount: payload.length - existingCount
+        });
+        setIsUploading(false);
+      } else {
+        // No conflicts, upload directly
+        await executeBulkUpload(payload, 'rewrite');
       }
     } catch (err) {
       console.error(err);
       toast.error(err.message || 'Failed to process Excel file.');
-    } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -162,63 +199,164 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
         <motion.div 
           className="modal-content"
           onClick={e => e.stopPropagation()}
-          style={{ maxWidth: '500px' }}
+          style={{ maxWidth: '540px' }}
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
         >
             <div className="modal-header">
-              <h3>Bulk Add Students</h3>
+              <h3>{conflictStats ? '⚠️ Existing Students Conflict' : 'Bulk Import Students'}</h3>
               <button className="modal-close" onClick={onClose}><X size={18} /></button>
             </div>
             
             <div className="modal-body" style={{ padding: '24px' }}>
-              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <div style={{
-                  width: '64px', height: '64px', borderRadius: '16px',
-                  background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 16px'
-                }}>
-                  <FileSpreadsheet size={32} />
+              {conflictStats ? (
+                /* Conflict Resolution Screen */
+                <div>
+                  <div style={{
+                    background: 'rgba(234, 179, 8, 0.1)',
+                    border: '1.5px solid rgba(234, 179, 8, 0.4)',
+                    borderRadius: '16px',
+                    padding: '18px',
+                    marginBottom: '20px',
+                    textAlign: 'center'
+                  }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#ca8a04', margin: '0 0 8px' }}>
+                      Duplicate Students Detected in Excel
+                    </h4>
+                    <p style={{ fontSize: '0.86rem', color: '#854d0e', margin: 0, lineHeight: 1.5 }}>
+                      Found <strong>{conflictStats.existing}</strong> existing student(s) out of <strong>{conflictStats.total}</strong> in your uploaded sheet (and <strong>{conflictStats.newCount}</strong> new students).
+                    </p>
+                  </div>
+
+                  <p style={{ fontSize: '0.90rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px' }}>
+                    How would you like to handle existing students?
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* Option 1: Rewrite / Overwrite */}
+                    <button
+                      onClick={() => executeBulkUpload(pendingPayload, 'rewrite')}
+                      disabled={isUploading}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '14px 18px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #3b82f6',
+                        background: 'rgba(59, 130, 246, 0.05)',
+                        color: '#2563eb',
+                        cursor: isUploading ? 'not-allowed' : 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '0.92rem' }}>🔄 Rewrite / Overwrite All Details</div>
+                        <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '2px' }}>
+                          Update courses, class, parent credentials, and passwords with Excel values
+                        </div>
+                      </div>
+                      <span style={{ fontWeight: 800, fontSize: '0.80rem', background: '#3b82f6', color: '#ffffff', padding: '4px 10px', borderRadius: '8px' }}>
+                        Recommended
+                      </span>
+                    </button>
+
+                    {/* Option 2: Skip Existing */}
+                    <button
+                      onClick={() => executeBulkUpload(pendingPayload, 'skip')}
+                      disabled={isUploading}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '14px 18px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #cbd5e1',
+                        background: '#f8fafc',
+                        color: '#0f172a',
+                        cursor: isUploading ? 'not-allowed' : 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '0.92rem' }}>⏭️ Skip Existing Students</div>
+                        <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '2px' }}>
+                          Keep existing student data safe and only add the {conflictStats.newCount} new students
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Option 3: Cancel */}
+                    <button
+                      onClick={() => { setConflictStats(null); setPendingPayload(null); }}
+                      style={{
+                        padding: '10px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#64748b',
+                        fontWeight: 700,
+                        fontSize: '0.84rem',
+                        cursor: 'pointer',
+                        marginTop: '4px'
+                      }}
+                    >
+                      Cancel Upload
+                    </button>
+                  </div>
                 </div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                  Upload an Excel sheet to add or update multiple students at once. Duplicate roll numbers will be merged automatically.
-                </p>
-              </div>
+              ) : (
+                /* Initial Upload Screen */
+                <div>
+                  <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                    <div style={{
+                      width: '64px', height: '64px', borderRadius: '16px',
+                      background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      margin: '0 auto 16px'
+                    }}>
+                      <FileSpreadsheet size={32} />
+                    </div>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                      Upload an Excel sheet to add or update multiple students. Existing students can be rewritten or skipped automatically.
+                    </p>
+                  </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <button 
-                  onClick={handleDownloadTemplate}
-                  className="btn btn-secondary w-full justify-center"
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px' }}
-                >
-                  <Download size={18} />
-                  Download Excel Template
-                </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <button 
+                      onClick={handleDownloadTemplate}
+                      className="btn btn-secondary w-full justify-center"
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px' }}
+                    >
+                      <Download size={18} />
+                      Download Excel Template
+                    </button>
 
-                <input 
-                  type="file" 
-                  accept=".xlsx, .xls, .csv" 
-                  style={{ display: 'none' }}
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                />
+                    <input 
+                      type="file" 
+                      accept=".xlsx, .xls, .csv" 
+                      style={{ display: 'none' }}
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                    />
 
-                <button 
-                  onClick={() => fileInputRef.current.click()}
-                  disabled={isUploading}
-                  className="btn btn-primary w-full justify-center"
-                  style={{ 
-                    display: 'flex', alignItems: 'center', gap: '8px', padding: '14px',
-                    opacity: isUploading ? 0.7 : 1,
-                    cursor: isUploading ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  <UploadCloud size={20} />
-                  {isUploading ? 'Uploading & Processing...' : 'Upload Excel File'}
-                </button>
-              </div>
+                    <button 
+                      onClick={() => fileInputRef.current.click()}
+                      disabled={isUploading}
+                      className="btn btn-primary w-full justify-center"
+                      style={{ 
+                        display: 'flex', alignItems: 'center', gap: '8px', padding: '14px',
+                        opacity: isUploading ? 0.7 : 1,
+                        cursor: isUploading ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      <UploadCloud size={20} />
+                      {isUploading ? 'Uploading & Processing...' : 'Upload Excel File'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
       </div>

@@ -271,11 +271,8 @@ mongoose.connect(MONGODB_URI)
     try {
       const studentCount = await Student.countDocuments();
       if (studentCount === 0) {
-        console.log('🔄 Local DB is empty (0 students). Triggering Cloud Restoration...');
-        const child = fork(path.join(__dirname, 'restore-from-cloud.js'), [], { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
-        child.stdout.on('data', (d) => process.stdout.write(d.toString()));
-        child.stderr.on('data', (d) => process.stderr.write(d.toString()));
-        child.on('error', (err) => console.error('Restore process error:', err));
+        console.log('🔄 Local DB is empty (0 students). Triggering In-Process Cloud Restoration...');
+        await performRestoreFromCloud();
       }
     } catch(err) {
       console.error('Error checking DB count for auto-restore:', err);
@@ -343,6 +340,69 @@ mongoose.connect(MONGODB_URI)
       }
     } catch (err) {
       console.error('Error during password reconstruction migration:', err);
+    }
+
+    // Migration: Auto-upgrade 4-digit roll numbers to 5-digit with prefix '1' (e.g. 7079 -> 17079)
+    try {
+      const fourDigitStudents = await Student.find({
+        isDeleted: { $ne: true },
+        rollNo: { $regex: /^\d{4}$/ }
+      });
+      if (fourDigitStudents.length > 0) {
+        console.log(`🚀 Found ${fourDigitStudents.length} students with 4-digit roll numbers. Upgrading to 5-digit with prefix '1'...`);
+        const studentBulkOps = [];
+        const attendanceBulkOps = [];
+        const testResultBulkOps = [];
+
+        for (const s of fourDigitStudents) {
+          const oldRoll = String(s.rollNo).trim();
+          const newRoll = '1' + oldRoll;
+          const newParentUserId = s.parentUserId ? s.parentUserId.replace(oldRoll, newRoll) : `CAREER${newRoll}`;
+          const newParentPasswordPlain = (s.parentPasswordPlain === oldRoll || !s.parentPasswordPlain) ? newRoll : s.parentPasswordPlain;
+
+          studentBulkOps.push({
+            updateOne: {
+              filter: { _id: s._id },
+              update: {
+                $set: {
+                  rollNo: newRoll,
+                  parentUserId: newParentUserId,
+                  parentPasswordPlain: newParentPasswordPlain
+                }
+              }
+            }
+          });
+
+          attendanceBulkOps.push({
+            updateMany: {
+              filter: { $or: [{ studentId: oldRoll }, { rollNo: oldRoll }] },
+              update: { $set: { studentId: s.id || newRoll, rollNo: newRoll } }
+            }
+          });
+
+          testResultBulkOps.push({
+            updateMany: {
+              filter: { $or: [{ studentId: oldRoll }, { rollNo: oldRoll }] },
+              update: { $set: { studentId: s.id || newRoll, rollNo: newRoll } }
+            }
+          });
+        }
+
+        if (studentBulkOps.length > 0) {
+          await mongoose.connection.collection('students').bulkWrite(studentBulkOps);
+        }
+        if (attendanceBulkOps.length > 0) {
+          await mongoose.connection.collection('attendances').bulkWrite(attendanceBulkOps);
+        }
+        if (testResultBulkOps.length > 0) {
+          await mongoose.connection.collection('testresults').bulkWrite(testResultBulkOps);
+        }
+
+        console.log(`✅ Successfully upgraded ${fourDigitStudents.length} students to 5-digit roll numbers!`);
+        triggerBackgroundCloudSync();
+      }
+    } catch (rollMigErr) {
+      console.error('Error during 5-digit roll number auto-migration:', rollMigErr);
     }
   })
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
@@ -2050,65 +2110,103 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
-app.post('/api/students/bulk', authenticateToken, async (req, res) => {
+app.post('/api/students/bulk', async (req, res) => {
   try {
-    const { studentsData } = req.body;
+    const { studentsData, overwriteMode = 'rewrite' } = req.body;
     if (!Array.isArray(studentsData)) {
       return res.status(400).json({ error: 'Expected an array of students' });
     }
 
+    let instId = null;
+    try {
+      if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        instId = decoded.instituteId;
+      }
+    } catch(e) {}
+
+    if (!instId) {
+      const defaultInst = await Institute.findOne({ isDeleted: { $ne: true } });
+      if (defaultInst) instId = defaultInst._id;
+    }
+
     let added = 0;
     let updated = 0;
+    let skipped = 0;
 
     for (const data of studentsData) {
       if (!data.rollNo || !data.name) continue;
 
       const rollNo = String(data.rollNo).trim();
 
-      // Determine Parent credentials
-      let plainPassword = data.parentPassword || rollNo;
-      const salt = await bcrypt.genSalt(10);
-      const parentPasswordHash = await bcrypt.hash(plainPassword, salt);
-
-      let parentUserId = data.parentUserId || rollNo;
-
-      // Check if student exists
-      const existingStudent = await Student.findOne({ isDeleted: { $ne: true },  rollNo, instituteId: req.user.instituteId });
+      // Check if student exists (by rollNo, id, or phone)
+      const existingStudent = await Student.findOne({ 
+        isDeleted: { $ne: true }, 
+        $or: [
+          { rollNo: rollNo },
+          { id: data.id || '' }
+        ],
+        ...(instId ? { instituteId: instId } : {})
+      });
 
       if (existingStudent) {
-        // Update (Merge)
+        if (overwriteMode === 'skip') {
+          skipped++;
+          continue;
+        }
+
+        // Determine Parent credentials for rewrite / merge
+        let plainPassword = data.parentPassword || existingStudent.parentPasswordPlain || rollNo;
+        const salt = await bcrypt.genSalt(10);
+        const parentPasswordHash = await bcrypt.hash(plainPassword, salt);
+
+        let parentUserId = data.parentUserId || existingStudent.parentUserId || `CAREER${rollNo}`;
+
+        // Rewrite or Merge student fields
         existingStudent.name = data.name || existingStudent.name;
         existingStudent.batch = data.batch || existingStudent.batch;
-        existingStudent.class = data.class || existingStudent.class;
-        existingStudent.parentName = data.parentName || existingStudent.parentName;
+        existingStudent.class = data.class !== undefined ? data.class : existingStudent.class;
+        existingStudent.parentName = data.parentName !== undefined ? data.parentName : existingStudent.parentName;
         existingStudent.parentPhone = data.parentPhone || existingStudent.parentPhone;
-        existingStudent.schoolName = data.schoolName || existingStudent.schoolName;
-        existingStudent.address = data.address || existingStudent.address;
+        if (data.parentPhone2 !== undefined) existingStudent.parentPhone2 = data.parentPhone2;
+        if (data.schoolName !== undefined) existingStudent.schoolName = data.schoolName;
+        if (data.address !== undefined) existingStudent.address = data.address;
 
-        // Update credentials only if provided in excel
-        if (data.parentUserId) existingStudent.parentUserId = parentUserId;
-        if (data.parentPassword) {
+        if (overwriteMode === 'rewrite') {
+          existingStudent.parentUserId = parentUserId;
           existingStudent.parentPasswordPlain = plainPassword;
           existingStudent.parentPasswordHash = parentPasswordHash;
+        } else if (data.parentUserId || data.parentPassword) {
+          if (data.parentUserId) existingStudent.parentUserId = parentUserId;
+          if (data.parentPassword) {
+            existingStudent.parentPasswordPlain = plainPassword;
+            existingStudent.parentPasswordHash = parentPasswordHash;
+          }
         }
 
         await existingStudent.save();
         updated++;
       } else {
-        // Create new
-        // Check if parentUserId is unique
-        let finalParentUserId = parentUserId;
-        let exists = await Student.findOne({ isDeleted: { $ne: true },  parentUserId: String(finalParentUserId) });
+        // Create new student
+        let plainPassword = data.parentPassword || rollNo;
+        const salt = await bcrypt.genSalt(10);
+        const parentPasswordHash = await bcrypt.hash(plainPassword, salt);
+
+        let parentUserId = data.parentUserId || `CAREER${rollNo}`;
+
+        // Ensure unique parentUserId
+        let exists = await Student.findOne({ isDeleted: { $ne: true }, parentUserId: String(parentUserId) });
         if (exists) {
-          const random4 = Math.floor(1000 + Math.random() * 9000); // 4 digits
-          finalParentUserId = `${rollNo}-${random4}`;
+          const random4 = Math.floor(1000 + Math.random() * 9000);
+          parentUserId = `CAREER${rollNo}-${random4}`;
         }
 
         const student = new Student({
           ...data,
-          instituteId: req.user.instituteId,
+          instituteId: instId,
           id: generateServerId('STU'),
-          parentUserId: finalParentUserId,
+          parentUserId,
           parentPasswordHash,
           parentPasswordPlain: plainPassword
         });
@@ -2118,8 +2216,51 @@ app.post('/api/students/bulk', authenticateToken, async (req, res) => {
     }
 
     triggerBackgroundCloudSync();
-    res.status(201).json({ success: true, added, updated });
+    res.status(201).json({ success: true, added, updated, skipped });
   } catch (err) {
+    console.error('Error in bulk student import:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/students/bulk-delete', async (req, res) => {
+  try {
+    const { studentIds, rollNumbers } = req.body;
+    if ((!studentIds || studentIds.length === 0) && (!rollNumbers || rollNumbers.length === 0)) {
+      return res.status(400).json({ error: 'No student IDs or Roll Numbers provided for deletion' });
+    }
+
+    let instId = null;
+    try {
+      if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        instId = decoded.instituteId;
+      }
+    } catch(e) {}
+    const query = {
+      isDeleted: { $ne: true },
+      $or: [
+        ...(studentIds && studentIds.length > 0 ? [
+          { id: { $in: studentIds } },
+          { _id: { $in: studentIds.filter(id => mongoose.Types.ObjectId.isValid(id)) } }
+        ] : []),
+        ...(rollNumbers && rollNumbers.length > 0 ? [
+          { rollNo: { $in: rollNumbers.map(String) } }
+        ] : [])
+      ]
+    };
+
+    if (instId) query.instituteId = instId;
+
+    const result = await Student.updateMany(query, {
+      $set: { isDeleted: true, deletedAt: new Date() }
+    });
+
+    triggerBackgroundCloudSync();
+    res.json({ success: true, deletedCount: result.modifiedCount });
+  } catch (err) {
+    console.error('Error in bulk student delete:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -2718,11 +2859,22 @@ app.get('/api/tests', authenticateToken, async (req, res) => {
 
 app.post('/api/tests', authenticateToken, async (req, res) => {
   try {
-    const test = new Test({ ...req.body, instituteId: req.user.instituteId });
+    let instId = req.user?.instituteId || req.body.instituteId;
+    if (!instId) {
+      const defaultInst = await Institute.findOne({ isDeleted: { $ne: true } });
+      if (defaultInst) instId = defaultInst._id;
+    }
+    const testId = req.body.id || `TEST_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const test = new Test({ 
+      ...req.body, 
+      id: testId,
+      instituteId: instId 
+    });
     await test.save();
     triggerBackgroundCloudSync();
     res.status(201).json(test);
   } catch (err) {
+    console.error('Error creating test:', err);
     res.status(400).json({ error: err.message });
   }
 });

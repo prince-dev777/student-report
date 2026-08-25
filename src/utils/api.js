@@ -120,7 +120,8 @@ export const api = {
   },
   getStudent: (id) => apiRequest(`/students/${id}`),
   createStudent: (student) => apiRequest('/students', { method: 'POST', body: JSON.stringify(student) }),
-  addStudentsBulk: (studentsData) => apiRequest('/students/bulk', { method: 'POST', body: JSON.stringify({ studentsData }) }),
+  addStudentsBulk: (studentsData, overwriteMode = 'rewrite') => apiRequest('/students/bulk', { method: 'POST', body: JSON.stringify({ studentsData, overwriteMode }) }),
+  deleteStudentsBulk: (studentIds) => apiRequest('/students/bulk-delete', { method: 'POST', body: JSON.stringify({ studentIds }) }),
   updateStudent: (id, updates) => apiRequest(`/students/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
   deleteStudent: (id) => apiRequest(`/students/${id}`, { method: 'DELETE' }),
 
