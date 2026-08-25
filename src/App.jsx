@@ -28,6 +28,7 @@ import SaaSShowcaseLandingPage from './pages/SaaSShowcaseLandingPage';
 import ParentPortalWeb from './pages/ParentPortalWeb';
 import TeacherPortalWeb from './pages/TeacherPortalWeb';
 import StaffInquiryWeb from './pages/StaffInquiryWeb';
+import GlobalScannerDeskListener from './components/GlobalScannerDeskListener';
 
 import { useApp } from './context/AppContext';
 
@@ -36,6 +37,7 @@ function AppLayout() {
   
   return (
     <div className={`app-layout ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <GlobalScannerDeskListener />
       <MouseTrail />
       <Sidebar />
       <div className="main-content">

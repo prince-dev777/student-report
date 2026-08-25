@@ -2940,10 +2940,10 @@ export default function Attendance() {
                                                   fontFamily: "'Montserrat', sans-serif"
                                                 }}
                                               >
-                                                {/* Top Header Logo */}
+                                                {/* Top Header Logo (Classic Box) */}
                                                 <div style={{
                                                   boxSizing: 'border-box',
-                                                  height: isCompact ? '60px' : '74px',
+                                                  height: isCompact ? '60px' : '72px',
                                                   width: 'calc(100% - 10px)',
                                                   margin: '5px auto 0',
                                                   overflow: 'hidden',
@@ -2958,15 +2958,15 @@ export default function Attendance() {
                                                   <img src={idLogo} alt="Career Xone" style={{ width: '94%', height: '88%', objectFit: 'contain' }} />
                                                 </div>
 
-                                                {/* Student Avatar / Photo */}
-                                                <div style={{ display: 'flex', justifyContent: 'center', marginTop: isCompact ? '-30px' : '-38px', zIndex: 2 }}>
+                                                {/* Student Avatar / Photo (Classic Overlapping Ring) */}
+                                                <div style={{ display: 'flex', justifyContent: 'center', marginTop: isCompact ? '-24px' : '-28px', zIndex: 2 }}>
                                                   {st.photo ? (
                                                     <img
                                                       src={st.photo}
                                                       alt={st.name}
                                                       style={{
-                                                        width: isCompact ? '62px' : '78px',
-                                                        height: isCompact ? '62px' : '78px',
+                                                        width: isCompact ? '62px' : '74px',
+                                                        height: isCompact ? '62px' : '74px',
                                                         borderRadius: '50%',
                                                         objectFit: 'cover',
                                                         border: '3px solid #ffffff',
@@ -2975,8 +2975,8 @@ export default function Attendance() {
                                                     />
                                                   ) : (
                                                     <div style={{
-                                                      width: isCompact ? '62px' : '78px',
-                                                      height: isCompact ? '62px' : '78px',
+                                                      width: isCompact ? '62px' : '74px',
+                                                      height: isCompact ? '62px' : '74px',
                                                       borderRadius: '50%',
                                                       background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                                                       display: 'flex',
@@ -2984,7 +2984,7 @@ export default function Attendance() {
                                                       justifyContent: 'center',
                                                       border: '3px solid #ffffff',
                                                       boxShadow: '0 3px 8px rgba(0,0,0,0.15)',
-                                                      fontSize: isCompact ? '1.2rem' : '1.5rem',
+                                                      fontSize: isCompact ? '1.3rem' : '1.5rem',
                                                       color: '#ffffff',
                                                       fontWeight: 800
                                                     }}>
@@ -2996,7 +2996,7 @@ export default function Attendance() {
                                                 {/* Student Details */}
                                                 <div style={{ padding: `0 ${isCompact ? '8px' : '12px'}`, textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                                                   <div>
-                                                    <h3 style={{ margin: '1px 0 1px 0', fontSize: isCompact ? '0.86rem' : '0.98rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    <h3 style={{ margin: '3px 0 1px 0', fontSize: isCompact ? '0.86rem' : '0.98rem', color: '#0f172a', fontWeight: 800, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                       {st.name}
                                                     </h3>
                                                     <p style={{ margin: '0 0 4px 0', fontSize: isCompact ? '0.64rem' : '0.72rem', color: '#2563eb', fontWeight: 700 }}>
@@ -3033,25 +3033,26 @@ export default function Attendance() {
                                                     </div>
                                                   </div>
 
-                                                  {/* Bottom Bar: Signatures & Scannable QR (Enlarged & Sharp) */}
-                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '3px 0', padding: '0 2px' }}>
+                                                  {/* Bottom Bar: Signatures & Scannable QR (Enlarged & Shifted Upward) */}
+                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '2px 0 2px', padding: '0 2px' }}>
                                                     <div style={{ textAlign: 'center', width: isCompact ? '42px' : '50px' }}>
                                                       <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px' }}></div>
                                                       <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Issue Auth</span>
                                                     </div>
 
-                                                    {/* Prominent High-Scan QR Code */}
+                                                    {/* Prominent High-Scan QR Code (Shifted Upwards & Enlarged) */}
                                                     <div style={{
                                                       display: 'flex',
                                                       alignItems: 'center',
                                                       justifyContent: 'center',
                                                       background: '#ffffff',
-                                                      padding: '2px',
+                                                      padding: '3px',
                                                       borderRadius: '6px',
-                                                      border: '1px solid #bfdbfe',
-                                                      boxShadow: '0 2px 5px rgba(0,0,0,0.06)'
+                                                      border: '1.5px solid #93c5fd',
+                                                      boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                                                      marginBottom: '1px'
                                                     }}>
-                                                      <QRCodeSVG value={String(st.rollNo || st.id)} size={isCompact ? 54 : 66} level="M" />
+                                                      <QRCodeSVG value={String(st.rollNo || st.id)} size={isCompact ? 60 : 70} level="M" />
                                                     </div>
 
                                                     <div style={{ textAlign: 'center', width: isCompact ? '42px' : '50px' }}>
@@ -3301,10 +3302,10 @@ export default function Attendance() {
                                     fontFamily: "'Montserrat', sans-serif"
                                   }}
                                 >
-                                  {/* Top Header Logo */}
+                                  {/* Top Header Logo (Classic Box) */}
                                   <div style={{
                                     boxSizing: 'border-box',
-                                    height: '74px',
+                                    height: '72px',
                                     width: 'calc(100% - 10px)',
                                     margin: '5px auto 0',
                                     overflow: 'hidden',
@@ -3319,15 +3320,15 @@ export default function Attendance() {
                                     <img src={idLogo} alt="Career Xone" style={{ width: '94%', height: '88%', objectFit: 'contain' }} />
                                   </div>
 
-                                  {/* Student Avatar / Photo */}
-                                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-38px', zIndex: 2 }}>
+                                  {/* Student Avatar / Photo (Classic Overlapping Ring) */}
+                                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-28px', zIndex: 2 }}>
                                     {st.photo ? (
                                       <img
                                         src={st.photo}
                                         alt={st.name}
                                         style={{
-                                          width: '78px',
-                                          height: '78px',
+                                          width: '74px',
+                                          height: '74px',
                                           borderRadius: '50%',
                                           objectFit: 'cover',
                                           border: '3px solid #ffffff',
@@ -3336,8 +3337,8 @@ export default function Attendance() {
                                       />
                                     ) : (
                                       <div style={{
-                                        width: '78px',
-                                        height: '78px',
+                                        width: '74px',
+                                        height: '74px',
                                         borderRadius: '50%',
                                         background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                                         display: 'flex',
@@ -3357,7 +3358,7 @@ export default function Attendance() {
                                   {/* Student Details */}
                                   <div style={{ padding: '0 12px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                                     <div>
-                                      <h3 style={{ margin: '1px 0 1px 0', fontSize: '0.98rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      <h3 style={{ margin: '3px 0 1px 0', fontSize: '0.98rem', color: '#0f172a', fontWeight: 800, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {st.name}
                                       </h3>
                                       <p style={{ margin: '0 0 4px 0', fontSize: '0.72rem', color: '#2563eb', fontWeight: 700 }}>
@@ -3394,25 +3395,26 @@ export default function Attendance() {
                                       </div>
                                     </div>
 
-                                    {/* Bottom Bar: Signatures & Scannable QR (Enlarged) */}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '3px 0', padding: '0 2px' }}>
+                                    {/* Bottom Bar: Signatures & Scannable QR (Enlarged & Shifted Upward) */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '2px 0 2px', padding: '0 2px' }}>
                                       <div style={{ textAlign: 'center', width: '50px' }}>
                                         <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px' }}></div>
                                         <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Issue Auth</span>
                                       </div>
 
-                                      {/* High Scan QR */}
+                                      {/* High Scan QR (Enlarged & Shifted Upward) */}
                                       <div style={{
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         background: '#ffffff',
-                                        padding: '2px',
+                                        padding: '3px',
                                         borderRadius: '6px',
-                                        border: '1px solid #bfdbfe',
-                                        boxShadow: '0 2px 5px rgba(0,0,0,0.06)'
+                                        border: '1.5px solid #93c5fd',
+                                        boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                                        marginBottom: '1px'
                                       }}>
-                                        <QRCodeSVG value={String(st.rollNo || st.id)} size={66} level="M" />
+                                        <QRCodeSVG value={String(st.rollNo || st.id)} size={70} level="M" />
                                       </div>
 
                                       <div style={{ textAlign: 'center', width: '50px' }}>

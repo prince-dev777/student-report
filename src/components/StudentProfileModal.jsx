@@ -515,35 +515,39 @@ export default function StudentProfileModal({
                           position: 'relative',
                           fontFamily: "'Montserrat', sans-serif"
                         }}>
-                          <div style={{ boxSizing: 'border-box', height: '68px', width: 'calc(100% - 10px)', margin: '5px auto 0', overflow: 'hidden', background: '#fff', border: '1.5px solid #3b82f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 6px' }}>
-                            <img src={idLogo} alt="Career Xone" style={{ width: '94%', height: '88%', objectFit: 'contain' }} />
+                          <div style={{ boxSizing: 'border-box', height: '52px', width: '100%', background: '#fff', borderBottom: '2px solid #2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px' }}>
+                            <img src={idLogo} alt="Career Xone" style={{ maxWidth: '92%', maxHeight: '90%', objectFit: 'contain' }} />
                           </div>
                           
-                          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-34px', zIndex: 2 }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0 2px', zIndex: 1 }}>
                             {student.photo ? (
-                              <img src={student.photo} alt={student.name} style={{ width: '70px', height: '70px', borderRadius: '50%', objectFit: 'cover', border: '3px solid white', boxShadow: '0 3px 8px rgba(0,0,0,0.15)' }} />
+                              <img src={student.photo} alt={student.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2.5px solid #2563eb', boxShadow: '0 3px 8px rgba(37,99,235,0.22)' }} />
                             ) : (
-                              <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid white', boxShadow: '0 3px 8px rgba(0,0,0,0.15)', fontSize: '1.4rem', color: '#ffffff', fontWeight: 'bold' }}>
+                              <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2.5px solid #ffffff', boxShadow: '0 3px 8px rgba(37,99,235,0.22)', fontSize: '1.3rem', color: '#ffffff', fontWeight: 900 }}>
                                 {getInitials(student.name)}
                               </div>
                             )}
                           </div>
                           
-                          <div style={{ padding: '4px 10px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div style={{ padding: '0 10px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <div>
-                              <h3 style={{ margin: '1px 0 1px 0', fontSize: '0.92rem', color: 'var(--text-primary)', fontWeight: '800', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{student.name}</h3>
-                              <p style={{ margin: '0 0 4px 0', fontSize: '0.66rem', color: '#2563eb', fontWeight: '700' }}>Course: {batches?.find(b => b.id === student.batch)?.name || student.batch || 'N/A'}</p>
+                              <h3 style={{ margin: '0 0 2px 0', fontSize: '0.88rem', color: '#0f172a', fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{student.name}</h3>
+                              <div style={{ margin: '0 0 4px 0' }}>
+                                <span style={{ fontSize: '0.62rem', color: '#1d4ed8', fontWeight: 800, background: 'rgba(37, 99, 235, 0.10)', border: '1px solid rgba(37, 99, 235, 0.22)', padding: '1px 8px', borderRadius: '10px', display: 'inline-block' }}>
+                                  Course: {batches?.find(b => b.id === student.batch)?.name || student.batch || 'General'}
+                                </span>
+                              </div>
                               
-                              <div style={{ textAlign: 'left', fontSize: '0.64rem', color: 'var(--text-primary)', lineHeight: '1.38', background: 'rgba(255,255,255,0.85)', padding: '5px 8px', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '50px', color: '#475569' }}>Roll No:</strong> <span style={{ fontWeight: 800, color: '#1e3a8a' }}>{student.rollNo || '—'}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '50px', color: '#475569' }}>Parent:</strong> <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '130px' }}>{student.parentName || 'N/A'}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '50px', color: '#475569' }}>Contact:</strong> <span style={{ fontWeight: 600 }}>{student.parentPhone}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong style={{ width: '50px', color: '#475569' }}>Address:</strong> <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>{student.address || 'N/A'}</span></div>
+                              <div style={{ textAlign: 'left', fontSize: '0.60rem', color: '#0f172a', lineHeight: '1.35', background: 'rgba(255,255,255,0.95)', padding: '4px 8px', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '48px', color: '#475569' }}>Roll No:</strong> <span style={{ fontWeight: 900, color: '#1e3a8a', fontFamily: 'monospace' }}>{student.rollNo || '—'}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '48px', color: '#475569' }}>Parent:</strong> <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>{student.parentName || 'N/A'}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '48px', color: '#475569' }}>Contact:</strong> <span style={{ fontWeight: 700 }}>{student.parentPhone}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong style={{ width: '48px', color: '#475569' }}>Address:</strong> <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>{student.address || 'N/A'}</span></div>
                               </div>
                             </div>
                             
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '2px 0', padding: '0 2px' }}>
-                              <div style={{ textAlign: 'center', width: '44px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '2px 0 1px', padding: '0 2px' }}>
+                              <div style={{ textAlign: 'center', width: '42px' }}>
                                 <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px' }}></div>
                                 <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Issue Auth</span>
                               </div>
@@ -557,18 +561,18 @@ export default function StudentProfileModal({
                                 border: '1px solid #bfdbfe',
                                 boxShadow: '0 2px 5px rgba(0,0,0,0.06)'
                               }}>
-                                <QRCodeSVG value={String(student.rollNo || '')} size={58} level="M" />
+                                <QRCodeSVG value={String(student.rollNo || '')} size={48} level="M" />
                               </div>
-                              <div style={{ textAlign: 'center', width: '44px' }}>
+                              <div style={{ textAlign: 'center', width: '42px' }}>
                                 <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                                  <img src="/principal-sign.png" alt="Principal" style={{ maxHeight: '14px', maxWidth: '44px', display: 'none' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }} />
+                                  <img src="/principal-sign.png" alt="Principal" style={{ maxHeight: '14px', maxWidth: '42px', display: 'none' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }} />
                                 </div>
                                 <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Principal</span>
                               </div>
                             </div>
                           </div>
                           
-                          <div style={{ background: '#3b82f6', padding: '4px', textAlign: 'center', fontSize: '0.60rem', color: '#fff', fontWeight: '800', letterSpacing: '0.5px' }}>
+                          <div style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', padding: '4px', textAlign: 'center', fontSize: '0.60rem', color: '#fff', fontWeight: '800', letterSpacing: '0.5px' }}>
                             STUDENT ID: {student.id}
                           </div>
                         </div>

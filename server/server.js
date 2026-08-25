@@ -789,26 +789,6 @@ app.post('/api/auth/inquiry-login', async (req, res) => {
   }
 });
 
-app.get('/api/teacher/data', async (req, res) => {
-  try {
-    const institute = await Institute.findOne({ isDeleted: { $ne: true } }) || { name: 'Career Xone', logo: '' };
-    const students = await Student.find({ isDeleted: { $ne: true } }).sort({ name: 1 }).lean();
-    const tests = await Test.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).lean();
-    const testResults = await TestResult.find({ isDeleted: { $ne: true } }).lean();
-    const attendances = await Attendance.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).lean();
-
-    res.json({
-      instituteName: institute.name || 'Career Xone',
-      instituteLogo: institute.logo || '',
-      students,
-      tests,
-      testResults,
-      attendances
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 app.get('/api/staff/students', async (req, res) => {
   try {

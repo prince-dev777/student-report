@@ -44,45 +44,84 @@ export default function TeacherPortalWeb() {
       toastId = toast.loading('Syncing latest student records...');
     }
 
+    let successData = null;
+
+    // Tier 1: Try api.getTeacherData()
     try {
       const data = await api.getTeacherData();
-      if (data && Array.isArray(data.students)) {
-        setTeacherData(data);
-        sessionStorage.setItem('teacherSession', JSON.stringify(data));
-        if (isManual) {
-          toast.success(`Synced! Refreshed ${data.students.length} students & ${data.tests?.length || 0} tests 🚀`, { id: toastId });
-        }
-      } else {
-        throw new Error('Invalid data format received');
+      if (data && Array.isArray(data.students) && data.students.length > 0) {
+        successData = data;
       }
-    } catch (err) {
-      console.error('Failed to fetch teacher data:', err);
+    } catch (e) {
+      console.warn('Tier 1 Teacher data fetch failed:', e);
+    }
+
+    // Tier 2: Try direct relative /api/teacher/data
+    if (!successData) {
+      try {
+        const res = await fetch('/api/teacher/data');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.students) && data.students.length > 0) {
+            successData = data;
+          }
+        }
+      } catch (e) {
+        console.warn('Tier 2 relative fetch failed:', e);
+      }
+    }
+
+    // Tier 3: Try Cloud Atlas Render API
+    if (!successData) {
+      try {
+        const res = await fetch('https://student-report-ezgw.onrender.com/api/teacher/data');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.students) && data.students.length > 0) {
+            successData = data;
+          }
+        }
+      } catch (e) {
+        console.warn('Tier 3 Cloud fetch failed:', e);
+      }
+    }
+
+    if (successData) {
+      setTeacherData(successData);
+      sessionStorage.setItem('teacherSession', JSON.stringify(successData));
+      if (isManual) {
+        toast.success(`Synced! Refreshed ${successData.students.length} students & ${successData.tests?.length || 0} tests 🚀`, { id: toastId });
+      }
+    } else {
+      // Tier 4: Fallback to local storage cache
       try {
         const localStudents = JSON.parse(localStorage.getItem('edutrack_students') || '[]');
         const localTests = JSON.parse(localStorage.getItem('edutrack_tests') || '[]');
         const localResults = JSON.parse(localStorage.getItem('edutrack_testResults') || '[]');
         const localAtt = JSON.parse(localStorage.getItem('edutrack_attendance') || '[]');
-        const fallbackData = {
-          instituteName: 'Career Xone',
-          students: localStudents,
-          tests: localTests,
-          testResults: localResults,
-          attendances: localAtt,
-          sessions: []
-        };
-        setTeacherData(fallbackData);
-        sessionStorage.setItem('teacherSession', JSON.stringify(fallbackData));
-        if (isManual) {
-          toast.success(`Synced from local cache (${localStudents.length} students)`, { id: toastId });
-        }
-      } catch (e) {
-        if (isManual) {
+        if (localStudents.length > 0) {
+          const fallbackData = {
+            instituteName: 'Career Xone',
+            students: localStudents,
+            tests: localTests,
+            testResults: localResults,
+            attendances: localAtt,
+            sessions: []
+          };
+          setTeacherData(fallbackData);
+          sessionStorage.setItem('teacherSession', JSON.stringify(fallbackData));
+          if (isManual) {
+            toast.success(`Loaded ${localStudents.length} students from offline cache`, { id: toastId });
+          }
+        } else if (isManual) {
           toast.error('Sync failed. Please check network connection.', { id: toastId });
         }
+      } catch (e) {
+        if (isManual) toast.error('Sync failed. Please check network connection.', { id: toastId });
       }
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   // Raw data collections
@@ -519,19 +558,62 @@ export default function TeacherPortalWeb() {
           <span style={{ color: '#2563eb' }}>Tap for dossier ➔</span>
         </div>
 
-        {/* Student Cards List (Crisp Typography, Spacious Name, Never Truncates) */}
-        {filteredStudents.length === 0 ? (
+        {/* Student Cards List */}
+        {loading && (!students || students.length === 0) ? (
           <div style={{
             background: '#ffffff',
             borderRadius: '12px',
-            padding: '24px 16px',
+            padding: '36px 16px',
             textAlign: 'center',
             border: '1px solid #e2e8f0',
             color: '#64748b'
           }}>
-            <Users size={28} color="#94a3b8" style={{ margin: '0 auto 6px' }} />
-            <div style={{ fontSize: '0.90rem', fontWeight: 800, color: '#334155' }}>No students match your filter</div>
-            <div style={{ fontSize: '0.74rem', marginTop: '2px' }}>Try searching by another name or clearing filters.</div>
+            <RefreshCw size={28} color="#2563eb" className="animate-spin" style={{ margin: '0 auto 10px' }} />
+            <div style={{ fontSize: '0.94rem', fontWeight: 800, color: '#0f172a' }}>Loading 360° Faculty Dossier...</div>
+            <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '4px' }}>Connecting to database and fetching student records...</div>
+          </div>
+        ) : filteredStudents.length === 0 ? (
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '12px',
+            padding: '28px 16px',
+            textAlign: 'center',
+            border: '1px solid #e2e8f0',
+            color: '#64748b'
+          }}>
+            <Users size={32} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
+            <div style={{ fontSize: '0.94rem', fontWeight: 800, color: '#334155' }}>
+              {students.length === 0 ? 'No Student Records Loaded' : 'No students match your filter'}
+            </div>
+            <div style={{ fontSize: '0.78rem', marginTop: '4px', color: '#64748b' }}>
+              {students.length === 0 
+                ? 'Click below to sync student data directly from the server.'
+                : 'Try searching by another name or clicking "All" courses.'}
+            </div>
+            {students.length === 0 && (
+              <button
+                onClick={() => fetchTeacherData(true)}
+                disabled={loading}
+                style={{
+                  marginTop: '14px',
+                  padding: '8px 18px',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
+                }}
+              >
+                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                <span>{loading ? 'Syncing Records...' : '🔄 Sync Latest Data'}</span>
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
