@@ -76,6 +76,7 @@ import {
 } from './db/syncEngine.js';
 import { uploadStudentPhoto, uploadInstituteLogo, uploadOMRScan } from './services/cloudinaryService.js';
 import { generateDatabaseSnapshot } from './services/jsonBackupService.js';
+import { mergeDuplicatesOnDb } from './db/duplicateCleaner.js';
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -276,11 +277,12 @@ mongoose.connect(MONGODB_URI)
   .then(async () => {
     console.log('🔌 Connected to MongoDB database.');
 
-    // Auto-restore check
+    // Auto-restore check on fresh install / 2nd computer
     try {
       const studentCount = await Student.countDocuments();
-      if (studentCount === 0) {
-        console.log('🔄 Local DB is empty (0 students). Triggering In-Process Cloud Restoration...');
+      const userCount = await User.countDocuments();
+      if (studentCount === 0 || userCount === 0) {
+        console.log('🔄 Local DB is empty or incomplete (0 students or 0 users). Triggering Cloud & Snapshot Restoration...');
         await performRestoreFromCloud();
       }
     } catch(err) {
@@ -343,13 +345,18 @@ mongoose.connect(MONGODB_URI)
             student.parentPasswordHash = await bcrypt.hash(plainText, salt);
             student.parentPasswordPlain = plainText;
             await student.save();
-          }
         }
-        console.log('✅ Reconstructed missing passwords successfully.');
       }
-    } catch (err) {
-      console.error('Error during password reconstruction migration:', err);
+      console.log('✅ Reconstructed missing passwords successfully.');
+      }
+    } catch (pwErr) {
+      console.error('Password reconstruction error:', pwErr);
     }
+
+    // Startup deduplication safeguard
+    try {
+      await mergeDuplicatesOnDb(mongoose.connection, 'LOCAL STARTUP');
+    } catch (e) {}
 
   })
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
@@ -3403,9 +3410,19 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
           const r = results[idx];
           const imgPath = imagePaths[idx];
           const webPath = '/uploads/omr/' + path.basename(imgPath);
+          const originalUploadedName = (req.files && req.files[idx] && req.files[idx].originalname)
+            ? req.files[idx].originalname
+            : (r.filename || path.basename(imgPath));
 
           if (r.error) {
-            errors.push({ error: r.error, details: r.details || '', rollNumber: r.rollNumber || 'Unknown', omrSheetImage: webPath, filename: r.filename || path.basename(imgPath) });
+            errors.push({
+              error: r.error,
+              details: r.details || '',
+              rollNumber: r.rollNumber || 'Unknown',
+              omrSheetImage: webPath,
+              filename: originalUploadedName,
+              omrOriginalFilename: originalUploadedName
+            });
             // safeUnlink(imgPath); // Delete failed image file
             continue;
           }
@@ -3444,7 +3461,8 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
             wrongCount: r.wrongCount,
             studentAnswers: studentAnswers,
             omrSheetImage: webPath,
-            filename: r.filename || path.basename(imgPath)
+            filename: originalUploadedName,
+            omrOriginalFilename: originalUploadedName
           });
         }
 

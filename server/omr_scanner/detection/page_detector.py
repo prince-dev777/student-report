@@ -20,9 +20,9 @@ def detect_page_anchors(image: np.ndarray) -> np.ndarray:
         (x, y, w, h) = cv2.boundingRect(c)
         ar = w / float(h)
         area = cv2.contourArea(c)
-        # Filters for the specific anchor squares
-        if 20 <= w <= 80 and 20 <= h <= 80 and 0.6 <= ar <= 1.4:
-            if 300 < area < 5000:
+        # Robust anchor filter: accommodates full circles and slightly clipped edges from ADF scanners
+        if 15 <= w <= 90 and 12 <= h <= 90 and 0.4 <= ar <= 2.5:
+            if 180 < area < 6000:
                 cX = x + w // 2
                 cY = y + h // 2
                 centers.append([cX, cY])
@@ -42,4 +42,17 @@ def detect_page_anchors(image: np.ndarray) -> np.ndarray:
     bl = centers[np.argmax(diff)]
     
     rect = np.array([tl, tr, br, bl], dtype="float32")
+    
+    # Validate that the 4 anchors form a legitimate page quadrilateral (not collapsed/corrupted)
+    width_top = np.linalg.norm(tr - tl)
+    width_bot = np.linalg.norm(br - bl)
+    height_left = np.linalg.norm(bl - tl)
+    height_right = np.linalg.norm(br - tr)
+    
+    min_w = image.shape[1] * 0.4
+    min_h = image.shape[0] * 0.4
+    
+    if width_top < min_w or width_bot < min_w or height_left < min_h or height_right < min_h:
+        raise PageDetectionError("Corrupted scan: Anchor geometry collapsed or cut off during scanning.")
+        
     return rect

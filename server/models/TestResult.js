@@ -15,6 +15,7 @@ const testResultSchema = new mongoose.Schema({
   studentAnswers: { type: [String], default: [] },
   omrSheetImage: { type: String, default: null },
   omrSheetPublicId: { type: String, default: null },
+  omrOriginalFilename: { type: String, default: null },
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null }
 }, { timestamps: true });

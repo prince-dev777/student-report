@@ -156,6 +156,7 @@ export default function Tests() {
   const [isDownloadingOmrs, setIsDownloadingOmrs] = useState(false);
   const [submittingAction, setSubmittingAction] = useState(null);
   const [omrImagesData, setOmrImagesData] = useState({}); // studentId: image dataURI
+  const [omrFilenames, setOmrFilenames] = useState({}); // studentId: original folder filename
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
   const [omrZoomScale, setOmrZoomScale] = useState(1);
   const [showManualAnswerKeyModal, setShowManualAnswerKeyModal] = useState(false);
@@ -269,6 +270,7 @@ export default function Tests() {
       setOmrStats({});
       setScannedAnswersData({});
       setOmrImagesData({});
+      setOmrFilenames({});
       setManualAnswersGrid([]);
       return;
     }
@@ -318,6 +320,7 @@ export default function Tests() {
     const initialScannedAnswers = {};
     const initialOmrStats = {};
     const initialOmrImages = {};
+    const initialOmrFilenames = {};
     
     batchStudents.forEach(s => {
       const match = existing.find(r => r.studentId === s.id);
@@ -325,6 +328,7 @@ export default function Tests() {
       initialScannedAnswers[s.id] = (match && match.studentAnswers) ? match.studentAnswers : [];
       if (match && match.omrSheetImage) {
         initialOmrImages[s.id] = match.omrSheetImage;
+        initialOmrFilenames[s.id] = match.omrOriginalFilename || null;
       }
       if (match && match.studentAnswers && match.studentAnswers.length > 0) {
         const answerKey = test.answerKey || [];
@@ -369,6 +373,7 @@ export default function Tests() {
     setScannedAnswersData(initialScannedAnswers);
     setOmrStats(initialOmrStats);
     setOmrImagesData(initialOmrImages);
+    setOmrFilenames(initialOmrFilenames);
   };
 
   // Handle marks changes
@@ -408,7 +413,8 @@ export default function Tests() {
         studentId: student.id,
         marks: Number(mark),
         studentAnswers: scannedAnswersData[student.id] || [],
-        omrSheetImage: omrImagesData[student.id] || null
+        omrSheetImage: omrImagesData[student.id] || null,
+        omrOriginalFilename: omrFilenames[student.id] || null
       });
     }
 
@@ -422,6 +428,7 @@ export default function Tests() {
       setOmrStats({});
       setScannedAnswersData({});
       setOmrImagesData({});
+      setOmrFilenames({});
       setActiveTab('all-tests');
     } finally {
       setSubmittingAction(null);
@@ -491,30 +498,21 @@ export default function Tests() {
       const newOmrStats = { ...omrStats };
       const newScannedAnswers = { ...scannedAnswersData };
       const newOmrImagesData = { ...omrImagesData };
+      const newOmrFilenames = { ...omrFilenames };
       let matchedCount = 0;
       const currentErrors = res.errors || [];
-      const seenRolls = new Set();
 
       const allScannedImages = [];
-      res.results.forEach(r => {
-        if (r.omrSheetImage) allScannedImages.push({ url: r.omrSheetImage, rollNo: String(r.rollNo) });
+      (res.results || []).forEach(r => {
+        if (r.omrSheetImage) allScannedImages.push({ url: r.omrSheetImage, rollNo: String(r.rollNo), filename: r.filename });
       });
       currentErrors.forEach((e, i) => {
-        if (e.omrSheetImage) allScannedImages.push({ url: e.omrSheetImage, rollNo: 'Wrong_OMR_' + (i + 1) });
+        if (e.omrSheetImage) allScannedImages.push({ url: e.omrSheetImage, rollNo: 'Wrong_OMR_' + (i + 1), filename: e.filename });
       });
       setLastScannedImages(allScannedImages);
 
-      res.results.forEach(r => {
-        let isDuplicate = false;
-        if (r.rollNo) {
-          if (seenRolls.has(String(r.rollNo))) {
-            isDuplicate = true;
-          }
-          seenRolls.add(String(r.rollNo));
-        }
-
-        // Map rollNo to studentId using the students list
-        // Strip ? and compare exact, numeric, or digit-only matching
+      // 1. Map each result to student
+      const mappedResults = (res.results || []).map(r => {
         const matchedStudent = students.find(s => {
           if (s.rollNo == null || r.rollNo == null) return false;
           const sRollStr = String(s.rollNo).trim();
@@ -533,42 +531,72 @@ export default function Tests() {
           }
           return false;
         });
-        if (!matchedStudent || isDuplicate) {
+
+        const key = matchedStudent
+          ? `STU_${matchedStudent.id}`
+          : (r.rollNo ? `ROLL_${String(r.rollNo).trim()}` : `UNMATCHED_${Math.random()}`);
+
+        return {
+          result: r,
+          student: matchedStudent || null,
+          studentKey: key
+        };
+      });
+
+      // 2. Count occurrences to detect duplicates across the batch
+      const keyCounts = {};
+      mappedResults.forEach(item => {
+        keyCounts[item.studentKey] = (keyCounts[item.studentKey] || 0) + 1;
+      });
+
+      // 3. Process each scanned OMR
+      mappedResults.forEach((item, itemIdx) => {
+        const r = item.result;
+        const matchedStudent = item.student;
+        const isDuplicate = keyCounts[item.studentKey] > 1;
+
+        if (!matchedStudent) {
           currentErrors.push({
-            rollNumber: r.rollNo,
-            error: isDuplicate ? `Duplicate Roll No: ${r.rollNo}` : (r.rollNo ? `Roll No ${r.rollNo} not found` : 'Roll No missing'),
+            rollNumber: r.rollNo || 'Missing',
+            studentName: '',
+            error: r.rollNo ? `Roll No ${r.rollNo} not found in database` : 'Roll No missing on sheet',
+            details: `File: ${r.filename || 'Unknown file'}`,
             omrSheetImage: r.omrSheetImage,
             filename: r.filename
           });
-          
-          if (!matchedStudent) {
-            console.warn(`OMR Scan: Student with Roll No ${r.rollNo} not found in database.`);
-            return;
-          }
-          if (isDuplicate) {
-            console.warn(`OMR Scan: Duplicate Roll No ${r.rollNo}.`);
-            return;
-          }
+          return;
         }
-        
+
+        if (isDuplicate) {
+          currentErrors.push({
+            rollNumber: r.rollNo || matchedStudent.rollNo,
+            studentName: matchedStudent.name,
+            error: `Duplicate OMR Detected (${r.rollNo || matchedStudent.rollNo}) - Not Inserted`,
+            details: `File: ${r.filename || 'Unknown file'}. Multiple sheets detected with this Roll No. Both are kept outside for review.`,
+            omrSheetImage: r.omrSheetImage,
+            filename: r.filename
+          });
+          console.warn(`OMR Scan: Duplicate Roll No ${r.rollNo}. Neither sheet will be inserted automatically.`);
+          return;
+        }
+
+        // Valid single student -> Insert marks & image
         const sId = matchedStudent.id;
         newMarksData[sId] = r.marks;
         if (r.omrSheetImage) {
           newOmrImagesData[sId] = r.omrSheetImage;
+          newOmrFilenames[sId] = r.filename;
         }
-        
+
         let rawAnswers = [];
         if (r.studentAnswers) {
-          rawAnswers = r.studentAnswers; // Fallback if no subjects
+          rawAnswers = r.studentAnswers;
         } else if (r.subjects) {
           const subjectNames = Object.keys(r.subjects).sort();
           for (const subj of subjectNames) {
             rawAnswers = rawAnswers.concat(r.subjects[subj]);
           }
         }
-
-        // Do not slice rawAnswers by detectQuestions here, because answerKey acts as a natural bound
-        // and slicing breaks non-contiguous mappings (e.g. Q1-25 and Q51-75).
 
         const answerKey = test.answerKey || [];
         const marksPerQ = test.marksPerQuestion || 1;
@@ -577,7 +605,6 @@ export default function Tests() {
         let wrong = 0;
 
         const flatAnswers = rawAnswers.map((ans, idx) => {
-           // ans could be string or object depending on python output version
            const isObj = typeof ans === 'object' && ans !== null;
            const status = isObj ? ans.status : (ans ? 'valid' : 'blank');
            const selected = isObj ? ans.selectedOption : ans;
@@ -590,7 +617,6 @@ export default function Tests() {
            
            if (isMapped) {
               if (idx < answerKey.length && isBonusAnswer(answerKey[idx])) {
-                 // ⭐ Bonus Question: full marks awarded unconditionally, zero negative deduction
                  correct++;
               } else if (status === 'invalid') {
                  wrong++;
@@ -626,6 +652,7 @@ export default function Tests() {
       setScannedAnswersData(newScannedAnswers);
       setOmrStats(newOmrStats);
       setOmrImagesData(newOmrImagesData);
+      setOmrFilenames(newOmrFilenames);
       setOmrScanErrors(currentErrors);
 
       toast.success(`Successfully scanned and matched ${matchedCount} OMR sheets.`);
@@ -703,11 +730,13 @@ export default function Tests() {
       const newOmrStats = { ...omrStats };
       const newScannedAnswers = { ...scannedAnswersData };
       const newOmrImagesData = { ...omrImagesData };
+      const newOmrFilenames = { ...omrFilenames };
 
       newMarksData[sId] = r.marks || 0;
       if (r.omrSheetImage) {
         newOmrImagesData[sId] = r.omrSheetImage;
-        setLastScannedImages(prev => [...prev.filter(x => x.rollNo !== String(r.rollNo)), { url: r.omrSheetImage, rollNo: String(r.rollNo || sId) }]);
+        newOmrFilenames[sId] = r.filename || file.name;
+        setLastScannedImages(prev => [...prev.filter(x => x.rollNo !== String(r.rollNo)), { url: r.omrSheetImage, rollNo: String(r.rollNo || sId), filename: r.filename || file.name }]);
       }
       
       let rawAnswers = [];
@@ -771,6 +800,7 @@ export default function Tests() {
       setScannedAnswersData(newScannedAnswers);
       setOmrStats(newOmrStats);
       setOmrImagesData(newOmrImagesData);
+      setOmrFilenames(newOmrFilenames);
       
       toast.success(`OMR uploaded and forcefully mapped to student!`);
     } catch (err) {
@@ -2858,13 +2888,18 @@ export default function Tests() {
                         {omrScanErrors.map((err, idx) => (
                           <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded-md border border-gray-100 hover:border-red-100 transition-colors">
                             <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-semibold text-gray-800 bg-white px-2 py-0.5 rounded text-sm border border-gray-200 shadow-sm">
-                                  Roll No: {err.rollNumber || 'Unknown'} ⇒ 
+                                  Roll No: {err.rollNumber || 'Unknown'}
                                 </span>
+                                {err.studentName && (
+                                  <span className="font-medium text-gray-700 bg-white px-2 py-0.5 rounded text-sm border border-gray-200">
+                                    {err.studentName}
+                                  </span>
+                                )}
                                 {err.filename && (
-                                  <span className="font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded text-sm border border-gray-200">
-                                    {err.filename} ⇒ 
+                                  <span className="font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-sm border border-blue-200">
+                                    📄 {err.filename}
                                   </span>
                                 )}
                                 <span className="text-sm font-medium text-red-600">{err.error}</span>
@@ -2874,8 +2909,13 @@ export default function Tests() {
                             {err.omrSheetImage && (
                               <button 
                                 type="button"
-                                onClick={() => setSelectedOmrImage(getMediaUrl(err.omrSheetImage))}
-                                className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors"
+                                onClick={() => setSelectedOmrImage({
+                                  url: getMediaUrl(err.omrSheetImage),
+                                  filename: err.filename || (err.rollNumber ? `Roll_${err.rollNumber}_OMR.jpg` : 'OMR_Sheet.jpg'),
+                                  rollNo: err.rollNumber,
+                                  studentName: err.studentName || ''
+                                })}
+                                className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex-shrink-0"
                               >
                                 <Eye size={16} />
                                 View OMR
@@ -2983,7 +3023,12 @@ export default function Tests() {
                                       <>
                                         <button
                                           type="button"
-                                          onClick={() => setSelectedOmrImage(getMediaUrl(omrImagesData[student.id]))}
+                                          onClick={() => setSelectedOmrImage({
+                                            url: getMediaUrl(omrImagesData[student.id]),
+                                            filename: omrFilenames[student.id] || (student.rollNo ? `${student.rollNo}_${student.name}.jpg` : 'OMR_Sheet.jpg'),
+                                            rollNo: student.rollNo,
+                                            studentName: student.name
+                                          })}
                                           className="btn btn-ghost btn-xs text-accent flex-shrink-0"
                                           style={{ padding: '4px 8px', fontSize: '0.75rem' }}
                                           title="Preview scanned OMR Sheet"
@@ -3165,7 +3210,12 @@ export default function Tests() {
                               {res.omrSheetImage && (
                                 <>
                                   <button 
-                                    onClick={() => setSelectedOmrImage(getMediaUrl(res.omrSheetImage))}
+                                    onClick={() => setSelectedOmrImage({
+                                      url: getMediaUrl(res.omrSheetImage),
+                                      filename: res.omrOriginalFilename || (res.rollNo ? `${res.rollNo}_${res.studentName}.jpg` : 'OMR_Sheet.jpg'),
+                                      rollNo: res.rollNo,
+                                      studentName: res.studentName
+                                    })}
                                     className="btn btn-ghost btn-xs text-accent"
                                     style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
                                   >
@@ -3232,51 +3282,71 @@ export default function Tests() {
             pinch={{ step: 1 }}
             panning={{ velocityDisabled: true }}
           >
-            {({ zoomIn, zoomOut, resetTransform, state }) => (
-              <div style={{ background: 'var(--bg-primary)', borderRadius: '18px', padding: '18px', maxWidth: '900px', width: '90vw', textAlign: 'center', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Scanned OMR Sheet</h4>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button className="btn btn-sm btn-ghost" onClick={() => zoomOut()}><ZoomOut size={16} /></button>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600, minWidth: '40px' }}>{Math.round(state.scale * 100)}%</span>
-                    <button className="btn btn-sm btn-ghost" onClick={() => zoomIn()}><ZoomIn size={16} /></button>
-                    <button className="btn btn-sm btn-ghost" style={{ marginLeft: '4px' }} onClick={() => resetTransform()}>Reset</button>
-                  </div>
-                </div>
-                
-                <div style={{ flex: 1, overflow: 'hidden', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'grab' }}>
-                  <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }} contentStyle={{ width: '100%' }}>
-                    <img 
-                      src={selectedOmrImage} 
-                      alt="OMR Sheet" 
-                      style={{ width: '100%', display: 'block' }}
-                      draggable={false}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentElement.innerHTML = `
-                          <div style="padding: 40px 20px; text-align: center; color: #64748b;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px;">
-                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                              <polyline points="21 15 16 10 5 21"></polyline>
-                            </svg>
-                            <p style="font-weight: 600; font-size: 1rem; margin: 0 0 6px;">OMR Sheet Unavailable</p>
-                            <p style="font-size: 0.85rem; margin: 0; color: #94a3b8;">This image was deleted from local storage.<br/>Please re-scan the OMR sheet to view it again.</p>
-                          </div>`;
-                      }}
-                    />
-                  </TransformComponent>
-                </div>
+            {({ zoomIn, zoomOut, resetTransform, state }) => {
+              const omrUrl = typeof selectedOmrImage === 'object' && selectedOmrImage !== null ? selectedOmrImage.url : selectedOmrImage;
+              const omrFilename = typeof selectedOmrImage === 'object' && selectedOmrImage !== null ? selectedOmrImage.filename : '';
+              const omrRollNo = typeof selectedOmrImage === 'object' && selectedOmrImage !== null ? selectedOmrImage.rollNo : '';
+              const omrStudentName = typeof selectedOmrImage === 'object' && selectedOmrImage !== null ? selectedOmrImage.studentName : '';
 
-                <button
-                  onClick={() => { setSelectedOmrImage(null); }}
-                  className="btn btn-primary"
-                  style={{ marginTop: '14px', width: '100%' }}
-                >
-                  Close Preview
-                </button>
-              </div>
-            )}
+              return (
+                <div style={{ background: 'var(--bg-primary)', borderRadius: '18px', padding: '18px', maxWidth: '900px', width: '90vw', textAlign: 'center', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', minWidth: 0, flex: 1, paddingRight: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: '100%' }}>
+                        <span style={{ fontSize: '1.1rem' }}>📄</span>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {omrFilename || 'Scanned OMR Sheet'}
+                        </h4>
+                      </div>
+                      {(omrRollNo || omrStudentName) && (
+                        <p style={{ margin: '2px 0 0 24px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          {omrRollNo ? <>Roll No: <strong style={{ color: 'var(--text-primary)' }}>{omrRollNo}</strong></> : null}
+                          {omrStudentName ? <span style={{ marginLeft: '8px' }}>| Student: <strong>{omrStudentName}</strong></span> : null}
+                        </p>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                      <button className="btn btn-sm btn-ghost" onClick={() => zoomOut()}><ZoomOut size={16} /></button>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, minWidth: '40px' }}>{Math.round(state.scale * 100)}%</span>
+                      <button className="btn btn-sm btn-ghost" onClick={() => zoomIn()}><ZoomIn size={16} /></button>
+                      <button className="btn btn-sm btn-ghost" style={{ marginLeft: '4px' }} onClick={() => resetTransform()}>Reset</button>
+                    </div>
+                  </div>
+                  
+                  <div style={{ flex: 1, overflow: 'hidden', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'grab' }}>
+                    <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }} contentStyle={{ width: '100%' }}>
+                      <img 
+                        src={omrUrl} 
+                        alt="OMR Sheet" 
+                        style={{ width: '100%', display: 'block' }}
+                        draggable={false}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = `
+                            <div style="padding: 40px 20px; text-align: center; color: #64748b;">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px;">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                              </svg>
+                              <p style="font-weight: 600; font-size: 1rem; margin: 0 0 6px;">OMR Sheet Unavailable</p>
+                              <p style="font-size: 0.85rem; margin: 0; color: #94a3b8;">This image was deleted from local storage.<br/>Please re-scan the OMR sheet to view it again.</p>
+                            </div>`;
+                        }}
+                      />
+                    </TransformComponent>
+                  </div>
+
+                  <button
+                    onClick={() => { setSelectedOmrImage(null); }}
+                    className="btn btn-primary"
+                    style={{ marginTop: '14px', width: '100%' }}
+                  >
+                    Close Preview
+                  </button>
+                </div>
+              );
+            }}
           </TransformWrapper>
         </div>
       , document.body)}
@@ -3296,7 +3366,12 @@ export default function Tests() {
                 {selectedStudentResult.omrSheetImage && (
                   <button 
                     className="btn btn-outline-primary btn-sm flex items-center gap-2"
-                    onClick={() => setSelectedOmrImage(getMediaUrl(selectedStudentResult.omrSheetImage))}
+                    onClick={() => setSelectedOmrImage({
+                      url: getMediaUrl(selectedStudentResult.omrSheetImage),
+                      filename: selectedStudentResult.omrOriginalFilename || (selectedStudentResult.rollNo ? `${selectedStudentResult.rollNo}_${selectedStudentResult.studentName}.jpg` : 'OMR_Sheet.jpg'),
+                      rollNo: selectedStudentResult.rollNo,
+                      studentName: selectedStudentResult.studentName
+                    })}
                   >
                     <Eye size={16} /> View OMR
                   </button>

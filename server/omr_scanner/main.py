@@ -44,24 +44,16 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", deb
     visualizer = Visualizer(output_dir) if debug else None
     
     # 1. LOAD IMAGE
-    try:
-        image = load_image(input_path)
-    except Exception as e:
-        print(f"Error loading image: {e}")
-        sys.exit(1)
+    image = load_image(input_path)
         
     if visualizer:
         visualizer.save_step("01_original.jpg", image)
         
     # 2 & 3. PAGE DETECTION & PERSPECTIVE CORRECTION
-    try:
-        anchors = detect_page_anchors(image)
-        warped = apply_perspective_correction(image, anchors, config.target_width, config.target_height)
-        if visualizer:
-            visualizer.save_step("05_perspective_corrected.jpg", warped)
-    except Exception as e:
-        print(f"Error during perspective correction: {e}")
-        sys.exit(1)
+    anchors = detect_page_anchors(image)
+    warped = apply_perspective_correction(image, anchors, config.target_width, config.target_height)
+    if visualizer:
+        visualizer.save_step("05_perspective_corrected.jpg", warped)
         
     # 4. PREPROCESSING
     thresh = preprocess_image(warped)
@@ -87,11 +79,7 @@ def run_scanner(input_path: str, output_dir: str, template_name: str = "T1", deb
     add_confidence_scores(results, config.fill_threshold)
     
     # 9. VALIDATION
-    try:
-        validate_results(results, config, mapped_questions=mapped_questions)
-    except Exception as e:
-        print(f"Validation Error: {e}")
-        sys.exit(1)
+    validate_results(results, config, mapped_questions=mapped_questions)
         
     # 10. SCORING
     calculate_score(results, config)
@@ -115,5 +103,9 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true", help="Enable debug visualizations")
     args = parser.parse_args()
     
-    result = run_scanner(args.input, args.output, args.template, args.debug)
-    print(json.dumps(result, indent=4))
+    try:
+        result = run_scanner(args.input, args.output, args.template, args.debug)
+        print(json.dumps(result, indent=4))
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)

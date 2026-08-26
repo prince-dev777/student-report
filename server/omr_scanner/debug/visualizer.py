@@ -43,59 +43,68 @@ class Visualizer:
                 ans = data["answer"]
                 conf = data.get("confidence", 0.0)
                 opts = data["options"]
+                is_num = len(opts) > len(set(opts))
                 
-                for x, y in coords:
-                    cv2.rectangle(debug_img, (int(x) - roi_half, int(y) - roi_half), (int(x) + roi_half, int(y) + roi_half), (255, 0, 0), 1)
+                if not is_num:
+                    # Standard MCQ: draw blue bounding boxes around 4 options
+                    for x, y in coords:
+                        cv2.rectangle(debug_img, (int(x) - roi_half, int(y) - roi_half), (int(x) + roi_half, int(y) + roi_half), (255, 0, 0), 1)
                     
-                # Label question
-                start_x, y = coords[0]
-                text_x = max(5, int(start_x) - 95)
-                text_y = int(y) + 4
-                if len(opts) > len(set(opts)):  # numerical question
-                    text_x = int(start_x) + 30
-                    text_y = int(y) - 10
-                
-                cv2.putText(debug_img, f"Q{q_num}: {ans if ans else status} | {conf}", 
-                            (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 0), 1)
-                            
-                if status in ("ANSWERED", "MULTIPLE") and ans is not None:
-                    # Highlight selected options
-                    if len(opts) > len(set(opts)):
-                        # Multi-row question (e.g. numerical) where options repeat
-                        options_per_row = len(set(opts))
-                        row_digits = data.get("row_digits")
-                        if row_digits:
-                            for row_idx, char in enumerate(row_digits):
-                                if not char:
-                                    continue
-                                base_idx = row_idx * options_per_row
-                                try:
-                                    block_opts = opts[base_idx : base_idx + options_per_row]
-                                    idx = base_idx + block_opts.index(char)
-                                    sel_x, sel_y = coords[idx]
-                                    cv2.circle(debug_img, (int(sel_x), int(sel_y)), roi_half + 2, (0, 255, 0), 2)
-                                except ValueError:
-                                    pass
-                        else:
-                            for i, char in enumerate(ans):
-                                base_idx = i * options_per_row
-                                try:
-                                    block_opts = opts[base_idx : base_idx + options_per_row]
-                                    idx = base_idx + block_opts.index(char)
-                                    sel_x, sel_y = coords[idx]
-                                    cv2.circle(debug_img, (int(sel_x), int(sel_y)), roi_half + 2, (0, 255, 0), 2)
-                                except ValueError:
-                                    pass
-                    else:
-                        # Standard MCQ
+                    # Label MCQ question in left margin
+                    start_x, y = coords[0]
+                    text_x = max(5, int(start_x) - 95)
+                    text_y = int(y) + 4
+                    cv2.putText(debug_img, f"Q{q_num}: {ans if ans else status} | {conf}", 
+                                (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 0), 1)
+                                
+                    # Highlight selected MCQ option
+                    if status in ("ANSWERED", "MULTIPLE") and ans is not None:
                         for char in ans:
                             if char in opts:
                                 idx = opts.index(char)
                                 sel_x, sel_y = coords[idx]
                                 cv2.circle(debug_img, (int(sel_x), int(sel_y)), roi_half + 2, (0, 255, 0), 2)
-                elif status == "UNCERTAIN":
-                    # Mark uncertain question entirely in red
-                    for x, y in coords:
-                        cv2.rectangle(debug_img, (int(x) - roi_half, int(y) - roi_half), (int(x) + roi_half, int(y) + roi_half), (0, 0, 255), 1)
+                    elif status == "UNCERTAIN":
+                        for x, y in coords:
+                            cv2.rectangle(debug_img, (int(x) - roi_half, int(y) - roi_half), (int(x) + roi_half, int(y) + roi_half), (0, 0, 255), 1)
+                else:
+                    # Numerical Question: Clean, uncluttered layout
+                    start_x, start_y = coords[0]
+                    end_x = coords[len(set(opts)) - 1][0]
+                    
+                    # Draw a single clean outer frame around the 4-row numerical matrix
+                    min_bx = int(start_x) - 10
+                    max_bx = int(end_x) + 10
+                    min_by = int(start_y) - 10
+                    max_by = int(coords[-1][1]) + 10
+                    cv2.rectangle(debug_img, (min_bx, min_by), (max_bx, max_by), (220, 180, 140), 1)
+                    
+                    # Clean answer badge in top right header of block
+                    badge_text = f"Ans: {ans}" if (status == "ANSWERED" and ans) else status
+                    badge_color = (0, 130, 0) if status == "ANSWERED" else (0, 0, 200)
+                    
+                    # Top badge placed cleanly with crisp white background tag
+                    b_str = f"[{badge_text}]"
+                    (tw, th), _ = cv2.getTextSize(b_str, cv2.FONT_HERSHEY_SIMPLEX, 0.35, 1)
+                    bx_pos = max_bx - tw - 4
+                    by_pos = min_by - 4
+                    cv2.rectangle(debug_img, (bx_pos - 2, by_pos - th - 2), (bx_pos + tw + 2, by_pos + 2), (255, 255, 255), -1)
+                    cv2.putText(debug_img, b_str, (bx_pos, by_pos), cv2.FONT_HERSHEY_SIMPLEX, 0.35, badge_color, 1)
+                    
+                    # Highlight detected numerical digits with bright green circles
+                    row_digits = data.get("row_digits")
+                    if row_digits and status in ("ANSWERED", "MULTIPLE"):
+                        for row_idx, char in enumerate(row_digits):
+                            if not char:
+                                continue
+                            try:
+                                digit_val = int(char)
+                                # Each numerical question has 4 rows (TH, H, T, U), with 10 options [0..9] per row
+                                coord_idx = row_idx * 10 + digit_val
+                                if coord_idx < len(coords):
+                                    sel_x, sel_y = coords[coord_idx]
+                                    cv2.circle(debug_img, (int(sel_x), int(sel_y)), 10, (0, 255, 0), 2)
+                            except (ValueError, IndexError):
+                                pass
                         
         self.save_step("10_final_answers.jpg", debug_img)

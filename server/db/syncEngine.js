@@ -5,6 +5,7 @@ import { ALL_COLLECTIONS } from '../services/jsonBackupService.js';
 import { logInfo, logError, logWarn } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
+import { mergeDuplicatesOnDb } from './duplicateCleaner.js';
 
 let isSyncing = false;
 let pendingSync = false;
@@ -19,6 +20,29 @@ function broadcastUpdate(event, data = {}) {
   if (typeof sseBroadcastCallback === 'function') {
     sseBroadcastCallback(event, data);
   }
+}
+
+/**
+ * Deep converter to ensure string hex ObjectIds are converted to real mongoose.Types.ObjectId
+ */
+export function fixObjectIds(obj) {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'string' && /^[a-f0-9]{24}$/.test(obj)) {
+    try {
+      return new mongoose.Types.ObjectId(obj);
+    } catch (e) {
+      return obj;
+    }
+  }
+  if (Array.isArray(obj)) return obj.map(fixObjectIds);
+  if (typeof obj === 'object' && !(obj instanceof Date) && !(obj instanceof mongoose.Types.ObjectId)) {
+    const fixed = {};
+    for (const [k, v] of Object.entries(obj)) {
+      fixed[k] = fixObjectIds(v);
+    }
+    return fixed;
+  }
+  return obj;
 }
 
 /**
@@ -88,7 +112,7 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
 
 /**
  * Full Two-Way Synchronization Engine
- * Pushes local updates to Cloud Atlas, pulls remote additions, and purges deleted records.
+ * Safe Two-Way Sync: Never wipes Cloud when Local is empty. Pulls missing records from Cloud to Local.
  */
 export async function performFullSync() {
   if (!isLocalDbReady()) {
@@ -101,6 +125,11 @@ export async function performFullSync() {
     logWarn('SYNC', 'Cloud Atlas not reachable. Skipping sync.');
     return { success: false, error: 'Cloud Atlas not reachable' };
   }
+
+  // Pre-sync safeguard: Automatically clean and merge any duplicate records before pushing
+  try {
+    await mergeDuplicatesOnDb(mongoose.connection, 'LOCAL DB PRE-SYNC');
+  } catch (e) {}
 
   let totalPushed = 0;
   let totalPulled = 0;
@@ -119,35 +148,58 @@ export async function performFullSync() {
         const activeLocalDocs = localDocs.filter(d => !d.isDeleted);
         const deletedLocalIds = localDocs.filter(d => d.isDeleted).map(d => d._id);
 
-        // 1. Purge soft-deleted documents from Cloud
+        // Fetch Cloud docs
+        const cloudDocs = await cloudColl.find({}).toArray();
+
+        // 1. If Local is completely empty and Cloud has data: AUTO-PULL from Cloud!
+        if (activeLocalDocs.length === 0 && cloudDocs.length > 0) {
+          const fixedCloudDocs = cloudDocs.map(fixObjectIds);
+          for (let i = 0; i < fixedCloudDocs.length; i += 500) {
+            const batch = fixedCloudDocs.slice(i, i + 500).map(doc => ({
+              replaceOne: { filter: { _id: doc._id }, replacement: doc, upsert: true }
+            }));
+            await localColl.bulkWrite(batch, { ordered: false });
+          }
+          totalPulled += cloudDocs.length;
+          logInfo('SYNC', `📥 Auto-pulled ${cloudDocs.length} records into empty local collection [${collName}]`);
+          continue;
+        }
+
+        // 2. Purge soft-deleted documents from Cloud
         if (deletedLocalIds.length > 0) {
           await cloudColl.deleteMany({ _id: { $in: deletedLocalIds } }).catch(() => {});
         }
 
-        // 2. Purge documents on Cloud that no longer exist locally
-        const localIdsSet = new Set(activeLocalDocs.map(d => String(d._id)));
-        const cloudDocs = await cloudColl.find({}).toArray();
-        
-        const orphansToDelete = cloudDocs
-          .filter(cd => !localIdsSet.has(String(cd._id)))
-          .map(cd => cd._id);
-
-        if (orphansToDelete.length > 0) {
-          await cloudColl.deleteMany({ _id: { $in: orphansToDelete } }).catch(() => {});
-          totalPurged += orphansToDelete.length;
+        // 3. Push Active Local Docs to Cloud Atlas (Upsert)
+        if (activeLocalDocs.length > 0) {
+          for (let i = 0; i < activeLocalDocs.length; i += 500) {
+            const batch = activeLocalDocs.slice(i, i + 500).map(doc => ({
+              replaceOne: {
+                filter: { _id: doc._id },
+                replacement: doc,
+                upsert: true
+              }
+            }));
+            await cloudColl.bulkWrite(batch, { ordered: false });
+          }
+          totalPushed += activeLocalDocs.length;
         }
 
-        // 3. Push Active Local Docs to Cloud Atlas
-        if (activeLocalDocs.length > 0) {
-          const pushOps = activeLocalDocs.map(doc => ({
-            replaceOne: {
-              filter: { _id: doc._id },
-              replacement: doc,
-              upsert: true
+        // 4. Pull any Cloud docs that are not yet in Local (Safe Two-Way Merge)
+        if (cloudDocs.length > 0) {
+          const localIdsSet = new Set(localDocs.map(d => String(d._id)));
+          const missingInLocal = cloudDocs.filter(cd => !localIdsSet.has(String(cd._id)));
+          if (missingInLocal.length > 0) {
+            const fixedMissing = missingInLocal.map(fixObjectIds);
+            for (let i = 0; i < fixedMissing.length; i += 500) {
+              const batch = fixedMissing.slice(i, i + 500).map(doc => ({
+                replaceOne: { filter: { _id: doc._id }, replacement: doc, upsert: true }
+              }));
+              await localColl.bulkWrite(batch, { ordered: false });
             }
-          }));
-          await cloudColl.bulkWrite(pushOps, { ordered: false });
-          totalPushed += activeLocalDocs.length;
+            totalPulled += missingInLocal.length;
+            logInfo('SYNC', `📥 Pulled ${missingInLocal.length} new records from Cloud into [${collName}]`);
+          }
         }
 
       } catch (collErr) {
@@ -163,12 +215,13 @@ export async function performFullSync() {
       fs.writeFileSync(statusFile, JSON.stringify({ lastSync: lastSyncTimestamp }), 'utf8');
     } catch (e) {}
 
-    logInfo('SYNC', `✅ Two-Way Sync Completed successfully! (Pushed: ${totalPushed}, Purged: ${totalPurged})`);
+    logInfo('SYNC', `✅ Safe Two-Way Sync Completed! (Pushed: ${totalPushed}, Pulled: ${totalPulled}, Purged: ${totalPurged})`);
 
     broadcastUpdate('data-updated', {
       source: 'full-sync',
       lastSync: lastSyncTimestamp,
       totalPushed,
+      totalPulled,
       totalPurged
     });
 
@@ -176,6 +229,7 @@ export async function performFullSync() {
       success: true,
       lastSync: lastSyncTimestamp,
       totalPushed,
+      totalPulled,
       totalPurged
     };
   } catch (err) {
@@ -191,7 +245,10 @@ export async function pullAndRestoreFromCloud() {
   if (!isLocalDbReady()) return { success: false, error: 'Local DB offline' };
 
   const cloudConn = await connectCloudDb();
-  if (!cloudConn || cloudConn.readyState !== 1) return { success: false, error: 'Cloud Atlas offline' };
+  if (!cloudConn || cloudConn.readyState !== 1) {
+    logWarn('PULL', 'Cloud Atlas offline, attempting snapshot restore...');
+    return restoreLocalFromSnapshot();
+  }
 
   try {
     const cloudDb = cloudConn.useDb('test').db;
@@ -205,26 +262,83 @@ export async function pullAndRestoreFromCloud() {
         const docs = await cloudColl.find({}).toArray();
         if (!docs || docs.length === 0) continue;
 
-        const bulkOps = docs.map(doc => ({
-          replaceOne: {
-            filter: { _id: doc._id },
-            replacement: doc,
-            upsert: true
-          }
-        }));
-
-        await localColl.bulkWrite(bulkOps, { ordered: false });
+        const fixedDocs = docs.map(fixObjectIds);
+        for (let i = 0; i < fixedDocs.length; i += 500) {
+          const batch = fixedDocs.slice(i, i + 500).map(doc => ({
+            replaceOne: {
+              filter: { _id: doc._id },
+              replacement: doc,
+              upsert: true
+            }
+          }));
+          await localColl.bulkWrite(batch, { ordered: false });
+        }
         totalRestored += docs.length;
       } catch (collErr) {
         logWarn('PULL', `Warning pulling [${collName}]: ${collErr.message}`);
       }
     }
 
-    logInfo('PULL', `✅ Pull from Cloud completed (${totalRestored} records)`);
+    // If Cloud was empty, fallback to bundled snapshot
+    if (totalRestored === 0) {
+      logWarn('PULL', 'Cloud was empty, seeding from bundled database_snapshot.json...');
+      return restoreLocalFromSnapshot();
+    }
+
+    logInfo('PULL', `✅ Pull from Cloud completed (${totalRestored} records restored with ObjectIds)`);
     broadcastUpdate('data-updated', { source: 'cloud-pull', totalRestored });
     return { success: true, totalRestored };
   } catch (err) {
     logError('PULL', 'Failed to pull from Cloud Atlas', err);
+    return restoreLocalFromSnapshot();
+  }
+}
+
+/**
+ * Offline / Cold-start fallback: Restore local MongoDB directly from bundled database_snapshot.json
+ */
+export async function restoreLocalFromSnapshot() {
+  try {
+    const snapshotPaths = [
+      path.join(process.cwd(), 'server', 'backup', 'database_snapshot.json'),
+      path.join(__dirname, '..', 'backup', 'database_snapshot.json'),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'server', 'backup', 'database_snapshot.json')
+    ];
+
+    let snapPath = snapshotPaths.find(p => fs.existsSync(p));
+    if (!snapPath) {
+      logWarn('RESTORE_SNAP', 'No database_snapshot.json found.');
+      return { success: false, error: 'Snapshot not found' };
+    }
+
+    const raw = fs.readFileSync(snapPath, 'utf8');
+    const snap = JSON.parse(raw);
+    if (!snap.data) return { success: false, error: 'Invalid snapshot' };
+
+    let totalRestored = 0;
+    for (const [collName, docs] of Object.entries(snap.data)) {
+      if (!docs || docs.length === 0) continue;
+      const localColl = mongoose.connection.collection(collName);
+      const fixedDocs = docs.map(fixObjectIds);
+
+      for (let i = 0; i < fixedDocs.length; i += 500) {
+        const batch = fixedDocs.slice(i, i + 500).map(doc => ({
+          replaceOne: {
+            filter: { _id: doc._id },
+            replacement: doc,
+            upsert: true
+          }
+        }));
+        await localColl.bulkWrite(batch, { ordered: false });
+      }
+      totalRestored += docs.length;
+    }
+
+    logInfo('RESTORE_SNAP', `✅ Restored ${totalRestored} records from local snapshot [${snapPath}]`);
+    broadcastUpdate('data-updated', { source: 'snapshot-restore', totalRestored });
+    return { success: true, totalRestored };
+  } catch (err) {
+    logError('RESTORE_SNAP', 'Failed to restore from snapshot', err);
     return { success: false, error: err.message };
   }
 }

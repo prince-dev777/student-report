@@ -31,19 +31,19 @@ DEFAULT_ROLL_NO_CONFIG = {
     "cols": 5,
     "rows": 10,
     "x_coords": [60, 86, 112, 138, 164],
-    "y_coords": [147 + r * 20 for r in range(10)]
+    "y_coords": [145 + r * 20 for r in range(10)]
 }
 
 
 # ==========================================
 # --- T1 (JEE 75 MCQ) ---
 # ==========================================
-t1_mcq_y = [407, 435, 463, 491, 519, 565, 593, 621, 649, 677, 723, 751, 779, 807, 835, 881, 909, 937, 965, 993, 1039, 1067, 1095, 1123, 1151]
+t1_mcq_y = [405, 433, 461, 489, 517, 563, 591, 619, 647, 675, 721, 749, 777, 805, 833, 879, 907, 935, 963, 991, 1037, 1065, 1093, 1121, 1149]
 
 T1_TEMPLATE = TemplateConfig(
     name="T1",
     roi_size=18,
-    fill_threshold=35.0,
+    fill_threshold=45.0,
     target_width=903,
     target_height=1412,
     roll_no_config=DEFAULT_ROLL_NO_CONFIG,
@@ -84,14 +84,15 @@ T1_TEMPLATE = TemplateConfig(
 # ==========================================
 # --- T2 (JEE 75 with Numerical) ---
 # ==========================================
-t2_mcq_y = [380 + r * 22 for r in range(20)]
-t2_num_y = [910, 1008, 1106, 1204, 1302]
+t2_mcq_y = [384 + r * 22 for r in range(20)]
+t2_num_y = [917, 1014, 1114, 1209, 1305]
+t2_num_row_offsets = [0.0, 17.3, 34.6, 51.9]
 
 T2_TEMPLATE = TemplateConfig(
     name="T2",
     roi_size=18,
-    fill_threshold=35.0,
-    numerical_fill_threshold=48.0,
+    fill_threshold=45.0,
+    numerical_fill_threshold=55.0,
     target_width=903,
     target_height=1412,
     roll_no_config=DEFAULT_ROLL_NO_CONFIG,
@@ -130,9 +131,9 @@ T2_TEMPLATE = TemplateConfig(
             "start_q": 21,
             "num_q": 5,
             "options": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-            "x_coords": [70, 94, 119, 144, 168, 192, 217, 242, 266, 290],
+            "x_coords": [70, 95, 119, 144, 168, 193, 217, 242, 267, 291],
             "y_coords": t2_num_y,
-            "row_offsets": [0.0, 17.5, 35.0, 52.5]
+            "row_offsets": t2_num_row_offsets
         },
         {
             "name": "CHEMISTRY NUMERICAL",
@@ -140,9 +141,9 @@ T2_TEMPLATE = TemplateConfig(
             "start_q": 46,
             "num_q": 5,
             "options": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-            "x_coords": [340, 365, 390, 414, 438, 463, 488, 512, 536, 561],
+            "x_coords": [341, 366, 390, 414, 439, 463, 488, 512, 537, 561],
             "y_coords": t2_num_y,
-            "row_offsets": [0.0, 17.5, 35.0, 52.5]
+            "row_offsets": t2_num_row_offsets
         },
         {
             "name": "MATH NUMERICAL",
@@ -150,9 +151,9 @@ T2_TEMPLATE = TemplateConfig(
             "start_q": 71,
             "num_q": 5,
             "options": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-            "x_coords": [611, 636, 660, 684, 709, 734, 758, 782, 807, 832],
+            "x_coords": [611, 636, 660, 685, 709, 734, 758, 783, 807, 831],
             "y_coords": t2_num_y,
-            "row_offsets": [0.0, 17.5, 35.0, 52.5]
+            "row_offsets": t2_num_row_offsets
         }
     ],
     answer_key={}
@@ -167,7 +168,7 @@ t3_y_coords = [375, 397, 419, 440, 462, 484, 506, 528, 549, 571, 593, 615, 637, 
 T3_TEMPLATE = TemplateConfig(
     name="T3",
     roi_size=18,
-    fill_threshold=35.0,
+    fill_threshold=32.0,
     target_width=903,
     target_height=1412,
     roll_no_config=DEFAULT_ROLL_NO_CONFIG,
@@ -216,12 +217,12 @@ T3_TEMPLATE = TemplateConfig(
 # ==========================================
 # --- T4 (NEET 90) ---
 # ==========================================
-t4_y_coords = [381, 406, 431, 456, 481, 519, 544, 569, 594, 619, 657, 682, 707, 732, 757, 795, 820, 845, 870, 895, 933, 958, 983, 1008, 1033, 1071, 1096, 1121, 1146, 1171]
+t4_y_coords = [380, 405, 430, 455, 480, 518, 543, 568, 593, 618, 656, 681, 706, 731, 756, 794, 819, 844, 869, 894, 932, 957, 982, 1007, 1032, 1070, 1095, 1120, 1145, 1170]
 
 T4_TEMPLATE = TemplateConfig(
     name="T4",
     roi_size=18,
-    fill_threshold=35.0,
+    fill_threshold=38.0,
     target_width=903,
     target_height=1412,
     roll_no_config=DEFAULT_ROLL_NO_CONFIG,
@@ -261,12 +262,12 @@ T4_TEMPLATE = TemplateConfig(
 # ==========================================
 # --- T5 (MHCET 200) ---
 # ==========================================
-t5_y_coords = [384, 403, 423, 442, 462, 481, 500, 520, 539, 558, 578, 597, 617, 636, 655, 675, 694, 714, 733, 752, 772, 791, 811, 830, 849, 869, 888, 907, 927, 946, 966, 985, 1004, 1024, 1043, 1063, 1082, 1101, 1121, 1140, 1160, 1179, 1198, 1218, 1237, 1256, 1276, 1295, 1315, 1334]
+t5_y_coords = [379, 399, 418, 438, 457, 477, 496, 516, 535, 555, 574, 594, 613, 633, 652, 672, 691, 711, 730, 750, 769, 789, 808, 827, 847, 866, 886, 905, 925, 944, 964, 983, 1003, 1022, 1042, 1062, 1082, 1100, 1120, 1139, 1159, 1178, 1198, 1217, 1237, 1256, 1276, 1295, 1315, 1334]
 
 T5_TEMPLATE = TemplateConfig(
     name="T5",
     roi_size=18,
-    fill_threshold=35.0,
+    fill_threshold=32.0,
     target_width=903,
     target_height=1412,
     roll_no_config=DEFAULT_ROLL_NO_CONFIG,
@@ -318,7 +319,7 @@ T5_TEMPLATE = TemplateConfig(
 T6_TEMPLATE = TemplateConfig(
     name="T6",
     roi_size=18,
-    fill_threshold=35.0,
+    fill_threshold=32.0,
     target_width=903,
     target_height=1412,
     roll_no_config=DEFAULT_ROLL_NO_CONFIG,
@@ -367,12 +368,12 @@ T6_TEMPLATE = TemplateConfig(
 # ==========================================
 # --- T7 (OMR 50) ---
 # ==========================================
-t7_y_coords = [407, 434, 461, 488, 515, 559, 586, 613, 640, 667, 711, 738, 765, 792, 819, 863, 890, 917, 944, 971, 1015, 1042, 1069, 1096, 1123]
+t7_y_coords = [405, 432, 459, 486, 513, 557, 584, 611, 638, 665, 709, 736, 763, 790, 817, 861, 888, 915, 942, 969, 1013, 1040, 1067, 1094, 1121]
 
 T7_TEMPLATE = TemplateConfig(
     name="T7",
     roi_size=18,
-    fill_threshold=35.0,
+    fill_threshold=40.0,
     target_width=903,
     target_height=1412,
     roll_no_config=DEFAULT_ROLL_NO_CONFIG,

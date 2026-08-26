@@ -28,7 +28,7 @@ def test_t2_synthetic_pipeline(tmp_path):
             
             real_x = int((unscaled_x + 30) * 2)
             real_y = int((unscaled_y + 30) * 2)
-            cv2.circle(img, (real_x, real_y), 10, (0, 0, 0), -1)
+            cv2.circle(img, (real_x, real_y), 16, (0, 0, 0), -1)
 
     # Fill Numerical Sections (3, 4, 5)
     num_answers = ["1024", "0059", "7310", "4444", "0000"]
@@ -41,11 +41,11 @@ def test_t2_synthetic_pipeline(tmp_path):
             for row_idx, char in enumerate(ans_str):
                 digit = int(char)
                 unscaled_x = section["x_coords"][digit]
-                unscaled_y = y_base + section["row_offsets"][row_idx]
+                unscaled_y = int(y_base + section["row_offsets"][row_idx])
                 
                 real_x = int((unscaled_x + 30) * 2)
                 real_y = int((unscaled_y + 30) * 2)
-                cv2.circle(img, (real_x, real_y), 10, (0, 0, 0), -1)
+                cv2.circle(img, (real_x, real_y), 16, (0, 0, 0), -1)
                 
     # Save synthetic image
     synthetic_path = str(tmp_path / "synthetic_t2.png")
@@ -94,10 +94,10 @@ def test_t2_numerical_row_alignment(tmp_path):
     # Fill H=2 and T=5 only (rows 1 and 2), leaving Th blank
     for row_idx, digit in ((1, 2), (2, 5)):
         unscaled_x = section["x_coords"][digit]
-        unscaled_y = y_base + section["row_offsets"][row_idx]
+        unscaled_y = int(y_base + section["row_offsets"][row_idx])
         real_x = int((unscaled_x + 30) * 2)
         real_y = int((unscaled_y + 30) * 2)
-        cv2.circle(img, (real_x, real_y), 10, (0, 0, 0), -1)
+        cv2.circle(img, (real_x, real_y), 16, (0, 0, 0), -1)
 
     synthetic_path = str(tmp_path / "synthetic_t2_partial_num.png")
     cv2.imwrite(synthetic_path, img)
