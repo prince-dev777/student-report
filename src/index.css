@@ -203,12 +203,17 @@ h4 { font-size: 1.1rem; }
   margin-left: var(--sidebar-width);
   padding-top: var(--topbar-height);
   min-height: 100vh;
-  transition: margin-left var(--transition-slow);
+  width: calc(100% - var(--sidebar-width));
+  max-width: calc(100% - var(--sidebar-width));
+  box-sizing: border-box;
+  transition: margin-left var(--transition-slow), width var(--transition-slow), max-width var(--transition-slow);
 }
 
 .page-container {
   padding: 24px 28px;
   max-width: 1400px;
+  width: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
 }
 
@@ -1699,6 +1704,201 @@ h4 { font-size: 1.1rem; }
   .form-row {
     grid-template-columns: 1fr;
   }
+}
+
+.tab {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all var(--transition-normal);
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+  background: rgba(37, 99, 235, 0.03);
+}
+
+.tab.active {
+  background: #ffffff;
+  color: var(--accent-blue);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   SMS Styles */
+.sms-bubble {
+  background: rgba(5, 150, 105, 0.05);
+  border: 1px solid rgba(5, 150, 105, 0.1);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+}
+
+.sms-bubble .sms-time {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+}
+
+.sms-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.sms-status.sent { color: var(--accent-blue-light); }
+.sms-status.delivered { color: var(--accent-green); }
+.sms-status.failed { color: var(--accent-red); }
+
+/* ============================================
+   Marks / Rank */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+}
+
+.rank-badge.gold {
+  background: linear-gradient(135deg, #fbbf24, #d97706);
+  color: #ffffff;
+}
+
+.rank-badge.silver {
+  background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+  color: #1e293b;
+}
+
+.rank-badge.bronze {
+  background: linear-gradient(135deg, #f59e0b, #b45309);
+  color: white;
+}
+
+.rank-badge.regular {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent-blue);
+}
+
+.marks-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.marks-pill.high {
+  background: rgba(5, 150, 105, 0.08);
+  color: var(--accent-green);
+}
+
+.marks-pill.medium {
+  background: rgba(217, 119, 6, 0.08);
+  color: var(--accent-orange);
+}
+
+.marks-pill.low {
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--accent-red);
+}
+
+/* ============================================
+   Recharts Overrides */
+.recharts-default-tooltip {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.recharts-tooltip-label {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.recharts-tooltip-item {
+  color: var(--text-secondary) !important;
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: var(--text-secondary) !important;
+  font-size: 0.72rem !important;
+}
+
+.recharts-legend-item-text {
+  color: var(--text-secondary) !important;
+  font-size: 0.8rem !important;
+}
+
+/* ============================================
+   Responsive Layout */
+@media (max-width: 1024px) {
+  .grid-dashboard {
+    grid-template-columns: 1fr;
+  }
+  .grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .topbar {
+    left: 0;
+    background: var(--bg-primary);
+  }
+
+  .topbar-hamburger {
+    display: flex;
+  }
+
+  .topbar-search input {
+    width: 180px;
+  }
+
+  .topbar-search input:focus {
+    width: 220px;
+  }
+
+  .stat-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid-2, .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 
   .page-container {
     padding: 16px;
@@ -1747,6 +1947,8 @@ h4 { font-size: 1.1rem; }
 
 .app-layout.sidebar-collapsed .main-content {
   margin-left: var(--sidebar-collapsed);
+  width: calc(100% - var(--sidebar-collapsed));
+  max-width: calc(100% - var(--sidebar-collapsed));
 }
 
 .app-layout.sidebar-collapsed .topbar {

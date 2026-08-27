@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
   UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2, ZoomIn, ZoomOut, AlertTriangle, Eye, Edit2,
-  Search, Sparkles, ArrowRight, CheckCircle2, ChevronRight, Layers, FileCheck, RefreshCw, Filter, Calendar, Users
+  Search, Sparkles, ArrowRight, CheckCircle2, ChevronRight, Layers, FileCheck, RefreshCw, Filter, Calendar, Users, Copy
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
@@ -16,12 +16,30 @@ import toast from 'react-hot-toast';
 import { api, getMediaUrl } from '../utils/api';
 import omrTemplatePdf from '../assets/OMR_Templates.pdf';
 import EditTestModal from '../components/EditTestModal';
+import MultiClassSelect from '../components/MultiClassSelect';
 
 // Helper to identify bonus questions in answer keys (e.g. '*', '*A', '*B', '*1', 'BONUS')
 export const isBonusAnswer = (key) => {
   if (key === undefined || key === null) return false;
   const str = String(key).trim().toUpperCase();
   return str === '*' || str.startsWith('*') || str.endsWith('*') || str.includes('BONUS') || str.includes('STAR');
+};
+
+// Helper to check if a student belongs to the test's target classes
+export const isStudentInTestClasses = (studentClass, test) => {
+  if (!test) return true;
+  // 1. Array check (new multi-class format)
+  if (Array.isArray(test.targetClasses) && test.targetClasses.length > 0) {
+    return test.targetClasses.includes(studentClass);
+  }
+  // 2. Comma-separated or single string check (backward compatibility)
+  if (test.targetClass && typeof test.targetClass === 'string' && test.targetClass.trim() !== '') {
+    const classes = test.targetClass.split(',').map((c) => c.trim()).filter(Boolean);
+    if (classes.length === 0) return true;
+    return classes.includes(studentClass);
+  }
+  // 3. Fallback: all classes in course match
+  return true;
 };
 
 export default function Tests() {
@@ -46,6 +64,7 @@ export default function Tests() {
   const [testForm, setTestForm] = useState({
     name: '',
     batch: '',
+    targetClasses: [],
     targetClass: '',
     date: new Date().toISOString().split('T')[0],
     totalMarks: 300,
@@ -154,6 +173,7 @@ export default function Tests() {
   const [lastOmrScanDir, setLastOmrScanDir] = useState(() => localStorage.getItem('last_omr_scan_dir') || '');
   const [lastScannedImages, setLastScannedImages] = useState([]);
   const [isDownloadingOmrs, setIsDownloadingOmrs] = useState(false);
+  const [showDownloadOmrModal, setShowDownloadOmrModal] = useState(false);
   const [submittingAction, setSubmittingAction] = useState(null);
   const [omrImagesData, setOmrImagesData] = useState({}); // studentId: image dataURI
   const [omrFilenames, setOmrFilenames] = useState({}); // studentId: original folder filename
@@ -232,7 +252,10 @@ export default function Tests() {
         subject: subjectMapping.map(s => s.subject).join(', '),
         subjectMapping: subjectMapping,
         batch: testForm.batch,
-        targetClass: testForm.targetClass,
+        targetClasses: testForm.targetClasses || [],
+        targetClass: Array.isArray(testForm.targetClasses) && testForm.targetClasses.length > 0
+          ? testForm.targetClasses.join(', ')
+          : testForm.targetClass || '',
         date: testForm.date,
         totalMarks: Number(testForm.totalMarks),
         marksPerQuestion: Number(testForm.marksPerQuestion) || 1,
@@ -245,6 +268,7 @@ export default function Tests() {
     setTestForm({
       name: '',
       batch: '',
+      targetClasses: [],
       targetClass: '',
       date: new Date().toISOString().split('T')[0],
       totalMarks: 300,
@@ -312,7 +336,7 @@ export default function Tests() {
     setManualAnswersGrid(newGrid);
 
     // Get all active students in the selected test's course & class
-    const batchStudents = students.filter(s => s.batch === test.batch && (!test.targetClass || s.class === test.targetClass) && s.status === 'active');
+    const batchStudents = students.filter(s => s.batch === test.batch && isStudentInTestClasses(s.class, test) && s.status === 'active');
     
     // Check if there are existing results for this test to pre-fill
     const existing = testResults.filter(r => r.testId === testId);
@@ -335,40 +359,36 @@ export default function Tests() {
         let correct = 0;
         let wrong = 0;
         match.studentAnswers.forEach((ans, idx) => {
-           const isObj = typeof ans === 'object' && ans !== null;
-           const status = isObj ? ans.status : (ans && ans !== 'NULL' ? 'valid' : 'blank');
-           const selected = isObj ? ans.selectedOption : ans;
-           
-           let isMapped = true;
-           if (test.subjectMapping && test.subjectMapping.length > 0) {
-              const qNum = idx + 1;
-              isMapped = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
-           }
-           
-           if (isMapped) {
-              if (idx < answerKey.length && isBonusAnswer(answerKey[idx])) {
-                 // ⭐ Bonus Question: full marks awarded unconditionally, zero negative deduction
-                 correct++;
-              } else if (status === 'invalid') {
-                 wrong++;
-              } else if (status === 'valid' && selected && selected !== 'NULL') {
-                 if (idx < answerKey.length) {
-                    const corStr = String(answerKey[idx]).trim().toUpperCase();
-                    const selStr = String(selected).trim().toUpperCase();
-                    
-                    let matched = false;
-                    if (selStr === corStr) matched = true;
-                    else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) matched = true;
-                    
-                    if (matched) correct++;
-                    else wrong++;
-                 }
+          const isObj = typeof ans === 'object' && ans !== null;
+          const status = isObj ? ans.status : (ans && ans !== 'NULL' ? 'valid' : 'blank');
+          const val = isObj ? ans.selectedOption : ans;
+
+          let isMapped = true;
+          if (test.subjectMapping && test.subjectMapping.length > 0) {
+            const qNum = idx + 1;
+            isMapped = test.subjectMapping.some(sub => qNum >= sub.fromQ && qNum <= sub.toQ);
+          }
+
+          if (isMapped) {
+            if (status === 'invalid') {
+              wrong++;
+            } else if (status === 'valid' && val && val !== 'NULL' && idx < answerKey.length) {
+              const k = String(answerKey[idx]).trim().toUpperCase();
+              const a = String(val).trim().toUpperCase();
+              const isBonus = isBonusAnswer(k);
+              const isMatch = (a === k) || (!isNaN(parseFloat(a)) && !isNaN(parseFloat(k)) && parseFloat(a) === parseFloat(k));
+              if (isBonus || isMatch) {
+                correct++;
+              } else {
+                wrong++;
               }
-           }
+            }
+          }
         });
         initialOmrStats[s.id] = { correct, wrong };
       }
     });
+
     setMarksData(initialMarks);
     setScannedAnswersData(initialScannedAnswers);
     setOmrStats(initialOmrStats);
@@ -395,7 +415,7 @@ export default function Tests() {
     if (!test) return;
 
     // Check if any mark exceeds totalMarks or is negative
-    const batchStudents = students.filter(s => s.batch === test.batch && (!test.targetClass || s.class === test.targetClass) && s.status === 'active');
+    const batchStudents = students.filter(s => s.batch === test.batch && isStudentInTestClasses(s.class, test) && s.status === 'active');
     const resultsPayload = [];
 
     setSubmittingAction(action);
@@ -812,76 +832,112 @@ export default function Tests() {
     }
   };
 
-  const handleDownloadOMRs = async () => {
-    // Collect ALL scanned OMR images from:
-    // 1. Current marks entry state (omrImagesData)
-    // 2. Saved test results for this test in database
-    // 3. Last scanned images list
-    // 4. Any OMR scan errors / unmatched sheets
-    const imagesMap = new Map();
+  // Helper to gather all categorized OMR sets for download with deduplication
+  const getOmrDownloadSets = () => {
+    const currentList = [];
+    const savedList = [];
+    const errorList = [];
 
-    // 1. Current marks entry state
+    // 1. Current marks entry state (Fresh in-memory evaluated OMRs)
     if (omrImagesData && Object.keys(omrImagesData).length > 0) {
       Object.entries(omrImagesData).forEach(([studentId, url]) => {
         if (!url) return;
         const stu = students.find(s => s.id === studentId || s._id === studentId);
         const cleanRoll = stu?.rollNo ? String(stu.rollNo).replace(/^\?+|\?+$/g, '').trim() : '';
         const name = stu?.name || '';
-        imagesMap.set(url, { url, rollNo: cleanRoll, name, studentId });
+        currentList.push({ url, rollNo: cleanRoll, name, studentId, source: 'current' });
       });
     }
 
-    // 2. Saved test results for this test
+    // 2. Saved test results for this test in database
     if (testResults && testResults.length > 0 && (entryTestId || selectedEntryTest)) {
       const tId = entryTestId || selectedEntryTest?.id || selectedEntryTest?._id;
       const savedForThisTest = testResults.filter(r => 
         (r.testId === tId || (selectedEntryTest && (r.testId === selectedEntryTest.id || r.testId === selectedEntryTest._id))) && r.omrSheetImage
       );
       savedForThisTest.forEach(r => {
-        if (r.omrSheetImage && !imagesMap.has(r.omrSheetImage)) {
+        if (r.omrSheetImage) {
           const stu = students.find(s => s.id === r.studentId || s._id === r.studentId || (r.rollNo && String(s.rollNo) === String(r.rollNo)));
           const cleanRoll = (r.rollNo || stu?.rollNo) ? String(r.rollNo || stu.rollNo).replace(/^\?+|\?+$/g, '').trim() : '';
           const name = stu?.name || r.studentName || '';
-          imagesMap.set(r.omrSheetImage, { url: r.omrSheetImage, rollNo: cleanRoll, name, studentId: r.studentId });
+          savedList.push({ url: r.omrSheetImage, rollNo: cleanRoll, name, studentId: r.studentId, source: 'saved' });
         }
       });
     }
 
-    // 3. Last scanned images list
-    if (lastScannedImages && lastScannedImages.length > 0) {
-      lastScannedImages.forEach((item, idx) => {
-        if (item.url && !imagesMap.has(item.url)) {
-          let rawRoll = item.rollNo ? String(item.rollNo).replace(/^\?+|\?+$/g, '').trim() : '';
-          const stu = students.find(s => {
-            if (!rawRoll) return false;
-            const sRoll = String(s.rollNo).replace(/^\?+|\?+$/g, '').trim();
-            return sRoll === rawRoll || (!isNaN(sRoll) && !isNaN(rawRoll) && Number(sRoll) === Number(rawRoll));
-          });
-          const rollNo = rawRoll || (stu?.rollNo ? String(stu.rollNo) : `Sheet_${idx + 1}`);
-          const name = stu?.name || '';
-          imagesMap.set(item.url, { url: item.url, rollNo, name });
-        }
-      });
-    }
-
-    // 4. Any OMR scan errors / unmatched sheets
+    // 3. Any OMR scan errors / unmatched sheets
     if (omrScanErrors && omrScanErrors.length > 0) {
       omrScanErrors.forEach((err, idx) => {
-        if (err.omrSheetImage && !imagesMap.has(err.omrSheetImage)) {
-          imagesMap.set(err.omrSheetImage, {
+        if (err.omrSheetImage) {
+          errorList.push({
             url: err.omrSheetImage,
             rollNo: err.rollNumber && !err.rollNumber.includes('?') ? err.rollNumber : `Unmatched_${idx + 1}`,
-            name: 'Scanned_Sheet'
+            name: 'Unmatched_Sheet',
+            source: 'error'
           });
         }
       });
     }
 
-    const imagesToDownload = Array.from(imagesMap.values());
+    // Merged Deduplicated Set: Current takes 100% precedence over older saved sheets for the same student
+    const deduplicatedMap = new Map();
+    currentList.forEach(item => {
+      const key = item.studentId ? `STU_${item.studentId}` : `URL_${item.url}`;
+      deduplicatedMap.set(key, item);
+    });
+    savedList.forEach(item => {
+      const key = item.studentId ? `STU_${item.studentId}` : `URL_${item.url}`;
+      if (!deduplicatedMap.has(key)) {
+        deduplicatedMap.set(key, item);
+      }
+    });
+    errorList.forEach((item, idx) => {
+      deduplicatedMap.set(`ERR_${idx}_${item.url}`, item);
+    });
 
-    if (!imagesToDownload || imagesToDownload.length === 0) {
+    const allList = Array.from(deduplicatedMap.values());
+
+    return { currentList, savedList, errorList, allList };
+  };
+
+  const handleDownloadOMRs = () => {
+    const { currentList, savedList, allList } = getOmrDownloadSets();
+
+    if (allList.length === 0) {
       return toast.error('No scanned OMR images available to download.');
     }
+
+    // If both freshly scanned sheets and previously saved sheets exist, open the options modal
+    if (currentList.length > 0 && savedList.length > 0) {
+      setShowDownloadOmrModal(true);
+      return;
+    }
+
+    // Otherwise directly execute download without prompting
+    if (currentList.length > 0) {
+      executeOmrDownload(currentList, 'Current Scanned');
+    } else if (savedList.length > 0) {
+      executeOmrDownload(savedList, 'Saved Database');
+    } else {
+      executeOmrDownload(allList, 'All Available');
+    }
+  };
+
+  const executeOmrDownload = async (imagesList, setLabel = '') => {
+    if (!imagesList || imagesList.length === 0) {
+      return toast.error('No OMR images in the selected category to download.');
+    }
+
+    // Strictly deduplicate by studentId to prevent duplicate files
+    const uniqueMap = new Map();
+    imagesList.forEach(item => {
+      if (!item.url) return;
+      const key = item.studentId ? `STU_${item.studentId}` : `URL_${item.url}`;
+      if (!uniqueMap.has(key) || item.source === 'current') {
+        uniqueMap.set(key, item);
+      }
+    });
+    const imagesToDownload = Array.from(uniqueMap.values());
 
     let targetDir = lastOmrScanDir || localStorage.getItem('last_omr_scan_dir') || '';
 
@@ -930,6 +986,7 @@ export default function Tests() {
         }
       }
       toast.dismiss(toastId);
+      setShowDownloadOmrModal(false);
       return toast.success(`🎉 Downloaded ${successCount} OMR sheets!`);
     }
 
@@ -953,7 +1010,8 @@ export default function Tests() {
         }
       }
 
-      toast.success(`🎉 Saved ${res.copiedCount} evaluated OMR images to:\n${res.outputDir}`, { duration: 6000 });
+      setShowDownloadOmrModal(false);
+      toast.success(`🎉 Saved ${res.copiedCount} evaluated OMR images (${setLabel || 'Clean'}) to:\n${res.outputDir}`, { duration: 6000 });
     } catch (err) {
       console.error(err);
       toast.error(err.message || 'Failed to save OMR images');
@@ -1382,6 +1440,34 @@ export default function Tests() {
     }
   };
 
+  const handleCopyAnswerKey = async () => {
+    try {
+      if (!manualAnswersGrid || manualAnswersGrid.length === 0 || manualAnswersGrid.every(t => !t || t.trim() === '')) {
+        return toast.error('Answer key is currently empty.');
+      }
+
+      // Convert grid to clean comma-separated answers (e.g. A, B, C, D...)
+      const formattedAnswers = manualAnswersGrid.map(ans => (ans || '').trim().toUpperCase()).join(', ');
+
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(formattedAnswers);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = formattedAnswers;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+
+      const filledCount = manualAnswersGrid.filter(t => t && t.trim() !== '').length;
+      toast.success(`📋 Copied ${filledCount} answer keys to clipboard! (Comma separated, ready to paste)`);
+    } catch (err) {
+      console.error('Failed to copy answer key:', err);
+      toast.error('Failed to copy to clipboard.');
+    }
+  };
+
   const handleManualAnswerKeySubmit = async () => {
     if (!entryTestId) return toast.error('Please select a test first');
     
@@ -1480,7 +1566,7 @@ export default function Tests() {
     // Include all active students belonging to this test course/batch
     const batchStudents = students.filter(s => 
       s.batch === test.batch && 
-      (!test.targetClass || s.class === test.targetClass) && 
+      isStudentInTestClasses(s.class, test) && 
       s.status === 'active'
     );
 
@@ -2000,7 +2086,9 @@ export default function Tests() {
                     <h3 className="mb-8">{test.name}</h3>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }} className="mb-16">
                       <div><strong>Course:</strong> {getCourseName(test.batch)}</div>
-                      {test.targetClass && <div><strong>Class:</strong> {test.targetClass}</div>}
+                      {(test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass) && (
+                        <div><strong>Class:</strong> {test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass}</div>
+                      )}
                       <div><strong>Total Marks:</strong> {test.totalMarks}</div>
                       {(test.negativeMarking > 0 || test.marksPerQuestion > 1) && (
                         <div>
@@ -2285,19 +2373,17 @@ export default function Tests() {
                     </select>
                   </div>
                   
-                  <div className="form-group">
-                    <label className="form-label">Target Class (Optional)</label>
-                    <select
-                      className="form-select w-full"
-                      value={testForm.targetClass}
-                      onChange={e => setTestForm(prev => ({ ...prev, targetClass: e.target.value }))}
-                    >
-                      <option value="">All Classes</option>
-                      {uniqueClasses.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <MultiClassSelect
+                    availableClasses={uniqueClasses}
+                    selectedClasses={testForm.targetClasses || []}
+                    onChange={selected => setTestForm(prev => ({
+                      ...prev,
+                      targetClasses: selected,
+                      targetClass: selected.length > 0 ? selected.join(', ') : ''
+                    }))}
+                    label="Target Classes (Optional)"
+                    placeholder="All Classes"
+                  />
                 </div>
 
                 <div className="form-row">
@@ -2413,11 +2499,14 @@ export default function Tests() {
                       }}
                     >
                       <option value="">-- Click to Select Test from List --</option>
-                      {tests.map(t => (
-                        <option key={t.id} value={t.id}>
-                          {t.name} ({getCourseName(t.batch)}{t.targetClass ? ` - ${t.targetClass}` : ''}) • {t.subject}
-                        </option>
-                      ))}
+                      {tests.map(t => {
+                        const classLabel = t.targetClasses?.length > 0 ? t.targetClasses.join(', ') : t.targetClass;
+                        return (
+                          <option key={t.id} value={t.id}>
+                            {t.name} ({getCourseName(t.batch)}{classLabel ? ` - ${classLabel}` : ''}) • {t.subject}
+                          </option>
+                        );
+                      })}
                     </select>
 
                     {entryTestId && (
@@ -2584,7 +2673,7 @@ export default function Tests() {
                       {filteredEntryTests.map(test => {
                         const appeared = getAppearedCount(test.id);
                         const totalStudentsInBatch = (students || []).filter(s => 
-                          s.batch === test.batch && (!test.targetClass || s.class === test.targetClass) && s.status === 'active'
+                          s.batch === test.batch && isStudentInTestClasses(s.class, test) && s.status === 'active'
                         ).length || 0;
                         const hasAnswerKey = test.answerKey && test.answerKey.length > 0;
                         const isFullyEvaluated = totalStudentsInBatch > 0 && appeared >= totalStudentsInBatch;
@@ -2659,7 +2748,7 @@ export default function Tests() {
                                 }}>
                                   🎓 {getCourseName(test.batch)}
                                 </span>
-                                {test.targetClass && (
+                                {(test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass) && (
                                   <span style={{
                                     fontSize: '0.72rem',
                                     fontWeight: 700,
@@ -2669,7 +2758,7 @@ export default function Tests() {
                                     borderRadius: '20px',
                                     border: '1px solid #e2e8f0'
                                   }}>
-                                    Class: {test.targetClass}
+                                    Class: {test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass}
                                   </span>
                                 )}
                                 <span style={{
@@ -2950,7 +3039,7 @@ export default function Tests() {
                       </thead>
                       <tbody>
                         {students
-                          .filter(s => s.batch === selectedEntryTest?.batch && (!selectedEntryTest?.targetClass || s.class === selectedEntryTest?.targetClass) && s.status === 'active')
+                          .filter(s => s.batch === selectedEntryTest?.batch && isStudentInTestClasses(s.class, selectedEntryTest) && s.status === 'active')
                           .filter(s => {
                             if (!searchStudentQuery) return true;
                             const query = searchStudentQuery.toLowerCase();
@@ -3557,7 +3646,7 @@ export default function Tests() {
                   <p className="text-sm text-gray-600 m-0">
                     Type your answers below and press <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Tab</kbd> or <kbd style={{ padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>Enter</kbd> to move to next box.
                   </p>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button 
                       type="button" 
                       className="btn btn-outline-danger btn-sm" 
@@ -3573,16 +3662,26 @@ export default function Tests() {
                     </button>
                     <button 
                       type="button" 
+                      className="btn btn-outline-primary btn-sm" 
+                      onClick={handleCopyAnswerKey}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '0.78rem', fontWeight: 600 }}
+                      title="Copy all answers as comma-separated text to paste in Notepad or another test"
+                    >
+                      <Copy size={13} /> Copy Answer Key
+                    </button>
+                    <button 
+                      type="button" 
                       className="btn btn-secondary btn-sm" 
                       onClick={handleManualGridPaste}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '0.78rem' }}
+                      title="Quick paste comma-separated answers from clipboard"
                     >
                       <ClipboardList size={14} /> Quick Paste
                     </button>
                   </div>
                 </div>
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '10px', fontSize: '0.85rem', color: '#475569' }}>
-                  <strong>💡 How to use Quick Paste:</strong> Open Notepad, write your answers separated by commas (e.g., <code>A, B, C, D...</code>), press <code>Ctrl + A</code> to select all, copy them, and click <strong>Quick Paste</strong> to fill all boxes instantly!
+                  <strong>💡 How to use Copy & Quick Paste:</strong> Click <strong>Copy Answer Key</strong> to copy all answers as comma-separated values (e.g., <code>A, B, C, D...</code>) to save in Notepad or paste into another test. You can also copy from Notepad and click <strong>Quick Paste</strong> to fill all boxes instantly!
                 </div>
                 <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', padding: '9px 12px', fontSize: '0.82rem', color: '#92400e', display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '8px' }}>
                   <Sparkles size={16} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -3733,6 +3832,162 @@ export default function Tests() {
                 }}
               >
                 Delete Test
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Smart Download OMR Choice Modal */}
+      {showDownloadOmrModal && createPortal(
+        <div className="modal-overlay" onClick={() => setShowDownloadOmrModal(false)} style={{ zIndex: 99999 }}>
+          <div className="modal-content" style={{ maxWidth: '540px', padding: '24px', borderRadius: '16px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: '#eff6ff', color: '#2563eb', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Download size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                    Download Scanned OMRs
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#64748b' }}>
+                    Choose which evaluated OMR sheets you want to save:
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDownloadOmrModal(false)}
+                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <X size={16} color="#64748b" />
+              </button>
+            </div>
+
+            {(() => {
+              const { currentList, savedList, allList } = getOmrDownloadSets();
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
+                  {/* Option 1: Current / Freshly Scanned OMRs */}
+                  {currentList.length > 0 && (
+                    <div
+                      onClick={() => executeOmrDownload(currentList, 'Current Fresh')}
+                      style={{
+                        border: '2px solid #2563eb',
+                        borderRadius: '12px',
+                        padding: '14px 16px',
+                        background: '#f8fafc',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'all 0.15s ease',
+                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.08)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#eff6ff'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#f8fafc'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '1.4rem' }}>🌟</span>
+                        <div>
+                          <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>Download Freshly Scanned OMRs</span>
+                            <span style={{ fontSize: '0.72rem', background: '#2563eb', color: '#ffffff', padding: '1px 8px', borderRadius: '10px' }}>Recommended</span>
+                          </div>
+                          <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '2px' }}>
+                            Only saves the <strong>{currentList.length}</strong> latest evaluated sheets from your active scan. (Zero duplicates)
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ color: '#2563eb', fontWeight: 800, fontSize: '0.85rem' }}>
+                        ➔
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Option 2: Previously Saved Database OMRs */}
+                  {savedList.length > 0 && (
+                    <div
+                      onClick={() => executeOmrDownload(savedList, 'Saved Database')}
+                      style={{
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '14px 16px',
+                        background: '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '1.4rem' }}>📦</span>
+                        <div>
+                          <div style={{ fontSize: '0.90rem', fontWeight: 800, color: '#334155' }}>
+                            Download Saved Database OMRs ({savedList.length} sheets)
+                          </div>
+                          <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '2px' }}>
+                            Saves previously submitted draft/published sheets from the database.
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ color: '#64748b', fontWeight: 800, fontSize: '0.85rem' }}>
+                        ➔
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Option 3: All Available OMRs (Deduplicated) */}
+                  {allList.length > 0 && (
+                    <div
+                      onClick={() => executeOmrDownload(allList, 'All Deduplicated')}
+                      style={{
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '14px 16px',
+                        background: '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '1.4rem' }}>📂</span>
+                        <div>
+                          <div style={{ fontSize: '0.90rem', fontWeight: 800, color: '#334155' }}>
+                            Download All Unique Sheets ({allList.length} total)
+                          </div>
+                          <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '2px' }}>
+                            1 latest sheet per student across all records plus unmatched sheets.
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ color: '#64748b', fontWeight: 800, fontSize: '0.85rem' }}>
+                        ➔
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setShowDownloadOmrModal(false)}
+                style={{ padding: '7px 18px', borderRadius: '8px' }}
+              >
+                Cancel
               </button>
             </div>
           </div>

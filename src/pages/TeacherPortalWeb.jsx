@@ -9,8 +9,15 @@ import { api } from '../utils/api';
 import { formatBatchName } from '../utils/helpers';
 import toast, { Toaster } from 'react-hot-toast';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
+import { AppContext } from '../context/AppContext';
 
 export default function TeacherPortalWeb() {
+  const appContext = React.useContext(AppContext);
+  const appStudents = appContext?.students;
+  const appTests = appContext?.tests;
+  const appTestResults = appContext?.testResults;
+  const appAttendance = appContext?.attendance;
+
   const [proceedToWeb, setProceedToWeb] = useState(() => !!sessionStorage.getItem('skip_teacher_install_gate'));
   const [loading, setLoading] = useState(false);
   const [teacherData, setTeacherData] = useState(() => {
@@ -46,20 +53,35 @@ export default function TeacherPortalWeb() {
 
     let successData = null;
 
+    // Tier 0: Instant AppContext in Desktop / Authenticated session
+    if (appStudents && Array.isArray(appStudents) && appStudents.length > 0) {
+      successData = {
+        instituteName: 'Career Xone',
+        students: appStudents,
+        tests: appTests || [],
+        testResults: appTestResults || [],
+        attendances: appAttendance || [],
+        sessions: []
+      };
+    }
+
     // Tier 1: Try api.getTeacherData()
-    try {
-      const data = await api.getTeacherData();
-      if (data && Array.isArray(data.students) && data.students.length > 0) {
-        successData = data;
+    if (!successData) {
+      try {
+        const data = await api.getTeacherData();
+        if (data && Array.isArray(data.students) && data.students.length > 0) {
+          successData = data;
+        }
+      } catch (e) {
+        console.warn('Tier 1 Teacher data fetch failed:', e);
       }
-    } catch (e) {
-      console.warn('Tier 1 Teacher data fetch failed:', e);
     }
 
     // Tier 2: Try direct relative /api/teacher/data
     if (!successData) {
       try {
-        const res = await fetch('/api/teacher/data');
+        const originUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/teacher/data` : '/api/teacher/data';
+        const res = await fetch(originUrl);
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.students) && data.students.length > 0) {
@@ -71,7 +93,32 @@ export default function TeacherPortalWeb() {
       }
     }
 
-    // Tier 3: Try Cloud Atlas Render API
+    // Tier 3: Try standard getStudents endpoint
+    if (!successData) {
+      try {
+        const [stRes, tRes, trRes, attRes] = await Promise.allSettled([
+          api.getStudents(1, 10000),
+          api.getTests(),
+          api.getTestResults(),
+          api.getAttendance()
+        ]);
+        const fetchedStudents = stRes.status === 'fulfilled' ? (stRes.value?.students || stRes.value || []) : [];
+        if (Array.isArray(fetchedStudents) && fetchedStudents.length > 0) {
+          successData = {
+            instituteName: 'Career Xone',
+            students: fetchedStudents,
+            tests: tRes.status === 'fulfilled' ? (tRes.value || []) : [],
+            testResults: trRes.status === 'fulfilled' ? (trRes.value || []) : [],
+            attendances: attRes.status === 'fulfilled' ? (attRes.value || []) : [],
+            sessions: []
+          };
+        }
+      } catch (e) {
+        console.warn('Tier 3 getStudents fallback failed:', e);
+      }
+    }
+
+    // Tier 4: Try Cloud Atlas Render API
     if (!successData) {
       try {
         const res = await fetch('https://student-report-ezgw.onrender.com/api/teacher/data');
@@ -82,7 +129,7 @@ export default function TeacherPortalWeb() {
           }
         }
       } catch (e) {
-        console.warn('Tier 3 Cloud fetch failed:', e);
+        console.warn('Tier 4 Cloud fetch failed:', e);
       }
     }
 
@@ -93,7 +140,7 @@ export default function TeacherPortalWeb() {
         toast.success(`Synced! Refreshed ${successData.students.length} students & ${successData.tests?.length || 0} tests 🚀`, { id: toastId });
       }
     } else {
-      // Tier 4: Fallback to local storage cache
+      // Tier 5: Fallback to local storage cache
       try {
         const localStudents = JSON.parse(localStorage.getItem('edutrack_students') || '[]');
         const localTests = JSON.parse(localStorage.getItem('edutrack_tests') || '[]');
@@ -124,11 +171,26 @@ export default function TeacherPortalWeb() {
     setLoading(false);
   };
 
-  // Raw data collections
-  const students = useMemo(() => teacherData?.students || [], [teacherData]);
-  const tests = useMemo(() => teacherData?.tests || [], [teacherData]);
-  const testResults = useMemo(() => teacherData?.testResults || [], [teacherData]);
-  const attendances = useMemo(() => teacherData?.attendances || [], [teacherData]);
+  // Raw data collections with instant reactivity from AppContext or fetched state
+  const students = useMemo(() => {
+    if (appStudents && Array.isArray(appStudents) && appStudents.length > 0) return appStudents;
+    return teacherData?.students || [];
+  }, [appStudents, teacherData]);
+
+  const tests = useMemo(() => {
+    if (appTests && Array.isArray(appTests) && appTests.length > 0) return appTests;
+    return teacherData?.tests || [];
+  }, [appTests, teacherData]);
+
+  const testResults = useMemo(() => {
+    if (appTestResults && Array.isArray(appTestResults) && appTestResults.length > 0) return appTestResults;
+    return teacherData?.testResults || [];
+  }, [appTestResults, teacherData]);
+
+  const attendances = useMemo(() => {
+    if (appAttendance && Array.isArray(appAttendance) && appAttendance.length > 0) return appAttendance;
+    return teacherData?.attendances || [];
+  }, [appAttendance, teacherData]);
 
   // Extract unique courses (e.g. JEE Mains, NEET, JEE Advanced, MHCET)
   const availableCourses = useMemo(() => {

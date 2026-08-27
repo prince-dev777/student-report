@@ -6,7 +6,7 @@ import { api, checkBackendStatus, API_BASE } from '../utils/api';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
 
-const AppContext = createContext(null);
+export const AppContext = createContext(null);
 
 function loadLocalData(key, fallback) {
   try {

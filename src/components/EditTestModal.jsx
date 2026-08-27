@@ -4,13 +4,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, BookOpen, Plus, Trash2, Loader2, Save } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import toast from 'react-hot-toast';
+import MultiClassSelect from './MultiClassSelect';
 
 export default function EditTestModal({ test, onClose, onSave }) {
   const { batches, students } = useApp();
 
+  const getInitialTargetClasses = () => {
+    if (Array.isArray(test?.targetClasses) && test.targetClasses.length > 0) {
+      return test.targetClasses;
+    }
+    if (test?.targetClass && typeof test.targetClass === 'string' && test.targetClass.trim() !== '') {
+      return test.targetClass.split(',').map((c) => c.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
   const [form, setForm] = useState({
     name: test?.name || '',
     batch: test?.batch || '',
+    targetClasses: getInitialTargetClasses(),
     targetClass: test?.targetClass || '',
     date: test?.date ? test.date.split('T')[0] : new Date().toISOString().split('T')[0],
     totalMarks: test?.totalMarks || 300,
@@ -143,7 +155,8 @@ export default function EditTestModal({ test, onClose, onSave }) {
         subject: subjectMapping.map((s) => s.subject).join(', '),
         subjectMapping,
         batch: form.batch,
-        targetClass: form.targetClass,
+        targetClasses: form.targetClasses || [],
+        targetClass: Array.isArray(form.targetClasses) && form.targetClasses.length > 0 ? form.targetClasses.join(', ') : form.targetClass || '',
         date: form.date,
         totalMarks: Number(form.totalMarks),
         marksPerQuestion: Number(form.marksPerQuestion) || 1,
@@ -277,23 +290,19 @@ export default function EditTestModal({ test, onClose, onSave }) {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" style={{ fontWeight: '600', marginBottom: '6px', display: 'block' }}>
-                  Target Class (Optional)
-                </label>
-                <select
-                  className="form-select w-full"
-                  value={form.targetClass}
-                  onChange={(e) => setForm((prev) => ({ ...prev, targetClass: e.target.value }))}
-                >
-                  <option value="">All Classes</option>
-                  {uniqueClasses.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <MultiClassSelect
+                availableClasses={uniqueClasses}
+                selectedClasses={form.targetClasses || []}
+                onChange={(selected) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    targetClasses: selected,
+                    targetClass: selected.length > 0 ? selected.join(', ') : ''
+                  }))
+                }
+                label="Target Classes (Optional)"
+                placeholder="All Classes"
+              />
             </div>
 
             <div className="form-row mb-16" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>

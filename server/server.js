@@ -1129,7 +1129,7 @@ app.get('/api/teacher/data', async (req, res) => {
       ]
     } : {};
 
-    const [students, tests, testResults, attendances, sessions, institute] = await Promise.all([
+    let [students, tests, testResults, attendances, sessions, institute] = await Promise.all([
       Student.find({ ...instQuery, isDeleted: { $ne: true } }).lean(),
       Test.find({ ...instQuery, isDeleted: { $ne: true } }).sort({ date: -1 }).lean(),
       TestResult.find({ ...instQuery, isDeleted: { $ne: true } }).lean(),
@@ -1138,14 +1138,31 @@ app.get('/api/teacher/data', async (req, res) => {
       instId ? Institute.findById(instId).lean() : Institute.findOne({ isDeleted: { $ne: true } }).lean()
     ]);
 
+    // Fallback if instQuery filtered out all students due to legacy ID format
+    if (!students || students.length === 0) {
+      students = await Student.find({ isDeleted: { $ne: true } }).lean();
+    }
+    if (!tests || tests.length === 0) {
+      tests = await Test.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).lean();
+    }
+    if (!testResults || testResults.length === 0) {
+      testResults = await TestResult.find({ isDeleted: { $ne: true } }).lean();
+    }
+    if (!attendances || attendances.length === 0) {
+      attendances = await Attendance.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).limit(2000).lean();
+    }
+    if (!sessions || sessions.length === 0) {
+      sessions = await Session.find({ isDeleted: { $ne: true } }).lean();
+    }
+
     res.json({
       instituteName: institute ? institute.name : 'Career Xone',
       instituteLogo: institute ? institute.logo : null,
-      students,
-      tests,
-      testResults,
-      attendances,
-      sessions
+      students: students || [],
+      tests: tests || [],
+      testResults: testResults || [],
+      attendances: attendances || [],
+      sessions: sessions || []
     });
   } catch (err) {
     console.error('Error fetching teacher data:', err);

@@ -288,12 +288,12 @@ export default function Students() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="page-header flex justify-between items-center flex-wrap gap-16">
+      <div className="page-header flex justify-between items-center flex-wrap gap-12">
         <div>
           <h1 className="page-title">Students Directory</h1>
           <p>Enrolled students details, courses, classes, parents info, and attendance statistics.</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <button className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }} onClick={handleDownloadExcel} disabled={filteredStudents.length === 0}>
               <Download size={16} />
               Export
@@ -342,8 +342,8 @@ export default function Students() {
       </div>
 
       <div className="card mb-24">
-        <div className="flex justify-between items-center flex-wrap gap-16">
-          <div className="topbar-search" style={{ position: 'relative' }}>
+        <div className="flex justify-between items-center flex-wrap gap-12">
+          <div className="topbar-search" style={{ position: 'relative', flex: '1 1 240px', maxWidth: '360px' }}>
             <Search className="topbar-search-icon" size={16} />
             <input
               type="text"
@@ -353,11 +353,11 @@ export default function Students() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              style={{ width: '300px' }}
+              style={{ width: '100%' }}
             />
           </div>
 
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-8 flex-wrap">
             <SlidersHorizontal size={16} className="text-secondary" />
             <select 
               className="form-select"
@@ -366,7 +366,7 @@ export default function Students() {
                 setSelectedCourse(e.target.value);
                 setCurrentPage(1);
               }}
-              style={{ minWidth: '160px' }}
+              style={{ minWidth: '150px' }}
             >
               <option value="all">All Courses / Batches</option>
               {dynamicBatches.map((b) => (
@@ -381,7 +381,7 @@ export default function Students() {
                 setSelectedClass(e.target.value);
                 setCurrentPage(1);
               }}
-              style={{ minWidth: '140px' }}
+              style={{ minWidth: '130px' }}
             >
               <option value="all">All Classes</option>
               {uniqueClasses.map((c, i) => (

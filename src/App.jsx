@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -32,70 +32,144 @@ import GlobalScannerDeskListener from './components/GlobalScannerDeskListener';
 
 import { useApp } from './context/AppContext';
 
+const KEEP_ALIVE_ROUTES = [
+  { path: '/', component: Dashboard, id: 'dashboard' },
+  { path: '/students', component: Students, id: 'students' },
+  { path: '/attendance', component: Attendance, id: 'attendance' },
+  { path: '/sessions', component: Sessions, id: 'sessions' },
+  { path: '/tests', component: Tests, id: 'tests' },
+  { path: '/test-series', component: TestSeries, id: 'test-series' },
+  { path: '/inquiries', component: Inquiries, id: 'inquiries' },
+  { path: '/sms', component: SMSCenter, id: 'sms' },
+  { path: '/share-app', component: ShareApp, id: 'share-app' },
+  { path: '/settings', component: Settings, id: 'settings' },
+  { path: '/teacher', component: TeacherPortalWeb, id: 'teacher' },
+  { path: '/inquiry', component: StaffInquiryWeb, id: 'inquiry' },
+];
+
+function KeepAlivePageOutlet() {
+  const location = useLocation();
+  const currentPath = location.pathname || '/';
+  
+  // Track visited paths to lazily mount components on first visit
+  const [visitedPaths, setVisitedPaths] = React.useState(() => new Set([currentPath]));
+
+  React.useEffect(() => {
+    setVisitedPaths(prev => {
+      if (prev.has(currentPath)) return prev;
+      const next = new Set(prev);
+      next.add(currentPath);
+      return next;
+    });
+  }, [currentPath]);
+
+  const isKnownRoute = KEEP_ALIVE_ROUTES.some(r => r.path === currentPath);
+
+  return (
+    <div className="keep-alive-container" style={{ width: '100%', minHeight: '100%' }}>
+      {KEEP_ALIVE_ROUTES.map(route => {
+        if (!visitedPaths.has(route.path)) return null;
+
+        const Component = route.component;
+        const isActive = currentPath === route.path;
+
+        return (
+          <div
+            key={route.path}
+            id={`keep-alive-view-${route.id}`}
+            style={{
+              display: isActive ? 'block' : 'none',
+              width: '100%',
+              minHeight: '100%'
+            }}
+          >
+            <Component />
+          </div>
+        );
+      })}
+
+      {!isKnownRoute && (
+        <Routes>
+          <Route path="*" element={<Dashboard />} />
+        </Routes>
+      )}
+    </div>
+  );
+}
+
 function AppLayout() {
   const { sidebarCollapsed, startupSyncing, startupSyncText } = useApp();
   
   if (startupSyncing) {
     return (
       <div style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0f172a 100%)',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 99999,
+        alignItems: 'center',
+        height: '100vh',
+        background: 'radial-gradient(ellipse at center, #0f172a 0%, #020617 100%)',
         color: '#f8fafc',
         fontFamily: "'Inter', sans-serif"
       }}>
         <div style={{
-          background: 'rgba(30, 41, 59, 0.7)',
-          border: '1px solid rgba(59, 130, 246, 0.25)',
+          padding: '36px 44px',
           borderRadius: '24px',
-          padding: '40px 48px',
+          background: 'rgba(15, 23, 42, 0.75)',
+          border: '1px solid rgba(59, 130, 246, 0.25)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(59, 130, 246, 0.15)',
+          backdropFilter: 'blur(16px)',
+          textAlign: 'center',
+          maxWidth: '460px',
+          width: '90%',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          maxWidth: '460px',
-          width: '90%',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(59, 130, 246, 0.15)',
-          backdropFilter: 'blur(16px)',
-          textAlign: 'center'
+          gap: '18px'
         }}>
-          {/* Animated Cloud / Sync Icon */}
           <div style={{
-            position: 'relative',
-            width: '76px',
-            height: '76px',
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+            width: '64px',
+            height: '64px',
+            borderRadius: '18px',
+            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 8px 24px rgba(37, 99, 235, 0.4)',
-            marginBottom: '20px'
+            boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
+            marginBottom: '4px'
           }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'cxSpin 3s linear infinite' }}>
-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-            </svg>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              border: '3.5px solid rgba(255, 255, 255, 0.3)',
+              borderTopColor: '#ffffff',
+              borderRadius: '50%',
+              animation: 'cxSpin 0.9s linear infinite'
+            }} />
           </div>
 
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.02em', margin: '0 0 6px 0', color: '#ffffff' }}>
-            CAREER XONE <span style={{ color: '#60a5fa' }}>PRO</span>
-          </h2>
-          <p style={{ fontSize: '0.80rem', color: '#94a3b8', margin: '0 0 24px 0', fontWeight: 600 }}>
-            Cloud Database Sync & Realtime Link Active
-          </p>
+          <div>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
+              Career Xone Pro
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.86rem', color: '#94a3b8' }}>
+              Syncing offline database with Cloud Atlas...
+            </p>
+          </div>
 
-          {/* Progress loader */}
-          <div style={{ width: '100%', height: '6px', background: 'rgba(51, 65, 85, 0.5)', borderRadius: '3px', overflow: 'hidden', marginBottom: '16px' }}>
+          <div style={{
+            width: '100%',
+            height: '6px',
+            background: 'rgba(255, 255, 255, 0.08)',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
             <div style={{
-              width: '65%',
               height: '100%',
-              background: 'linear-gradient(90deg, #3b82f6, #60a5fa, #93c5fd)',
-              borderRadius: '3px',
-              animation: 'cxPulseBar 1.5s ease-in-out infinite'
+              background: 'linear-gradient(90deg, #3b82f6, #60a5fa, #6366f1)',
+              borderRadius: '10px',
+              animation: 'cxPulseBar 1.8s ease-in-out infinite'
             }} />
           </div>
 
@@ -123,22 +197,7 @@ function AppLayout() {
       <Sidebar />
       <div className="main-content">
         <Topbar />
-        <div className="page-container">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/students" element={<Students />} />
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/sessions" element={<Sessions />} />
-            <Route path="/tests" element={<Tests />} />
-            <Route path="/test-series" element={<TestSeries />} />
-            <Route path="/inquiries" element={<Inquiries />} />
-            <Route path="/sms" element={<SMSCenter />} />
-            <Route path="/share-app" element={<ShareApp />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/teacher" element={<TeacherPortalWeb />} />
-            <Route path="/inquiry" element={<StaffInquiryWeb />} />
-          </Routes>
-        </div>
+        <KeepAlivePageOutlet />
       </div>
     </div>
   );
