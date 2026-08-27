@@ -2898,271 +2898,571 @@ export default function Tests() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="flex justify-center"
+            style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}
           >
-            <div className="card w-full" style={{ maxWidth: '600px' }}>
-              <div className="card-header">
-                <h3 className="card-title">Schedule a New Exam</h3>
-              </div>
-              <form onSubmit={handleCreateTest} className="mt-8">
-                <div className="form-group">
-                  <label className="form-label">Test Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Monthly Mock Test, Unit Test 1"
-                    value={testForm.name}
-                    onChange={e => setTestForm(prev => ({ ...prev, name: e.target.value }))}
-                  />
+            <form onSubmit={handleCreateTest}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+                gap: '24px',
+                alignItems: 'start'
+              }}>
+                {/* ================= LEFT COLUMN: MAIN CONFIGURATION FORM ================= */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  
+                  {/* Card 1: Basic Exam Information */}
+                  <div className="card" style={{
+                    background: 'var(--surface-color)',
+                    border: '1.5px solid var(--border-color)',
+                    borderRadius: '18px',
+                    padding: '24px',
+                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.04)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--border-color)' }}>
+                      <div style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
+                      }}>
+                        <BookOpen size={20} />
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                          Exam Blueprint & Details
+                        </h3>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                          Define test title, scheduled date, target audience and course.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* Test Name */}
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: '6px' }}>
+                          Test / Exam Title <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. JEE Main Full Mock Test 01 (Physics / Chem / Maths)"
+                          value={testForm.name}
+                          onChange={e => setTestForm(prev => ({ ...prev, name: e.target.value }))}
+                          style={{ fontSize: '0.90rem', padding: '10px 14px', borderRadius: '10px', height: '42px' }}
+                          required
+                        />
+                      </div>
+
+                      {/* Date & Target Course in 2 Columns */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: '6px' }}>
+                            Exam Date
+                          </label>
+                          <input
+                            type="date"
+                            className="form-input"
+                            value={testForm.date}
+                            onChange={e => setTestForm(prev => ({ ...prev, date: e.target.value }))}
+                            style={{ fontSize: '0.85rem', padding: '8px 12px', borderRadius: '10px', height: '42px' }}
+                          />
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: '6px' }}>
+                            Target Course <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <select
+                            className="form-select w-full"
+                            value={testForm.batch}
+                            onChange={e => setTestForm(prev => ({ ...prev, batch: e.target.value }))}
+                            style={{ fontSize: '0.85rem', padding: '8px 12px', borderRadius: '10px', height: '42px' }}
+                            required
+                          >
+                            <option value="">-- Select Target Course --</option>
+                            {batches.map(b => (
+                              <option key={b.id} value={b.id}>{b.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Multi-Class Selector */}
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <MultiClassSelect
+                          availableClasses={uniqueClasses}
+                          selectedClasses={testForm.targetClasses || []}
+                          onChange={selected => setTestForm(prev => ({
+                            ...prev,
+                            targetClasses: selected,
+                            targetClass: selected.length > 0 ? selected.join(', ') : ''
+                          }))}
+                          label="Target Classes (Optional)"
+                          placeholder="All Classes enrolled in course"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: OMR Template & Subject Mapping */}
+                  <div className="card" style={{
+                    background: 'var(--surface-color)',
+                    border: '1.5px solid var(--border-color)',
+                    borderRadius: '18px',
+                    padding: '24px',
+                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.04)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
+                        }}>
+                          <Layers size={20} />
+                        </div>
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                            OMR Layout & Subject Mapping
+                          </h3>
+                          <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                            Select master OMR sheet template and configure subject ranges.
+                          </p>
+                        </div>
+                      </div>
+
+                      <span style={{
+                        background: 'rgba(16, 185, 129, 0.12)',
+                        color: '#10b981',
+                        fontSize: '0.74rem',
+                        fontWeight: 800,
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <CheckCircle2 size={13} /> {testForm.questionsToDetect} Total Questions
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* OMR Template Selector */}
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: '6px' }}>
+                          Default OMR Template Layout
+                        </label>
+                        <select
+                          className="form-select"
+                          value={testForm.templateId}
+                          onChange={e => {
+                            const tempId = e.target.value;
+                            let defaultDetect = 75;
+                            let defaultMarksPerQ = 4;
+                            let defaultNegMarks = 1;
+
+                            if (tempId === 'T1' || tempId === 'T2') {
+                              defaultDetect = 75; defaultMarksPerQ = 4; defaultNegMarks = 1;
+                            } else if (tempId === 'T3') {
+                              defaultDetect = 180; defaultMarksPerQ = 4; defaultNegMarks = 1;
+                            } else if (tempId === 'T4') {
+                              defaultDetect = 90; defaultMarksPerQ = 4; defaultNegMarks = 1;
+                            } else if (tempId === 'T5' || tempId === 'T6') {
+                              defaultDetect = 200; defaultMarksPerQ = 1; defaultNegMarks = 0;
+                            } else if (tempId === 'T7') {
+                              defaultDetect = 50; defaultMarksPerQ = 4; defaultNegMarks = 1;
+                            }
+                            
+                            setTestForm(prev => ({ 
+                              ...prev, 
+                              templateId: tempId,
+                              questionsToDetect: defaultDetect,
+                              marksPerQuestion: defaultMarksPerQ,
+                              negativeMarking: defaultNegMarks
+                            }));
+                          }}
+                          style={{ fontSize: '0.88rem', padding: '10px 14px', borderRadius: '10px', fontWeight: 600, height: '44px' }}
+                        >
+                          <option value="T1">T1 — JEE Main 75 Questions (Physics, Chem, Maths • MCQ)</option>
+                          <option value="T2">T2 — JEE Main 75 Mixed (MCQ + Numerical Section)</option>
+                          <option value="T3">T3 — NEET 180 Questions (Physics, Chem, Biology)</option>
+                          <option value="T4">T4 — NEET 90 Questions (Biology Section Only)</option>
+                          <option value="T5">T5 — MHCET 200 Questions (Physics, Chem, Maths, Bio)</option>
+                          <option value="T6">T6 — MHCET 200 Questions (Physics, Chem, Bio)</option>
+                          <option value="T7">T7 — Standard 50 Questions (General / Foundation)</option>
+                        </select>
+                      </div>
+
+                      {/* Subject Mapping Table */}
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.82rem', margin: 0 }}>
+                            Subject-Question Ranges <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <button 
+                            type="button" 
+                            className="btn btn-sm btn-secondary"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSubjectMapping(prev => [...prev, { subject: 'Physics', fromQ: prev.length ? (Number(prev[prev.length-1].toQ) || 0) + 1 : 1, toQ: '' }]);
+                            }}
+                            style={{ fontSize: '0.76rem', padding: '4px 10px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Plus size={13} /> Add Subject Row
+                          </button>
+                        </div>
+
+                        <div style={{
+                          border: '1.5px solid var(--border-color)',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          background: 'var(--bg-color)'
+                        }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                            <thead>
+                              <tr style={{ background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
+                                <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--text-secondary)' }}>Subject</th>
+                                <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--text-secondary)', width: '90px' }}>From Q</th>
+                                <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--text-secondary)', width: '90px' }}>To Q</th>
+                                <th style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--text-secondary)', width: '80px', textAlign: 'center' }}>Total Qs</th>
+                                <th style={{ padding: '10px 10px', width: '40px' }}></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {subjectMapping.map((mapping, idx) => {
+                                const qCount = (mapping.fromQ && mapping.toQ) ? Math.max(0, Number(mapping.toQ) - Number(mapping.fromQ) + 1) : 0;
+                                const getSubjectBadgeColor = (sub) => {
+                                  if (sub === 'Physics') return '#2563eb';
+                                  if (sub === 'Chemistry') return '#059669';
+                                  if (sub === 'Mathematics') return '#7c3aed';
+                                  if (sub === 'Biology') return '#d97706';
+                                  return '#475569';
+                                };
+
+                                return (
+                                  <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)', background: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.01)' }}>
+                                    <td style={{ padding: '8px 12px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: getSubjectBadgeColor(mapping.subject) }}></div>
+                                        <select 
+                                          className="form-select" 
+                                          style={{ padding: '6px 10px', fontSize: '0.82rem', height: '34px', borderRadius: '8px', fontWeight: 600 }}
+                                          value={mapping.subject}
+                                          onChange={(e) => {
+                                            const newMap = [...subjectMapping];
+                                            newMap[idx].subject = e.target.value;
+                                            setSubjectMapping(newMap);
+                                          }}
+                                        >
+                                          <option value="Physics">Physics</option>
+                                          <option value="Chemistry">Chemistry</option>
+                                          <option value="Mathematics">Mathematics</option>
+                                          <option value="Biology">Biology</option>
+                                          <option value="General">General / Foundation</option>
+                                        </select>
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: '8px 12px' }}>
+                                      <input 
+                                        type="number" 
+                                        className="form-input" 
+                                        style={{ padding: '6px 8px', fontSize: '0.82rem', height: '34px', borderRadius: '8px', textAlign: 'center', fontWeight: 700 }}
+                                        value={mapping.fromQ}
+                                        onChange={(e) => {
+                                          const newMap = [...subjectMapping];
+                                          newMap[idx].fromQ = Number(e.target.value);
+                                          setSubjectMapping(newMap);
+                                        }}
+                                        min="1"
+                                      />
+                                    </td>
+                                    <td style={{ padding: '8px 12px' }}>
+                                      <input 
+                                        type="number" 
+                                        className="form-input" 
+                                        style={{ padding: '6px 8px', fontSize: '0.82rem', height: '34px', borderRadius: '8px', textAlign: 'center', fontWeight: 700 }}
+                                        value={mapping.toQ}
+                                        onChange={(e) => {
+                                          const newMap = [...subjectMapping];
+                                          newMap[idx].toQ = Number(e.target.value);
+                                          setSubjectMapping(newMap);
+                                        }}
+                                        min="1"
+                                      />
+                                    </td>
+                                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                      <span style={{
+                                        fontWeight: 800,
+                                        fontSize: '0.78rem',
+                                        color: qCount > 0 ? getSubjectBadgeColor(mapping.subject) : 'var(--text-tertiary)',
+                                        background: qCount > 0 ? 'var(--surface-color)' : 'transparent',
+                                        padding: '3px 8px',
+                                        borderRadius: '6px',
+                                        border: qCount > 0 ? '1px solid var(--border-color)' : 'none'
+                                      }}>
+                                        {qCount} Qs
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: '8px 8px', textAlign: 'center' }}>
+                                      <button 
+                                        type="button" 
+                                        className="btn btn-sm"
+                                        style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.08)', padding: '6px', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+                                        onClick={() => {
+                                          setSubjectMapping(prev => prev.filter((_, i) => i !== idx));
+                                        }}
+                                        title="Delete Row"
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                              {subjectMapping.length === 0 && (
+                                <tr>
+                                  <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-secondary)' }}>
+                                    No subjects mapped. Click "+ Add Subject Row" above.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Marking Scheme in 2 Columns */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '4px' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: '6px' }}>
+                            Marks per Correct Answer
+                          </label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            placeholder="e.g. 4 for JEE/NEET"
+                            min="1"
+                            value={testForm.marksPerQuestion}
+                            onChange={e => setTestForm(prev => ({ ...prev, marksPerQuestion: e.target.value }))}
+                            style={{ fontSize: '0.88rem', padding: '8px 12px', borderRadius: '10px', height: '42px', fontWeight: 700, color: '#10b981' }}
+                          />
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: '6px' }}>
+                            Negative Penalty (per wrong)
+                          </label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            placeholder="e.g. 1 for JEE/NEET"
+                            min="0"
+                            step="0.25"
+                            value={testForm.negativeMarking}
+                            onChange={e => setTestForm(prev => ({ ...prev, negativeMarking: e.target.value }))}
+                            style={{ fontSize: '0.88rem', padding: '8px 12px', borderRadius: '10px', height: '42px', fontWeight: 700, color: '#ef4444' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="form-label">Default OMR Layout</label>
-                    <select
-                      className="form-select"
-                      value={testForm.templateId}
-                      onChange={e => {
-                        const tempId = e.target.value;
-                        let defaultDetect = 75;
-                        let defaultMarksPerQ = 4;
-                        let defaultNegMarks = 1;
+                {/* ================= RIGHT COLUMN: LIVE TEST ARCHITECTURE BLUEPRINT ================= */}
+                <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="card" style={{
+                    background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.04) 0%, rgba(59, 130, 246, 0.06) 100%)',
+                    border: '1.5px solid rgba(59, 130, 246, 0.25)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    boxShadow: '0 12px 36px rgba(37, 99, 235, 0.08)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Sparkles size={18} style={{ color: '#2563eb' }} />
+                        <span style={{ fontSize: '0.90rem', fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Live Test Blueprint
+                        </span>
+                      </div>
+                      <span style={{
+                        background: '#2563eb',
+                        color: '#ffffff',
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '6px'
+                      }}>
+                        {testForm.templateId}
+                      </span>
+                    </div>
 
-                        if (tempId === 'T1' || tempId === 'T2') {
-                          defaultDetect = 75; defaultMarksPerQ = 4; defaultNegMarks = 1;
-                        } else if (tempId === 'T3') {
-                          defaultDetect = 180; defaultMarksPerQ = 4; defaultNegMarks = 1;
-                        } else if (tempId === 'T4') {
-                          defaultDetect = 90; defaultMarksPerQ = 4; defaultNegMarks = 1;
-                        } else if (tempId === 'T5') {
-                          defaultDetect = 200; defaultMarksPerQ = 1; defaultNegMarks = 0; // Configured for MHCET
-                        } else if (tempId === 'T6') {
-                          defaultDetect = 200; defaultMarksPerQ = 1; defaultNegMarks = 0;
-                        } else if (tempId === 'T7') {
-                          defaultDetect = 50; defaultMarksPerQ = 4; defaultNegMarks = 1;
-                        }
-                        
-                        setTestForm(prev => ({ 
-                          ...prev, 
-                          templateId: tempId,
-                          questionsToDetect: defaultDetect,
-                          marksPerQuestion: defaultMarksPerQ,
-                          negativeMarking: defaultNegMarks
-                        }));
+                    {/* Stat Badges Grid 2x2 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+                      <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Total Marks</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#10b981', marginTop: '2px' }}>
+                          {testForm.totalMarks || 0}
+                        </div>
+                      </div>
+
+                      <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Questions</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#2563eb', marginTop: '2px' }}>
+                          {testForm.questionsToDetect || 0} Qs
+                        </div>
+                      </div>
+
+                      <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Scoring Ratio</div>
+                        <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
+                          +{testForm.marksPerQuestion || 0} / -{testForm.negativeMarking || 0}
+                        </div>
+                      </div>
+
+                      <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Date</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {formatDate(testForm.date) || 'Today'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Subject Distribution Visual Progress Bar */}
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Subject Distribution</span>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2563eb' }}>{subjectMapping.length} Sections</span>
+                      </div>
+
+                      {/* Multi-color segment bar */}
+                      <div style={{ height: '8px', borderRadius: '6px', overflow: 'hidden', display: 'flex', background: 'var(--border-color)', marginBottom: '12px' }}>
+                        {subjectMapping.map((m, i) => {
+                          const count = (m.fromQ && m.toQ) ? Math.max(0, Number(m.toQ) - Number(m.fromQ) + 1) : 0;
+                          const total = Number(testForm.questionsToDetect) || 1;
+                          const pct = (count / total) * 100;
+                          const colors = ['#2563eb', '#10b981', '#7c3aed', '#d97706', '#06b6d4'];
+                          return (
+                            <div 
+                              key={i} 
+                              style={{ width: `${pct}%`, background: colors[i % colors.length] }} 
+                              title={`${m.subject}: ${count} Qs (${pct.toFixed(0)}%)`}
+                            />
+                          );
+                        })}
+                      </div>
+
+                      {/* Subject items list */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {subjectMapping.map((m, i) => {
+                          const count = (m.fromQ && m.toQ) ? Math.max(0, Number(m.toQ) - Number(m.fromQ) + 1) : 0;
+                          const subMarks = count * (Number(testForm.marksPerQuestion) || 0);
+                          const colors = ['#2563eb', '#10b981', '#7c3aed', '#d97706', '#06b6d4'];
+                          return (
+                            <div key={i} style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              fontSize: '0.76rem',
+                              padding: '6px 10px',
+                              background: 'var(--surface-color)',
+                              borderRadius: '8px',
+                              border: '1px solid var(--border-color)'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: colors[i % colors.length] }}></div>
+                                <strong style={{ color: 'var(--text-primary)' }}>{m.subject}</strong>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.70rem' }}>(Q{m.fromQ}–Q{m.toQ})</span>
+                              </div>
+                              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                                {count} Qs • <span style={{ color: '#10b981' }}>{subMarks}M</span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Target Course & Class summary */}
+                    <div style={{
+                      background: 'var(--surface-color)',
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: '1px solid var(--border-color)',
+                      marginBottom: '20px',
+                      fontSize: '0.76rem'
+                    }}>
+                      <div style={{ color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '4px' }}>Target Audience:</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{
+                          background: 'rgba(37, 99, 235, 0.10)',
+                          color: '#2563eb',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '6px'
+                        }}>
+                          {batches.find(b => b.id === testForm.batch)?.name || 'Course Not Selected'}
+                        </span>
+                        {testForm.targetClasses?.length > 0 ? (
+                          testForm.targetClasses.map(c => (
+                            <span key={c} style={{ background: 'rgba(16, 185, 129, 0.10)', color: '#10b981', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>
+                              Class: {c}
+                            </span>
+                          ))
+                        ) : (
+                          <span style={{ color: 'var(--text-secondary)' }}>• All Classes</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Schedule Button */}
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={submittingAction === 'CreateTest'}
+                      style={{
+                        width: '100%',
+                        padding: '14px',
+                        borderRadius: '12px',
+                        fontSize: '0.94rem',
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                        boxShadow: '0 8px 24px rgba(37, 99, 235, 0.35)',
+                        border: 'none'
                       }}
                     >
-                      <option value="T1">T1 — JEE Main 75 (MCQ)</option>
-                      <option value="T2">T2 — JEE Main 75 Mixed (MCQ + Numerical)</option>
-                      <option value="T3">T3 — NEET 180 Questions (Physics/Chem/Bio)</option>
-                      <option value="T4">T4 — NEET 90 Questions (Biology only)</option>
-                      <option value="T5">T5 — MHCET 200 Maths</option>
-                      <option value="T6">T6 — MHCET 200 Biology</option>
-                      <option value="T7">T7 — OMR 50 Questions</option>
-                    </select>
+                      {submittingAction === 'CreateTest' ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          <span>Scheduling Exam...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={18} />
+                          <span>Schedule Exam & Next</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
-
-                <div className="form-row">
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <div className="form-label flex justify-between items-center">
-                      <span>Subject-Question Mapping *</span>
-                      <button 
-                        type="button" 
-                        className="btn btn-sm btn-secondary"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSubjectMapping(prev => [...prev, { subject: 'Physics', fromQ: prev.length ? prev[prev.length-1].toQ + 1 : 1, toQ: '' }]);
-                        }}
-                      >
-                        <Plus size={14} style={{ marginRight: '4px' }} /> Add Row
-                      </button>
-                    </div>
-                    <div className="table-container mt-8" style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
-                      <table className="data-table" style={{ fontSize: '0.85rem' }}>
-                        <thead>
-                          <tr>
-                            <th>Subject</th>
-                            <th>From Q</th>
-                            <th>To Q</th>
-                            <th style={{ width: '40px' }}></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {subjectMapping.map((mapping, idx) => (
-                            <tr key={idx}>
-                              <td style={{ padding: '4px 8px' }}>
-                                <select 
-                                  className="form-select w-full" 
-                                  style={{ padding: '4px 8px', fontSize: '0.85rem', height: '30px' }}
-                                  value={mapping.subject}
-                                  onChange={(e) => {
-                                    const newMap = [...subjectMapping];
-                                    newMap[idx].subject = e.target.value;
-                                    setSubjectMapping(newMap);
-                                  }}
-                                >
-                                  <option value="Physics">Physics</option>
-                                  <option value="Chemistry">Chemistry</option>
-                                  <option value="Mathematics">Mathematics</option>
-                                  <option value="Biology">Biology</option>
-                                </select>
-                              </td>
-                              <td style={{ padding: '4px 8px' }}>
-                                <input 
-                                  type="number" 
-                                  className="form-input w-full" 
-                                  style={{ padding: '4px 8px', fontSize: '0.85rem', height: '30px' }}
-                                  value={mapping.fromQ}
-                                  onChange={(e) => {
-                                    const newMap = [...subjectMapping];
-                                    newMap[idx].fromQ = Number(e.target.value);
-                                    setSubjectMapping(newMap);
-                                  }}
-                                  min="1"
-                                />
-                              </td>
-                              <td style={{ padding: '4px 8px' }}>
-                                <input 
-                                  type="number" 
-                                  className="form-input w-full" 
-                                  style={{ padding: '4px 8px', fontSize: '0.85rem', height: '30px' }}
-                                  value={mapping.toQ}
-                                  onChange={(e) => {
-                                    const newMap = [...subjectMapping];
-                                    newMap[idx].toQ = Number(e.target.value);
-                                    setSubjectMapping(newMap);
-                                  }}
-                                  min="1"
-                                />
-                              </td>
-                              <td style={{ padding: '4px 8px' }}>
-                                <button 
-                                  type="button" 
-                                  className="btn btn-sm"
-                                  style={{ color: '#ef4444', background: 'transparent', padding: '4px' }}
-                                  onClick={() => {
-                                    setSubjectMapping(prev => prev.filter((_, i) => i !== idx));
-                                  }}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                          {subjectMapping.length === 0 && (
-                            <tr>
-                              <td colSpan="4" className="text-center text-secondary py-16">
-                                No subjects mapped. Please add a row.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="form-label text-primary" style={{ fontWeight: '600' }}>OMR Sheet Layout (Bubbles)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={testForm.questionsToDetect}
-                      readOnly
-                      style={{ background: 'var(--surface-color)', cursor: 'not-allowed', fontWeight: 'bold' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Target Course *</label>
-                    <select
-                      className="form-select w-full"
-                      value={testForm.batch}
-                      onChange={e => setTestForm(prev => ({ ...prev, batch: e.target.value }))}
-                    >
-                      <option value="">Select Course</option>
-                      {batches.map(b => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <MultiClassSelect
-                    availableClasses={uniqueClasses}
-                    selectedClasses={testForm.targetClasses || []}
-                    onChange={selected => setTestForm(prev => ({
-                      ...prev,
-                      targetClasses: selected,
-                      targetClass: selected.length > 0 ? selected.join(', ') : ''
-                    }))}
-                    label="Target Classes (Optional)"
-                    placeholder="All Classes"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="form-label">Date</label>
-                    <input
-                      type="date"
-                      className="form-input"
-                      value={testForm.date}
-                      onChange={e => setTestForm(prev => ({ ...prev, date: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Marks per Correct Answer</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      placeholder="e.g. 4 for NEET"
-                      min="1"
-                      value={testForm.marksPerQuestion}
-                      onChange={e => setTestForm(prev => ({ ...prev, marksPerQuestion: e.target.value }))}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Negative Marking (per wrong)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      placeholder="e.g. 1 for NEET"
-                      min="0"
-                      step="0.25"
-                      value={testForm.negativeMarking}
-                      onChange={e => setTestForm(prev => ({ ...prev, negativeMarking: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="form-label text-primary" style={{ fontWeight: '600' }}>Total Marks (Auto-calculated)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={testForm.totalMarks}
-                      readOnly
-                      style={{ background: 'var(--surface-color)', cursor: 'not-allowed', fontWeight: 'bold' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-8 mt-16 pt-16" style={{ borderTop: '1px solid var(--border-color-light)' }}>
-                  <button type="submit" className="btn btn-primary" disabled={submittingAction === 'CreateTest'}>
-                    {submittingAction === 'CreateTest' ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} />}
-                    {submittingAction === 'CreateTest' ? 'Scheduling...' : 'Schedule Test'}
-                  </button>
-                </div>
-              </form>
-            </div>
+              </div>
+            </form>
           </motion.div>
         )}
 

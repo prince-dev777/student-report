@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   GraduationCap, Users, Calendar, Clock, Search, Filter,
   TrendingUp, CheckCircle2, XCircle, AlertCircle,
-  ChevronRight, Phone, MessageCircle, ArrowLeft,
+  ChevronRight, ChevronLeft, Phone, MessageCircle, ArrowLeft,
   RefreshCw, Smartphone, Award, BookOpen, User, Check, X
 } from 'lucide-react';
 import { api } from '../utils/api';
@@ -34,6 +34,8 @@ export default function TeacherPortalWeb() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [dossierTab, setDossierTab] = useState('tests'); // 'tests' | 'attendance'
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     document.title = 'Career Xone - Teacher Portal';
@@ -347,6 +349,20 @@ export default function TeacherPortalWeb() {
     });
   }, [enrichedStudents, selectedCourse, selectedClass, searchQuery]);
 
+  // Reset page to 1 when filters or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCourse, selectedClass, searchQuery, pageSize]);
+
+  // Paginated Students computation
+  const actualPageSize = pageSize === 'all' ? (filteredStudents.length || 1) : Number(pageSize);
+  const totalPages = Math.ceil(filteredStudents.length / actualPageSize) || 1;
+  const paginatedStudents = useMemo(() => {
+    if (pageSize === 'all') return filteredStudents;
+    const start = (currentPage - 1) * actualPageSize;
+    return filteredStudents.slice(start, start + actualPageSize);
+  }, [filteredStudents, currentPage, pageSize, actualPageSize]);
+
   // Keep selected student synced
   useEffect(() => {
     if (selectedStudent) {
@@ -625,19 +641,51 @@ export default function TeacherPortalWeb() {
           )}
         </div>
 
-        {/* Compact Counter Bar */}
+        {/* Compact Counter Bar & Page Size Selector */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '6px',
+          marginBottom: '8px',
           padding: '0 2px',
-          fontSize: '0.72rem',
+          fontSize: '0.74rem',
           color: '#64748b',
-          fontWeight: 700
+          fontWeight: 700,
+          flexWrap: 'wrap',
+          gap: '6px'
         }}>
-          <span>Showing <strong style={{ color: '#0f172a' }}>{filteredStudents.length}</strong> Students</span>
-          <span style={{ color: '#2563eb' }}>Tap for dossier ➔</span>
+          <div>
+            Showing <strong style={{ color: '#0f172a' }}>{paginatedStudents.length}</strong> of <strong style={{ color: '#0f172a' }}>{filteredStudents.length}</strong> Students
+            {totalPages > 1 && pageSize !== 'all' && (
+              <span style={{ marginLeft: '6px', color: '#2563eb' }}>(Page {currentPage} of {totalPages})</span>
+            )}
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              style={{
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                color: '#1e293b',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                padding: '2px 6px',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+              title="Students per page"
+            >
+              <option value={15}>15 / page</option>
+              <option value={25}>25 / page</option>
+              <option value={50}>50 / page</option>
+              <option value={100}>100 / page</option>
+              <option value="all">All ({filteredStudents.length})</option>
+            </select>
+            <span style={{ color: '#2563eb', fontSize: '0.70rem' }}>Tap for dossier ➔</span>
+          </div>
         </div>
 
         {/* Student Cards List */}
@@ -699,7 +747,7 @@ export default function TeacherPortalWeb() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {filteredStudents.map((st, index) => (
+            {paginatedStudents.map((st, index) => (
               <div
                 key={st.stId}
                 onClick={() => setSelectedStudent(st)}
@@ -821,6 +869,117 @@ export default function TeacherPortalWeb() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ================= PAGINATION CONTROLS ================= */}
+        {totalPages > 1 && pageSize !== 'all' && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
+            padding: '10px 14px',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            marginTop: '12px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+          }}>
+            <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>
+              Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({filteredStudents.length} Total)
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => {
+                  setCurrentPage(p => Math.max(1, p - 1));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  background: currentPage <= 1 ? '#f1f5f9' : '#ffffff',
+                  color: currentPage <= 1 ? '#94a3b8' : '#1e293b',
+                  cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2px'
+                }}
+              >
+                <ChevronLeft size={13} /> Prev
+              </button>
+
+              {/* Numeric Page Buttons with Windowing */}
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pageNum = idx + 1;
+                if (
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                ) {
+                  const isCur = currentPage === pageNum;
+                  return (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => {
+                        setCurrentPage(pageNum);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      style={{
+                        padding: '4px 9px',
+                        borderRadius: '8px',
+                        border: isCur ? 'none' : '1px solid #cbd5e1',
+                        background: isCur ? '#2563eb' : '#ffffff',
+                        color: isCur ? '#ffffff' : '#1e293b',
+                        fontWeight: isCur ? 800 : 600,
+                        fontSize: '0.72rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                } else if (
+                  (pageNum === currentPage - 2 && pageNum > 1) ||
+                  (pageNum === currentPage + 2 && pageNum < totalPages)
+                ) {
+                  return <span key={pageNum} style={{ color: '#94a3b8', fontSize: '0.72rem', padding: '0 2px' }}>...</span>;
+                }
+                return null;
+              })}
+
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => {
+                  setCurrentPage(p => Math.min(totalPages, p + 1));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  background: currentPage >= totalPages ? '#f1f5f9' : '#ffffff',
+                  color: currentPage >= totalPages ? '#94a3b8' : '#1e293b',
+                  cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2px'
+                }}
+              >
+                Next <ChevronRight size={13} />
+              </button>
+            </div>
           </div>
         )}
       </main>
