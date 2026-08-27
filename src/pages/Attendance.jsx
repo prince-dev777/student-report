@@ -480,22 +480,30 @@ export default function Attendance() {
 
   // 📥 Dedicated High-Resolution Native A4 PDF Generator (Direct download via jsPDF)
   const handleSaveAsPdf = async () => {
-    let sheetElements = Array.from(document.querySelectorAll('#printable-id-cards .a4-print-sheet'));
-    
-    // If not in duplex/sheet mode, capture the card pair container
-    if (!sheetElements || sheetElements.length === 0) {
-      const container = document.getElementById('printable-id-cards');
-      if (!container) {
-        toast.error('No ID cards found to export');
-        return;
-      }
-      sheetElements = [container];
-    }
-
-    const totalPages = sheetElements.length;
-    const toastId = toast.loading(`Generating High-Resolution A4 PDF (0/${totalPages} pages)...`);
+    const prevShowAll = idCardShowAll;
+    const toastId = toast.loading('Preparing all ID card sheets for PDF export...');
 
     try {
+      // 1. Temporarily expand DOM to render ALL students
+      if (!prevShowAll) {
+        setIdCardShowAll(true);
+        await new Promise((r) => setTimeout(r, 350));
+      }
+
+      let sheetElements = Array.from(document.querySelectorAll('#printable-id-cards .a4-print-sheet'));
+      
+      // If not in duplex/sheet mode, capture the card pair container
+      if (!sheetElements || sheetElements.length === 0) {
+        const container = document.getElementById('printable-id-cards');
+        if (!container) {
+          toast.error('No ID cards found to export', { id: toastId });
+          if (!prevShowAll) setIdCardShowAll(false);
+          return;
+        }
+        sheetElements = [container];
+      }
+
+      const totalPages = sheetElements.length;
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -504,18 +512,18 @@ export default function Attendance() {
       });
 
       for (let i = 0; i < totalPages; i++) {
-        toast.loading(`Processing Page ${i + 1} of ${totalPages}...`, { id: toastId });
+        toast.loading(`Rendering Sheet ${i + 1} of ${totalPages} (300 DPI)...`, { id: toastId });
         const sheet = sheetElements[i];
 
         const canvas = await html2canvas(sheet, {
-          scale: 2.5, // 300+ DPI for high print clarity
+          scale: 2.0, // High-clarity 300 DPI vector-like rasterization
           useCORS: true,
           allowTaint: true,
           logging: false,
           backgroundColor: '#ffffff'
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const imgData = canvas.toDataURL('image/jpeg', 0.96);
 
         if (i > 0) {
           pdf.addPage('a4', 'portrait');
@@ -528,20 +536,31 @@ export default function Attendance() {
       const filename = `CareerXone_ID_Cards_${batchName}.pdf`;
       pdf.save(filename);
 
-      toast.success(`✅ Saved ${totalPages} Page(s) PDF to Downloads!`, { id: toastId });
+      toast.success(`✅ Saved ${totalPages} Page(s) PDF (${filteredIdCardStudents.length} Students) to Downloads!`, { id: toastId });
     } catch (err) {
       console.error('PDF Generation Error:', err);
       toast.error(`❌ PDF Generation Failed: ${err.message}`, { id: toastId });
+    } finally {
+      if (!prevShowAll) {
+        setIdCardShowAll(false);
+      }
     }
   };
 
-  // 🖨️ Direct System Printer Dialog
-  const handlePrintSystem = () => {
+  // 🖨️ Direct System Printer Dialog (All Students)
+  const handlePrintSystem = async () => {
+    const prevShowAll = idCardShowAll;
+    if (!prevShowAll) {
+      setIdCardShowAll(true);
+      await new Promise((r) => setTimeout(r, 300));
+    }
+
     document.body.classList.add('printing-id-cards');
     requestAnimationFrame(() => {
       window.print();
       setTimeout(() => {
         document.body.classList.remove('printing-id-cards');
+        if (!prevShowAll) setIdCardShowAll(false);
       }, 1500);
     });
   };
@@ -1927,28 +1946,6 @@ export default function Attendance() {
                   >
                     <Printer size={15} />
                     <span>🪪 Print Student QR Cards</span>
-                  </button>
-
-                  {/* Hardware Guide Button */}
-                  <button
-                    type="button"
-                    onClick={() => setShowHardwareModal(true)}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 10,
-                      border: '1.5px solid var(--border-color)',
-                      background: 'var(--surface-color)',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.80rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6
-                    }}
-                  >
-                    <HelpCircle size={15} color="var(--accent-blue)" />
-                    <span>🛒 Scanner Guide</span>
                   </button>
 
                   {/* Fullscreen Toggle */}

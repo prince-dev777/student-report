@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Plus, FileSpreadsheet, BookOpen, 
   UserCheck, Award, TrendingUp, X, Check, Calculator, Upload, Trash2, Save, Download, Loader2, ZoomIn, ZoomOut, AlertTriangle, Eye, Edit2,
-  Search, Sparkles, ArrowRight, CheckCircle2, ChevronRight, Layers, FileCheck, RefreshCw, Filter, Calendar, Users, Copy
+  Search, Sparkles, ArrowRight, CheckCircle2, ChevronRight, Layers, FileCheck, RefreshCw, Filter, Calendar, Users, Copy,
+  LayoutGrid, List, ArrowUpDown, SlidersHorizontal, ChevronLeft
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
@@ -59,6 +60,28 @@ export default function Tests() {
   const [omrScanErrors, setOmrScanErrors] = useState([]);
   const [testToDelete, setTestToDelete] = useState(null);
   const [editingTest, setEditingTest] = useState(null);
+
+  // 🔍 All Tests Tab Controls (Search, Filters, Sort, View Mode & Pagination)
+  const [testSearchQuery, setTestSearchQuery] = useState('');
+  const [testCourseFilter, setTestCourseFilter] = useState('ALL');
+  const [testStatusFilter, setTestStatusFilter] = useState('ALL');
+  const [testSortBy, setTestSortBy] = useState('newest');
+  const [testViewMode, setTestViewMode] = useState(() => {
+    try {
+      return localStorage.getItem('tests_view_mode') || 'grid';
+    } catch (e) {
+      return 'grid';
+    }
+  });
+  const [testCurrentPage, setTestCurrentPage] = useState(1);
+  const [testPageSize, setTestPageSize] = useState(12);
+
+  const handleViewModeChange = (mode) => {
+    setTestViewMode(mode);
+    try {
+      localStorage.setItem('tests_view_mode', mode);
+    } catch (e) {}
+  };
 
   // For Create Test form (Answer Key input removed as it is now moved to Enter Marks page)
   const [testForm, setTestForm] = useState({
@@ -164,7 +187,26 @@ export default function Tests() {
   // For Marks Entry
   const [entryTestId, setEntryTestId] = useState('');
   const [entryMarksBatchFilter, setEntryMarksBatchFilter] = useState('ALL');
+  const [entryMarksStatusFilter, setEntryMarksStatusFilter] = useState('ALL');
+  const [entryMarksSortBy, setEntryMarksSortBy] = useState('newest');
   const [entryMarksSearch, setEntryMarksSearch] = useState('');
+  const [entryMarksViewMode, setEntryMarksViewMode] = useState(() => {
+    try {
+      return localStorage.getItem('entry_marks_view_mode') || 'grid';
+    } catch (e) {
+      return 'grid';
+    }
+  });
+  const [entryMarksPageSize, setEntryMarksPageSize] = useState(12);
+  const [entryMarksCurrentPage, setEntryMarksCurrentPage] = useState(1);
+
+  const handleEntryMarksViewModeChange = (mode) => {
+    setEntryMarksViewMode(mode);
+    try {
+      localStorage.setItem('entry_marks_view_mode', mode);
+    } catch (e) {}
+  };
+
   const [marksData, setMarksData] = useState({}); // studentId: marks
   const [omrStats, setOmrStats] = useState({}); // studentId: { correct, wrong }
   const [scannedAnswersData, setScannedAnswersData] = useState({}); // studentId: [selectedOption1, selectedOption2, ...]
@@ -190,27 +232,79 @@ export default function Tests() {
     return tests.find(t => t.id === entryTestId) || null;
   }, [tests, entryTestId]);
 
-  // Filter tests list for the Enter Marks selector view
+  // Filter & sort tests list for the Enter Marks selector view
   const filteredEntryTests = React.useMemo(() => {
-    return (tests || []).filter(t => {
-      if (entryMarksBatchFilter !== 'ALL') {
-        const batchName = formatBatchName(t.batch).toLowerCase();
-        const courseName = getCourseName(t.batch).toLowerCase();
-        const target = entryMarksBatchFilter.toLowerCase();
-        if (!batchName.includes(target) && !courseName.includes(target) && t.batch !== entryMarksBatchFilter) {
-          return false;
-        }
-      }
+    let list = (tests || []).filter(t => {
+      // 1. Search Query
       if (entryMarksSearch.trim()) {
         const q = entryMarksSearch.toLowerCase();
         const nameMatch = (t.name || '').toLowerCase().includes(q);
         const subMatch = (t.subject || '').toLowerCase().includes(q);
-        const batchMatch = formatBatchName(t.batch || '').toLowerCase().includes(q);
-        return nameMatch || subMatch || batchMatch;
+        const batchMatch = formatBatchName(t.batch, batches).toLowerCase().includes(q);
+        const classMatch = (Array.isArray(t.targetClasses) ? t.targetClasses.join(' ') : (t.targetClass || '')).toLowerCase().includes(q);
+        const dateMatch = formatDate(t.date).toLowerCase().includes(q) || (t.date || '').toLowerCase().includes(q);
+        if (!nameMatch && !subMatch && !batchMatch && !classMatch && !dateMatch) {
+          return false;
+        }
       }
+
+      // 2. Course / Batch Filter
+      if (entryMarksBatchFilter !== 'ALL') {
+        const courseName = getCourseName(t.batch).toLowerCase();
+        const target = entryMarksBatchFilter.toLowerCase();
+        if (!courseName.includes(target) && t.batch !== entryMarksBatchFilter) {
+          return false;
+        }
+      }
+
+      // 3. Status Filter (Evaluated vs Pending)
+      if (entryMarksStatusFilter !== 'ALL') {
+        const appeared = testResults.filter(r => r.testId === t.id).length;
+        if (entryMarksStatusFilter === 'evaluated' && appeared === 0) return false;
+        if (entryMarksStatusFilter === 'pending' && appeared > 0) return false;
+      }
+
       return true;
     });
-  }, [tests, entryMarksBatchFilter, entryMarksSearch]);
+
+    // Sort
+    list.sort((a, b) => {
+      if (entryMarksSortBy === 'newest') {
+        return new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0);
+      }
+      if (entryMarksSortBy === 'oldest') {
+        return new Date(a.date || a.createdAt || 0) - new Date(b.date || b.createdAt || 0);
+      }
+      if (entryMarksSortBy === 'name') {
+        return (a.name || '').localeCompare(b.name || '');
+      }
+      if (entryMarksSortBy === 'marks') {
+        return (Number(b.totalMarks) || 0) - (Number(a.totalMarks) || 0);
+      }
+      if (entryMarksSortBy === 'appeared') {
+        const appA = testResults.filter(r => r.testId === a.id).length;
+        const appB = testResults.filter(r => r.testId === b.id).length;
+        return appB - appA;
+      }
+      return 0;
+    });
+
+    return list;
+  }, [tests, testResults, entryMarksBatchFilter, entryMarksStatusFilter, entryMarksSortBy, entryMarksSearch, batches]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setEntryMarksCurrentPage(1);
+  }, [entryMarksSearch, entryMarksBatchFilter, entryMarksStatusFilter, entryMarksSortBy, entryMarksPageSize]);
+
+  // Paginated Entry Tests
+  const actualEntryPageSize = entryMarksPageSize === 'all' ? (filteredEntryTests.length || 1) : Number(entryMarksPageSize);
+  const totalEntryTestPages = Math.ceil(filteredEntryTests.length / actualEntryPageSize) || 1;
+  const paginatedEntryTests = React.useMemo(() => {
+    if (entryMarksPageSize === 'all') return filteredEntryTests;
+    const start = (entryMarksCurrentPage - 1) * actualEntryPageSize;
+    return filteredEntryTests.slice(start, start + actualEntryPageSize);
+  }, [filteredEntryTests, entryMarksCurrentPage, entryMarksPageSize, actualEntryPageSize]);
 
   // Dynamically compute the physical question numbers mapped for the entry test
   const questionNumbers = React.useMemo(() => {
@@ -2006,6 +2100,90 @@ export default function Tests() {
     return Math.max(...results.map(r => r.marks));
   };
 
+  // Unique Courses list for filter dropdown
+  const uniqueCourses = React.useMemo(() => {
+    const set = new Set();
+    (tests || []).forEach(t => {
+      const c = getCourseName(t.batch);
+      if (c) set.add(c);
+    });
+    return Array.from(set);
+  }, [tests, batches]);
+
+  // Filtered and Sorted Tests for the All Tests Tab
+  const filteredTests = React.useMemo(() => {
+    let list = (tests || []).filter(test => {
+      // 1. Search Query
+      if (testSearchQuery.trim()) {
+        const q = testSearchQuery.toLowerCase();
+        const nameMatch = (test.name || '').toLowerCase().includes(q);
+        const subMatch = (test.subject || '').toLowerCase().includes(q);
+        const batchMatch = formatBatchName(test.batch, batches).toLowerCase().includes(q);
+        const classMatch = (Array.isArray(test.targetClasses) ? test.targetClasses.join(' ') : (test.targetClass || '')).toLowerCase().includes(q);
+        const dateMatch = formatDate(test.date).toLowerCase().includes(q) || (test.date || '').toLowerCase().includes(q);
+        if (!nameMatch && !subMatch && !batchMatch && !classMatch && !dateMatch) {
+          return false;
+        }
+      }
+
+      // 2. Course Filter
+      if (testCourseFilter !== 'ALL') {
+        const courseName = getCourseName(test.batch).toLowerCase();
+        const target = testCourseFilter.toLowerCase();
+        if (!courseName.includes(target) && test.batch !== testCourseFilter) {
+          return false;
+        }
+      }
+
+      // 3. Status Filter (Evaluated vs Pending)
+      if (testStatusFilter !== 'ALL') {
+        const appeared = testResults.filter(r => r.testId === test.id).length;
+        if (testStatusFilter === 'evaluated' && appeared === 0) return false;
+        if (testStatusFilter === 'pending' && appeared > 0) return false;
+      }
+
+      return true;
+    });
+
+    // Sort
+    list.sort((a, b) => {
+      if (testSortBy === 'newest') {
+        return new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0);
+      }
+      if (testSortBy === 'oldest') {
+        return new Date(a.date || a.createdAt || 0) - new Date(b.date || b.createdAt || 0);
+      }
+      if (testSortBy === 'name') {
+        return (a.name || '').localeCompare(b.name || '');
+      }
+      if (testSortBy === 'marks') {
+        return (Number(b.totalMarks) || 0) - (Number(a.totalMarks) || 0);
+      }
+      if (testSortBy === 'appeared') {
+        const appA = testResults.filter(r => r.testId === a.id).length;
+        const appB = testResults.filter(r => r.testId === b.id).length;
+        return appB - appA;
+      }
+      return 0;
+    });
+
+    return list;
+  }, [tests, testResults, testSearchQuery, testCourseFilter, testStatusFilter, testSortBy, batches]);
+
+  // Reset current page when filters change
+  React.useEffect(() => {
+    setTestCurrentPage(1);
+  }, [testSearchQuery, testCourseFilter, testStatusFilter, testSortBy, testPageSize]);
+
+  // Paginated Tests
+  const actualPageSize = testPageSize === 'all' ? (filteredTests.length || 1) : Number(testPageSize);
+  const totalTestPages = Math.ceil(filteredTests.length / actualPageSize) || 1;
+  const paginatedTests = React.useMemo(() => {
+    if (testPageSize === 'all') return filteredTests;
+    const start = (testCurrentPage - 1) * actualPageSize;
+    return filteredTests.slice(start, start + actualPageSize);
+  }, [filteredTests, testCurrentPage, testPageSize, actualPageSize]);
+
   return (
     <motion.div 
       className="page-container animate-fade"
@@ -2063,114 +2241,654 @@ export default function Tests() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="grid-3"
+            className="flex flex-col gap-16"
           >
-            {tests.map((test) => {
-              const appeared = getAppearedCount(test.id);
-              const avg = calcTestAverage(testResults.filter(r => r.testId === test.id));
-              const highest = getHighestScore(test.id);
-
-              return (
-                <div key={test.id} className="card flex flex-col justify-between" style={{ minHeight: '220px' }}>
-                  <div>
-                    <div className="flex justify-between items-center mb-8">
-                      <div className="flex flex-wrap gap-4">
-                        {test.subject?.split(', ').map(s => (
-                          <span key={s} className="badge badge-info">{s}</span>
-                        ))}
-                      </div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                        {formatDate(test.date)}
-                      </span>
-                    </div>
-                    <h3 className="mb-8">{test.name}</h3>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }} className="mb-16">
-                      <div><strong>Course:</strong> {getCourseName(test.batch)}</div>
-                      {(test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass) && (
-                        <div><strong>Class:</strong> {test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass}</div>
-                      )}
-                      <div><strong>Total Marks:</strong> {test.totalMarks}</div>
-                      {(test.negativeMarking > 0 || test.marksPerQuestion > 1) && (
-                        <div>
-                          <strong>Marking:</strong> +{test.marksPerQuestion || 1} / -{test.negativeMarking || 0}
-                        </div>
-                      )}
-                      <div><strong>Appeared:</strong> {appeared > 0 ? `${appeared} students` : 'Results pending'}</div>
-                    </div>
-                  </div>
-
-                  {appeared > 0 ? (
-                    <div>
-                      <div className="flex justify-between border-glass mt-8 pt-8 mb-16" style={{ borderTop: '1px solid var(--border-color-light)', fontSize: '0.8rem' }}>
-                        <div>
-                          <div style={{ color: 'var(--text-tertiary)' }}>Class Avg</div>
-                          <strong className="text-gradient" style={{ fontSize: '1rem' }}>{avg}%</strong>
-                        </div>
-                        <div>
-                          <div style={{ color: 'var(--text-tertiary)' }}>Highest</div>
-                          <strong style={{ color: 'var(--accent-green)', fontSize: '1rem' }}>{highest}/{test.totalMarks}</strong>
-                        </div>
-                      </div>
-                      <div className="flex gap-8">
-                        <button 
-                          className="btn btn-secondary flex-1 justify-center btn-sm"
-                          onClick={() => handleViewResults(test)}
-                        >
-                          <Award size={14} />
-                          View Leaderboard
-                        </button>
-                        <button 
-                          className="btn btn-sm justify-center"
-                          onClick={() => setEditingTest(test)}
-                          style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '6px 10px' }}
-                          title="Edit Test Details"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button 
-                          className="btn btn-sm justify-center"
-                          onClick={() => setTestToDelete(test)}
-                          style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 10px' }}
-                          title="Delete Test"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex gap-8">
-                      <button 
-                        className="btn btn-primary flex-1 justify-center btn-sm mt-8"
-                        onClick={() => {
-                          setEntryTestId(test.id);
-                          handleEntryTestChange(test.id);
-                          setActiveTab('enter-marks');
-                        }}
-                      >
-                        <FileSpreadsheet size={14} />
-                        Enter Marks
-                      </button>
-                      <button 
-                        className="btn btn-sm mt-8 justify-center"
-                        onClick={() => setEditingTest(test)}
-                        style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '6px 10px' }}
-                        title="Edit Test Details"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button 
-                        className="btn btn-sm mt-8 justify-center"
-                        onClick={() => setTestToDelete(test)}
-                        style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 10px' }}
-                        title="Delete Test"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+            {/* 🔍 Search & Filter Toolbar */}
+            <div className="card" style={{ padding: '14px 18px', background: 'var(--surface-color)', border: '1.5px solid var(--border-color)', borderRadius: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                {/* Search Input */}
+                <div style={{ position: 'relative', flex: '1 1 260px', minWidth: '220px' }}>
+                  <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={testSearchQuery}
+                    onChange={(e) => setTestSearchQuery(e.target.value)}
+                    placeholder="Search tests by name, course, batch, class or date..."
+                    style={{ paddingLeft: 34, paddingRight: testSearchQuery ? 30 : 12, fontSize: '0.82rem', height: 38 }}
+                  />
+                  {testSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setTestSearchQuery('')}
+                      style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                    >
+                      <X size={14} />
+                    </button>
                   )}
                 </div>
-              );
-            })}
+
+                {/* Filter Controls Group */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {/* Course Filter */}
+                  <select
+                    className="form-select"
+                    value={testCourseFilter}
+                    onChange={(e) => setTestCourseFilter(e.target.value)}
+                    style={{ fontSize: '0.80rem', padding: '6px 10px', height: 38, minWidth: 130 }}
+                  >
+                    <option value="ALL">All Courses</option>
+                    {uniqueCourses.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+
+                  {/* Status Filter */}
+                  <select
+                    className="form-select"
+                    value={testStatusFilter}
+                    onChange={(e) => setTestStatusFilter(e.target.value)}
+                    style={{ fontSize: '0.80rem', padding: '6px 10px', height: 38, minWidth: 130 }}
+                  >
+                    <option value="ALL">All Status</option>
+                    <option value="evaluated">✅ Results Declared</option>
+                    <option value="pending">⏳ Results Pending</option>
+                  </select>
+
+                  {/* Sort By */}
+                  <select
+                    className="form-select"
+                    value={testSortBy}
+                    onChange={(e) => setTestSortBy(e.target.value)}
+                    style={{ fontSize: '0.80rem', padding: '6px 10px', height: 38, minWidth: 135 }}
+                  >
+                    <option value="newest">📅 Newest First</option>
+                    <option value="oldest">📅 Oldest First</option>
+                    <option value="name">🔤 Name (A-Z)</option>
+                    <option value="marks">🎯 Highest Marks</option>
+                    <option value="appeared">👥 Most Appeared</option>
+                  </select>
+
+                  {/* Per Page */}
+                  <select
+                    className="form-select"
+                    value={testPageSize}
+                    onChange={(e) => setTestPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                    style={{ fontSize: '0.80rem', padding: '6px 8px', height: 38, minWidth: 95 }}
+                    title="Cards / Rows per page"
+                  >
+                    <option value={12}>12 / page</option>
+                    <option value={24}>24 / page</option>
+                    <option value={48}>48 / page</option>
+                    <option value="all">All ({filteredTests.length})</option>
+                  </select>
+
+                  {/* Grid vs Table View Switcher */}
+                  <div style={{ display: 'flex', background: 'var(--bg-color)', padding: 3, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleViewModeChange('grid')}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 7,
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: testViewMode === 'grid' ? 'var(--accent-blue)' : 'transparent',
+                        color: testViewMode === 'grid' ? '#ffffff' : 'var(--text-secondary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: '0.78rem',
+                        fontWeight: 700
+                      }}
+                      title="Compact Grid Cards View"
+                    >
+                      <LayoutGrid size={14} />
+                      <span className="hide-mobile">Grid</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleViewModeChange('list')}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 7,
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: testViewMode === 'list' ? 'var(--accent-blue)' : 'transparent',
+                        color: testViewMode === 'list' ? '#ffffff' : 'var(--text-secondary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: '0.78rem',
+                        fontWeight: 700
+                      }}
+                      title="High-Density Table View (Fast for 1,000+ Tests)"
+                    >
+                      <List size={14} />
+                      <span className="hide-mobile">Table</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status & Active Filter summary */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-color-light)', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                <div>
+                  Showing <strong>{filteredTests.length > 0 ? (testPageSize === 'all' ? `1–${filteredTests.length}` : `${(testCurrentPage - 1) * actualPageSize + 1}–${Math.min(testCurrentPage * actualPageSize, filteredTests.length)}`) : 0}</strong> of <strong>{filteredTests.length}</strong> Tests {filteredTests.length !== tests.length && `(Filtered from ${tests.length} total)`}
+                </div>
+                {(testSearchQuery || testCourseFilter !== 'ALL' || testStatusFilter !== 'ALL') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTestSearchQuery('');
+                      setTestCourseFilter('ALL');
+                      setTestStatusFilter('ALL');
+                    }}
+                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.74rem', fontWeight: 600 }}
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Empty State */}
+            {filteredTests.length === 0 ? (
+              <div className="card text-center" style={{ padding: '48px 24px', borderRadius: 16 }}>
+                <ClipboardList size={48} style={{ color: 'var(--text-tertiary)', margin: '0 auto 12px' }} />
+                <h3 style={{ margin: '0 0 6px', fontSize: '1.1rem', color: 'var(--text-primary)' }}>No Tests Found</h3>
+                <p style={{ margin: '0 0 16px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  {testSearchQuery || testCourseFilter !== 'ALL' || testStatusFilter !== 'ALL'
+                    ? 'No exams match your active search and filter criteria.'
+                    : 'No exams have been created yet.'}
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
+                  {(testSearchQuery || testCourseFilter !== 'ALL' || testStatusFilter !== 'ALL') && (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setTestSearchQuery('');
+                        setTestCourseFilter('ALL');
+                        setTestStatusFilter('ALL');
+                      }}
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => setActiveTab('create-test')}
+                  >
+                    <Plus size={14} /> Create New Test
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* ================= VIEW 1: COMPACT GRID VIEW ================= */}
+                {testViewMode === 'grid' && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                      gap: 16
+                    }}
+                  >
+                    {paginatedTests.map((test) => {
+                      const appeared = getAppearedCount(test.id);
+                      const avg = calcTestAverage(testResults.filter(r => r.testId === test.id));
+                      const highest = getHighestScore(test.id);
+                      const targetClassDisplay = test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass;
+
+                      return (
+                        <div
+                          key={test.id}
+                          className="card"
+                          style={{
+                            padding: '16px',
+                            borderRadius: 14,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            border: '1px solid var(--border-color)',
+                            background: 'var(--surface-color)',
+                            transition: 'all 0.2s',
+                            position: 'relative'
+                          }}
+                        >
+                          <div>
+                            {/* Top Row: Subjects + Date */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                {test.subject?.split(', ').map(s => (
+                                  <span
+                                    key={s}
+                                    style={{
+                                      background: 'rgba(59, 130, 246, 0.12)',
+                                      color: 'var(--accent-blue)',
+                                      fontSize: '0.68rem',
+                                      fontWeight: 700,
+                                      padding: '2px 6px',
+                                      borderRadius: 6
+                                    }}
+                                  >
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
+                                {formatDate(test.date)}
+                              </span>
+                            </div>
+
+                            {/* Test Title */}
+                            <h3
+                              title={test.name}
+                              style={{
+                                fontSize: '0.98rem',
+                                fontWeight: 800,
+                                margin: '0 0 8px',
+                                color: 'var(--text-primary)',
+                                lineHeight: 1.3,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
+                              }}
+                            >
+                              {test.name}
+                            </h3>
+
+                            {/* Compact Info Grid */}
+                            <div
+                              style={{
+                                background: 'var(--bg-color)',
+                                padding: '8px 10px',
+                                borderRadius: 8,
+                                border: '1px solid var(--border-color-light)',
+                                fontSize: '0.76rem',
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr',
+                                gap: '4px 8px',
+                                marginBottom: 12
+                              }}
+                            >
+                              <div>
+                                <span style={{ color: 'var(--text-secondary)' }}>Course: </span>
+                                <strong style={{ color: 'var(--text-primary)' }}>{getCourseName(test.batch)}</strong>
+                              </div>
+                              <div>
+                                <span style={{ color: 'var(--text-secondary)' }}>Marks: </span>
+                                <strong style={{ color: 'var(--text-primary)' }}>
+                                  {test.totalMarks} {test.marksPerQuestion ? `(+${test.marksPerQuestion}/-${test.negativeMarking || 0})` : ''}
+                                </strong>
+                              </div>
+                              {targetClassDisplay && (
+                                <div style={{ gridColumn: '1 / -1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <span style={{ color: 'var(--text-secondary)' }}>Class: </span>
+                                  <strong style={{ color: 'var(--text-primary)' }}>{targetClassDisplay}</strong>
+                                </div>
+                              )}
+                              <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>Status: </span>
+                                {appeared > 0 ? (
+                                  <span style={{ color: '#10b981', fontWeight: 800, fontSize: '0.74rem' }}>
+                                    ✅ {appeared} Evaluated
+                                  </span>
+                                ) : (
+                                  <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: '0.74rem' }}>
+                                    ⏳ Results Pending
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Bottom Row: Stats & Action Buttons */}
+                          <div>
+                            {appeared > 0 && (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  padding: '6px 10px',
+                                  background: 'rgba(59, 130, 246, 0.06)',
+                                  borderRadius: 8,
+                                  border: '1px solid rgba(59, 130, 246, 0.15)',
+                                  marginBottom: 10,
+                                  fontSize: '0.76rem'
+                                }}
+                              >
+                                <div>
+                                  <span style={{ color: 'var(--text-secondary)' }}>Avg: </span>
+                                  <strong style={{ color: 'var(--accent-blue)' }}>{avg}%</strong>
+                                </div>
+                                <div>
+                                  <span style={{ color: 'var(--text-secondary)' }}>Top: </span>
+                                  <strong style={{ color: 'var(--accent-green)' }}>{highest}/{test.totalMarks}</strong>
+                                </div>
+                              </div>
+                            )}
+
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              {appeared > 0 ? (
+                                <button
+                                  className="btn btn-secondary flex-1 justify-center btn-sm"
+                                  onClick={() => handleViewResults(test)}
+                                  style={{ fontSize: '0.76rem', padding: '6px 8px' }}
+                                >
+                                  <Award size={13} />
+                                  <span>Leaderboard</span>
+                                </button>
+                              ) : (
+                                <button
+                                  className="btn btn-primary flex-1 justify-center btn-sm"
+                                  onClick={() => {
+                                    setEntryTestId(test.id);
+                                    handleEntryTestChange(test.id);
+                                    setActiveTab('enter-marks');
+                                  }}
+                                  style={{ fontSize: '0.76rem', padding: '6px 8px' }}
+                                >
+                                  <FileSpreadsheet size={13} />
+                                  <span>Enter Marks</span>
+                                </button>
+                              )}
+
+                              <button
+                                className="btn btn-sm justify-center"
+                                onClick={() => setEditingTest(test)}
+                                style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '6px 9px' }}
+                                title="Edit Test Details"
+                              >
+                                <Edit2 size={13} />
+                              </button>
+
+                              <button
+                                className="btn btn-sm justify-center"
+                                onClick={() => setTestToDelete(test)}
+                                style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 9px' }}
+                                title="Delete Test"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* ================= VIEW 2: HIGH-DENSITY TABLE VIEW ================= */}
+                {testViewMode === 'list' && (
+                  <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 16, border: '1.5px solid var(--border-color)' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                        <thead>
+                          <tr style={{ background: 'var(--bg-color)', borderBottom: '1.5px solid var(--border-color)', textAlign: 'left' }}>
+                            <th style={{ padding: '12px 16px', fontWeight: 800 }}>Test Name &amp; Date</th>
+                            <th style={{ padding: '12px 14px', fontWeight: 800 }}>Course &amp; Class</th>
+                            <th style={{ padding: '12px 14px', fontWeight: 800 }}>Subjects</th>
+                            <th style={{ padding: '12px 14px', fontWeight: 800 }}>Total Marks</th>
+                            <th style={{ padding: '12px 14px', fontWeight: 800 }}>Evaluation Status</th>
+                            <th style={{ padding: '12px 14px', fontWeight: 800 }}>Performance</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800 }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paginatedTests.map((test) => {
+                            const appeared = getAppearedCount(test.id);
+                            const avg = calcTestAverage(testResults.filter(r => r.testId === test.id));
+                            const highest = getHighestScore(test.id);
+                            const targetClassDisplay = test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass;
+
+                            return (
+                              <tr
+                                key={test.id}
+                                style={{
+                                  borderBottom: '1px solid var(--border-color-light)',
+                                  transition: 'background 0.15s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                              >
+                                {/* Test Name & Date */}
+                                <td style={{ padding: '10px 16px' }}>
+                                  <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{test.name}</div>
+                                  <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: 2 }}>
+                                    📅 {formatDate(test.date)}
+                                  </div>
+                                </td>
+
+                                {/* Course & Class */}
+                                <td style={{ padding: '10px 14px' }}>
+                                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{getCourseName(test.batch)}</div>
+                                  {targetClassDisplay && (
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                                      {targetClassDisplay}
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Subjects */}
+                                <td style={{ padding: '10px 14px' }}>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                    {test.subject?.split(', ').map(s => (
+                                      <span
+                                        key={s}
+                                        style={{
+                                          background: 'rgba(59, 130, 246, 0.1)',
+                                          color: 'var(--accent-blue)',
+                                          fontSize: '0.68rem',
+                                          fontWeight: 700,
+                                          padding: '1px 5px',
+                                          borderRadius: 4
+                                        }}
+                                      >
+                                        {s}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </td>
+
+                                {/* Total Marks */}
+                                <td style={{ padding: '10px 14px' }}>
+                                  <strong style={{ color: 'var(--text-primary)' }}>{test.totalMarks}</strong>
+                                  {test.marksPerQuestion ? (
+                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginLeft: 4 }}>
+                                      (+{test.marksPerQuestion}/-{test.negativeMarking || 0})
+                                    </span>
+                                  ) : null}
+                                </td>
+
+                                {/* Evaluation Status */}
+                                <td style={{ padding: '10px 14px' }}>
+                                  {appeared > 0 ? (
+                                    <span
+                                      style={{
+                                        background: 'rgba(16, 185, 129, 0.12)',
+                                        color: '#10b981',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 800,
+                                        padding: '3px 8px',
+                                        borderRadius: 12,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4
+                                      }}
+                                    >
+                                      <CheckCircle2 size={12} /> {appeared} Evaluated
+                                    </span>
+                                  ) : (
+                                    <span
+                                      style={{
+                                        background: 'rgba(245, 158, 11, 0.12)',
+                                        color: '#f59e0b',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 700,
+                                        padding: '3px 8px',
+                                        borderRadius: 12
+                                      }}
+                                    >
+                                      ⏳ Results Pending
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* Performance */}
+                                <td style={{ padding: '10px 14px' }}>
+                                  {appeared > 0 ? (
+                                    <div style={{ fontSize: '0.76rem' }}>
+                                      <div>Avg: <strong style={{ color: 'var(--accent-blue)' }}>{avg}%</strong></div>
+                                      <div>Top: <strong style={{ color: 'var(--accent-green)' }}>{highest}/{test.totalMarks}</strong></div>
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>—</span>
+                                  )}
+                                </td>
+
+                                {/* Actions */}
+                                <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                    {appeared > 0 ? (
+                                      <button
+                                        className="btn btn-secondary btn-sm"
+                                        onClick={() => handleViewResults(test)}
+                                        style={{ fontSize: '0.74rem', padding: '4px 10px' }}
+                                        title="View Leaderboard & Marks"
+                                      >
+                                        <Award size={13} />
+                                        <span>Leaderboard</span>
+                                      </button>
+                                    ) : (
+                                      <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={() => {
+                                          setEntryTestId(test.id);
+                                          handleEntryTestChange(test.id);
+                                          setActiveTab('enter-marks');
+                                        }}
+                                        style={{ fontSize: '0.74rem', padding: '4px 10px' }}
+                                        title="Enter / Scan Marks"
+                                      >
+                                        <FileSpreadsheet size={13} />
+                                        <span>Enter Marks</span>
+                                      </button>
+                                    )}
+
+                                    <button
+                                      className="btn btn-sm"
+                                      onClick={() => setEditingTest(test)}
+                                      style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '4px 8px' }}
+                                      title="Edit Test"
+                                    >
+                                      <Edit2 size={13} />
+                                    </button>
+
+                                    <button
+                                      className="btn btn-sm"
+                                      onClick={() => setTestToDelete(test)}
+                                      style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '4px 8px' }}
+                                      title="Delete Test"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* ================= PAGINATION CONTROLS ================= */}
+                {totalTestPages > 1 && testPageSize !== 'all' && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 12,
+                      padding: '12px 18px',
+                      background: 'var(--surface-color)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 14,
+                      marginTop: 6
+                    }}
+                  >
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                      Page <strong>{testCurrentPage}</strong> of <strong>{totalTestPages}</strong> ({filteredTests.length} Tests Total)
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={testCurrentPage <= 1}
+                        onClick={() => setTestCurrentPage(p => Math.max(1, p - 1))}
+                        style={{ fontSize: '0.76rem', padding: '4px 10px' }}
+                      >
+                        <ChevronLeft size={14} /> Previous
+                      </button>
+
+                      {/* Numeric Page Buttons */}
+                      {Array.from({ length: totalTestPages }).map((_, idx) => {
+                        const pageNum = idx + 1;
+                        // Windowing: show first, last, and current +/- 1
+                        if (
+                          pageNum === 1 ||
+                          pageNum === totalTestPages ||
+                          (pageNum >= testCurrentPage - 1 && pageNum <= testCurrentPage + 1)
+                        ) {
+                          return (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => setTestCurrentPage(pageNum)}
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 8,
+                                border: 'none',
+                                cursor: 'pointer',
+                                background: testCurrentPage === pageNum ? 'var(--accent-blue)' : 'var(--bg-color)',
+                                color: testCurrentPage === pageNum ? '#ffffff' : 'var(--text-primary)',
+                                fontWeight: 700,
+                                fontSize: '0.78rem'
+                              }}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        } else if (
+                          (pageNum === testCurrentPage - 2 && pageNum > 1) ||
+                          (pageNum === testCurrentPage + 2 && pageNum < totalTestPages)
+                        ) {
+                          return <span key={pageNum} style={{ color: 'var(--text-tertiary)', padding: '0 2px' }}>...</span>;
+                        }
+                        return null;
+                      })}
+
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={testCurrentPage >= totalTestPages}
+                        onClick={() => setTestCurrentPage(p => Math.min(totalTestPages, p + 1))}
+                        style={{ fontSize: '0.76rem', padding: '4px 10px' }}
+                      >
+                        Next <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </motion.div>
         )}
 
@@ -2522,321 +3240,584 @@ export default function Tests() {
                   </div>
                 </div>
 
-                {/* Right side: Search when picking tests */}
+                {/* Right side: Search & Filters when picking tests */}
                 {!entryTestId && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <div style={{ position: 'relative' }}>
-                      <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {/* Search Input */}
+                    <div style={{ position: 'relative', minWidth: '220px' }}>
+                      <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                       <input
                         type="text"
-                        placeholder="Search test name or subject..."
+                        placeholder="Search test name, course, class..."
                         value={entryMarksSearch}
                         onChange={(e) => setEntryMarksSearch(e.target.value)}
+                        className="form-input"
                         style={{
-                          padding: '9px 12px 9px 36px',
-                          borderRadius: '10px',
-                          border: '1.5px solid #cbd5e1',
-                          fontSize: '0.85rem',
-                          width: '240px',
-                          outline: 'none',
-                          background: '#ffffff'
+                          paddingLeft: '34px',
+                          paddingRight: entryMarksSearch ? '30px' : '12px',
+                          fontSize: '0.82rem',
+                          height: '38px'
                         }}
                       />
+                      {entryMarksSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setEntryMarksSearch('')}
+                          style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Course Filter */}
+                    <select
+                      className="form-select"
+                      value={entryMarksBatchFilter}
+                      onChange={(e) => setEntryMarksBatchFilter(e.target.value)}
+                      style={{ fontSize: '0.80rem', padding: '6px 10px', height: 38, minWidth: 130 }}
+                    >
+                      <option value="ALL">All Courses</option>
+                      {uniqueCourses.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+
+                    {/* Status Filter */}
+                    <select
+                      className="form-select"
+                      value={entryMarksStatusFilter}
+                      onChange={(e) => setEntryMarksStatusFilter(e.target.value)}
+                      style={{ fontSize: '0.80rem', padding: '6px 10px', height: 38, minWidth: 130 }}
+                    >
+                      <option value="ALL">All Status</option>
+                      <option value="evaluated">✅ Results Declared</option>
+                      <option value="pending">⏳ Results Pending</option>
+                    </select>
+
+                    {/* Sort By */}
+                    <select
+                      className="form-select"
+                      value={entryMarksSortBy}
+                      onChange={(e) => setEntryMarksSortBy(e.target.value)}
+                      style={{ fontSize: '0.80rem', padding: '6px 10px', height: 38, minWidth: 135 }}
+                    >
+                      <option value="newest">📅 Newest First</option>
+                      <option value="oldest">📅 Oldest First</option>
+                      <option value="name">🔤 Name (A-Z)</option>
+                      <option value="marks">🎯 Highest Marks</option>
+                      <option value="appeared">👥 Most Appeared</option>
+                    </select>
+
+                    {/* Per Page */}
+                    <select
+                      className="form-select"
+                      value={entryMarksPageSize}
+                      onChange={(e) => setEntryMarksPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                      style={{ fontSize: '0.80rem', padding: '6px 8px', height: 38, minWidth: 95 }}
+                      title="Cards / Rows per page"
+                    >
+                      <option value={12}>12 / page</option>
+                      <option value={24}>24 / page</option>
+                      <option value={48}>48 / page</option>
+                      <option value="all">All ({filteredEntryTests.length})</option>
+                    </select>
+
+                    {/* Grid vs Table View Switcher */}
+                    <div style={{ display: 'flex', background: 'var(--bg-color)', padding: 3, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleEntryMarksViewModeChange('grid')}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: 7,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: entryMarksViewMode === 'grid' ? 'var(--accent-blue)' : 'transparent',
+                          color: entryMarksViewMode === 'grid' ? '#ffffff' : 'var(--text-secondary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: '0.78rem',
+                          fontWeight: 700
+                        }}
+                        title="Compact Grid Cards View"
+                      >
+                        <LayoutGrid size={14} />
+                        <span className="hide-mobile">Grid</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEntryMarksViewModeChange('list')}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: 7,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: entryMarksViewMode === 'list' ? 'var(--accent-blue)' : 'transparent',
+                          color: entryMarksViewMode === 'list' ? '#ffffff' : 'var(--text-secondary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: '0.78rem',
+                          fontWeight: 700
+                        }}
+                        title="High-Density Table View (Fast for 1,000+ Tests)"
+                      >
+                        <List size={14} />
+                        <span className="hide-mobile">Table</span>
+                      </button>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Batch Filter Pills (when choosing a test) */}
+              {/* Status & Active Filter summary for Enter Marks */}
               {!entryTestId && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginTop: '16px',
-                  paddingTop: '14px',
-                  borderTop: '1px solid #f1f5f9',
-                  flexWrap: 'wrap'
-                }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Filter size={13} /> Filter Course:
-                  </span>
-                  {['ALL', 'JEE Mains', 'NEET', 'JEE Advanced', 'MHCET'].map(course => (
-                    <button
-                      key={course}
-                      type="button"
-                      onClick={() => setEntryMarksBatchFilter(course)}
-                      style={{
-                        padding: '5px 12px',
-                        borderRadius: '20px',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        border: entryMarksBatchFilter === course ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
-                        background: entryMarksBatchFilter === course ? '#2563eb' : '#ffffff',
-                        color: entryMarksBatchFilter === course ? '#ffffff' : '#475569',
-                        boxShadow: entryMarksBatchFilter === course ? '0 2px 8px rgba(37, 99, 235, 0.25)' : 'none'
-                      }}
-                    >
-                      {course === 'ALL' ? '🎓 All Courses' : course}
-                    </button>
-                  ))}
-                  {(entryMarksBatchFilter !== 'ALL' || entryMarksSearch) && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-color-light)', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                  <div>
+                    Showing <strong>{filteredEntryTests.length > 0 ? (entryMarksPageSize === 'all' ? `1–${filteredEntryTests.length}` : `${(entryMarksCurrentPage - 1) * actualEntryPageSize + 1}–${Math.min(entryMarksCurrentPage * actualEntryPageSize, filteredEntryTests.length)}`) : 0}</strong> of <strong>{filteredEntryTests.length}</strong> Tests {filteredEntryTests.length !== tests.length && `(Filtered from ${tests.length} total)`}
+                  </div>
+                  {(entryMarksSearch || entryMarksBatchFilter !== 'ALL' || entryMarksStatusFilter !== 'ALL') && (
                     <button
                       type="button"
-                      onClick={() => { setEntryMarksBatchFilter('ALL'); setEntryMarksSearch(''); }}
-                      style={{
-                        padding: '4px 10px',
-                        borderRadius: '8px',
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        background: '#f1f5f9',
-                        color: '#64748b',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
+                      onClick={() => {
+                        setEntryMarksSearch('');
+                        setEntryMarksBatchFilter('ALL');
+                        setEntryMarksStatusFilter('ALL');
                       }}
+                      style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.74rem', fontWeight: 600 }}
                     >
-                      <X size={12} /> Clear
+                      Clear All Filters
                     </button>
                   )}
                 </div>
               )}
             </div>
 
-            {/* When NO test is selected: Show Visual Test Picker Cards + 3-Step Guided Workflow */}
+            {/* When NO test is selected: Show Visual Test Picker Cards / Table + Pagination */}
             {!entryTestId && (
               <div>
-                {/* Active Scheduled Tests Grid */}
+                {/* Active Scheduled Tests Container */}
                 <div style={{ marginBottom: '32px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>📋 Pick a Test to Enter Marks & Scan OMR</span>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
-                          {filteredEntryTests.length} Tests Available
-                        </span>
-                      </h3>
-                      <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '4px 0 0' }}>
-                        Click on any test card to open its live marksheet, upload answer keys, or start scanning OMR sheets.
-                      </p>
-                    </div>
-                  </div>
-
                   {filteredEntryTests.length === 0 ? (
-                    <div style={{
-                      background: '#ffffff',
-                      borderRadius: '16px',
-                      padding: '48px 24px',
-                      textAlign: 'center',
-                      border: '1.5px dashed #cbd5e1'
-                    }}>
-                      <div style={{
-                        width: '56px',
-                        height: '56px',
-                        borderRadius: '16px',
-                        background: '#f1f5f9',
-                        color: '#94a3b8',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 16px'
-                      }}>
-                        <FileSpreadsheet size={28} />
-                      </div>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', margin: '0 0 6px' }}>
+                    <div className="card text-center" style={{ padding: '48px 24px', borderRadius: 16 }}>
+                      <ClipboardList size={48} style={{ color: 'var(--text-tertiary)', margin: '0 auto 12px' }} />
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>
                         No Scheduled Tests Found
                       </h4>
-                      <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 20px', maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto' }}>
-                        {entryMarksSearch || entryMarksBatchFilter !== 'ALL'
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 20px', maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto' }}>
+                        {entryMarksSearch || entryMarksBatchFilter !== 'ALL' || entryMarksStatusFilter !== 'ALL'
                           ? 'No tests matched your current filter criteria. Try clearing filters.'
                           : 'Create your first test to start recording marks and evaluating OMR sheets.'}
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('create-test')}
-                        className="btn btn-primary"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                      >
-                        <Plus size={16} /> Schedule New Test
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
-                      gap: '16px'
-                    }}>
-                      {filteredEntryTests.map(test => {
-                        const appeared = getAppearedCount(test.id);
-                        const totalStudentsInBatch = (students || []).filter(s => 
-                          s.batch === test.batch && isStudentInTestClasses(s.class, test) && s.status === 'active'
-                        ).length || 0;
-                        const hasAnswerKey = test.answerKey && test.answerKey.length > 0;
-                        const isFullyEvaluated = totalStudentsInBatch > 0 && appeared >= totalStudentsInBatch;
-
-                        return (
-                          <div
-                            key={test.id}
-                            onClick={() => handleEntryTestChange(test.id)}
-                            style={{
-                              background: '#ffffff',
-                              borderRadius: '16px',
-                              border: '1.5px solid #e2e8f0',
-                              padding: '20px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'space-between',
-                              position: 'relative',
-                              overflow: 'hidden'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.borderColor = '#3b82f6';
-                              e.currentTarget.style.transform = 'translateY(-3px)';
-                              e.currentTarget.style.boxShadow = '0 12px 24px -6px rgba(37, 99, 235, 0.12)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.borderColor = '#e2e8f0';
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
+                        {(entryMarksSearch || entryMarksBatchFilter !== 'ALL' || entryMarksStatusFilter !== 'ALL') && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => {
+                              setEntryMarksSearch('');
+                              setEntryMarksBatchFilter('ALL');
+                              setEntryMarksStatusFilter('ALL');
                             }}
                           >
-                            <div>
-                              {/* Top Bar: Subject tags & Date */}
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                  {(test.subject || '').split(',').map((sub, i) => (
-                                    <span key={i} style={{
-                                      fontSize: '0.7rem',
-                                      fontWeight: 700,
-                                      background: '#f1f5f9',
-                                      color: '#334155',
-                                      padding: '2px 8px',
-                                      borderRadius: '6px',
-                                      border: '1px solid #e2e8f0'
-                                    }}>
-                                      {sub.trim()}
+                            Clear Filters
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('create-test')}
+                          className="btn btn-primary btn-sm"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <Plus size={14} /> Schedule New Test
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* ================= VIEW 1: COMPACT GRID VIEW ================= */}
+                      {entryMarksViewMode === 'grid' && (
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                            gap: '16px'
+                          }}
+                        >
+                          {paginatedEntryTests.map(test => {
+                            const appeared = getAppearedCount(test.id);
+                            const totalStudentsInBatch = (students || []).filter(s => 
+                              s.batch === test.batch && isStudentInTestClasses(s.class, test) && s.status === 'active'
+                            ).length || 0;
+                            const hasAnswerKey = test.answerKey && test.answerKey.length > 0;
+                            const isFullyEvaluated = totalStudentsInBatch > 0 && appeared >= totalStudentsInBatch;
+                            const targetClassDisplay = test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass;
+
+                            return (
+                              <div
+                                key={test.id}
+                                onClick={() => handleEntryTestChange(test.id)}
+                                className="card"
+                                style={{
+                                  padding: '16px',
+                                  borderRadius: '14px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'space-between',
+                                  border: '1px solid var(--border-color)',
+                                  background: 'var(--surface-color)',
+                                  position: 'relative'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = 'var(--accent-blue)';
+                                  e.currentTarget.style.transform = 'translateY(-2px)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = 'var(--border-color)';
+                                  e.currentTarget.style.transform = 'translateY(0)';
+                                }}
+                              >
+                                <div>
+                                  {/* Top Bar: Subject tags & Date */}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                      {(test.subject || '').split(',').map((sub, i) => (
+                                        <span key={i} style={{
+                                          fontSize: '0.68rem',
+                                          fontWeight: 700,
+                                          background: 'rgba(59, 130, 246, 0.12)',
+                                          color: 'var(--accent-blue)',
+                                          padding: '2px 6px',
+                                          borderRadius: '6px'
+                                        }}>
+                                          {sub.trim()}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
+                                      {test.date ? formatDate(test.date) : 'N/A'}
                                     </span>
-                                  ))}
-                                </div>
-                                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <Calendar size={12} /> {test.date ? formatDate(test.date) : 'N/A'}
-                                </span>
-                              </div>
+                                  </div>
 
-                              {/* Test Title */}
-                              <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: '0 0 10px', lineHeight: 1.3 }}>
-                                {test.name}
-                              </h4>
+                                  {/* Test Title */}
+                                  <h4
+                                    title={test.name}
+                                    style={{
+                                      fontSize: '0.98rem',
+                                      fontWeight: 800,
+                                      color: 'var(--text-primary)',
+                                      margin: '0 0 8px',
+                                      lineHeight: 1.3,
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: 'vertical',
+                                      overflow: 'hidden'
+                                    }}
+                                  >
+                                    {test.name}
+                                  </h4>
 
-                              {/* Course & Class Badges */}
-                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
-                                <span style={{
-                                  fontSize: '0.72rem',
-                                  fontWeight: 800,
-                                  background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-                                  color: '#1d4ed8',
-                                  padding: '3px 10px',
-                                  borderRadius: '20px',
-                                  border: '1px solid #bfdbfe'
-                                }}>
-                                  🎓 {getCourseName(test.batch)}
-                                </span>
-                                {(test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass) && (
-                                  <span style={{
-                                    fontSize: '0.72rem',
-                                    fontWeight: 700,
-                                    background: '#f8fafc',
-                                    color: '#475569',
-                                    padding: '3px 8px',
-                                    borderRadius: '20px',
-                                    border: '1px solid #e2e8f0'
-                                  }}>
-                                    Class: {test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass}
-                                  </span>
-                                )}
-                                <span style={{
-                                  fontSize: '0.72rem',
-                                  fontWeight: 700,
-                                  background: '#f0fdf4',
-                                  color: '#15803d',
-                                  padding: '3px 8px',
-                                  borderRadius: '20px',
-                                  border: '1px solid #bbf7d0'
-                                }}>
-                                  🎯 {test.totalMarks} Marks
-                                </span>
-                              </div>
-
-                              {/* Evaluation Progress & Key Status */}
-                              <div style={{
-                                background: '#f8fafc',
-                                borderRadius: '10px',
-                                padding: '10px 12px',
-                                marginBottom: '16px',
-                                border: '1px solid #f1f5f9'
-                              }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                  <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Users size={12} /> Evaluation Status:
-                                  </span>
-                                  <span style={{
-                                    fontSize: '0.74rem',
-                                    fontWeight: 800,
-                                    color: isFullyEvaluated ? '#15803d' : appeared > 0 ? '#2563eb' : '#94a3b8'
-                                  }}>
-                                    {appeared} / {totalStudentsInBatch || '–'} Evaluated
-                                  </span>
+                                  {/* Compact Info Grid */}
+                                  <div
+                                    style={{
+                                      background: 'var(--bg-color)',
+                                      padding: '8px 10px',
+                                      borderRadius: 8,
+                                      border: '1px solid var(--border-color-light)',
+                                      fontSize: '0.76rem',
+                                      display: 'grid',
+                                      gridTemplateColumns: '1fr 1fr',
+                                      gap: '4px 8px',
+                                      marginBottom: 12
+                                    }}
+                                  >
+                                    <div>
+                                      <span style={{ color: 'var(--text-secondary)' }}>Course: </span>
+                                      <strong style={{ color: 'var(--text-primary)' }}>{getCourseName(test.batch)}</strong>
+                                    </div>
+                                    <div>
+                                      <span style={{ color: 'var(--text-secondary)' }}>Marks: </span>
+                                      <strong style={{ color: 'var(--text-primary)' }}>{test.totalMarks}</strong>
+                                    </div>
+                                    {targetClassDisplay && (
+                                      <div style={{ gridColumn: '1 / -1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Class: </span>
+                                        <strong style={{ color: 'var(--text-primary)' }}>{targetClassDisplay}</strong>
+                                      </div>
+                                    )}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <span style={{ color: 'var(--text-secondary)' }}>Progress: </span>
+                                      <strong style={{ color: isFullyEvaluated ? '#10b981' : appeared > 0 ? 'var(--accent-blue)' : 'var(--text-tertiary)' }}>
+                                        {appeared}/{totalStudentsInBatch || '–'}
+                                      </strong>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <span style={{ color: 'var(--text-secondary)' }}>Key: </span>
+                                      <strong style={{ color: hasAnswerKey ? '#10b981' : '#f59e0b', fontSize: '0.72rem' }}>
+                                        {hasAnswerKey ? `Configured` : `Not Set`}
+                                      </strong>
+                                    </div>
+                                  </div>
                                 </div>
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                                    Answer Key:
-                                  </span>
-                                  <span style={{
-                                    fontSize: '0.72rem',
-                                    fontWeight: 700,
-                                    color: hasAnswerKey ? '#16a34a' : '#d97706',
+                                {/* Action Button */}
+                                <button
+                                  type="button"
+                                  className="btn btn-primary btn-sm"
+                                  style={{
+                                    width: '100%',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '3px'
-                                  }}>
-                                    {hasAnswerKey ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
-                                    {hasAnswerKey ? `${test.answerKey.length} Qs Configured` : 'Key Not Set'}
-                                  </span>
-                                </div>
+                                    justifyContent: 'center',
+                                    gap: '6px',
+                                    padding: '7px',
+                                    borderRadius: '8px',
+                                    fontWeight: 700,
+                                    fontSize: '0.78rem'
+                                  }}
+                                >
+                                  <FileSpreadsheet size={14} />
+                                  Open Marksheet &amp; Scan OMR ➔
+                                </button>
                               </div>
-                            </div>
+                            );
+                          })}
+                        </div>
+                      )}
 
-                            {/* Action Button */}
+                      {/* ================= VIEW 2: HIGH-DENSITY TABLE VIEW ================= */}
+                      {entryMarksViewMode === 'list' && (
+                        <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 16, border: '1.5px solid var(--border-color)' }}>
+                          <div style={{ overflowX: 'auto' }}>
+                            <table className="table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                              <thead>
+                                <tr style={{ background: 'var(--bg-color)', borderBottom: '1.5px solid var(--border-color)', textAlign: 'left' }}>
+                                  <th style={{ padding: '12px 16px', fontWeight: 800 }}>Test Name &amp; Date</th>
+                                  <th style={{ padding: '12px 14px', fontWeight: 800 }}>Course &amp; Class</th>
+                                  <th style={{ padding: '12px 14px', fontWeight: 800 }}>Subjects</th>
+                                  <th style={{ padding: '12px 14px', fontWeight: 800 }}>Total Marks</th>
+                                  <th style={{ padding: '12px 14px', fontWeight: 800 }}>Evaluation Status</th>
+                                  <th style={{ padding: '12px 14px', fontWeight: 800 }}>Answer Key</th>
+                                  <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800 }}>Action</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {paginatedEntryTests.map((test) => {
+                                  const appeared = getAppearedCount(test.id);
+                                  const totalStudentsInBatch = (students || []).filter(s => 
+                                    s.batch === test.batch && isStudentInTestClasses(s.class, test) && s.status === 'active'
+                                  ).length || 0;
+                                  const hasAnswerKey = test.answerKey && test.answerKey.length > 0;
+                                  const isFullyEvaluated = totalStudentsInBatch > 0 && appeared >= totalStudentsInBatch;
+                                  const targetClassDisplay = test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass;
+
+                                  return (
+                                    <tr
+                                      key={test.id}
+                                      onClick={() => handleEntryTestChange(test.id)}
+                                      style={{
+                                        borderBottom: '1px solid var(--border-color-light)',
+                                        cursor: 'pointer',
+                                        transition: 'background 0.15s'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'}
+                                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                      {/* Test Name & Date */}
+                                      <td style={{ padding: '10px 16px' }}>
+                                        <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{test.name}</div>
+                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: 2 }}>
+                                          📅 {formatDate(test.date)}
+                                        </div>
+                                      </td>
+
+                                      {/* Course & Class */}
+                                      <td style={{ padding: '10px 14px' }}>
+                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{getCourseName(test.batch)}</div>
+                                        {targetClassDisplay && (
+                                          <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                                            {targetClassDisplay}
+                                          </div>
+                                        )}
+                                      </td>
+
+                                      {/* Subjects */}
+                                      <td style={{ padding: '10px 14px' }}>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                          {(test.subject || '').split(',').map((s, i) => (
+                                            <span
+                                              key={i}
+                                              style={{
+                                                background: 'rgba(59, 130, 246, 0.1)',
+                                                color: 'var(--accent-blue)',
+                                                fontSize: '0.68rem',
+                                                fontWeight: 700,
+                                                padding: '1px 5px',
+                                                borderRadius: 4
+                                              }}
+                                            >
+                                              {s.trim()}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </td>
+
+                                      {/* Total Marks */}
+                                      <td style={{ padding: '10px 14px' }}>
+                                        <strong style={{ color: 'var(--text-primary)' }}>{test.totalMarks}</strong>
+                                      </td>
+
+                                      {/* Evaluation Status */}
+                                      <td style={{ padding: '10px 14px' }}>
+                                        <span
+                                          style={{
+                                            background: isFullyEvaluated ? 'rgba(16, 185, 129, 0.12)' : appeared > 0 ? 'rgba(59, 130, 246, 0.12)' : 'rgba(148, 163, 184, 0.12)',
+                                            color: isFullyEvaluated ? '#10b981' : appeared > 0 ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                                            fontSize: '0.72rem',
+                                            fontWeight: 800,
+                                            padding: '3px 8px',
+                                            borderRadius: 12,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 4
+                                          }}
+                                        >
+                                          {isFullyEvaluated ? <CheckCircle2 size={12} /> : null}
+                                          {appeared} / {totalStudentsInBatch || '–'} Evaluated
+                                        </span>
+                                      </td>
+
+                                      {/* Answer Key */}
+                                      <td style={{ padding: '10px 14px' }}>
+                                        <span
+                                          style={{
+                                            color: hasAnswerKey ? '#10b981' : '#f59e0b',
+                                            fontSize: '0.74rem',
+                                            fontWeight: 700,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 4
+                                          }}
+                                        >
+                                          {hasAnswerKey ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
+                                          {hasAnswerKey ? `${test.answerKey.length} Qs` : 'Key Not Set'}
+                                        </span>
+                                      </td>
+
+                                      {/* Action */}
+                                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                                        <button
+                                          type="button"
+                                          className="btn btn-primary btn-sm"
+                                          style={{ fontSize: '0.74rem', padding: '4px 10px' }}
+                                        >
+                                          <FileSpreadsheet size={13} />
+                                          <span>Open Marksheet ➔</span>
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ================= PAGINATION CONTROLS ================= */}
+                      {totalEntryTestPages > 1 && entryMarksPageSize !== 'all' && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 12,
+                            padding: '12px 18px',
+                            background: 'var(--surface-color)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 14,
+                            marginTop: 12
+                          }}
+                        >
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                            Page <strong>{entryMarksCurrentPage}</strong> of <strong>{totalEntryTestPages}</strong> ({filteredEntryTests.length} Tests Total)
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <button
                               type="button"
-                              className="btn btn-primary btn-sm"
-                              style={{
-                                width: '100%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '6px',
-                                padding: '9px',
-                                borderRadius: '10px',
-                                fontWeight: 700,
-                                fontSize: '0.82rem'
+                              className="btn btn-secondary btn-sm"
+                              disabled={entryMarksCurrentPage <= 1}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEntryMarksCurrentPage(p => Math.max(1, p - 1));
                               }}
+                              style={{ fontSize: '0.76rem', padding: '4px 10px' }}
                             >
-                              <FileSpreadsheet size={15} />
-                              Open Marksheet & Scan OMR ➔
+                              <ChevronLeft size={14} /> Previous
+                            </button>
+
+                            {/* Numeric Page Buttons */}
+                            {Array.from({ length: totalEntryTestPages }).map((_, idx) => {
+                              const pageNum = idx + 1;
+                              if (
+                                pageNum === 1 ||
+                                pageNum === totalEntryTestPages ||
+                                (pageNum >= entryMarksCurrentPage - 1 && pageNum <= entryMarksCurrentPage + 1)
+                              ) {
+                                return (
+                                  <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEntryMarksCurrentPage(pageNum);
+                                    }}
+                                    style={{
+                                      width: 32,
+                                      height: 32,
+                                      borderRadius: 8,
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      background: entryMarksCurrentPage === pageNum ? 'var(--accent-blue)' : 'var(--bg-color)',
+                                      color: entryMarksCurrentPage === pageNum ? '#ffffff' : 'var(--text-primary)',
+                                      fontWeight: 700,
+                                      fontSize: '0.78rem'
+                                    }}
+                                  >
+                                    {pageNum}
+                                  </button>
+                                );
+                              } else if (
+                                (pageNum === entryMarksCurrentPage - 2 && pageNum > 1) ||
+                                (pageNum === entryMarksCurrentPage + 2 && pageNum < totalEntryTestPages)
+                              ) {
+                                return <span key={pageNum} style={{ color: 'var(--text-tertiary)', padding: '0 2px' }}>...</span>;
+                              }
+                              return null;
+                            })}
+
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              disabled={entryMarksCurrentPage >= totalEntryTestPages}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEntryMarksCurrentPage(p => Math.min(totalEntryTestPages, p + 1));
+                              }}
+                              style={{ fontSize: '0.76rem', padding: '4px 10px' }}
+                            >
+                              Next <ChevronRight size={14} />
                             </button>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

@@ -77,6 +77,26 @@ export default function TeacherPortalWeb() {
       }
     }
 
+    // Tier 1.5: Direct localhost:5000 / 127.0.0.1:5000 endpoints
+    if (!successData) {
+      const localEndpoints = [
+        'http://localhost:5000/api/teacher/data',
+        'http://127.0.0.1:5000/api/teacher/data'
+      ];
+      for (const endpoint of localEndpoints) {
+        if (successData) break;
+        try {
+          const res = await fetch(endpoint);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.students) && data.students.length > 0) {
+              successData = data;
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
     // Tier 2: Try direct relative /api/teacher/data
     if (!successData) {
       try {

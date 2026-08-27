@@ -21,9 +21,11 @@ import {
   Library,
   Sparkles,
   Settings as SettingsIcon,
-  ChevronDown
+  ChevronDown,
+  Info
 } from 'lucide-react';
 import UpdateNotesModal from './UpdateNotesModal';
+import AboutAppModal from './AboutAppModal';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { api, API_BASE } from '../utils/api';
@@ -55,6 +57,7 @@ export default function Sidebar() {
   const [lastSeenSmsCount, setLastSeenSmsCount] = useState(0);
   const [appVersion, setAppVersion] = useState('');
   const [showNotesModal, setShowNotesModal] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [backupMenuOpen, setBackupMenuOpen] = useState(false);
@@ -444,39 +447,67 @@ export default function Sidebar() {
           </div>
         </nav>
 
-        {/* Version Info & What's New */}
+        {/* Version Info, About App & What's New */}
         {!sidebarCollapsed && (
           <div style={{
-            padding: '10px 16px',
+            padding: '10px 14px',
             borderTop: '1px solid var(--border-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            fontSize: '0.72rem',
-            color: 'var(--text-muted)',
-            letterSpacing: '0.5px'
+            fontSize: '0.74rem',
+            color: 'var(--text-muted)'
           }}>
-            <span>Version: {appVersion || '1.0.41'}</span>
-            <button
-              type="button"
-              onClick={() => setShowNotesModal(true)}
-              style={{
-                background: 'rgba(59, 130, 246, 0.12)',
-                color: '#3b82f6',
-                border: '1px solid rgba(59, 130, 246, 0.25)',
-                borderRadius: '12px',
-                padding: '2px 8px',
-                fontSize: '0.68rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-              title="View Release & Update Notes"
-            >
-              <Sparkles size={11} /> What&apos;s New
-            </button>
+            <span style={{ fontWeight: 600, color: 'var(--text-tertiary)' }}>v{appVersion || '1.0.41'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShowAboutModal(true)}
+                style={{
+                  background: 'none',
+                  color: 'var(--text-secondary)',
+                  border: 'none',
+                  padding: 0,
+                  fontSize: '0.72rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  transition: 'color 0.15s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#10b981'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                title="About App & Offline Guide"
+              >
+                <Info size={12} />
+                <span>About App</span>
+              </button>
+              <span style={{ color: 'var(--border-color)', userSelect: 'none' }}>•</span>
+              <button
+                type="button"
+                onClick={() => setShowNotesModal(true)}
+                style={{
+                  background: 'none',
+                  color: 'var(--text-secondary)',
+                  border: 'none',
+                  padding: 0,
+                  fontSize: '0.72rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  transition: 'color 0.15s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-blue)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                title="View Release & Update Notes"
+              >
+                <Sparkles size={12} />
+                <span>What&apos;s New</span>
+              </button>
+            </div>
           </div>
         )}
       </motion.aside>
@@ -484,6 +515,12 @@ export default function Sidebar() {
       <UpdateNotesModal
         isOpen={showNotesModal}
         onClose={() => setShowNotesModal(false)}
+        currentVersion={appVersion || '1.0.41'}
+      />
+
+      <AboutAppModal
+        isOpen={showAboutModal}
+        onClose={() => setShowAboutModal(false)}
         currentVersion={appVersion || '1.0.41'}
       />
     </>

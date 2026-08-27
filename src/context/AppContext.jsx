@@ -623,7 +623,11 @@ export function AppProvider({ children }) {
   const deleteSMS = useCallback(async (id) => {
     const targetId = String(id);
     // ⚡ Optimistic UI Update: Instantly remove from React state with 0ms delay
-    setSMSHistory((prev) => prev.filter((sms) => String(sms._id) !== targetId && String(sms.id) !== targetId));
+    setSMSHistory((prev) => {
+      const updated = prev.filter((sms) => String(sms._id) !== targetId && String(sms.id) !== targetId);
+      saveLocalData('sms', updated);
+      return updated;
+    });
 
     if (backendOnline) {
       try {
@@ -641,7 +645,11 @@ export function AppProvider({ children }) {
     if (!ids || ids.length === 0) return;
     const targetIds = new Set(ids.map(id => String(id)));
     // ⚡ Optimistic UI Update: Instantly remove all selected SMS logs
-    setSMSHistory((prev) => prev.filter((sms) => !targetIds.has(String(sms._id)) && !targetIds.has(String(sms.id))));
+    setSMSHistory((prev) => {
+      const updated = prev.filter((sms) => !targetIds.has(String(sms._id)) && !targetIds.has(String(sms.id)));
+      saveLocalData('sms', updated);
+      return updated;
+    });
 
     if (backendOnline) {
       try {
@@ -659,6 +667,7 @@ export function AppProvider({ children }) {
   const deleteAllSMS = useCallback(async () => {
     const totalCount = smsHistory.length;
     setSMSHistory([]);
+    saveLocalData('sms', []);
 
     if (backendOnline) {
       try {

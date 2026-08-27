@@ -3558,10 +3558,10 @@ app.delete('/api/sms-logs/bulk', async (req, res) => {
       query.instituteId = req.user.instituteId;
     }
 
-    const result = await SMSLog.deleteMany(query);
+    const result = await dualDelete('smslogs', query);
 
     triggerBackgroundCloudSync();
-    res.json({ message: `Successfully deleted ${result.deletedCount || 0} SMS logs`, deletedCount: result.deletedCount });
+    res.json({ message: `Successfully deleted ${result.localDeleted || 0} SMS logs`, deletedCount: result.localDeleted });
   } catch (err) {
     console.error('Error in SMSLog bulk delete:', err);
     res.status(500).json({ error: err.message });
@@ -3576,10 +3576,10 @@ app.delete('/api/sms-logs/all', async (req, res) => {
       query.instituteId = req.user.instituteId;
     }
 
-    const result = await SMSLog.deleteMany(query);
+    const result = await dualDelete('smslogs', query);
 
     triggerBackgroundCloudSync();
-    res.json({ message: `Cleared all ${result.deletedCount || 0} SMS logs successfully`, deletedCount: result.deletedCount });
+    res.json({ message: `Cleared all ${result.localDeleted || 0} SMS logs successfully`, deletedCount: result.localDeleted });
   } catch (err) {
     console.error('Error clearing all SMS logs:', err);
     res.status(500).json({ error: err.message });
@@ -3598,8 +3598,12 @@ app.delete('/api/sms-logs/:id', async (req, res) => {
     if (req.user && req.user.instituteId) {
       query.instituteId = req.user.instituteId;
     }
-    const log = await SMSLog.findOneAndDelete(query);
-    if (!log) return res.status(404).json({ error: 'SMS log not found' });
+
+    const result = await dualDelete('smslogs', query);
+    if (!result || result.localDeleted === 0) {
+      // Also try soft-delete check or return success if already deleted
+      await SMSLog.findOneAndDelete(query);
+    }
 
     triggerBackgroundCloudSync();
     res.json({ message: 'SMS log permanently deleted successfully' });

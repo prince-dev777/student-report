@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Bell, LogOut, MessageSquare, UserPlus, ClipboardCheck, X, Sparkles } from 'lucide-react';
+import { Menu, Bell, LogOut, MessageSquare, UserPlus, ClipboardCheck, X, Sparkles, Maximize2, Minimize2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -12,8 +12,42 @@ export default function Topbar() {
   const { logout, user } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [updateState, setUpdateState] = useState({ status: 'idle', version: '', releaseDate: '', currentVersion: '', progress: 0 });
   const notifRef = useRef(null);
+
+  // Sync fullscreen state
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else if (document.documentElement.webkitRequestFullscreen) {
+          document.documentElement.webkitRequestFullscreen().catch(() => {});
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen().catch(() => {});
+        }
+      }
+    } catch (err) {
+      console.error('Fullscreen toggle failed:', err);
+    }
+  };
 
   // Check for app updates only inside Electron desktop app
   useEffect(() => {
@@ -144,6 +178,17 @@ export default function Topbar() {
               </motion.button>
             </div>
           )}
+
+          {/* Fullscreen Toggle Button */}
+          <button 
+            className="topbar-btn" 
+            aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            onClick={toggleFullscreen}
+            style={{ cursor: 'pointer' }}
+            title={isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen Mode"}
+          >
+            {isFullscreen ? <Minimize2 size={19} /> : <Maximize2 size={19} />}
+          </button>
 
           <div ref={notifRef} style={{ position: 'relative' }}>
             <button 
