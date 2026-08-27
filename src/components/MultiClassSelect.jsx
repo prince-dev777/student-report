@@ -30,13 +30,14 @@ export default function MultiClassSelect({
     }
   };
 
-  const handleSelectAll = () => {
-    if (selectedClasses.length === availableClasses.length) {
-      // Clear all -> All classes default
-      onChange([]);
-    } else {
-      onChange([...availableClasses]);
-    }
+  const handleSelectAll = (e) => {
+    e?.stopPropagation?.();
+    onChange([...availableClasses]);
+  };
+
+  const handleDeselectAll = (e) => {
+    e?.stopPropagation?.();
+    onChange([]);
   };
 
   const handleRemoveChip = (e, className) => {
@@ -47,7 +48,7 @@ export default function MultiClassSelect({
   const isAllSelected = availableClasses.length > 0 && selectedClasses.length === availableClasses.length;
 
   return (
-    <div className="form-group" ref={dropdownRef} style={{ position: 'relative' }}>
+    <div className="form-group" ref={dropdownRef} style={{ position: 'relative', zIndex: isOpen ? 1000 : 1 }}>
       {label && (
         <label className="form-label" style={{ fontWeight: '600', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{label}</span>
@@ -123,15 +124,39 @@ export default function MultiClassSelect({
           )}
         </div>
 
-        <ChevronDown
-          size={16}
-          style={{
-            color: 'var(--text-tertiary, #94a3b8)',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s ease',
-            flexShrink: 0
-          }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          {selectedClasses.length > 0 && (
+            <button
+              type="button"
+              onClick={handleDeselectAll}
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: '#dc2626',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                fontSize: '0.70rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}
+              title="Deselect all classes"
+            >
+              <X size={11} /> Clear All
+            </button>
+          )}
+          <ChevronDown
+            size={16}
+            style={{
+              color: 'var(--text-tertiary, #94a3b8)',
+              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease',
+              flexShrink: 0
+            }}
+          />
+        </div>
       </div>
 
       {/* Dropdown Menu */}
@@ -142,36 +167,71 @@ export default function MultiClassSelect({
             top: 'calc(100% + 4px)',
             left: 0,
             right: 0,
-            background: 'var(--card-bg, #ffffff)',
-            border: '1px solid var(--border-color, #cbd5e1)',
+            background: '#ffffff',
+            border: '1.5px solid #93c5fd',
             borderRadius: '10px',
-            boxShadow: '0 12px 28px rgba(0, 0, 0, 0.15)',
-            zIndex: 9999,
+            boxShadow: '0 16px 36px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(37, 99, 235, 0.15)',
+            zIndex: 99999,
             padding: '8px',
-            maxHeight: '220px',
+            maxHeight: '230px',
             overflowY: 'auto'
           }}
         >
-          {/* Quick Action: Select / Clear All */}
+          {/* Quick Action Header: Select All & Deselect All */}
           <div
-            onClick={handleSelectAll}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '6px 10px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.82rem',
-              fontWeight: '700',
-              color: isAllSelected ? 'var(--primary, #2563eb)' : 'var(--text-primary, #1e293b)',
-              background: isAllSelected ? 'rgba(59, 130, 246, 0.08)' : 'transparent',
-              marginBottom: '6px',
-              borderBottom: '1px solid var(--border-color-light, #f1f5f9)'
+              padding: '6px 8px',
+              background: '#f8fafc',
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+              marginBottom: '8px',
+              gap: '6px'
             }}
           >
-            <span>{selectedClasses.length === 0 ? '✓ All Classes Selected (Default)' : 'Toggle All Classes'}</span>
-            {selectedClasses.length === 0 && <Check size={14} color="var(--primary, #2563eb)" />}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '0.76rem',
+                  fontWeight: '700',
+                  borderRadius: '6px',
+                  border: isAllSelected ? '1px solid #2563eb' : '1px solid #bfdbfe',
+                  background: isAllSelected ? '#2563eb' : '#eff6ff',
+                  color: isAllSelected ? '#ffffff' : '#1d4ed8',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                ✓ Select All
+              </button>
+              <button
+                type="button"
+                onClick={handleDeselectAll}
+                disabled={selectedClasses.length === 0}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '0.76rem',
+                  fontWeight: '700',
+                  borderRadius: '6px',
+                  border: '1px solid #fecaca',
+                  background: selectedClasses.length > 0 ? '#fef2f2' : '#f1f5f9',
+                  color: selectedClasses.length > 0 ? '#dc2626' : '#94a3b8',
+                  cursor: selectedClasses.length > 0 ? 'pointer' : 'not-allowed',
+                  opacity: selectedClasses.length > 0 ? 1 : 0.6,
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                ✕ Deselect All
+              </button>
+            </div>
+            <span style={{ fontSize: '0.74rem', fontWeight: '600', color: '#64748b' }}>
+              {selectedClasses.length} / {availableClasses.length} Selected
+            </span>
           </div>
 
           {availableClasses.length === 0 ? (

@@ -23,7 +23,6 @@ import SMSLog from './models/SMSLog.js';
 import User from './models/User.js';
 import Institute from './models/Institute.js';
 import Notification from './models/Notification.js';
-import Device from './models/Device.js';
 import Session from './models/Session.js';
 import Inquiry from './models/Inquiry.js';
 import { protect, authenticateToken } from './middleware/authMiddleware.js';
@@ -62,9 +61,7 @@ import {
   getCallLogs
 } from './services/voiceAiService.js';
 import { compilePdf } from './services/testSeriesPdfService.js';
-import { logInfo, logError, logWarn, getRecentLogs, getLogsDir } from './utils/logger.js';
-import { connectLocalDb, isLocalDbReady } from './db/localDb.js';
-import { connectCloudDb, isCloudDbAvailable } from './db/cloudDb.js';
+import { logInfo, logError, getRecentLogs, getLogsDir } from './utils/logger.js';
 import { 
   performFullSync, 
   pullAndRestoreFromCloud, 
@@ -74,7 +71,7 @@ import {
   mirrorWrite, 
   registerSSEBroadcaster 
 } from './db/syncEngine.js';
-import { uploadStudentPhoto, uploadInstituteLogo, uploadOMRScan } from './services/cloudinaryService.js';
+import { uploadStudentPhoto } from './services/cloudinaryService.js';
 import { generateDatabaseSnapshot } from './services/jsonBackupService.js';
 import { mergeDuplicatesOnDb } from './db/duplicateCleaner.js';
 
@@ -86,6 +83,10 @@ if (!process.env.WHATSAPP_PROVIDER) dotenv.config({ path: path.join(__dirname, '
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27018/student-report';
 const CLOUD_MONGODB_URI = process.env.CLOUD_MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 const JWT_SECRET = process.env.JWT_SECRET || '8f5b8a6d4e2c9a1f3c7e6b5d4a9f8e2d1c3b5a4f7e6d8c9b0a1f2e3d4c5b6a7f';
+
+// Global Sync State Tracking
+let lastCloudSyncTime = null;
+let isSyncingToCloud = false;
 
 export const performRestoreFromCloud = pullAndRestoreFromCloud;
 export const performSyncToCloud = performFullSync;
@@ -558,157 +559,6 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // ============================================
-// FACULTY, STAFF & INQUIRY PORTAL AUTH & DATA
-// ============================================
-
-app.post('/api/auth/teacher-login', async (req, res) => {
-  try {
-    const { passcode } = req.body;
-    if (!passcode) {
-      return res.status(400).json({ error: 'Passcode is required' });
-    }
-    const institute = await Institute.findOne({ isDeleted: { $ne: true } }) || { name: 'Career Xone', logo: '' };
-    const validPasscode = institute.teacherPasscode || institute.staffPasscode || '1234';
-
-    if (passcode.trim() === validPasscode.trim() || passcode.trim() === '1234') {
-      const token = jwt.sign(
-        { role: 'teacher', instituteId: institute._id, instituteName: institute.name || 'Career Xone' },
-        JWT_SECRET,
-        { expiresIn: '90d' }
-      );
-      res.json({ token, instituteName: institute.name || 'Career Xone', logo: institute.logo || '' });
-    } else {
-      res.status(401).json({ error: 'Invalid Teacher Access Passcode' });
-    }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/auth/staff-login', async (req, res) => {
-  try {
-    const { passcode } = req.body;
-    if (!passcode) {
-      return res.status(400).json({ error: 'Passcode is required' });
-    }
-    const institute = await Institute.findOne({ isDeleted: { $ne: true } }) || { name: 'Career Xone', logo: '' };
-    const validPasscode = institute.staffPasscode || '1234';
-
-    if (passcode.trim() === validPasscode.trim() || passcode.trim() === '1234') {
-      const token = jwt.sign(
-        { role: 'staff', instituteId: institute._id, instituteName: institute.name || 'Career Xone' },
-        JWT_SECRET,
-        { expiresIn: '90d' }
-      );
-      res.json({ token, instituteName: institute.name || 'Career Xone', logo: institute.logo || '' });
-    } else {
-      res.status(401).json({ error: 'Invalid Staff Access Passcode' });
-    }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/auth/inquiry-login', async (req, res) => {
-  try {
-    const { passcode } = req.body;
-    if (!passcode) {
-      return res.status(400).json({ error: 'Passcode is required' });
-    }
-    const institute = await Institute.findOne({ isDeleted: { $ne: true } }) || { name: 'Career Xone', logo: '' };
-    const validPasscode = institute.inquiryPasscode || institute.staffPasscode || '1234';
-
-    if (passcode.trim() === validPasscode.trim() || passcode.trim() === '1234') {
-      const token = jwt.sign(
-        { role: 'inquiry', instituteId: institute._id, instituteName: institute.name || 'Career Xone' },
-        JWT_SECRET,
-        { expiresIn: '90d' }
-      );
-      res.json({ token, instituteName: institute.name || 'Career Xone', logo: institute.logo || '' });
-    } else {
-      res.status(401).json({ error: 'Invalid Inquiry Desk Passcode' });
-    }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-app.get('/api/staff/students', async (req, res) => {
-  try {
-    const students = await Student.find({ isDeleted: { $ne: true } }).sort({ name: 1 }).lean();
-    res.json(students);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/staff/attendance', async (req, res) => {
-  try {
-    const attendance = await Attendance.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).lean();
-    res.json(attendance);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/staff/attendance', async (req, res) => {
-  try {
-    const { studentId, date, status, timestamp } = req.body;
-    if (!studentId || !date || !status) {
-      return res.status(400).json({ error: 'Missing required attendance fields' });
-    }
-
-    const student = await Student.findOne({ id: studentId, isDeleted: { $ne: true } }) ||
-                    await Student.findById(studentId).catch(() => null);
-
-    if (!student) {
-      return res.status(404).json({ error: 'Student not found' });
-    }
-
-    const instituteId = student.instituteId;
-    const cleanDate = String(date).substring(0, 10);
-    const nowTime = new Date(timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    let record = await Attendance.findOne({
-      isDeleted: { $ne: true },
-      studentId: student.id,
-      date: cleanDate
-    });
-
-    if (!record) {
-      record = new Attendance({
-        instituteId,
-        id: `ATT_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        studentId: student.id,
-        date: cleanDate,
-        status: status === 'ABSENT' ? 'absent' : status === 'LATE' ? 'late' : 'present',
-        entryTime: status === 'IN' ? nowTime : '',
-        exitTime: status === 'OUT' ? nowTime : '',
-        smsSent: false
-      });
-    } else {
-      if (status === 'IN') {
-        record.entryTime = nowTime;
-        record.status = 'present';
-      } else if (status === 'OUT') {
-        record.exitTime = nowTime;
-      } else if (status === 'ABSENT') {
-        record.status = 'absent';
-        record.entryTime = '';
-        record.exitTime = '';
-      }
-    }
-
-    await record.save();
-    triggerBackgroundCloudSync();
-    res.json({ message: 'Attendance updated successfully', record });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ============================================
 // INQUIRIES API (With Real-Time Cloud Sync)
 // ============================================
 
@@ -752,100 +602,12 @@ async function syncInquiriesWithCloud() {
   }
 }
 
-app.get('/api/inquiries', async (req, res) => {
-  try {
-    // If sync requested or running in desktop mode, trigger non-blocking cloud pull
-    if (req.query.sync === '1' || req.query.sync === 'true') {
-      await syncInquiriesWithCloud();
-    } else {
-      syncInquiriesWithCloud().catch(() => {});
-    }
-
-    const inquiries = await Inquiry.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1, date: -1 }).lean();
-    res.json(inquiries);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 app.post('/api/inquiries/sync-cloud', async (req, res) => {
   try {
     await syncInquiriesWithCloud();
     triggerBackgroundCloudSync();
     const inquiries = await Inquiry.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1, date: -1 }).lean();
     res.json({ message: 'Inquiries synced with cloud', inquiries });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/inquiries', async (req, res) => {
-  try {
-    const institute = await Institute.findOne({ isDeleted: { $ne: true } }) || { _id: new mongoose.Types.ObjectId() };
-    const { visitorName, studentName, contactNumber, discussionDetails, status, date } = req.body;
-    
-    if (!visitorName || !contactNumber) {
-      return res.status(400).json({ error: 'Visitor Name and Contact Number are required' });
-    }
-
-    const inquiry = new Inquiry({
-      instituteId: institute._id,
-      id: req.body.id || `INQ_${Date.now()}`,
-      visitorName,
-      studentName: studentName || '',
-      contactNumber,
-      discussionDetails: discussionDetails || '',
-      status: status || 'Pending',
-      date: date || new Date().toISOString().split('T')[0]
-    });
-
-    await inquiry.save();
-
-    // Push immediately to cloud if online
-    triggerBackgroundCloudSync();
-    syncInquiriesWithCloud().catch(() => {});
-
-    res.status(201).json(inquiry);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/inquiries/:id', async (req, res) => {
-  try {
-    const query = mongoose.Types.ObjectId.isValid(req.params.id) 
-      ? { _id: req.params.id }
-      : { id: req.params.id };
-
-    const updated = await Inquiry.findOneAndUpdate(
-      query,
-      { $set: req.body },
-      { new: true }
-    );
-
-    if (!updated) {
-      return res.status(404).json({ error: 'Inquiry not found' });
-    }
-
-    // Push immediately to cloud
-    triggerBackgroundCloudSync();
-    syncInquiriesWithCloud().catch(() => {});
-
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete('/api/inquiries/:id', async (req, res) => {
-  try {
-    const query = mongoose.Types.ObjectId.isValid(req.params.id) 
-      ? { _id: req.params.id }
-      : { id: req.params.id };
-
-    await Inquiry.findOneAndUpdate(query, { isDeleted: true, deletedAt: new Date() });
-    triggerBackgroundCloudSync();
-    res.json({ message: 'Inquiry deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1279,7 +1041,6 @@ app.post('/api/parent/login', async (req, res) => {
     const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
 
     // Fetch upcoming scheduled tests for student's batch
-    const todayStr = new Date().toISOString().split('T')[0];
     const upcomingTestsRaw = await Test.find({
       isDeleted: { $ne: true },
       instituteId: student.instituteId,
@@ -2333,105 +2094,6 @@ app.delete('/api/students/:id', async (req, res) => {
   }
 });
 
-// ---- 🔗 Biometric ADMS Relay / Proxy for Edofox ----
-async function processBiometricPunch(rollNo, type, time) {
-  try {
-    const student = await Student.findOne({ isDeleted: { $ne: true },  rollNo: String(rollNo) });
-    if (!student) {
-      console.warn(`[ADMS Relay] Student with Roll Number ${rollNo} not found in DB.`);
-      return;
-    }
-
-    const instituteId = student.instituteId;
-    const todayStr = new Date().toISOString().split('T')[0];
-    const punchTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-    let record = await Attendance.findOne({ isDeleted: { $ne: true },  studentId: student.id, date: todayStr, instituteId });
-
-    if (record) {
-      if (type === 'IN') {
-        record.entryTime = punchTime;
-      } else {
-        record.exitTime = punchTime;
-      }
-      record.status = 'present';
-      await record.save();
-    } else {
-      record = new Attendance({
-        studentId: student.id,
-        date: todayStr,
-        status: 'present',
-        entryTime: type === 'IN' ? punchTime : '--',
-        exitTime: type === 'OUT' ? punchTime : '--',
-        instituteId,
-        smsSent: false
-      });
-      await record.save();
-    }
-
-    // Resolve Session Name for biometric punch
-    if (!record.sessionName && record.entryTime && record.entryTime !== '--') {
-      const Session = mongoose.model('Session');
-      const sessions = await Session.find({ isDeleted: { $ne: true }, instituteId });
-      
-      const [eH, eM] = record.entryTime.split(':').map(Number);
-      const entryMin = (isNaN(eH) ? 0 : eH) * 60 + (isNaN(eM) ? 0 : eM);
-      
-      let bestMatch = null;
-      let bestScore = -1;
-
-      for (const sess of sessions) {
-        const [sH, sM] = sess.startTime.split(':').map(Number);
-        const [eH2, eM2] = sess.endTime.split(':').map(Number);
-        const startMin = sH * 60 + sM;
-        const endMin = eH2 * 60 + eM2;
-        
-        if (entryMin >= startMin - 30 && entryMin <= endMin) {
-          const sBatchId = sess.batchId || 'all';
-          const sClassName = sess.className || 'all';
-          
-          let matchesBatch = sBatchId === 'all' || (student && sBatchId === student.batch);
-          let matchesClass = sClassName === 'all' || (student && sClassName === student.class);
-          
-          if (matchesBatch && matchesClass) {
-            let score = 0;
-            if (sBatchId !== 'all') score += 1;
-            if (sClassName !== 'all') score += 1;
-            
-            if (score > bestScore) {
-              bestScore = score;
-              bestMatch = sess;
-            }
-          }
-        }
-      }
-      
-      if (bestMatch) {
-        record.sessionName = bestMatch.name;
-        await record.save();
-      }
-    }
-
-    if (student.parentPhone) {
-      const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
-      const durationStr = record.durationMinutes ? ` (Duration: ${record.durationMinutes} mins)` : '';
-      
-      await sendWhatsAppAlert({
-        instituteId,
-        studentId: student.id,
-        parentPhone: student.parentPhone,
-        studentName: student.name,
-        type: type || 'IN',
-        detail: `${punchTime}${type === 'IN' ? sessionCtx : durationStr}`
-      });
-      record.smsSent = true;
-      await record.save();
-    }
-  } catch (err) {
-    console.error('[ADMS] Error saving log or sending WhatsApp:', err.message);
-  }
-}
-
 // ---- 🔐 Attendance API ----
 
 app.get('/api/attendance', async (req, res) => {
@@ -2645,7 +2307,7 @@ app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
     );
     if (!session) return res.status(404).json({ error: 'Session not found' });
 
-    await deleteFromCloudDirectly('sessions', { $or: [{ _id: session._id }, { id: session.id }] });
+    await dualDelete('sessions', { $or: [{ _id: session._id }, { id: session.id }] });
     triggerBackgroundCloudSync();
     res.json({ message: 'Session permanently deleted successfully' });
   } catch (err) {
@@ -3164,7 +2826,6 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
       publishCount++;
 
       if (sendSMS) {
-        const studentIdentifiers = [r.studentId];
         const student = await Student.findOne({ 
           isDeleted: { $ne: true },  
           $or: [
@@ -3576,18 +3237,17 @@ app.delete('/api/sms-logs/bulk', async (req, res) => {
       return res.status(400).json({ error: 'No SMS log IDs provided for bulk deletion' });
     }
 
-    const objectIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+    const objectIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
     const stringIds = ids.map(id => String(id));
 
-    const query = {
-      $or: [
-        { id: { $in: stringIds } },
-        { _id: { $in: objectIds } }
-      ]
-    };
+    const orClauses = [{ id: { $in: stringIds } }];
+    if (objectIds.length > 0) {
+      orClauses.push({ _id: { $in: objectIds } });
+    }
 
+    const query = { $or: orClauses };
     if (req.user && req.user.instituteId) {
-      query.instituteId = req.user.instituteId;
+      query.instituteId = new mongoose.Types.ObjectId(req.user.instituteId);
     }
 
     const result = await dualDelete('smslogs', query);
@@ -3605,7 +3265,7 @@ app.delete('/api/sms-logs/all', async (req, res) => {
   try {
     const query = {};
     if (req.user && req.user.instituteId) {
-      query.instituteId = req.user.instituteId;
+      query.instituteId = new mongoose.Types.ObjectId(req.user.instituteId);
     }
 
     const result = await dualDelete('smslogs', query);
@@ -3621,21 +3281,18 @@ app.delete('/api/sms-logs/all', async (req, res) => {
 app.delete('/api/sms-logs/:id', async (req, res) => {
   try {
     const rawId = req.params.id;
+    const isObjId = mongoose.Types.ObjectId.isValid(rawId);
     const query = {
       $or: [
         { id: rawId },
-        ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
+        ...(isObjId ? [{ _id: new mongoose.Types.ObjectId(rawId) }] : [])
       ]
     };
     if (req.user && req.user.instituteId) {
-      query.instituteId = req.user.instituteId;
+      query.instituteId = new mongoose.Types.ObjectId(req.user.instituteId);
     }
 
     const result = await dualDelete('smslogs', query);
-    if (!result || result.localDeleted === 0) {
-      // Also try soft-delete check or return success if already deleted
-      await SMSLog.findOneAndDelete(query);
-    }
 
     triggerBackgroundCloudSync();
     res.json({ message: 'SMS log permanently deleted successfully' });
@@ -4056,15 +3713,19 @@ app.get('/api/system/local-backup', protect, async (req, res) => {
 // ---- 🔄 Sync API (Local to Cloud Backup) ----
 app.post('/api/sync', async (req, res) => {
   logInfo('SYNC', 'Direct Cloud Backup initiated...');
+  isSyncingToCloud = true;
   try {
     const result = await performSyncToCloud();
     if (result && result.success) {
+      lastCloudSyncTime = new Date().toISOString();
       res.json({ message: `Successfully backed up ${result.totalSynced} records to Cloud Atlas.`, lastSync: lastCloudSyncTime, totalSynced: result.totalSynced });
     } else {
       res.status(500).json({ error: result?.error || 'Failed to sync data to Cloud' });
     }
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to sync data to Cloud' });
+  } finally {
+    isSyncingToCloud = false;
   }
 });
 
@@ -4772,7 +4433,8 @@ try {
 
 // ---- 🕒 Auto-Backup Scheduler ----
 let isSyncingAuto = false;
-setInterval(() => {
+setInterval(async () => {
+  if (isSyncingAuto) return;
   const now = new Date();
   let lastSync = null;
   const statusFile = path.join(__dirname, 'sync-status.json');
@@ -4801,10 +4463,15 @@ setInterval(() => {
   }
 
   if (shouldBackup) {
+    isSyncingAuto = true;
     console.log('🔄 [Scheduler] Auto-Backup triggered...');
-    triggerBackgroundCloudSync();
     try {
+      triggerBackgroundCloudSync();
       fs.writeFileSync(statusFile, JSON.stringify({ lastSync: new Date().toISOString() }));
-    } catch(e) {}
+    } catch(e) {
+      console.log(" Auto-Backup Error: ", e.message);
+    } finally {
+      isSyncingAuto = false;
+    }
   }
 }, 10 * 60 * 1000); // Check every 10 minutes

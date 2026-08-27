@@ -513,46 +513,67 @@ export default function StudentProfileModal({
                           flexDirection: 'column',
                           border: '1.5px solid #bfdbfe',
                           position: 'relative',
-                          fontFamily: "'Montserrat', sans-serif"
+                          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                         }}>
-                          <div style={{ boxSizing: 'border-box', height: '52px', width: '100%', background: '#fff', borderBottom: '2px solid #2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px' }}>
-                            <img src={idLogo} alt="Career Xone" style={{ maxWidth: '92%', maxHeight: '90%', objectFit: 'contain' }} />
+                          {/* Top Cover Banner (Facebook-style Full Header) */}
+                          <div style={{
+                            boxSizing: 'border-box',
+                            height: '85px',
+                            width: '100%',
+                            margin: 0,
+                            background: '#ffffff',
+                            borderBottom: '2.5px solid #2563eb',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '4px 8px',
+                            position: 'relative'
+                          }}>
+                            <img src={idLogo} alt="Career Xone" style={{ maxWidth: '98%', maxHeight: '96%', width: 'auto', height: '72px', objectFit: 'contain' }} />
                           </div>
                           
-                          <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0 2px', zIndex: 1 }}>
+                          {/* Student Avatar / Photo (Overlapping Cover Banner Facebook Style) */}
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            marginTop: '-44px',
+                            marginBottom: '1px',
+                            zIndex: 5,
+                            position: 'relative'
+                          }}>
                             {student.photo ? (
-                              <img src={student.photo} alt={student.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2.5px solid #2563eb', boxShadow: '0 3px 8px rgba(37,99,235,0.22)' }} />
+                              <img src={student.photo} alt={student.name} style={{ width: '88px', height: '98px', borderRadius: '12px', objectFit: 'cover', border: '3px solid #ffffff', boxShadow: '0 5px 14px rgba(0,0,0,0.20)', background: '#ffffff' }} />
                             ) : (
-                              <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2.5px solid #ffffff', boxShadow: '0 3px 8px rgba(37,99,235,0.22)', fontSize: '1.3rem', color: '#ffffff', fontWeight: 900 }}>
+                              <div style={{ width: '88px', height: '98px', borderRadius: '12px', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #ffffff', boxShadow: '0 5px 14px rgba(0,0,0,0.20)', fontSize: '1.8rem', color: '#ffffff', fontWeight: 900 }}>
                                 {getInitials(student.name)}
                               </div>
                             )}
                           </div>
                           
-                          <div style={{ padding: '0 10px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div style={{ padding: '0 10px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '3px' }}>
                             <div>
-                              <h3 style={{ margin: '0 0 2px 0', fontSize: '0.88rem', color: '#0f172a', fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{student.name}</h3>
-                              <div style={{ margin: '0 0 4px 0' }}>
+                              <h3 style={{ margin: '1px 0 1px 0', fontSize: '0.90rem', color: '#0f172a', fontWeight: 900, lineHeight: 1.25 }}>{student.name}</h3>
+                              <div style={{ margin: '0 0 2px 0' }}>
                                 <span style={{ fontSize: '0.62rem', color: '#1d4ed8', fontWeight: 800, background: 'rgba(37, 99, 235, 0.10)', border: '1px solid rgba(37, 99, 235, 0.22)', padding: '1px 8px', borderRadius: '10px', display: 'inline-block' }}>
                                   Course: {batches?.find(b => b.id === student.batch)?.name || student.batch || 'General'}
                                 </span>
                               </div>
                               
-                              <div style={{ textAlign: 'left', fontSize: '0.60rem', color: '#0f172a', lineHeight: '1.35', background: 'rgba(255,255,255,0.95)', padding: '4px 8px', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '48px', color: '#475569' }}>Roll No:</strong> <span style={{ fontWeight: 900, color: '#1e3a8a', fontFamily: 'monospace' }}>{student.rollNo || '—'}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '48px', color: '#475569' }}>Parent:</strong> <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>{student.parentName || 'N/A'}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}><strong style={{ width: '48px', color: '#475569' }}>Contact:</strong> <span style={{ fontWeight: 700 }}>{student.parentPhone}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong style={{ width: '48px', color: '#475569' }}>Address:</strong> <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>{student.address || 'N/A'}</span></div>
+                              <div style={{ textAlign: 'left', fontSize: '0.62rem', color: '#0f172a', lineHeight: '1.40', background: 'rgba(255,255,255,0.95)', padding: '4px 8px', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}><strong style={{ minWidth: '48px', color: '#475569' }}>Roll No:</strong> <span style={{ fontWeight: 900, color: '#1e3a8a' }}>{student.rollNo || '—'}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}><strong style={{ minWidth: '48px', color: '#475569' }}>Parent:</strong> <span style={{ fontWeight: 600, textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{student.parentName || 'N/A'}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}><strong style={{ minWidth: '48px', color: '#475569' }}>Contact:</strong> <span style={{ fontWeight: 700, textAlign: 'right', flex: 1 }}>{student.parentPhone}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}><strong style={{ minWidth: '48px', color: '#475569' }}>Address:</strong> <span style={{ textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{student.address || 'N/A'}</span></div>
                               </div>
                             </div>
                             
-                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '3px 0 1px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '2px 0 1px' }}>
                               <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 background: '#ffffff',
-                                padding: '4px',
+                                padding: '3px',
                                 borderRadius: '8px',
                                 border: '2px solid #93c5fd',
                                 boxShadow: '0 2px 6px rgba(37, 99, 235, 0.12)'
@@ -583,10 +604,10 @@ export default function StudentProfileModal({
                           overflow: 'hidden', 
                           display: 'flex', 
                           flexDirection: 'column', 
-                          justifyContent: 'space-between',
+                          justifyContent: 'space-between', 
                           border: '1.5px solid #bfdbfe',
                           position: 'relative',
-                          fontFamily: "'Montserrat', sans-serif"
+                          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                         }}>
                           {/* Header */}
                           <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', padding: '5px 8px', textAlign: 'center', color: '#fff' }}>

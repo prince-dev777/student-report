@@ -2916,7 +2916,9 @@ export default function Tests() {
                     border: '1.5px solid var(--border-color)',
                     borderRadius: '18px',
                     padding: '24px',
-                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.04)'
+                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.04)',
+                    position: 'relative',
+                    zIndex: 20
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--border-color)' }}>
                       <div style={{
@@ -2994,7 +2996,7 @@ export default function Tests() {
                       </div>
 
                       {/* Multi-Class Selector */}
-                      <div className="form-group" style={{ margin: 0 }}>
+                      <div className="form-group" style={{ margin: 0, position: 'relative', zIndex: 30 }}>
                         <MultiClassSelect
                           availableClasses={uniqueClasses}
                           selectedClasses={testForm.targetClasses || []}
@@ -3016,7 +3018,9 @@ export default function Tests() {
                     border: '1.5px solid var(--border-color)',
                     borderRadius: '18px',
                     padding: '24px',
-                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.04)'
+                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.04)',
+                    position: 'relative',
+                    zIndex: 10
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

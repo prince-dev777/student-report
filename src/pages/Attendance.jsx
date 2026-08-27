@@ -62,6 +62,7 @@ import SearchableStudentSelect from '../components/SearchableStudentSelect';
 import {
   formatTime,
   formatDate,
+  formatBatchName,
   getTodayStr,
   getTodayAttendanceStats,
   getDaysInMonth,
@@ -404,15 +405,18 @@ export default function Attendance() {
     }
   };
 
-  // Available batches for ID card printing
+  // Available batches for ID card printing (Mapped to user-friendly Course names like JEE Mains / NEET)
   const availableBatches = useMemo(() => {
-    const set = new Set();
+    const map = new Map();
     students.forEach((s) => {
-      if (s.batch) set.add(s.batch);
-      else if (s.targetClass) set.add(s.targetClass);
+      const raw = s.batch || s.targetClass || s.course;
+      if (raw && !map.has(raw)) {
+        const formatted = formatBatchName(raw, batches);
+        map.set(raw, { id: raw, name: formatted || raw });
+      }
     });
-    return Array.from(set).filter(Boolean);
-  }, [students]);
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [students, batches]);
 
   // Filtered students for ID card printing modal (Exact Roll Priority & 0ms Zero-Lag Indexing)
   const filteredIdCardStudents = useMemo(() => {
@@ -422,8 +426,9 @@ export default function Attendance() {
     if (selectedIdCardBatch !== 'all') {
       const bSel = selectedIdCardBatch.toLowerCase();
       pool = pool.filter((s) => {
-        const b = (s.batch || s.targetClass || '').toLowerCase();
-        return b === bSel || b.includes(bSel);
+        const raw = (s.batch || s.targetClass || s.course || '').toLowerCase();
+        const formatted = formatBatchName(s.batch || s.targetClass || s.course, batches).toLowerCase();
+        return raw === bSel || raw.includes(bSel) || formatted === bSel || formatted.includes(bSel);
       });
     }
 
@@ -516,20 +521,22 @@ export default function Attendance() {
         const sheet = sheetElements[i];
 
         const canvas = await html2canvas(sheet, {
-          scale: 2.0, // High-clarity 300 DPI vector-like rasterization
+          scale: 3, // Ultra-sharp 300-400 DPI lossless vector-like rendering
           useCORS: true,
           allowTaint: true,
           logging: false,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          letterRendering: true,
+          windowWidth: 1200
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.96);
+        const imgData = canvas.toDataURL('image/png');
 
         if (i > 0) {
           pdf.addPage('a4', 'portrait');
         }
 
-        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
       }
 
       const batchName = selectedIdCardBatch === 'all' ? 'All_Students' : selectedIdCardBatch.replace(/\s+/g, '_');
@@ -2713,7 +2720,7 @@ export default function Attendance() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', flex: 1 }}>
                       {/* Batch Selector */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <label style={{ fontSize: '0.80rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em' }}>BATCH:</label>
+                        <label style={{ fontSize: '0.80rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em' }}>COURSE / BATCH:</label>
                         <select
                           value={selectedIdCardBatch}
                           onChange={(e) => setSelectedIdCardBatch(e.target.value)}
@@ -2729,9 +2736,9 @@ export default function Attendance() {
                             cursor: 'pointer'
                           }}
                         >
-                          <option value="all">All Batches ({activeStudents.length} Students)</option>
-                          {availableBatches.map((b, i) => (
-                            <option key={i} value={b}>{b}</option>
+                          <option value="all">🎓 All Courses / Batches ({activeStudents.length} Students)</option>
+                          {availableBatches.map((b) => (
+                            <option key={b.id} value={b.id}>{b.name}</option>
                           ))}
                         </select>
                       </div>
@@ -2968,10 +2975,10 @@ export default function Attendance() {
                             }
 
                             const isCompact = idCardCardsPerPage === 6;
-                            const cardWidth = isCompact ? '230px' : '270px';
-                            const cardHeight = isCompact ? '360px' : '430px';
-                            const gridCols = isCompact ? 'repeat(2, 230px)' : 'repeat(2, 270px)';
-                            const gridGap = isCompact ? '16px 36px' : '24px 44px';
+                            const cardWidth = isCompact ? '230px' : '260px';
+                            const cardHeight = isCompact ? '355px' : '390px';
+                            const gridCols = isCompact ? 'repeat(2, 230px)' : 'repeat(2, 260px)';
+                            const gridGap = isCompact ? '14px 36px' : '18px 40px';
 
                             return (
                               <div key={sheetIdx} style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center', width: '100%' }}>
@@ -3041,129 +3048,140 @@ export default function Attendance() {
                                                   justifyContent: 'space-between',
                                                   border: '1.5px solid #bfdbfe',
                                                   position: 'relative',
-                                                  fontFamily: "'Montserrat', sans-serif"
+                                                  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                                                 }}
                                               >
-                                                {/* Top Header Logo (Classic Box) */}
-                                                <div style={{
-                                                  boxSizing: 'border-box',
-                                                  height: isCompact ? '60px' : '72px',
-                                                  width: 'calc(100% - 10px)',
-                                                  margin: '5px auto 0',
-                                                  overflow: 'hidden',
-                                                  background: '#ffffff',
-                                                  border: '1.5px solid #2563eb',
-                                                  borderRadius: '8px',
-                                                  display: 'flex',
-                                                  alignItems: 'center',
-                                                  justifyContent: 'center',
-                                                  padding: '2px 8px'
-                                                }}>
-                                                  <img src={idLogo} alt="Career Xone" style={{ width: '94%', height: '88%', objectFit: 'contain' }} />
-                                                </div>
+                                                {/* Top Cover Banner (Facebook-style Full Header) */}
+                                                 <div style={{
+                                                   boxSizing: 'border-box',
+                                                   height: isCompact ? '85px' : '98px',
+                                                   width: '100%',
+                                                   margin: 0,
+                                                   background: '#ffffff',
+                                                   borderBottom: '2.5px solid #2563eb',
+                                                   display: 'flex',
+                                                   alignItems: 'center',
+                                                   justifyContent: 'center',
+                                                   padding: '4px 8px',
+                                                   position: 'relative'
+                                                 }}>
+                                                   <img src={idLogo} alt="Career Xone" style={{ maxWidth: '98%', maxHeight: '96%', width: 'auto', height: isCompact ? '72px' : '84px', objectFit: 'contain' }} />
+                                                 </div>
 
-                                                {/* Student Avatar / Photo (Classic Overlapping Ring) */}
-                                                <div style={{ display: 'flex', justifyContent: 'center', marginTop: isCompact ? '-24px' : '-28px', zIndex: 2 }}>
-                                                  {st.photo ? (
-                                                    <img
-                                                      src={st.photo}
-                                                      alt={st.name}
-                                                      style={{
-                                                        width: isCompact ? '62px' : '74px',
-                                                        height: isCompact ? '62px' : '74px',
-                                                        borderRadius: '50%',
-                                                        objectFit: 'cover',
-                                                        border: '3px solid #ffffff',
-                                                        boxShadow: '0 3px 8px rgba(0,0,0,0.15)'
-                                                      }}
-                                                    />
-                                                  ) : (
-                                                    <div style={{
-                                                      width: isCompact ? '62px' : '74px',
-                                                      height: isCompact ? '62px' : '74px',
-                                                      borderRadius: '50%',
-                                                      background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                                                      display: 'flex',
-                                                      alignItems: 'center',
-                                                      justifyContent: 'center',
-                                                      border: '3px solid #ffffff',
-                                                      boxShadow: '0 3px 8px rgba(0,0,0,0.15)',
-                                                      fontSize: isCompact ? '1.3rem' : '1.5rem',
-                                                      color: '#ffffff',
-                                                      fontWeight: 800
-                                                    }}>
-                                                      {getInitials(st.name)}
-                                                    </div>
-                                                  )}
-                                                </div>
+                                                 {/* Student Avatar / Photo (Overlapping Cover Banner Facebook Style) */}
+                                                 <div style={{
+                                                   display: 'flex',
+                                                   justifyContent: 'center',
+                                                   marginTop: isCompact ? '-42px' : '-48px',
+                                                   marginBottom: '1px',
+                                                   zIndex: 5,
+                                                   position: 'relative'
+                                                 }}>
+                                                   {st.photo ? (
+                                                     <img
+                                                       src={st.photo}
+                                                       alt={st.name}
+                                                       style={{
+                                                         width: isCompact ? '84px' : '96px',
+                                                         height: isCompact ? '92px' : '104px',
+                                                         borderRadius: '12px',
+                                                         objectFit: 'cover',
+                                                         border: '3px solid #ffffff',
+                                                         boxShadow: '0 5px 14px rgba(0, 0, 0, 0.20)',
+                                                         background: '#ffffff'
+                                                       }}
+                                                     />
+                                                   ) : (
+                                                     <div style={{
+                                                       width: isCompact ? '84px' : '96px',
+                                                       height: isCompact ? '92px' : '104px',
+                                                       borderRadius: '12px',
+                                                       background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                                                       display: 'flex',
+                                                       alignItems: 'center',
+                                                       justifyContent: 'center',
+                                                       border: '3px solid #ffffff',
+                                                       boxShadow: '0 5px 14px rgba(0, 0, 0, 0.20)',
+                                                       fontSize: isCompact ? '1.7rem' : '2.0rem',
+                                                       color: '#ffffff',
+                                                       fontWeight: 800
+                                                     }}>
+                                                       {getInitials(st.name)}
+                                                     </div>
+                                                   )}
+                                                 </div>
 
-                                                {/* Student Details */}
-                                                <div style={{ padding: `0 ${isCompact ? '8px' : '12px'}`, textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                                <div style={{ padding: `0 ${isCompact ? '8px' : '12px'}`, textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '3px' }}>
                                                   <div>
-                                                    <h3 style={{ margin: '3px 0 1px 0', fontSize: isCompact ? '0.86rem' : '0.98rem', color: '#0f172a', fontWeight: 800, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    <h3 style={{ margin: '1px 0 1px 0', fontSize: isCompact ? '0.88rem' : '1.02rem', color: '#0f172a', fontWeight: 800, lineHeight: 1.25 }}>
                                                       {st.name}
                                                     </h3>
-                                                    <p style={{ margin: '0 0 4px 0', fontSize: isCompact ? '0.64rem' : '0.72rem', color: '#2563eb', fontWeight: 700 }}>
-                                                      Course: {batches?.find(b => b.id === st.batch)?.name || st.batch || st.targetClass || 'General'}
+                                                    <p style={{ margin: '0 0 2px 0', fontSize: isCompact ? '0.62rem' : '0.70rem', color: '#2563eb', fontWeight: 700 }}>
+                                                      Course: {formatBatchName(st.batch || st.targetClass || st.course, batches) || 'General'}
                                                     </p>
 
                                                     {/* Info Table Box */}
                                                     <div style={{
-                                                      background: 'rgba(255, 255, 255, 0.88)',
+                                                      background: 'rgba(255, 255, 255, 0.94)',
                                                       borderRadius: '6px',
                                                       border: '1px solid #bfdbfe',
-                                                      padding: isCompact ? '4px 8px' : '6px 10px',
+                                                      padding: isCompact ? '4px 6px' : '5px 8px',
                                                       textAlign: 'left',
                                                       fontSize: isCompact ? '0.60rem' : '0.68rem',
                                                       color: '#0f172a',
-                                                      lineHeight: 1.38
+                                                      lineHeight: 1.40
                                                     }}>
-                                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
-                                                        <strong style={{ width: isCompact ? '48px' : '56px', color: '#475569' }}>Roll No:</strong>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}>
+                                                        <strong style={{ minWidth: isCompact ? '46px' : '54px', color: '#475569', flexShrink: 0 }}>Roll No:</strong>
                                                         <span style={{ fontWeight: 800, color: '#1e3a8a' }}>{st.rollNo || '—'}</span>
                                                       </div>
-                                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
-                                                        <strong style={{ width: isCompact ? '48px' : '56px', color: '#475569' }}>Parent:</strong>
-                                                        <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isCompact ? '130px' : '160px' }}>{st.parentName || 'N/A'}</span>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}>
+                                                        <strong style={{ minWidth: isCompact ? '46px' : '54px', color: '#475569', flexShrink: 0 }}>Parent:</strong>
+                                                        <span style={{ fontWeight: 600, textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{st.parentName || 'N/A'}</span>
                                                       </div>
-                                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
-                                                        <strong style={{ width: isCompact ? '48px' : '56px', color: '#475569' }}>Contact:</strong>
-                                                        <span style={{ fontWeight: 600 }}>{st.parentPhone || st.phone || 'N/A'}</span>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}>
+                                                        <strong style={{ minWidth: isCompact ? '46px' : '54px', color: '#475569', flexShrink: 0 }}>Contact:</strong>
+                                                        <span style={{ fontWeight: 600, textAlign: 'right', flex: 1 }}>{st.parentPhone || st.phone || 'N/A'}</span>
                                                       </div>
-                                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                        <strong style={{ width: isCompact ? '48px' : '56px', color: '#475569' }}>Address:</strong>
-                                                        <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isCompact ? '130px' : '160px' }}>{st.address || 'N/A'}</span>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}>
+                                                        <strong style={{ minWidth: isCompact ? '46px' : '54px', color: '#475569', flexShrink: 0 }}>Address:</strong>
+                                                        <span style={{ fontWeight: 500, textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{st.address || 'N/A'}</span>
                                                       </div>
                                                     </div>
                                                   </div>
 
-                                                  {/* Bottom Bar: Centered Large Scannable QR (High Visibility) */}
-                                                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '3px 0 2px' }}>
+                                                  {/* Bottom Bar: Centered Large Scannable QR (High Visibility, snugly below table) */}
+                                                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '2px 0 1px' }}>
                                                     <div style={{
                                                       display: 'flex',
                                                       alignItems: 'center',
                                                       justifyContent: 'center',
                                                       background: '#ffffff',
-                                                      padding: isCompact ? '4px' : '5px',
+                                                      padding: isCompact ? '3px' : '4px',
                                                       borderRadius: '8px',
                                                       border: '2px solid #93c5fd',
-                                                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.12)',
-                                                      marginBottom: '1px'
+                                                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.12)'
                                                     }}>
-                                                      <QRCodeSVG value={String(st.rollNo || st.id)} size={isCompact ? 76 : 88} level="M" />
+                                                      <QRCodeSVG value={String(st.rollNo || st.id)} size={isCompact ? 64 : 74} level="M" />
                                                     </div>
                                                   </div>
                                                 </div>
 
-                                                {/* Footer Ribbon */}
+                                                {/* Footer Ribbon (No text clipping) */}
                                                 <div style={{
+                                                  boxSizing: 'border-box',
                                                   background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                                                  padding: isCompact ? '4px' : '5px',
-                                                  textAlign: 'center',
-                                                  fontSize: isCompact ? '0.58rem' : '0.66rem',
+                                                  height: isCompact ? '24px' : '26px',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  padding: '0 8px',
+                                                  fontSize: isCompact ? '0.60rem' : '0.68rem',
+                                                  lineHeight: 1,
                                                   color: '#ffffff',
                                                   fontWeight: 800,
-                                                  letterSpacing: '0.5px'
+                                                  letterSpacing: '0.5px',
+                                                  flexShrink: 0
                                                 }}>
                                                   STUDENT ID: {st.id}
                                                 </div>
@@ -3244,12 +3262,12 @@ export default function Attendance() {
                                                   justifyContent: 'space-between',
                                                   border: '1.5px solid #bfdbfe',
                                                   position: 'relative',
-                                                  fontFamily: "'Montserrat', sans-serif"
+                                                  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                                                 }}
                                               >
                                                 {/* Header Ribbon */}
                                                 <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', padding: isCompact ? '5px 8px' : '7px 10px', textAlign: 'center', color: '#ffffff' }}>
-                                                  <h4 style={{ margin: 0, fontSize: isCompact ? '0.74rem' : '0.84rem', fontWeight: 800, letterSpacing: '0.4px' }}>Terms &amp; Conditions</h4>
+                                                  <h4 style={{ margin: 0, fontSize: isCompact ? '0.74rem' : '0.84rem', fontWeight: 800, letterSpacing: '0.4px', color: '#ffffff' }}>Terms &amp; Conditions</h4>
                                                   <span style={{ fontSize: isCompact ? '0.48rem' : '0.56rem', opacity: 0.9 }}>Career Xone Rules &amp; Regulations</span>
                                                 </div>
 
@@ -3372,8 +3390,8 @@ export default function Attendance() {
                                 <div
                                   className="print-id-card"
                                   style={{
-                                    width: '270px',
-                                    height: '430px',
+                                    width: '260px',
+                                    height: '390px',
                                     boxSizing: 'border-box',
                                     background: 'linear-gradient(135deg, #f0f7ff 0%, #dbeafe 100%)',
                                     borderRadius: '12px',
@@ -3384,133 +3402,147 @@ export default function Attendance() {
                                     justifyContent: 'space-between',
                                     border: '1.5px solid #bfdbfe',
                                     position: 'relative',
-                                    fontFamily: "'Montserrat', sans-serif"
+                                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                                   }}
                                 >
-                                  {/* Top Header Logo (Classic Box) */}
+                                  {/* Top Cover Banner (Facebook-style Full Header) */}
                                   <div style={{
                                     boxSizing: 'border-box',
-                                    height: '72px',
-                                    width: 'calc(100% - 10px)',
-                                    margin: '5px auto 0',
-                                    overflow: 'hidden',
-                                    background: '#ffffff',
-                                    border: '1.5px solid #2563eb',
-                                    borderRadius: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: '2px 8px'
-                                  }}>
-                                    <img src={idLogo} alt="Career Xone" style={{ width: '94%', height: '88%', objectFit: 'contain' }} />
-                                  </div>
+                                    height: '98px',
+                                    width: '100%',
+                                     height: '98px',
+                                     width: '100%',
+                                     margin: 0,
+                                     background: '#ffffff',
+                                     borderBottom: '2.5px solid #2563eb',
+                                     display: 'flex',
+                                     alignItems: 'center',
+                                     justifyContent: 'center',
+                                     padding: '4px 8px',
+                                     position: 'relative'
+                                   }}>
+                                     <img src={idLogo} alt="Career Xone" style={{ maxWidth: '98%', maxHeight: '96%', width: 'auto', height: '84px', objectFit: 'contain' }} />
+                                   </div>
 
-                                  {/* Student Avatar / Photo (Classic Overlapping Ring) */}
-                                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-28px', zIndex: 2 }}>
-                                    {st.photo ? (
-                                      <img
-                                        src={st.photo}
-                                        alt={st.name}
-                                        style={{
-                                          width: '74px',
-                                          height: '74px',
-                                          borderRadius: '50%',
-                                          objectFit: 'cover',
-                                          border: '3px solid #ffffff',
-                                          boxShadow: '0 3px 8px rgba(0,0,0,0.15)'
-                                        }}
-                                      />
-                                    ) : (
-                                      <div style={{
-                                        width: '74px',
-                                        height: '74px',
-                                        borderRadius: '50%',
-                                        background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        border: '3px solid #ffffff',
-                                        boxShadow: '0 3px 8px rgba(0,0,0,0.15)',
-                                        fontSize: '1.5rem',
-                                        color: '#ffffff',
-                                        fontWeight: 800
-                                      }}>
-                                        {getInitials(st.name)}
-                                      </div>
-                                    )}
-                                  </div>
+                                   {/* Student Avatar / Photo (Overlapping Cover Banner Facebook Style) */}
+                                   <div style={{
+                                     display: 'flex',
+                                     justifyContent: 'center',
+                                     marginTop: '-48px',
+                                     marginBottom: '1px',
+                                     zIndex: 5,
+                                     position: 'relative'
+                                   }}>
+                                     {st.photo ? (
+                                       <img
+                                         src={st.photo}
+                                         alt={st.name}
+                                         style={{
+                                           width: '96px',
+                                           height: '104px',
+                                           borderRadius: '12px',
+                                           objectFit: 'cover',
+                                           border: '3px solid #ffffff',
+                                           boxShadow: '0 5px 14px rgba(0, 0, 0, 0.20)',
+                                           background: '#ffffff'
+                                         }}
+                                       />
+                                     ) : (
+                                       <div style={{
+                                         width: '96px',
+                                         height: '104px',
+                                         borderRadius: '12px',
+                                         background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                                         display: 'flex',
+                                         alignItems: 'center',
+                                         justifyContent: 'center',
+                                         border: '3px solid #ffffff',
+                                         boxShadow: '0 5px 14px rgba(0, 0, 0, 0.20)',
+                                         fontSize: '2.0rem',
+                                         color: '#ffffff',
+                                         fontWeight: 800
+                                       }}>
+                                         {getInitials(st.name)}
+                                       </div>
+                                     )}
+                                   </div>
 
-                                  {/* Student Details */}
-                                  <div style={{ padding: '0 12px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                                    <div>
-                                      <h3 style={{ margin: '3px 0 1px 0', fontSize: '0.98rem', color: '#0f172a', fontWeight: 800, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {st.name}
-                                      </h3>
-                                      <p style={{ margin: '0 0 4px 0', fontSize: '0.72rem', color: '#2563eb', fontWeight: 700 }}>
-                                        Course: {batches?.find(b => b.id === st.batch)?.name || st.batch || st.targetClass || 'General'}
-                                      </p>
+                                   {/* Student Details */}
+                                   <div style={{ padding: '0 12px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '3px' }}>
+                                     <div>
+                                       <h3 style={{ margin: '1px 0 1px 0', fontSize: '1.02rem', color: '#0f172a', fontWeight: 800, lineHeight: 1.25 }}>
+                                         {st.name}
+                                       </h3>
+                                       <p style={{ margin: '0 0 2px 0', fontSize: '0.70rem', color: '#2563eb', fontWeight: 700 }}>
+                                         Course: {formatBatchName(st.batch || st.targetClass || st.course, batches) || 'General'}
+                                       </p>
 
-                                      {/* Info Table Box */}
-                                      <div style={{
-                                        background: 'rgba(255, 255, 255, 0.88)',
-                                        borderRadius: '6px',
-                                        border: '1px solid #bfdbfe',
-                                        padding: '6px 10px',
-                                        textAlign: 'left',
-                                        fontSize: '0.68rem',
-                                        color: '#0f172a',
-                                        lineHeight: 1.38
-                                      }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
-                                          <strong style={{ width: '56px', color: '#475569' }}>Roll No:</strong>
-                                          <span style={{ fontWeight: 800, color: '#1e3a8a' }}>{st.rollNo || '—'}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
-                                          <strong style={{ width: '56px', color: '#475569' }}>Parent:</strong>
-                                          <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{st.parentName || 'N/A'}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px' }}>
-                                          <strong style={{ width: '56px', color: '#475569' }}>Contact:</strong>
-                                          <span style={{ fontWeight: 600 }}>{st.parentPhone || st.phone || 'N/A'}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                          <strong style={{ width: '56px', color: '#475569' }}>Address:</strong>
-                                          <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{st.address || 'N/A'}</span>
-                                        </div>
-                                      </div>
-                                    </div>
+                                       {/* Info Table Box */}
+                                       <div style={{
+                                         background: 'rgba(255, 255, 255, 0.94)',
+                                         borderRadius: '6px',
+                                         border: '1px solid #bfdbfe',
+                                         padding: '5px 8px',
+                                         textAlign: 'left',
+                                         fontSize: '0.68rem',
+                                         color: '#0f172a',
+                                         lineHeight: 1.40
+                                       }}>
+                                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}>
+                                           <strong style={{ minWidth: '54px', color: '#475569', flexShrink: 0 }}>Roll No:</strong>
+                                           <span style={{ fontWeight: 800, color: '#1e3a8a' }}>{st.rollNo || '—'}</span>
+                                         </div>
+                                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}>
+                                           <strong style={{ minWidth: '54px', color: '#475569', flexShrink: 0 }}>Parent:</strong>
+                                           <span style={{ fontWeight: 600, textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{st.parentName || 'N/A'}</span>
+                                         </div>
+                                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}>
+                                           <strong style={{ minWidth: '54px', color: '#475569', flexShrink: 0 }}>Contact:</strong>
+                                           <span style={{ fontWeight: 600, textAlign: 'right', flex: 1 }}>{st.parentPhone || st.phone || 'N/A'}</span>
+                                         </div>
+                                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}>
+                                           <strong style={{ minWidth: '54px', color: '#475569', flexShrink: 0 }}>Address:</strong>
+                                           <span style={{ fontWeight: 500, textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{st.address || 'N/A'}</span>
+                                         </div>
+                                       </div>
+                                     </div>
 
-                                    {/* Bottom Bar: Centered Large Scannable QR (High Visibility) */}
-                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '3px 0 2px' }}>
-                                      <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        background: '#ffffff',
-                                        padding: '5px',
-                                        borderRadius: '8px',
-                                        border: '2px solid #93c5fd',
-                                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.12)',
-                                        marginBottom: '1px'
-                                      }}>
-                                        <QRCodeSVG value={String(st.rollNo || st.id)} size={88} level="M" />
-                                      </div>
-                                    </div>
-                                  </div>
+                                     {/* Bottom Bar: Centered Large Scannable QR (High Visibility, snugly below table) */}
+                                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '2px 0 1px' }}>
+                                       <div style={{
+                                         display: 'flex',
+                                         alignItems: 'center',
+                                         justifyContent: 'center',
+                                         background: '#ffffff',
+                                         padding: '4px',
+                                         borderRadius: '8px',
+                                         border: '2px solid #93c5fd',
+                                         boxShadow: '0 2px 8px rgba(37, 99, 235, 0.12)'
+                                       }}>
+                                         <QRCodeSVG value={String(st.rollNo || st.id)} size={74} level="M" />
+                                       </div>
+                                     </div>
+                                   </div>
 
-                                  {/* Footer Ribbon */}
-                                  <div style={{
-                                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                                    padding: '5px',
-                                    textAlign: 'center',
-                                    fontSize: '0.66rem',
-                                    color: '#ffffff',
-                                    fontWeight: 800,
-                                    letterSpacing: '0.5px'
-                                  }}>
-                                    STUDENT ID: {st.id}
-                                  </div>
-                                </div>
+                                   {/* Footer Ribbon (No text clipping) */}
+                                   <div style={{
+                                     boxSizing: 'border-box',
+                                     background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                     height: '26px',
+                                     display: 'flex',
+                                     alignItems: 'center',
+                                     justifyContent: 'center',
+                                     padding: '0 8px',
+                                     fontSize: '0.68rem',
+                                     lineHeight: 1,
+                                     color: '#ffffff',
+                                     fontWeight: 800,
+                                     letterSpacing: '0.5px',
+                                     flexShrink: 0
+                                   }}>
+                                     STUDENT ID: {st.id}
+                                   </div>
+                                 </div>
                               )}
 
                               {/* BACK SIDE (Terms & Conditions) */}
@@ -3530,7 +3562,7 @@ export default function Attendance() {
                                     justifyContent: 'space-between',
                                     border: '1.5px solid #bfdbfe',
                                     position: 'relative',
-                                    fontFamily: "'Montserrat', sans-serif"
+                                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                                   }}
                                 >
                                   {/* Header Ribbon */}

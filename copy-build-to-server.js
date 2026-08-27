@@ -10,7 +10,31 @@ const destDir = path.join(__dirname, 'server', 'public');
 
 if (fs.existsSync(srcDir)) {
   fs.mkdirSync(destDir, { recursive: true });
-  fs.cpSync(srcDir, destDir, { recursive: true });
+  
+  function copyRecursive(src, dest) {
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+    fs.mkdirSync(dest, { recursive: true });
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+      if (entry.isDirectory()) {
+        copyRecursive(srcPath, destPath);
+      } else {
+        try {
+          fs.copyFileSync(srcPath, destPath);
+        } catch (e) {
+          // If locked by running process, try writing buffer
+          try {
+            const data = fs.readFileSync(srcPath);
+            fs.writeFileSync(destPath, data);
+          } catch (err) {
+            console.warn(`[WARN] Skipping locked file: ${entry.name}`);
+          }
+        }
+      }
+    }
+  }
+  copyRecursive(srcDir, destDir);
   
   // Fix manifest link in server/public/index.html to always be absolute /manifest.json
   const serverIndexHtml = path.join(destDir, 'index.html');

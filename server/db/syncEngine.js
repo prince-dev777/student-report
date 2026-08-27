@@ -72,14 +72,15 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
   try {
     const localColl = getLocalCollection(collectionName);
     const cloudColl = await getCloudCollection(collectionName);
+    const fixedFilter = fixObjectIds(filter);
 
     // 1. Delete from Local DB
-    const localRes = await localColl.deleteMany(filter);
+    const localRes = await localColl.deleteMany(fixedFilter);
 
     // 2. Delete from Cloud Atlas
     let cloudDeleted = 0;
     if (cloudColl) {
-      const cloudRes = await cloudColl.deleteMany(filter);
+      const cloudRes = await cloudColl.deleteMany(fixedFilter);
       cloudDeleted = cloudRes.deletedCount;
     }
 
@@ -88,10 +89,11 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
       try {
         const localRelColl = getLocalCollection(rel.collection);
         const cloudRelColl = await getCloudCollection(rel.collection);
+        const fixedRelFilter = fixObjectIds(rel.filter);
 
-        await localRelColl.deleteMany(rel.filter);
+        await localRelColl.deleteMany(fixedRelFilter);
         if (cloudRelColl) {
-          await cloudRelColl.deleteMany(rel.filter);
+          await cloudRelColl.deleteMany(fixedRelFilter);
         }
       } catch (relErr) {
         logWarn('SYNC_DELETE', `Cascade delete notice on [${rel.collection}]: ${relErr.message}`);

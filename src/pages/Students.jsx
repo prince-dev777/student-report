@@ -32,12 +32,24 @@ export default function Students() {
   const { students, batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent, deleteStudentsBulk } = useApp();
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState('all'); // 'all' | 'rollNo' | 'phone' | 'name' | 'parentName' | 'id'
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedClass, setSelectedClass] = useState('all');
   const [studentToDelete, setStudentToDelete] = useState(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  const getSearchPlaceholder = () => {
+    switch (searchType) {
+      case 'rollNo': return 'Enter Roll No (e.g. 7388)...';
+      case 'phone': return 'Enter 10-digit Phone No...';
+      case 'name': return 'Enter Student Name...';
+      case 'parentName': return 'Enter Parent Name...';
+      case 'id': return 'Enter Student ID...';
+      default: return 'Search by Name, Roll No, Phone, ID...';
+    }
+  };
 
   // Pagination State
   const [paginatedStudents, setPaginatedStudents] = useState([]);
@@ -134,11 +146,33 @@ export default function Students() {
         const matchesClass = isClassMatch(student.class, selectedClass);
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();
-          const nameMatch = (student.name || '').toLowerCase().includes(q);
-          const rollMatch = String(student.rollNo || '').toLowerCase().includes(q);
-          const phoneMatch = String(student.parentPhone || student.phone || '').includes(q);
-          const idMatch = String(student.id || '').toLowerCase().includes(q);
-          return matchesCourse && matchesClass && (nameMatch || rollMatch || phoneMatch || idMatch);
+          let matchesSearch = false;
+
+          if (searchType === 'rollNo') {
+            const roll = String(student.rollNo || '').toLowerCase().trim();
+            matchesSearch = roll === q || roll.startsWith(q) || roll.includes(q);
+          } else if (searchType === 'phone') {
+            const phone = String(student.parentPhone || student.phone || student.mobile || '').replace(/\D/g, '');
+            const cleanQ = q.replace(/\D/g, '');
+            matchesSearch = cleanQ ? phone.includes(cleanQ) : false;
+          } else if (searchType === 'name') {
+            matchesSearch = (student.name || '').toLowerCase().includes(q);
+          } else if (searchType === 'parentName') {
+            matchesSearch = (student.parentName || '').toLowerCase().includes(q);
+          } else if (searchType === 'id') {
+            const id = String(student.id || student._id || '').toLowerCase().trim();
+            matchesSearch = id === q || id.includes(q);
+          } else {
+            // all fields
+            const nameMatch = (student.name || '').toLowerCase().includes(q);
+            const parentMatch = (student.parentName || '').toLowerCase().includes(q);
+            const rollMatch = String(student.rollNo || '').toLowerCase().includes(q);
+            const phoneMatch = String(student.parentPhone || student.phone || '').includes(q);
+            const idMatch = String(student.id || student._id || '').toLowerCase().includes(q);
+            matchesSearch = nameMatch || parentMatch || rollMatch || phoneMatch || idMatch;
+          }
+
+          return matchesCourse && matchesClass && matchesSearch;
         }
         return matchesCourse && matchesClass;
       })
@@ -147,12 +181,13 @@ export default function Students() {
         const rollB = b.rollNo ? String(b.rollNo) : '';
         return rollA.localeCompare(rollB, undefined, { numeric: true });
       });
-  }, [allStudentsList, paginatedStudents, selectedCourse, selectedClass, searchQuery, isCourseMatch, isClassMatch]);
+  }, [allStudentsList, paginatedStudents, selectedCourse, selectedClass, searchQuery, searchType, isCourseMatch, isClassMatch]);
 
+  const totalEnrolled = (allStudentsList && allStudentsList.length > 0) ? allStudentsList.length : totalCount;
   const activeCount = (allStudentsList && allStudentsList.length > 0)
     ? allStudentsList.filter(s => s.status === 'active').length
     : paginatedStudents.filter(s => s.status === 'active').length;
-  const inactiveCount = Math.max(0, (allStudentsList && allStudentsList.length > 0 ? allStudentsList.length : totalCount) - activeCount);
+  const inactiveCount = Math.max(0, totalEnrolled - activeCount);
 
   const pageSize = 50;
   const activeTotalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
@@ -258,9 +293,10 @@ export default function Students() {
         const res = await addStudent(formData);
         if (res && res.parentUserId && res.parentPlainPassword) {
           setCreatedStudentCreds({
-            name: res.name,
-            parentUserId: res.parentUserId,
-            parentPlainPassword: res.parentPlainPassword
+            studentName: res.name,
+            rollNo: res.rollNo,
+            username: res.parentUserId,
+            password: res.parentPlainPassword
           });
         }
       }
@@ -268,17 +304,25 @@ export default function Students() {
       setEditingStudent(null);
       fetchData(currentPage, searchQuery);
     } catch (err) {
-      console.error('Error saving student:', err);
+      console.error('Failed to save student:', err);
+      alert(err.message || 'Failed to save student');
     }
   };
 
-  const handleDelete = (id, name) => {
-    setStudentToDelete({ id, name });
+  const handleDelete = (student) => {
+    setStudentToDelete(student);
   };
 
-  const getCourseName = (batchId) => {
-    const course = batches.find((b) => b.id === batchId);
-    return course ? course.name : 'Unknown';
+  const confirmDelete = async () => {
+    if (!studentToDelete) return;
+    try {
+      await deleteStudent(studentToDelete.id);
+      setStudentToDelete(null);
+      fetchData(currentPage, searchQuery);
+    } catch (err) {
+      console.error('Failed to delete student:', err);
+      alert(err.message || 'Failed to delete student');
+    }
   };
 
   return (
@@ -288,20 +332,20 @@ export default function Students() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="page-header flex justify-between items-center flex-wrap gap-12">
+      <div className="page-header flex justify-between items-center mb-24">
         <div>
           <h1 className="page-title">Students Directory</h1>
-          <p>Enrolled students details, courses, classes, parents info, and attendance statistics.</p>
+          <p className="page-subtitle">Enrolled students details, courses, classes, parents info, and attendance statistics.</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }} onClick={handleDownloadExcel} disabled={filteredStudents.length === 0}>
-              <Download size={16} />
-              Export
-            </button>
-            <button className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }} onClick={handleBulkAddClick}>
-              <FileSpreadsheet size={16} />
-              Bulk Import
-            </button>
+        <div className="flex gap-12">
+          <button className="btn btn-secondary" onClick={handleDownloadExcel}>
+            <Download size={18} />
+            Export Excel
+          </button>
+          <button className="btn btn-secondary" onClick={handleBulkAddClick}>
+            <FileSpreadsheet size={18} />
+            Bulk Import
+          </button>
           <button className="btn btn-primary" onClick={handleAddClick}>
             <UserPlus size={18} />
             Add Student
@@ -316,7 +360,7 @@ export default function Students() {
               <Users size={20} />
             </div>
           </div>
-          <div className="stat-card-value"><AnimatedCounter to={totalCount} /></div>
+          <div className="stat-card-value"><AnimatedCounter to={totalEnrolled} /></div>
           <div className="stat-card-label">Total Enrolled</div>
         </div>
 
@@ -343,18 +387,97 @@ export default function Students() {
 
       <div className="card mb-24">
         <div className="flex justify-between items-center flex-wrap gap-12">
-          <div className="topbar-search" style={{ position: 'relative', flex: '1 1 240px', maxWidth: '360px' }}>
-            <Search className="topbar-search-icon" size={16} />
-            <input
-              type="text"
-              placeholder="Search by name, roll no, or ID..."
-              value={searchQuery}
+          
+          {/* Smart Search Bar with Credential / Search Type Selector */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: 'var(--surface-color, #ffffff)',
+            border: '1.5px solid var(--border-color, #cbd5e1)',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            flex: '1 1 360px',
+            maxWidth: '540px',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+            transition: 'border-color 0.2s'
+          }}>
+            {/* Search Type Selector */}
+            <select
+              value={searchType}
               onChange={(e) => {
-                setSearchQuery(e.target.value);
+                setSearchType(e.target.value);
                 setCurrentPage(1);
               }}
-              style={{ width: '100%' }}
-            />
+              style={{
+                background: 'var(--bg-light, #f8fafc)',
+                border: 'none',
+                borderRight: '1.5px solid var(--border-color, #e2e8f0)',
+                padding: '8px 10px',
+                fontSize: '0.80rem',
+                fontWeight: 700,
+                color: 'var(--primary, #2563eb)',
+                cursor: 'pointer',
+                outline: 'none',
+                height: '40px',
+                flexShrink: 0
+              }}
+              title="Filter search by specific field"
+            >
+              <option value="all">🔍 All Fields</option>
+              <option value="rollNo">🔢 Roll No</option>
+              <option value="phone">📱 Phone No</option>
+              <option value="name">👤 Student Name</option>
+              <option value="parentName">👨‍👩‍👧 Parent Name</option>
+              <option value="id">🆔 Student ID</option>
+            </select>
+
+            {/* Search Input Box */}
+            <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder={getSearchPlaceholder()}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  width: '100%',
+                  border: 'none',
+                  outline: 'none',
+                  padding: '8px 30px 8px 12px',
+                  fontSize: '0.86rem',
+                  fontWeight: 600,
+                  color: 'var(--text-primary, #0f172a)',
+                  background: 'transparent'
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: '#e2e8f0',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#64748b'
+                  }}
+                  title="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-8 flex-wrap">
@@ -390,6 +513,49 @@ export default function Students() {
             </select>
           </div>
         </div>
+
+        {/* Search Results Summary Tag if Search/Filter Active */}
+        {(searchQuery.trim() || selectedCourse !== 'all' || selectedClass !== 'all') && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: '12px',
+            paddingTop: '10px',
+            borderTop: '1px solid var(--border-color-light, #f1f5f9)',
+            fontSize: '0.78rem',
+            color: 'var(--text-secondary, #64748b)'
+          }}>
+            <span>
+              Found <strong style={{ color: 'var(--primary, #2563eb)' }}>{filteredStudents.length}</strong> matching students 
+              {searchQuery && (
+                <span> for <code style={{ background: '#eff6ff', color: '#1d4ed8', padding: '1px 6px', borderRadius: '4px' }}>"{searchQuery}"</code> in <strong>{searchType === 'all' ? 'All Fields' : searchType}</strong></span>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSearchType('all');
+                setSelectedCourse('all');
+                setSelectedClass('all');
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#ef4444',
+                fontWeight: 700,
+                fontSize: '0.76rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <X size={12} /> Reset Filters
+            </button>
+          </div>
+        )}
       </div>
 
       <AnimatePresence>

@@ -21,11 +21,9 @@ import {
   Library,
   Sparkles,
   Settings as SettingsIcon,
-  ChevronDown,
-  Info
+  ChevronDown
 } from 'lucide-react';
 import UpdateNotesModal from './UpdateNotesModal';
-import AboutAppModal from './AboutAppModal';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { api, API_BASE } from '../utils/api';
@@ -57,7 +55,6 @@ export default function Sidebar() {
   const [lastSeenSmsCount, setLastSeenSmsCount] = useState(0);
   const [appVersion, setAppVersion] = useState('');
   const [showNotesModal, setShowNotesModal] = useState(false);
-  const [showAboutModal, setShowAboutModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [backupMenuOpen, setBackupMenuOpen] = useState(false);
@@ -462,30 +459,6 @@ export default function Sidebar() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button
                 type="button"
-                onClick={() => setShowAboutModal(true)}
-                style={{
-                  background: 'none',
-                  color: 'var(--text-secondary)',
-                  border: 'none',
-                  padding: 0,
-                  fontSize: '0.72rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                  transition: 'color 0.15s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#10b981'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
-                title="About App & Offline Guide"
-              >
-                <Info size={12} />
-                <span>About App</span>
-              </button>
-              <span style={{ color: 'var(--border-color)', userSelect: 'none' }}>•</span>
-              <button
-                type="button"
                 onClick={() => setShowNotesModal(true)}
                 style={{
                   background: 'none',
@@ -515,12 +488,6 @@ export default function Sidebar() {
       <UpdateNotesModal
         isOpen={showNotesModal}
         onClose={() => setShowNotesModal(false)}
-        currentVersion={appVersion || '1.0.41'}
-      />
-
-      <AboutAppModal
-        isOpen={showAboutModal}
-        onClose={() => setShowAboutModal(false)}
         currentVersion={appVersion || '1.0.41'}
       />
     </>
