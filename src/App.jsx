@@ -203,9 +203,23 @@ function AppLayout() {
   );
 }
 
-const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
+const isElectron = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 
 export default function App() {
+  // 🔄 24/7 Keep-Alive: Ping Render Cloud every 10 minutes so it never goes to sleep
+  React.useEffect(() => {
+    const pingCloud = async () => {
+      try {
+        await fetch('https://student-report-ezgw.onrender.com/api/health', {
+          headers: { 'User-Agent': 'CareerXone-WebPWA-KeepAlive/1.0' }
+        });
+      } catch (e) {}
+    };
+    pingCloud();
+    const interval = setInterval(pingCloud, 10 * 60 * 1000); // 10 mins
+    return () => clearInterval(interval);
+  }, []);
+
   if (!isElectron) {
     if (typeof window !== 'undefined') {
       const path = (window.location.pathname || '').toLowerCase();

@@ -117,6 +117,38 @@ app.get('/ping', (req, res) => {
   res.status(200).send('pong');
 });
 
+// 🔄 24/7 Keep-Alive Self-Ping Service (Keeps Render Cloud Server permanently awake)
+const CLOUD_APP_URL = process.env.CLOUD_APP_URL || 'https://student-report-ezgw.onrender.com';
+const KEEP_ALIVE_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
+function startKeepAlivePing() {
+  setInterval(async () => {
+    try {
+      const pingUrl = `${CLOUD_APP_URL}/api/health`;
+      const res = await fetch(pingUrl, {
+        headers: { 'User-Agent': 'CareerXone-KeepAlive-Engine/1.0' }
+      });
+      if (res.ok) {
+        console.log(`📡 [Keep-Alive] Self-ping successful to ${pingUrl} at ${new Date().toLocaleTimeString('en-IN')}`);
+      }
+    } catch (e) {
+      console.warn(`⚠️ [Keep-Alive] Ping failed: ${e.message}`);
+    }
+  }, KEEP_ALIVE_INTERVAL);
+
+  // Initial wake-up ping after 15 seconds
+  setTimeout(async () => {
+    try {
+      await fetch(`${CLOUD_APP_URL}/api/health`, {
+        headers: { 'User-Agent': 'CareerXone-KeepAlive-Engine/1.0' }
+      });
+      console.log(`📡 [Keep-Alive] Initial wake-up ping sent to ${CLOUD_APP_URL}`);
+    } catch (e) {}
+  }, 15000);
+}
+
+startKeepAlivePing();
+
 const dataPath = process.env.USER_DATA_PATH || __dirname;
 app.use('/uploads', express.static(path.join(dataPath, 'uploads'), {
   setHeaders: (res, filePath) => {

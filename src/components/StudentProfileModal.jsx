@@ -546,28 +546,18 @@ export default function StudentProfileModal({
                               </div>
                             </div>
                             
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '2px 0 1px', padding: '0 2px' }}>
-                              <div style={{ textAlign: 'center', width: '42px' }}>
-                                <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px' }}></div>
-                                <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Issue Auth</span>
-                              </div>
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '3px 0 1px' }}>
                               <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 background: '#ffffff',
-                                padding: '2px',
-                                borderRadius: '6px',
-                                border: '1px solid #bfdbfe',
-                                boxShadow: '0 2px 5px rgba(0,0,0,0.06)'
+                                padding: '4px',
+                                borderRadius: '8px',
+                                border: '2px solid #93c5fd',
+                                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.12)'
                               }}>
-                                <QRCodeSVG value={String(student.rollNo || '')} size={48} level="M" />
-                              </div>
-                              <div style={{ textAlign: 'center', width: '42px' }}>
-                                <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                                  <img src="/principal-sign.png" alt="Principal" style={{ maxHeight: '14px', maxWidth: '42px', display: 'none' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }} />
-                                </div>
-                                <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Principal</span>
+                                <QRCodeSVG value={String(student.rollNo || '')} size={64} level="M" />
                               </div>
                             </div>
                           </div>

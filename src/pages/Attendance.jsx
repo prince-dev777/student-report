@@ -3137,39 +3137,20 @@ export default function Attendance() {
                                                     </div>
                                                   </div>
 
-                                                  {/* Bottom Bar: Signatures & Scannable QR (Enlarged & Shifted Upward) */}
-                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '2px 0 2px', padding: '0 2px' }}>
-                                                    <div style={{ textAlign: 'center', width: isCompact ? '42px' : '50px' }}>
-                                                      <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px' }}></div>
-                                                      <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Issue Auth</span>
-                                                    </div>
-
-                                                    {/* Prominent High-Scan QR Code (Shifted Upwards & Enlarged) */}
+                                                  {/* Bottom Bar: Centered Large Scannable QR (High Visibility) */}
+                                                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '3px 0 2px' }}>
                                                     <div style={{
                                                       display: 'flex',
                                                       alignItems: 'center',
                                                       justifyContent: 'center',
                                                       background: '#ffffff',
-                                                      padding: '3px',
-                                                      borderRadius: '6px',
-                                                      border: '1.5px solid #93c5fd',
-                                                      boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                                                      padding: isCompact ? '4px' : '5px',
+                                                      borderRadius: '8px',
+                                                      border: '2px solid #93c5fd',
+                                                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.12)',
                                                       marginBottom: '1px'
                                                     }}>
-                                                      <QRCodeSVG value={String(st.rollNo || st.id)} size={isCompact ? 60 : 70} level="M" />
-                                                    </div>
-
-                                                    <div style={{ textAlign: 'center', width: isCompact ? '42px' : '50px' }}>
-                                                      <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                                                        <img
-                                                          src="/principal-sign.png"
-                                                          alt="Principal"
-                                                          style={{ maxHeight: '14px', maxWidth: '44px', display: 'none' }}
-                                                          onError={(e) => e.target.style.display = 'none'}
-                                                          onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }}
-                                                        />
-                                                      </div>
-                                                      <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Principal</span>
+                                                      <QRCodeSVG value={String(st.rollNo || st.id)} size={isCompact ? 76 : 88} level="M" />
                                                     </div>
                                                   </div>
                                                 </div>
@@ -3499,39 +3480,20 @@ export default function Attendance() {
                                       </div>
                                     </div>
 
-                                    {/* Bottom Bar: Signatures & Scannable QR (Enlarged & Shifted Upward) */}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '2px 0 2px', padding: '0 2px' }}>
-                                      <div style={{ textAlign: 'center', width: '50px' }}>
-                                        <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px' }}></div>
-                                        <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Issue Auth</span>
-                                      </div>
-
-                                      {/* High Scan QR (Enlarged & Shifted Upward) */}
+                                    {/* Bottom Bar: Centered Large Scannable QR (High Visibility) */}
+                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '3px 0 2px' }}>
                                       <div style={{
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         background: '#ffffff',
-                                        padding: '3px',
-                                        borderRadius: '6px',
-                                        border: '1.5px solid #93c5fd',
-                                        boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                                        padding: '5px',
+                                        borderRadius: '8px',
+                                        border: '2px solid #93c5fd',
+                                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.12)',
                                         marginBottom: '1px'
                                       }}>
-                                        <QRCodeSVG value={String(st.rollNo || st.id)} size={70} level="M" />
-                                      </div>
-
-                                      <div style={{ textAlign: 'center', width: '50px' }}>
-                                        <div style={{ width: '100%', borderBottom: '1px solid #94a3b8', marginBottom: '2px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                                          <img
-                                            src="/principal-sign.png"
-                                            alt="Principal"
-                                            style={{ maxHeight: '14px', maxWidth: '44px', display: 'none' }}
-                                            onError={(e) => e.target.style.display = 'none'}
-                                            onLoad={(e) => { e.target.style.display = 'block'; e.target.parentElement.style.borderBottom = 'none'; }}
-                                          />
-                                        </div>
-                                        <span style={{ fontSize: '0.48rem', color: '#64748b', fontWeight: 600 }}>Principal</span>
+                                        <QRCodeSVG value={String(st.rollNo || st.id)} size={88} level="M" />
                                       </div>
                                     </div>
                                   </div>
