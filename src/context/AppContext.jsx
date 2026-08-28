@@ -390,17 +390,6 @@ export function AppProvider({ children }) {
           }
         });
         toast.success(`✅ Attendance sync: ${type === 'entry' ? 'Entry' : 'Exit'} marked.`);
-        
-        // Trigger SMS and update log with correct session name
-        sendAttendanceSMS(student, type, currentTime, instName, saved.sessionName).then(async (smsLog) => {
-          try {
-            const savedLog = await api.createSMSLog(smsLog);
-            setSMSHistory((h) => [savedLog, ...h]);
-          } catch (e) {
-            console.error('Failed to save SMS log to backend', e);
-          }
-        });
-        
         return;
       } catch (err) {
         console.error(err);

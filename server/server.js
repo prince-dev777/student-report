@@ -2196,6 +2196,7 @@ app.post('/api/attendance', async (req, res) => {
           studentId: student.id,
           parentPhone: student.parentPhone,
           studentName: student.name,
+          parentName: student.parentName,
           type: 'ABSENT',
           detail: date
         }).catch(err => console.error('Failed to send absent WhatsApp alert:', err.message));
@@ -2224,6 +2225,7 @@ app.post('/api/attendance', async (req, res) => {
             studentId: student.id,
             parentPhone: student.parentPhone,
             studentName: student.name,
+            parentName: student.parentName,
             type: 'IN',
             detail: `${entryTime}${sessionCtx}`
           }).catch(err => console.error('Failed to send entry WhatsApp alert:', err.message));
@@ -2250,6 +2252,7 @@ app.post('/api/attendance', async (req, res) => {
             studentId: student.id,
             parentPhone: student.parentPhone,
             studentName: student.name,
+            parentName: student.parentName,
             type: 'OUT',
             detail: `${exitTime}${durationStr}`
           }).catch(err => console.error('Failed to send exit WhatsApp alert:', err.message));

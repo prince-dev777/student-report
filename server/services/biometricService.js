@@ -358,6 +358,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
           studentId: student.id,
           parentPhone: student.parentPhone,
           studentName: student.name,
+          parentName: student.parentName,
           type: type,
           detail: `${formattedTime}${type === 'IN' ? sessionCtx : durationStr}`
         }).catch((err) => console.warn('[Biometric] WhatsApp alert warning:', err.message));

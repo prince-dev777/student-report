@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "enabled": false,
   "coachingName": "Career Xone",
   "welcomeHeader": "Namaste! Welcome to Career Xone Intelligent Academic Assistant.",
   "counselingPhone1": "9673383561",
@@ -15,5 +15,5 @@
   "enableLeaveLogger": true,
   "enableLocationGuide": true,
   "customFaqs": [],
-  "totalLogsCount": 0
+  "totalLogsCount": 1
 }

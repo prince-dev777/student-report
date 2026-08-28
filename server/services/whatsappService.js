@@ -12,18 +12,19 @@ import { sendWhatsAppMessageWeb, getWhatsAppClientState } from './whatsappClient
  * @param {string} type - 'IN' | 'OUT' | 'ABSENT' | 'TEST_RESULT' | 'WELCOME'
  * @param {string|object} detail - time (for IN/OUT), date (for ABSENT), or object with marks info (for TEST_RESULT)
  */
-export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, type, detail }) {
+export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail }) {
   const provider = (process.env.WHATSAPP_PROVIDER || 'mock').toLowerCase();
   let status = 'sent';
 
   // Build message text based on type
+  const pName = parentName || 'Parent';
   let messageText;
   if (type === 'IN') {
-    messageText = `Dear Parent, this is to inform you that your ward ${studentName} has safely arrived at the institute at ${detail}. - Career Xone`;
+    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} has safely arrived at the institute at ${detail}. - Career Xone`;
   } else if (type === 'OUT') {
-    messageText = `Dear Parent, this is to inform you that your ward ${studentName} has left the institute at ${detail}. - Career Xone`;
+    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} has left the institute at ${detail}. - Career Xone`;
   } else if (type === 'ABSENT') {
-    messageText = `Dear Parent, this is to inform you that your ward ${studentName} is absent from the institute today (${detail}). - Career Xone`;
+    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} is absent from the institute today (${detail}). - Career Xone`;
   } else if (type === 'TEST_RESULT' && typeof detail === 'object') {
     const portalUrl = 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
     const percent = detail.percentage ?? (detail.totalMarks ? Math.round((Number(detail.marks) / detail.totalMarks) * 1000) / 10 : 0);
