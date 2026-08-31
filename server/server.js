@@ -1991,18 +1991,28 @@ app.post('/api/attendance', async (req, res) => {
           
           // check if entryTime falls within session window (allow 30 min buffer before start)
           if (entryMin >= startMin - 30 && entryMin <= endMin) {
-            // Check student matching
-            const sBatchId = sess.batchId || 'all';
-            const sClassName = sess.className || 'all';
-            
-            let matchesBatch = sBatchId === 'all' || (student && sBatchId === student.batch);
-            let matchesClass = sClassName === 'all' || (student && sClassName === student.class);
-            
+            // Check multi-course and multi-class student matching
+            let matchesBatch = true;
+            if (Array.isArray(sess.batchIds) && sess.batchIds.length > 0) {
+              matchesBatch = student && sess.batchIds.includes(student.batch);
+            } else if (sess.batchId && sess.batchId !== 'all') {
+              const bList = sess.batchId.split(',').map(b => b.trim());
+              matchesBatch = student && bList.includes(student.batch);
+            }
+
+            let matchesClass = true;
+            if (Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) {
+              matchesClass = student && sess.targetClasses.includes(student.class);
+            } else if (sess.className && sess.className !== 'all') {
+              const cList = sess.className.split(',').map(c => c.trim());
+              matchesClass = student && cList.includes(student.class);
+            }
+
             if (matchesBatch && matchesClass) {
               // Calculate score to prefer more specific sessions
               let score = 0;
-              if (sBatchId !== 'all') score += 1;
-              if (sClassName !== 'all') score += 1;
+              if ((Array.isArray(sess.batchIds) && sess.batchIds.length > 0) || (sess.batchId && sess.batchId !== 'all')) score += 1;
+              if ((Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) || (sess.className && sess.className !== 'all')) score += 1;
               
               if (score > bestScore) {
                 bestScore = score;
