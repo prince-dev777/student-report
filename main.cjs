@@ -72,10 +72,102 @@ function killMongo() {
   });
 }
 
+const splashHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: radial-gradient(circle at 50% 35%, #1e293b, #0f172a 85%);
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      overflow: hidden;
+    }
+    .logo-box {
+      width: 76px;
+      height: 76px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 28px -4px rgba(59, 130, 246, 0.55);
+      margin-bottom: 20px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .logo-text {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 6px;
+      background: linear-gradient(to right, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 22px;
+    }
+    .spinner-bar {
+      width: 170px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .spinner-inner {
+      width: 50px;
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, #6366f1);
+      border-radius: 999px;
+      position: absolute;
+      animation: slide 1.2s ease-in-out infinite;
+    }
+    @keyframes slide {
+      0% { left: -50px; }
+      100% { left: 170px; }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 10px 28px -4px rgba(59, 130, 246, 0.55); }
+      50% { transform: scale(1.05); box-shadow: 0 14px 32px -2px rgba(99, 102, 241, 0.65); }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-box">
+    <div class="logo-text">CX</div>
+  </div>
+  <h1>Career Xone Pro</h1>
+  <p>Starting background server & database...</p>
+  <div class="spinner-bar">
+    <div class="spinner-inner"></div>
+  </div>
+</body>
+</html>
+`;
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    backgroundColor: '#0f172a',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -115,6 +207,9 @@ function createWindow() {
     } catch(e) {}
     mainWindow.loadURL('http://localhost:5173');
   } else {
+    // Show instant splash screen while backend server boots up
+    mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(splashHtml));
+
     // Retry loading from local Express server until port 5000 is ready
     const loadProductionApp = async () => {
       const http = require('http');
@@ -138,7 +233,9 @@ function createWindow() {
 
     loadProductionApp();
 
-    mainWindow.webContents.on('did-fail-load', () => {
+    mainWindow.webContents.on('did-fail-load', (event, errorCode) => {
+      // Don't retry on aborted data URLs
+      if (errorCode === -3) return;
       setTimeout(() => {
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.loadURL('http://localhost:5000');
@@ -396,12 +493,9 @@ app.whenReady().then(async () => {
     }
   });
 
+  createWindow();
+  createTray();
   await startServer();
-  // Wait a moment for server to start before creating window
-  setTimeout(() => {
-    createWindow();
-    createTray();
-  }, 3000);
 
   // Auto Updater Logic
   if (app.isPackaged) {

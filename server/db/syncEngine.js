@@ -128,11 +128,6 @@ export async function performFullSync() {
     return { success: false, error: 'Cloud Atlas not reachable' };
   }
 
-  // Pre-sync safeguard: Automatically clean and merge any duplicate records before pushing
-  try {
-    await mergeDuplicatesOnDb(mongoose.connection, 'LOCAL DB PRE-SYNC');
-  } catch (e) {}
-
   let totalPushed = 0;
   let totalPulled = 0;
   let totalPurged = 0;

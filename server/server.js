@@ -401,11 +401,6 @@ mongoose.connect(MONGODB_URI)
       console.error('Password reconstruction error:', pwErr);
     }
 
-    // Startup deduplication safeguard
-    try {
-      await mergeDuplicatesOnDb(mongoose.connection, 'LOCAL STARTUP');
-    } catch (e) {}
-
   })
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
@@ -2847,9 +2842,14 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
 
     fs.writeFileSync(tempArgsPath, JSON.stringify(jsonPayload));
 
-    const standaloneDirExe = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_bin', 'omr_engine_v2.exe');
-    const standaloneSingleExe = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_v2.exe');
-    const isPackaged = __dirname.includes('app.asar');
+    const possibleExePaths = [
+      path.join(__dirname, 'omr_engine_bin', 'omr_engine_v2.exe'),
+      path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_bin', 'omr_engine_v2.exe'),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'server', 'omr_engine_bin', 'omr_engine_v2.exe'),
+      path.join(__dirname, 'omr_engine_v2.exe'),
+      path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_v2.exe')
+    ];
+    const foundExePath = possibleExePaths.find(p => p && fs.existsSync(p));
 
     const spawnOptions = {
       cwd: __dirname,
@@ -2869,18 +2869,16 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
       }
     }
 
-    if (fs.existsSync(standaloneDirExe)) {
+    let pythonProcess;
+    if (foundExePath) {
       // 1. Standalone Binary Runtime (Works 100% on Boss & Client PCs with NO Python installed)
-      pythonProcess = spawn(standaloneDirExe, [tempArgsPath], {
-        cwd: path.dirname(standaloneDirExe),
+      pythonProcess = spawn(foundExePath, [tempArgsPath], {
+        cwd: path.dirname(foundExePath),
         env: { ...process.env }
       });
     } else if (pythonCmd && fs.existsSync(pythonScriptPath)) {
       // 2. Direct Python source (When Python runtime exists)
       pythonProcess = spawn(pythonCmd, [pythonScriptPath, tempArgsPath], spawnOptions);
-    } else if (fs.existsSync(standaloneSingleExe)) {
-      // 3. Fallback binary
-      pythonProcess = spawn(standaloneSingleExe, [tempArgsPath], spawnOptions);
     } else {
       pythonProcess = spawn(pythonCmd || 'python', [pythonScriptPath, tempArgsPath], spawnOptions);
     }
