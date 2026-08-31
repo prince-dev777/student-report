@@ -1730,7 +1730,9 @@ export default function ParentPortalWeb() {
                 </div>
                 <div>
                   <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>Biometric Machine</span>
-                  <strong style={{ fontSize: '0.80rem', color: '#16a34a' }}>Machine #1 (Verified ✅)</strong>
+                  <strong style={{ fontSize: '0.80rem', color: todayAttendance.status === 'PRESENT' ? '#16a34a' : '#64748b' }}>
+                    {todayAttendance.status === 'PRESENT' ? 'Machine #1 (Verified ✅)' : todayAttendance.status === 'ABSENT' ? 'Marked Absent' : 'Awaiting Punch ⏳'}
+                  </strong>
                 </div>
               </div>
             </div>

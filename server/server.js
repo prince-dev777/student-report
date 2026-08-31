@@ -72,7 +72,7 @@ import {
   mirrorWrite, 
   registerSSEBroadcaster 
 } from './db/syncEngine.js';
-import { uploadStudentPhoto } from './services/cloudinaryService.js';
+import { uploadStudentPhoto, uploadOMRScan } from './services/cloudinaryService.js';
 import { generateDatabaseSnapshot } from './services/jsonBackupService.js';
 import { mergeDuplicatesOnDb } from './db/duplicateCleaner.js';
 import {
@@ -1050,19 +1050,26 @@ app.post('/api/parent/login', async (req, res) => {
     const presentAtt = attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length;
     const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
 
-    // Fetch upcoming scheduled tests for student's batch
+    // Fetch upcoming scheduled tests for student's batch (future dates only)
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    const studentBatch = student.batch || '';
+    const batchFilters = [
+      { batch: studentBatch },
+      { batch: 'All' },
+      { batch: 'ALL' }
+    ];
+    if (studentBatch) {
+      batchFilters.push({ batch: new RegExp(studentBatch, 'i') });
+    }
+
     const upcomingTestsRaw = await Test.find({
       isDeleted: { $ne: true },
       instituteId: student.instituteId,
-      $or: [
-        { batch: student.batch },
-        { batch: 'All' },
-        { batch: 'ALL' },
-        { batch: '' }
-      ]
+      date: { $gte: todayDateStr },
+      $or: batchFilters
     })
       .sort({ date: 1 })
-      .limit(10);
+      .limit(6);
 
     const upcomingTests = upcomingTestsRaw.map(t => ({
       id: t.id,
@@ -2531,19 +2538,16 @@ app.post('/api/test-results/bulk', authenticateToken, async (req, res) => {
         return res.status(404).json({ error: `Test not found for id ${r.testId}` });
       }
 
-      // Check if uploading a base64 OMR image
-      if (r.omrSheetImage && r.omrSheetImage.startsWith('data:image')) {
-        if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-          try {
-            const uploadRes = await cloudinary.uploader.upload(r.omrSheetImage, {
-              folder: 'student_report_omr',
-              format: 'jpg'
-            });
-            r.omrSheetImage = uploadRes.secure_url;
-            r.omrSheetPublicId = uploadRes.public_id;
-          } catch (err) {
-            console.error('Cloudinary upload error:', err.message);
+      // Upload OMR image to Cloudinary (for both base64 and local disk scans)
+      if (r.omrSheetImage && !r.omrSheetImage.startsWith('http')) {
+        try {
+          const uploaded = await uploadOMRScan(r.omrSheetImage, `${test.id}_${r.studentId || r.rollNo}`);
+          if (uploaded && uploaded.url) {
+            r.omrSheetImage = uploaded.url;
+            r.omrSheetPublicId = uploaded.publicId;
           }
+        } catch (err) {
+          console.error('Cloudinary OMR upload error:', err.message);
         }
       }
 

@@ -3,6 +3,7 @@ import { getLocalDb, getLocalCollection, isLocalDbReady } from './localDb.js';
 import { connectCloudDb, getCloudDb, getCloudCollection, isCloudDbAvailable } from './cloudDb.js';
 import { ALL_COLLECTIONS } from '../services/jsonBackupService.js';
 import { logInfo, logError, logWarn } from '../utils/logger.js';
+import { uploadOMRScan } from '../services/cloudinaryService.js';
 import fs from 'fs';
 import path from 'path';
 import { mergeDuplicatesOnDb } from './duplicateCleaner.js';
@@ -178,6 +179,21 @@ export async function performFullSync() {
 
         // 3. Push Active Local Docs to Cloud Atlas (Upsert)
         if (activeLocalDocs.length > 0) {
+          if (collName === 'testresults') {
+            for (const doc of activeLocalDocs) {
+              if (doc.omrSheetImage && !doc.omrSheetImage.startsWith('http')) {
+                try {
+                  const res = await uploadOMRScan(doc.omrSheetImage, `${doc.testId}_${doc.studentId || doc.rollNo}`);
+                  if (res && res.url) {
+                    doc.omrSheetImage = res.url;
+                    doc.omrSheetPublicId = res.publicId;
+                    await localColl.updateOne({ _id: doc._id }, { $set: { omrSheetImage: res.url, omrSheetPublicId: res.publicId } }).catch(() => {});
+                  }
+                } catch (omrErr) {}
+              }
+            }
+          }
+
           for (let i = 0; i < activeLocalDocs.length; i += 500) {
             const batch = activeLocalDocs.slice(i, i + 500).map(doc => ({
               replaceOne: {

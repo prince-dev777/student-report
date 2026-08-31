@@ -81,20 +81,48 @@ export async function uploadInstituteLogo(logoData) {
   }
 }
 
-export async function uploadOMRScan(localFilePath) {
-  if (!localFilePath || !fs.existsSync(localFilePath)) return null;
+export async function uploadOMRScan(imageInput, identifier = '') {
+  if (!imageInput || typeof imageInput !== 'string') return null;
+  if (imageInput.startsWith('http://') || imageInput.startsWith('https://')) {
+    return { url: imageInput, publicId: null };
+  }
 
   try {
-    const uploadRes = await cloudinary.uploader.upload(localFilePath, {
+    initCloudinary();
+    let fileToUpload = imageInput;
+
+    if (!imageInput.startsWith('data:image')) {
+      const rel = imageInput.replace(/^\/+/, '');
+      const candidates = [
+        path.join(process.cwd(), 'server', rel),
+        path.join(process.cwd(), rel),
+        path.join(__dirname, '..', '..', rel),
+        path.join(__dirname, '..', rel),
+        path.join(__dirname, '..', 'uploads', 'omr', path.basename(rel))
+      ];
+      const found = candidates.find(p => fs.existsSync(p));
+      if (!found) {
+        logWarn('CLOUDINARY', `Local OMR file not found on disk: ${imageInput}`);
+        return null;
+      }
+      fileToUpload = found;
+    }
+
+    const publicId = identifier ? `omr_${identifier}_${Date.now()}` : `omr_${Date.now()}`;
+    const uploadRes = await cloudinary.uploader.upload(fileToUpload, {
       folder: 'student_report_omr',
+      public_id: publicId,
+      overwrite: true,
       format: 'jpg'
     });
+
+    logInfo('CLOUDINARY', `✅ Uploaded OMR to Cloudinary: ${uploadRes.secure_url}`);
     return {
       url: uploadRes.secure_url,
       publicId: uploadRes.public_id
     };
   } catch (err) {
-    logWarn('CLOUDINARY', `Failed to upload OMR: ${err.message}`);
+    logWarn('CLOUDINARY', `Failed to upload OMR to Cloudinary: ${err.message}`);
     return null;
   }
 }
