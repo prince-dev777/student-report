@@ -168,6 +168,7 @@ export default function Attendance() {
   const [idCardShowAll, setIdCardShowAll] = useState(false);
   const [lastPunch, setLastPunch] = useState(null);
   const [lastScannedMap, setLastScannedMap] = useState({});
+  const [showKioskSuggestions, setShowKioskSuggestions] = useState(false);
   const lastSeenBiometricEventIdRef = useRef(null);
   const kioskInputRef = useRef(null);
 
@@ -595,6 +596,21 @@ export default function Attendance() {
     [students]
   );
 
+  // 🔍 Live Kiosk Autocomplete Suggestions
+  const kioskSuggestions = useMemo(() => {
+    const q = kioskCode.trim().toLowerCase();
+    if (!q || q.length < 1) return [];
+    return activeStudents
+      .filter((s) => {
+        const name = (s.name || '').toLowerCase();
+        const roll = String(s.rollNo || '').toLowerCase();
+        const phone = String(s.phone || s.parentPhone || '').toLowerCase();
+        const batch = String(s.batch || s.targetClass || '').toLowerCase();
+        return name.includes(q) || roll.includes(q) || phone.includes(q) || batch.includes(q);
+      })
+      .slice(0, 8);
+  }, [kioskCode, activeStudents]);
+
   // Live clock
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -947,51 +963,58 @@ export default function Attendance() {
   };
 
   // ⚡ Kiosk Scan Submission Handler (USB Tabletop Scanner + Manual)
-  const handleKioskScan = (e) => {
+  const handleKioskScan = (e, studentOverride = null) => {
     if (e) e.preventDefault();
-    const raw = String(kioskCode || '').trim();
-    if (!raw) return;
-
-    setKioskCode('');
-
-    // 1. Check if raw is JSON (from formatted QR cards)
-    let extractedRoll = raw;
-    try {
-      if (raw.startsWith('{') && raw.endsWith('}')) {
-        const parsed = JSON.parse(raw);
-        extractedRoll = String(parsed.rollNo || parsed.roll || parsed.id || parsed.studentId || raw);
-      }
-    } catch (err) {}
-
-    // 2. Check if raw is URL
-    if (extractedRoll.startsWith('http://') || extractedRoll.startsWith('https://')) {
-      try {
-        const u = new URL(extractedRoll);
-        const parts = u.pathname.split('/').filter(Boolean);
-        extractedRoll = u.searchParams.get('roll') || u.searchParams.get('id') || parts[parts.length - 1] || extractedRoll;
-      } catch (err) {}
-    }
-
-    extractedRoll = extractedRoll.trim();
-
-    // 3. Find matching student (by rollNo, id, name, or phone)
-    const target = extractedRoll.toLowerCase();
-    const matchedStudent = activeStudents.find((s) => {
-      const r = String(s.rollNo || '').trim().toLowerCase();
-      const id = String(s.id || '').trim().toLowerCase();
-      const phone = String(s.phone || s.parentPhone || '').trim();
-      return r === target || id === target || phone === target;
-    }) || activeStudents.find((s) => {
-      const rNum = parseInt(s.rollNo, 10);
-      const targetNum = parseInt(extractedRoll, 10);
-      return !isNaN(rNum) && !isNaN(targetNum) && rNum === targetNum;
-    });
+    let matchedStudent = studentOverride;
 
     if (!matchedStudent) {
-      if (soundEnabled) playKioskSound('error');
-      toast.error(`❌ Student not found for Roll/QR: "${extractedRoll}"`);
-      return;
+      const raw = String(kioskCode || '').trim();
+      if (!raw) return;
+
+      // 1. Check if raw is JSON (from formatted QR cards)
+      let extractedRoll = raw;
+      try {
+        if (raw.startsWith('{') && raw.endsWith('}')) {
+          const parsed = JSON.parse(raw);
+          extractedRoll = String(parsed.rollNo || parsed.roll || parsed.id || parsed.studentId || raw);
+        }
+      } catch (err) {}
+
+      // 2. Check if raw is URL
+      if (extractedRoll.startsWith('http://') || extractedRoll.startsWith('https://')) {
+        try {
+          const u = new URL(extractedRoll);
+          const parts = u.pathname.split('/').filter(Boolean);
+          extractedRoll = u.searchParams.get('roll') || u.searchParams.get('id') || parts[parts.length - 1] || extractedRoll;
+        } catch (err) {}
+      }
+
+      extractedRoll = extractedRoll.trim();
+
+      // 3. Find matching student (by rollNo, id, name, or phone)
+      const target = extractedRoll.toLowerCase();
+      matchedStudent = activeStudents.find((s) => {
+        const r = String(s.rollNo || '').trim().toLowerCase();
+        const id = String(s.id || '').trim().toLowerCase();
+        const phone = String(s.phone || s.parentPhone || '').trim();
+        return r === target || id === target || phone === target;
+      }) || activeStudents.find((s) => {
+        const rNum = parseInt(s.rollNo, 10);
+        const targetNum = parseInt(extractedRoll, 10);
+        return !isNaN(rNum) && !isNaN(targetNum) && rNum === targetNum;
+      }) || activeStudents.find((s) => {
+        return (s.name || '').toLowerCase().includes(target);
+      });
+
+      if (!matchedStudent) {
+        if (soundEnabled) playKioskSound('error');
+        toast.error(`❌ Student not found for Roll/QR: "${extractedRoll}"`);
+        return;
+      }
     }
+
+    setKioskCode('');
+    setShowKioskSuggestions(false);
 
     // 4. Anti-spam 15-second debounce check
     const now = Date.now();
@@ -3175,7 +3198,7 @@ export default function Attendance() {
                 </div>
 
                 {/* Always-Focused Hardware Scanner Input Bar */}
-                <form onSubmit={handleKioskScan} style={{ position: 'relative' }}>
+                <form onSubmit={handleKioskScan} style={{ position: 'relative', zIndex: 120 }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -3191,8 +3214,12 @@ export default function Attendance() {
                       ref={kioskInputRef}
                       type="text"
                       value={kioskCode}
-                      onChange={(e) => setKioskCode(e.target.value)}
-                      placeholder="Flash QR code or type Roll Number (e.g. 101)..."
+                      onChange={(e) => {
+                        setKioskCode(e.target.value);
+                        setShowKioskSuggestions(true);
+                      }}
+                      onFocus={() => setShowKioskSuggestions(true)}
+                      placeholder="Type student name, Roll No (e.g. 101), or flash QR..."
                       autoFocus
                       style={{
                         flex: 1,
@@ -3202,13 +3229,16 @@ export default function Attendance() {
                         fontSize: '1.05rem',
                         fontWeight: 700,
                         color: 'var(--text-primary)',
-                        fontFamily: 'monospace'
+                        fontFamily: 'inherit'
                       }}
                     />
                     {kioskCode && (
                       <button
                         type="button"
-                        onClick={() => setKioskCode('')}
+                        onClick={() => {
+                          setKioskCode('');
+                          setShowKioskSuggestions(false);
+                        }}
                         style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 4 }}
                       >
                         <X size={16} />
@@ -3237,6 +3267,139 @@ export default function Attendance() {
                       <span>Punch</span>
                     </button>
                   </div>
+
+                  {/* 🔍 LIVE AUTOCOMPLETE SUGGESTION DROPDOWN */}
+                  {showKioskSuggestions && kioskCode.trim().length >= 1 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      left: 0,
+                      right: 0,
+                      background: 'var(--surface-color, #ffffff)',
+                      border: '1.5px solid var(--border-color, #cbd5e1)',
+                      borderRadius: 16,
+                      boxShadow: '0 15px 35px rgba(0,0,0,0.18)',
+                      zIndex: 1000,
+                      overflow: 'hidden',
+                      maxHeight: '340px',
+                      overflowY: 'auto'
+                    }}>
+                      <div style={{
+                        padding: '8px 14px',
+                        background: 'var(--bg-color, #f8fafc)',
+                        borderBottom: '1px solid var(--border-color, #e2e8f0)',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        color: 'var(--text-secondary, #64748b)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <span>STUDENT MATCHES ({kioskSuggestions.length})</span>
+                        <span>Click student or press Enter to Punch</span>
+                      </div>
+
+                      {kioskSuggestions.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary, #64748b)', fontSize: '0.86rem' }}>
+                          No active students found matching "{kioskCode}"
+                        </div>
+                      ) : (
+                        kioskSuggestions.map((s, idx) => {
+                          const todayRec = todayRecords.find(r => r.studentId === s.id);
+                          const isCheckedIn = todayRec && todayRec.entryTime && !todayRec.exitTime;
+                          const isCompleted = todayRec && todayRec.entryTime && todayRec.exitTime;
+
+                          return (
+                            <div
+                              key={s.id}
+                              onClick={() => handleKioskScan(null, s)}
+                              style={{
+                                padding: '10px 14px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 12,
+                                borderBottom: '1px solid var(--border-color-light, #f1f5f9)',
+                                cursor: 'pointer',
+                                transition: 'background 0.15s ease',
+                                background: idx === 0 ? 'rgba(59, 130, 246, 0.05)' : 'transparent'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = idx === 0 ? 'rgba(59, 130, 246, 0.05)' : 'transparent'}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                                {s.photo ? (
+                                  <img src={s.photo} alt={s.name} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                                ) : (
+                                  <div style={{
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                                    color: '#ffffff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 800,
+                                    fontSize: '0.78rem'
+                                  }}>
+                                    {getInitials(s.name)}
+                                  </div>
+                                )}
+                                <div style={{ minWidth: 0 }}>
+                                  <div style={{ fontWeight: 800, fontSize: '0.90rem', color: 'var(--text-primary, #0f172a)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                                    <span style={{ fontSize: '0.72rem', padding: '1px 7px', borderRadius: 10, background: '#eff6ff', color: '#2563eb', fontWeight: 800, border: '1px solid #bfdbfe', flexShrink: 0 }}>
+                                      Roll: {s.rollNo}
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary, #64748b)', marginTop: 2 }}>
+                                    {s.class || s.batch || s.targetClass || 'General'} {s.phone || s.parentPhone ? `• 📞 ${s.phone || s.parentPhone}` : ''}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                <span style={{
+                                  fontSize: '0.70rem',
+                                  padding: '3px 8px',
+                                  borderRadius: 12,
+                                  fontWeight: 800,
+                                  background: isCheckedIn ? 'rgba(16, 185, 129, 0.12)' : isCompleted ? 'rgba(59, 130, 246, 0.12)' : 'rgba(148, 163, 184, 0.15)',
+                                  color: isCheckedIn ? '#10b981' : isCompleted ? '#2563eb' : '#64748b'
+                                }}>
+                                  {isCheckedIn ? '🟢 In Institute' : isCompleted ? '🔵 Exited' : '⚪ Not Checked In'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleKioskScan(null, s);
+                                  }}
+                                  style={{
+                                    padding: '5px 12px',
+                                    borderRadius: 8,
+                                    background: '#3b82f6',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    fontWeight: 800,
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4
+                                  }}
+                                >
+                                  <Zap size={12} />
+                                  Punch
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
 
                   <div style={{
                     display: 'flex',

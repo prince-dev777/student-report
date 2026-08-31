@@ -8,8 +8,9 @@
   "main": "main.cjs",
   "scripts": {
     "dev": "vite",
-    "audit": "node scripts/audit-codebase.js",
-    "build": "node scripts/audit-codebase.js && vite build && node copy-build-to-server.js",
+    "audit": "node scripts/audit-codebase.js && node scripts/verify_all_api.js",
+    "audit:master": "node scripts/master-production-audit.js",
+    "build": "node scripts/audit-codebase.js && node scripts/verify_all_api.js && vite build && node copy-build-to-server.js",
     "preview": "vite preview",
     "postinstall": "cd server && npm install --omit=dev && node download-mongodb.js && cd .. && npm run build",
     "electron:dev": "node scripts/pre-dev.js && concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",

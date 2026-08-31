@@ -292,14 +292,26 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
           const endMin = eH2 * 60 + eM2;
 
           if (entryMin >= startMin - 45 && entryMin <= endMin + 30) {
-            const sBatchId = sess.batchId || 'all';
-            const sClassName = sess.className || 'all';
-            let matchesBatch = sBatchId === 'all' || sBatchId === student.batch;
-            let matchesClass = sClassName === 'all' || sClassName === student.class;
+            let matchesBatch = true;
+            if (Array.isArray(sess.batchIds) && sess.batchIds.length > 0) {
+              matchesBatch = student && sess.batchIds.includes(student.batch);
+            } else if (sess.batchId && sess.batchId !== 'all') {
+              const bList = sess.batchId.split(',').map(b => b.trim());
+              matchesBatch = student && bList.includes(student.batch);
+            }
+
+            let matchesClass = true;
+            if (Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) {
+              matchesClass = student && sess.targetClasses.includes(student.class);
+            } else if (sess.className && sess.className !== 'all') {
+              const cList = sess.className.split(',').map(c => c.trim());
+              matchesClass = student && cList.includes(student.class);
+            }
+
             if (matchesBatch && matchesClass) {
               let score = 0;
-              if (sBatchId !== 'all') score += 1;
-              if (sClassName !== 'all') score += 1;
+              if ((Array.isArray(sess.batchIds) && sess.batchIds.length > 0) || (sess.batchId && sess.batchId !== 'all')) score += 1;
+              if ((Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) || (sess.className && sess.className !== 'all')) score += 1;
               if (score > bestScore) {
                 bestScore = score;
                 bestMatch = sess;
@@ -335,8 +347,12 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       await record.save();
 
       // Create in-app Notification
+      const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
+      const durationStr = record.durationMinutes ? ` (Duration: ${record.durationMinutes} mins)` : '';
+
+      // Create in-app Notification
       const title = type === 'IN' ? 'Check-In Alert' : 'Check-Out Alert';
-      const message = `${student.name} (Roll ${student.rollNo}) has checked ${type} at ${formattedTime}.`;
+      const message = `${student.name} (Roll ${student.rollNo}) has checked ${type} at ${formattedTime}${sessionCtx}${type === 'OUT' ? durationStr : ''}.`;
       try {
         const notification = new Notification({
           instituteId: resolvedInstituteId,
@@ -350,9 +366,6 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 
       // Trigger Parent WhatsApp Alert & Log to SMSLog DB collection
       if (student.parentPhone) {
-        const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
-        const durationStr = record.durationMinutes ? ` (Duration: ${record.durationMinutes} mins)` : '';
-
         sendWhatsAppAlert({
           instituteId: resolvedInstituteId,
           studentId: student.id,
@@ -360,7 +373,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
           studentName: student.name,
           parentName: student.parentName,
           type: type,
-          detail: `${formattedTime}${type === 'IN' ? sessionCtx : durationStr}`
+          detail: `${formattedTime}${sessionCtx}${type === 'OUT' ? durationStr : ''}`
         }).catch((err) => console.warn('[Biometric] WhatsApp alert warning:', err.message));
       }
 

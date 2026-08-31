@@ -279,7 +279,8 @@ export default function App() {
           } />
         </Routes>
         <Toaster
-          position="bottom-right"
+          position="top-center"
+          containerStyle={{ zIndex: 999999999 }}
           toastOptions={{
             duration: 3000,
             style: {

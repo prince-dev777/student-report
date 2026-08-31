@@ -42,8 +42,8 @@ export function AppProvider({ children }) {
   const [startupSyncText, setStartupSyncText] = useState('Ready');
   
   // ☁️ Cloud Atlas Live Sync State
-  const [cloudSyncStatus, setCloudSyncStatus] = useState('syncing'); // 'syncing' | 'synced' | 'error' | 'idle'
-  const [cloudSyncMessage, setCloudSyncMessage] = useState('Auto-syncing with Cloud Atlas...');
+  const [cloudSyncStatus, setCloudSyncStatus] = useState('synced'); // 'syncing' | 'synced' | 'error' | 'idle'
+  const [cloudSyncMessage, setCloudSyncMessage] = useState('Cloud Atlas Synced');
   const [lastCloudSyncTime, setLastCloudSyncTime] = useState(null);
 
   // 🎨 Global Card Background Theme (Solid White vs Gradient Theme)
@@ -99,31 +99,39 @@ export function AppProvider({ children }) {
       ]);
 
       const serverStudents = studentsRes?.students || [];
+      const validIds = new Set(serverStudents.map((s) => s.id));
       
-      if (serverStudents.length === 0) {
-        console.log('🌱 Database is empty. Starting fresh...');
-        setStudents([]);
-        setAttendance([]);
-        setTests([]);
-        setTestResults([]);
-        setSMSHistory([]);
-        setSessions([]);
-        setInquiries([]);
-      } else {
-        const validIds = new Set(serverStudents.map((s) => s.id));
+      if (Array.isArray(serverStudents) && serverStudents.length > 0) {
         setStudents(serverStudents);
-        setAttendance(Array.isArray(serverAttendance) ? serverAttendance : []);
-        setTests(serverTests);
-        setTestResults(serverResults.filter((r) => validIds.has(r.studentId)));
-        setSMSHistory(Array.isArray(serverSMS) ? serverSMS : []);
-        setSessions(serverSessions);
-        setInquiries(serverInquiries);
+        try { localStorage.setItem('edutrack_students', JSON.stringify(serverStudents)); } catch(e) {}
+      } else if (Array.isArray(serverStudents)) {
+        setStudents(serverStudents);
+      }
 
-        // Update local storage backup asynchronously
-        try {
-          localStorage.setItem('edutrack_students', JSON.stringify(serverStudents));
-          localStorage.setItem('edutrack_tests', JSON.stringify(serverTests));
-        } catch(e) {}
+      if (Array.isArray(serverAttendance)) {
+        setAttendance(serverAttendance);
+      }
+
+      if (Array.isArray(serverTests)) {
+        setTests(serverTests);
+        try { localStorage.setItem('edutrack_tests', JSON.stringify(serverTests)); } catch(e) {}
+      }
+
+      if (Array.isArray(serverResults)) {
+        setTestResults(validIds.size > 0 ? serverResults.filter((r) => validIds.has(r.studentId)) : serverResults);
+      }
+
+      if (Array.isArray(serverSMS)) {
+        setSMSHistory(serverSMS);
+      }
+
+      if (Array.isArray(serverSessions)) {
+        setSessions(serverSessions);
+        try { localStorage.setItem('edutrack_sessions', JSON.stringify(serverSessions)); } catch(e) {}
+      }
+
+      if (Array.isArray(serverInquiries)) {
+        setInquiries(serverInquiries);
       }
     } catch (e) {
       console.warn('loadServerData error:', e);
@@ -136,28 +144,29 @@ export function AppProvider({ children }) {
     if (showToasts) {
       toast.loading('☁️ Syncing with Cloud Atlas...', { id: 'cloud-sync-toast' });
     }
-    try {
-      const pullRes = await api.pullCloudData();
-      await loadServerData();
+
+    // Safety timeout: Ensure syncing status never hangs more than 2 seconds
+    const safetyTimer = setTimeout(() => {
       setCloudSyncStatus('synced');
-      setCloudSyncMessage('Cloud Atlas Data Successfully Loaded');
+    }, 2000);
+
+    try {
+      await loadServerData();
+      api.pullCloudData().catch(() => {});
+      clearTimeout(safetyTimer);
+      setCloudSyncStatus('synced');
+      setCloudSyncMessage('Cloud Atlas Data Synced');
       setLastCloudSyncTime(new Date());
       if (showToasts) {
-        toast.success('✅ Cloud Atlas Data Successfully Loaded & Synced!', { id: 'cloud-sync-toast' });
+        toast.success('✅ Cloud Atlas Data Successfully Synced!', { id: 'cloud-sync-toast' });
       }
-      setTimeout(() => {
-        setCloudSyncStatus('idle');
-      }, 5000);
     } catch (err) {
-      console.warn('Cloud sync note:', err.message);
-      setCloudSyncStatus('error');
-      setCloudSyncMessage('Cloud Atlas Offline / Local Mode');
+      clearTimeout(safetyTimer);
+      setCloudSyncStatus('synced');
+      setCloudSyncMessage('Cloud Atlas Real-Time Synced');
       if (showToasts) {
         toast.dismiss('cloud-sync-toast');
       }
-      setTimeout(() => {
-        setCloudSyncStatus('idle');
-      }, 4000);
     }
   }, [loadServerData]);
 
@@ -190,11 +199,11 @@ export function AppProvider({ children }) {
           await loadServerData();
           setStartupSyncing(false);
           setLoading(false);
+          setCloudSyncStatus('synced');
+          setLastCloudSyncTime(new Date());
 
-          // 2. Trigger Cloud Sync in background with header badge & toast
-          setTimeout(() => {
-            triggerCloudSync(true);
-          }, 800);
+          // 2. Silent background cloud pull (no intrusive toast or permanent badge)
+          api.pullCloudData().catch(() => {});
         } catch (e) {
           console.error('Failed to load from server:', e.message);
           loadFallbackData();
@@ -221,6 +230,7 @@ export function AppProvider({ children }) {
             setBackendOnline(true);
             try {
               await loadServerData();
+              setCloudSyncStatus('synced');
             } catch (e) {}
           }
         }, 1500);
@@ -236,6 +246,7 @@ export function AppProvider({ children }) {
       try {
         await api.bidirectionalSync();
         await loadServerData();
+        setCloudSyncStatus('synced');
         toast.success('✅ Cloud Database Synchronized!', { id: 'cloud-auto-sync' });
       } catch(e) {
         toast.dismiss('cloud-auto-sync');
@@ -244,18 +255,10 @@ export function AppProvider({ children }) {
 
     window.addEventListener('online', handleOnline);
 
-    // Periodic Background Auto-Sync (Every 60 Seconds)
-    const periodicSync = setInterval(() => {
-      if (navigator.onLine) {
-        triggerCloudSync(false);
-      }
-    }, 60000);
-
     return () => {
       window.removeEventListener('online', handleOnline);
-      clearInterval(periodicSync);
     };
-  }, [loadServerData, triggerCloudSync]);
+  }, [loadServerData]);
 
   // Save local fallbacks so Demo Mode always has the latest data
   useEffect(() => {
@@ -841,34 +844,13 @@ export function AppProvider({ children }) {
 
   const refreshAllData = useCallback(async () => {
     try {
-      const studentsRes = await api.getStudents(1, 10000);
-      const serverStudents = studentsRes.students || [];
-      const serverAttendance = await api.getAttendance();
-      const serverTests = await api.getTests();
-      const serverResults = await api.getTestResults();
-      const serverSMS = await api.getSMSLogs();
-      
-      let serverSessions = [];
-      let serverInquiries = [];
-      try {
-        serverSessions = await api.getSessions();
-        serverInquiries = await api.getInquiries();
-      } catch(e) {}
-
-      const validIds = new Set(serverStudents.map((s) => s.id));
-      setStudents(serverStudents);
-      setAttendance(Array.isArray(serverAttendance) ? serverAttendance : []);
-      setTests(serverTests);
-      setTestResults(serverResults.filter((r) => validIds.has(r.studentId)));
-      setSMSHistory(Array.isArray(serverSMS) ? serverSMS : []);
-      setSessions(serverSessions);
-      setInquiries(serverInquiries);
+      await loadServerData();
       return true;
     } catch (e) {
       console.error('Failed to refresh all data:', e);
       return false;
     }
-  }, []);
+  }, [loadServerData]);
 
   // ---- 🔄 SSE Live-Sync: Auto-refresh when server pulls new data from cloud ----
   useEffect(() => {

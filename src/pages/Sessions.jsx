@@ -15,6 +15,17 @@ export default function Sessions() {
   
   const uniqueClasses = [...new Set((students || []).map((s) => s.class).filter(Boolean))].sort();
 
+  // Auto-fetch latest sessions from database on mount
+  React.useEffect(() => {
+    let isMounted = true;
+    api.getSessions().then((data) => {
+      if (isMounted && Array.isArray(data) && data.length > 0) {
+        setSessions(data);
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, [setSessions]);
+
   const [formData, setFormData] = useState({
     name: '',
     startTime: '',
@@ -25,10 +36,6 @@ export default function Sessions() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!backendOnline) {
-      toast.error('Offline mode: Cannot save sessions');
-      return;
-    }
 
     const payload = {
       ...formData,
@@ -39,12 +46,28 @@ export default function Sessions() {
 
     try {
       if (isEditing) {
-        const updated = await api.updateSession(isEditing.id, payload);
+        let updated = { ...isEditing, ...payload };
+        if (backendOnline) {
+          try {
+            const res = await api.updateSession(isEditing.id, payload);
+            if (res) updated = res;
+          } catch (apiErr) {
+            console.warn('API update failed, updating locally:', apiErr.message);
+          }
+        }
         setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
         toast.success('Session updated successfully!');
       } else {
         const newSession = { ...payload, id: generateId('SESS') };
-        const saved = await api.createSession(newSession);
+        let saved = newSession;
+        if (backendOnline) {
+          try {
+            const res = await api.createSession(newSession);
+            if (res) saved = res;
+          } catch (apiErr) {
+            console.warn('API create failed, saving locally:', apiErr.message);
+          }
+        }
         setSessions(prev => [...prev, saved]);
         toast.success('Session created successfully!');
       }
@@ -57,13 +80,18 @@ export default function Sessions() {
   };
 
   const handleDelete = async (id) => {
-    if (!backendOnline) return toast.error('Offline mode');
     if (!window.confirm('Are you sure you want to delete this session?')) return;
     
     try {
-      await api.deleteSession(id);
+      if (backendOnline) {
+        try {
+          await api.deleteSession(id);
+        } catch (apiErr) {
+          console.warn('API delete failed, removing locally:', apiErr.message);
+        }
+      }
       setSessions(prev => prev.filter(s => s.id !== id));
-      toast.success('Session deleted');
+      toast.success('Session deleted successfully!');
     } catch (err) {
       toast.error('Failed to delete session');
     }

@@ -62,6 +62,7 @@ import {
   getCallLogs
 } from './services/voiceAiService.js';
 import { compilePdf } from './services/testSeriesPdfService.js';
+import { startSessionScheduler } from './services/sessionScheduler.js';
 import { logInfo, logError, getRecentLogs, getLogsDir } from './utils/logger.js';
 import { 
   performFullSync, 
@@ -132,6 +133,9 @@ app.get('/ping', (req, res) => {
 
 // 📡 Register Biometric Engine Routes (FK Web Protocol /hdata.aspx, ADMS /iclock/cdata, Staff & Student attendance)
 setupBiometricRoutes(app);
+
+// ⏰ Start Automated Session Rollover & Missed-Exit Monitor
+startSessionScheduler();
 
 // 🔄 24/7 Keep-Alive Self-Ping Service (Keeps Cloud Server awake)
 const CLOUD_APP_URL = process.env.CLOUD_APP_URL || process.env.VITE_API_BASE_URL?.replace('/api', '') || '';
@@ -1488,13 +1492,23 @@ app.get('/api/parent/notifications', async (req, res) => {
 
 
 // ---- 👨‍🎓 Students API ----
-app.get('/api/students', async (req, res) => {
+app.get('/api/students', authenticateToken, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10000;
     const search = req.query.search || '';
 
-    const query = { instituteId: req.user.instituteId, isDeleted: { $ne: true } };
+    let instId = req.user?.instituteId;
+    if (!instId) {
+      const defaultInst = await Institute.findOne({ isDeleted: { $ne: true } });
+      if (defaultInst) instId = defaultInst._id;
+    }
+
+    const query = { isDeleted: { $ne: true } };
+    if (instId) {
+      query.instituteId = instId;
+    }
+
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -1517,6 +1531,7 @@ app.get('/api/students', async (req, res) => {
       totalPages: Math.ceil(total / limit)
     });
   } catch (err) {
+    console.error('Error in GET /api/students:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1934,26 +1949,157 @@ app.delete('/api/students/:id', async (req, res) => {
   }
 });
 
-// ---- 🔐 Attendance API ----
-
-app.get('/api/attendance', async (req, res) => {
+// ---- 🏫 Classes Management API ----
+app.get('/api/classes', authenticateToken, async (req, res) => {
   try {
-    const records = await Attendance.find({ isDeleted: { $ne: true },  instituteId: req.user.instituteId });
-    res.json(records);
+    let instId = req.user?.instituteId;
+    if (!instId) {
+      const defaultInst = await Institute.findOne({ isDeleted: { $ne: true } });
+      if (defaultInst) instId = defaultInst._id;
+    }
+
+    const query = { isDeleted: { $ne: true } };
+    if (instId) query.instituteId = instId;
+
+    const students = await Student.find(query, 'class');
+    const classCountMap = {};
+
+    students.forEach(s => {
+      const cls = String(s.class || '').trim();
+      if (cls) {
+        classCountMap[cls] = (classCountMap[cls] || 0) + 1;
+      }
+    });
+
+    const classList = Object.entries(classCountMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    res.json({ success: true, classes: classList, totalClasses: classList.length });
   } catch (err) {
+    console.error('Error fetching classes:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/attendance', async (req, res) => {
+app.post('/api/classes/rename', authenticateToken, async (req, res) => {
+  try {
+    const oldName = String(req.body.oldName || '').trim();
+    const newName = String(req.body.newName || '').trim();
+
+    if (!oldName || !newName) {
+      return res.status(400).json({ error: 'Both oldName and newName are required.' });
+    }
+
+    if (oldName === newName) {
+      return res.status(400).json({ error: 'New class name must be different from current name.' });
+    }
+
+    let instId = req.user?.instituteId;
+    if (!instId) {
+      const defaultInst = await Institute.findOne({ isDeleted: { $ne: true } });
+      if (defaultInst) instId = defaultInst._id;
+    }
+
+    const query = {
+      isDeleted: { $ne: true },
+      class: oldName
+    };
+    if (instId) query.instituteId = instId;
+
+    const updateRes = await Student.updateMany(query, { $set: { class: newName } });
+
+    triggerBackgroundCloudSync();
+
+    res.json({
+      success: true,
+      message: `Successfully renamed class "${oldName}" to "${newName}"`,
+      modifiedCount: updateRes.modifiedCount || updateRes.nModified || 0,
+      oldName,
+      newName
+    });
+  } catch (err) {
+    console.error('Error renaming class:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/classes/merge', authenticateToken, async (req, res) => {
+  try {
+    const { sourceClasses, targetClass } = req.body;
+    const targetClassClean = String(targetClass || '').trim();
+
+    if (!Array.isArray(sourceClasses) || sourceClasses.length === 0 || !targetClassClean) {
+      return res.status(400).json({ error: 'sourceClasses array and targetClass are required.' });
+    }
+
+    let instId = req.user?.instituteId;
+    if (!instId) {
+      const defaultInst = await Institute.findOne({ isDeleted: { $ne: true } });
+      if (defaultInst) instId = defaultInst._id;
+    }
+
+    const query = {
+      isDeleted: { $ne: true },
+      class: { $in: sourceClasses }
+    };
+    if (instId) query.instituteId = instId;
+
+    const updateRes = await Student.updateMany(query, { $set: { class: targetClassClean } });
+
+    triggerBackgroundCloudSync();
+
+    res.json({
+      success: true,
+      message: `Successfully merged classes into "${targetClassClean}"`,
+      modifiedCount: updateRes.modifiedCount || updateRes.nModified || 0,
+      targetClass: targetClassClean
+    });
+  } catch (err) {
+    console.error('Error merging classes:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- 🔐 Attendance API ----
+
+app.get('/api/attendance', authenticateToken, async (req, res) => {
+  try {
+    let instId = req.user?.instituteId;
+    if (!instId) {
+      const defaultInst = await Institute.findOne({ isDeleted: { $ne: true } });
+      if (defaultInst) instId = defaultInst._id;
+    }
+
+    const query = { isDeleted: { $ne: true } };
+    if (instId) query.instituteId = instId;
+
+    const records = await Attendance.find(query).sort({ date: -1 });
+    res.json(records);
+  } catch (err) {
+    console.error('Error fetching attendance:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/attendance', authenticateToken, async (req, res) => {
   try {
     const { studentId, date, status, entryTime, exitTime, smsSent } = req.body;
+
+    let instId = req.user?.instituteId;
+    if (!instId) {
+      const defaultInst = await Institute.findOne({ isDeleted: { $ne: true } });
+      if (defaultInst) instId = defaultInst._id;
+    }
 
     let isNewEntry = false;
     let isNewExit = false;
 
     // Find if already exists for this institute
-    let record = await Attendance.findOne({ isDeleted: { $ne: true },  studentId, date, instituteId: req.user.instituteId });
+    const query = { isDeleted: { $ne: true }, studentId, date };
+    if (instId) query.instituteId = instId;
+
+    let record = await Attendance.findOne(query);
     if (record) {
       if (entryTime && !record.entryTime) isNewEntry = true;
       if (exitTime && !record.exitTime) isNewExit = true;
@@ -1967,7 +2113,7 @@ app.post('/api/attendance', async (req, res) => {
       if (entryTime) isNewEntry = true;
       if (exitTime) isNewExit = true;
 
-      record = new Attendance({ ...req.body, instituteId: req.user.instituteId });
+      record = new Attendance({ ...req.body, instituteId: instId });
       await record.save();
     }
 
@@ -2084,9 +2230,10 @@ app.post('/api/attendance', async (req, res) => {
 
       // 3. Exit Alert
       if (isNewExit) {
+        const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
         const durationStr = record.durationMinutes ? ` (Duration: ${record.durationMinutes} mins)` : '';
         const title = 'Check-Out Alert';
-        const message = `${student.name} has checked OUT at ${exitTime}${durationStr}.`;
+        const message = `${student.name} has checked OUT at ${exitTime}${sessionCtx}${durationStr}.`;
         
         await Notification.create({
           instituteId: req.user.instituteId,
@@ -2104,7 +2251,7 @@ app.post('/api/attendance', async (req, res) => {
             studentName: student.name,
             parentName: student.parentName,
             type: 'OUT',
-            detail: `${exitTime}${durationStr}`
+            detail: `${exitTime}${sessionCtx}${durationStr}`
           }).catch(err => console.error('Failed to send exit WhatsApp alert:', err.message));
         }
       }
@@ -2707,45 +2854,50 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
       await r.save();
       publishCount++;
 
-      if (sendSMS) {
-        const student = await Student.findOne({ 
-          isDeleted: { $ne: true },  
-          $or: [
-            { id: r.studentId },
-            { rollNo: isNaN(r.studentId) ? -999999 : Number(r.studentId) },
-            { _id: mongoose.Types.ObjectId.isValid(r.studentId) ? r.studentId : null }
-          ], 
-          instituteId: req.user.instituteId 
-        });
-        if (student) {
+      const student = await Student.findOne({ 
+        isDeleted: { $ne: true },  
+        $or: [
+          { id: r.studentId },
+          { rollNo: isNaN(r.studentId) ? -999999 : Number(r.studentId) },
+          { _id: mongoose.Types.ObjectId.isValid(r.studentId) ? r.studentId : null }
+        ], 
+        instituteId: req.user.instituteId 
+      });
+
+      if (student) {
+        // In-App Notification: Always created so parents see it in the Parents App
+        try {
           const notification = new Notification({
             instituteId: req.user.instituteId,
             studentId: student._id,
             title: 'Test Result Published',
-            message: `${student.name} scored ${r.marks}/${test.totalMarks} in ${test.subject}. Rank: ${r.rank}/${r.totalStudents}.`,
+            message: `${student.name} scored ${r.marks}/${test.totalMarks} in ${test.subject || test.name}. Rank: ${r.rank}/${r.totalStudents}.`,
             type: 'TEST_RESULT'
           });
           await notification.save();
+        } catch (notifErr) {
+          console.error('Failed to create in-app notification:', notifErr.message);
+        }
 
-          if (student.parentPhone) {
-            sendWhatsAppAlert({
-              instituteId: req.user.instituteId,
-              studentId: student.id,
-              parentPhone: student.parentPhone,
-              studentName: student.name,
-              type: 'TEST_RESULT',
-              detail: {
-                marks: r.marks,
-                totalMarks: r.totalMarks || test.totalMarks,
-                percentage: r.percentage,
-                subject: test.subject,
-                testName: test.name,
-                rank: r.rank,
-                totalStudents: r.totalStudents,
-                omrSheetImage: r.omrSheetImage
-              }
-            }).catch(err => console.error('Failed to send test result WhatsApp alert:', err.message));
-          }
+        // WhatsApp Parent Alert: Sent ONLY if user clicked "Publish & Send SMS"
+        if (sendSMS && student.parentPhone) {
+          sendWhatsAppAlert({
+            instituteId: req.user.instituteId,
+            studentId: student.id,
+            parentPhone: student.parentPhone,
+            studentName: student.name,
+            type: 'TEST_RESULT',
+            detail: {
+              marks: r.marks,
+              totalMarks: r.totalMarks || test.totalMarks,
+              percentage: r.percentage,
+              subject: test.subject,
+              testName: test.name,
+              rank: r.rank,
+              totalStudents: r.totalStudents,
+              omrSheetImage: r.omrSheetImage
+            }
+          }).catch(err => console.error('Failed to send test result WhatsApp alert:', err.message));
         }
       }
     }

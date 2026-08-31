@@ -95,24 +95,36 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   const provider = (process.env.WHATSAPP_PROVIDER || 'mock').toLowerCase();
   let status = isMessagingPaused ? 'pending' : 'sent';
 
+  // Format current date in Indian style (DD-MM-YYYY)
+  const now = new Date();
+  const formattedDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+
   // Build message text based on type
   const pName = parentName || 'Parent';
   let messageText;
   if (type === 'IN') {
-    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} has safely arrived at the institute at ${detail}. - Career Xone`;
+    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} has safely arrived at the institute on ${formattedDate} at ${detail}. - Career Xone`;
   } else if (type === 'OUT') {
-    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} has left the institute at ${detail}. - Career Xone`;
+    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} has left the institute on ${formattedDate} at ${detail}. - Career Xone`;
   } else if (type === 'ABSENT') {
-    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} is absent from the institute today (${detail}). - Career Xone`;
+    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} is absent from the institute today on ${formattedDate} (${detail}). - Career Xone`;
   } else if (type === 'TEST_RESULT' && typeof detail === 'object') {
     const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
     const percent = detail.percentage ?? (detail.totalMarks ? Math.round((Number(detail.marks) / detail.totalMarks) * 1000) / 10 : 0);
-    messageText = `📊 *Test Result Announcement - Career Xone*\n\nDear Parent, your ward *${studentName}* has appeared for *${detail.testName || detail.subject || 'Exam'}*.\n\n🎯 *Marks Scored:* ${detail.marks}/${detail.totalMarks} (${percent}%)\n🏆 *Rank:* ${detail.rank || '-'}/${detail.totalStudents || '-'}\n\n📱 *View Complete Report & Scanned OMR Sheet:*\n🔗 ${portalUrl}\n\n- Career Xone (CX Career Academy)`;
+    messageText = `📊 *Test Result Announcement - Career Xone*\n\nDear Parent, your ward *${studentName}* has appeared for *${detail.testName || detail.subject || 'Exam'}* on ${formattedDate}.\n\n🎯 *Marks Scored:* ${detail.marks}/${detail.totalMarks} (${percent}%)\n🏆 *Rank:* ${detail.rank || '-'}/${detail.totalStudents || '-'}\n\n📱 *View Complete Report & Scanned OMR Sheet:*\n🔗 ${portalUrl}\n\n- Career Xone (CX Career Academy)`;
+  } else if (type === 'SESSION_CONTINUE') {
+    const prev = typeof detail === 'object' ? (detail.prevSession || 'Morning Class') : 'Morning Class';
+    const next = typeof detail === 'object' ? (detail.nextSession || 'Self Study') : (detail || 'Self Study');
+    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} did not check out after ${prev} and is continuing at the institute on ${formattedDate} for ${next}. - Career Xone`;
+  } else if (type === 'MISSED_EXIT') {
+    const sess = typeof detail === 'object' ? (detail.sessionName || 'Self Study') : (detail || 'the session');
+    const timeStr = typeof detail === 'object' && detail.time ? ` (${detail.time})` : '';
+    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} did not record a check-out punch on ${formattedDate} before the end of ${sess}${timeStr}. - Career Xone`;
   } else if (type === 'WELCOME') {
     const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
-    messageText = `🎉 Welcome to Career Xone!\n\n${studentName} has been registered successfully.\n\n📱 *Download/Access Parents App:*\n🔗 Link: ${portalUrl}\n\n*Login Credentials:*\nUser ID: ${detail.parentUserId}\nPassword: ${detail.parentPassword}\n\nPlease login to track attendance and test results regularly.`;
+    messageText = `🎉 Welcome to Career Xone!\n\n${studentName} has been registered successfully on ${formattedDate}.\n\n📱 *Download/Access Parents App:*\n🔗 Link: ${portalUrl}\n\n*Login Credentials:*\nUser ID: ${detail.parentUserId}\nPassword: ${detail.parentPassword}\n\nPlease login to track attendance and test results regularly.`;
   } else {
-    messageText = `Notification for ${studentName}: ${detail || 'No details provided.'}`;
+    messageText = `Notification for ${studentName} (${formattedDate}): ${detail || 'No details provided.'}`;
   }
 
   const phoneNumbers = parentPhone ? parentPhone.split(',').map(p => p.trim()).filter(Boolean) : [];
@@ -138,7 +150,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
           status = 'delivered';
           recordSentAlert(studentId, type, todayStr);
           console.log(`[WhatsAppService] Successfully sent WhatsApp message via local client to ${formattedPhone}`);
-      } else if (provider === 'ultramsg') {
+        } else if (provider === 'ultramsg') {
         const instanceId = process.env.WHATSAPP_INSTANCE_ID;
         const token = process.env.WHATSAPP_TOKEN;
 
@@ -194,9 +206,10 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       } else {
         status = 'pending';
       }
-    } catch (err) {
-      console.error('[WhatsAppService] Error sending WhatsApp message:', err.message);
-      status = 'failed';
+      } catch (err) {
+        console.error('[WhatsAppService] Error sending WhatsApp message:', err.message);
+        status = 'failed';
+      }
     }
   }
 

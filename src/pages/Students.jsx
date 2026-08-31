@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, animate } from 'framer-motion';
-import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X, FileSpreadsheet, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, SlidersHorizontal, Users, CheckCircle, AlertTriangle, X, FileSpreadsheet, ChevronLeft, ChevronRight, Download, Layers } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api } from '../utils/api';
 import { calcAttendancePercent, formatBatchName } from '../utils/helpers';
@@ -9,6 +9,7 @@ import { getAvatarClass, getInitials } from '../data/sampleData';
 import AddStudentModal from '../components/AddStudentModal';
 import StudentProfileModal from '../components/StudentProfileModal';
 import BulkUploadModal from '../components/BulkUploadModal';
+import ManageClassesModal from '../components/ManageClassesModal';
 import * as XLSX from 'xlsx';
 
 const AnimatedCounter = ({ to }) => {
@@ -29,7 +30,7 @@ const AnimatedCounter = ({ to }) => {
 };
 
 export default function Students() {
-  const { students, batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent, deleteStudentsBulk } = useApp();
+  const { students, batches, attendance, tests, testResults, smsHistory, addStudent, updateStudent, deleteStudent, deleteStudentsBulk, refreshAllData } = useApp();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState('all'); // 'all' | 'rollNo' | 'phone' | 'name' | 'parentName' | 'id'
@@ -39,6 +40,7 @@ export default function Students() {
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showClassManagerModal, setShowClassManagerModal] = useState(false);
 
   const getSearchPlaceholder = () => {
     switch (searchType) {
@@ -338,6 +340,10 @@ export default function Students() {
           <p className="page-subtitle">Enrolled students details, courses, classes, parents info, and attendance statistics.</p>
         </div>
         <div className="flex gap-12">
+          <button className="btn btn-secondary" onClick={() => setShowClassManagerModal(true)}>
+            <Layers size={18} />
+            Manage Classes
+          </button>
           <button className="btn btn-secondary" onClick={handleDownloadExcel}>
             <Download size={18} />
             Export Excel
@@ -940,8 +946,7 @@ export default function Students() {
             <div style={{
               background: 'rgba(239, 68, 68, 0.08)',
               border: '1px solid rgba(239, 68, 68, 0.25)',
-              borderRadius: '12px',
-              padding: '12px 16px',
+                   padding: '12px 16px',
               fontSize: '0.82rem',
               color: 'var(--text-secondary)',
               marginBottom: '20px',
@@ -988,6 +993,16 @@ export default function Students() {
         isOpen={bulkModalOpen} 
         onClose={() => setBulkModalOpen(false)} 
         onSuccess={handleBulkSuccess} 
+      />
+
+      <ManageClassesModal
+        isOpen={showClassManagerModal}
+        onClose={() => setShowClassManagerModal(false)}
+        onClassUpdated={() => {
+          fetchData(currentPage, searchQuery);
+          if (refreshAllData) refreshAllData();
+        }}
+        allStudents={allStudentsList}
       />
     </motion.div>
   );

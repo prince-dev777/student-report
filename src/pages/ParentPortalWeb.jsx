@@ -87,6 +87,45 @@ export default function ParentPortalWeb() {
     });
   };
 
+  // Cleared / Dismissed Notifications State
+  const [clearedNotifIds, setClearedNotifIds] = useState(() => {
+    try {
+      if (typeof window === 'undefined') return [];
+      return JSON.parse(localStorage.getItem('parent_cleared_notifs') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  // Global Parent Logout Handler
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('parentSession');
+      localStorage.removeItem('parentToken');
+      sessionStorage.removeItem('parentSession');
+    } catch {}
+    setIsLoggedIn(false);
+    setStudentData(null);
+    setAttendanceRecords([]);
+    setTestResults([]);
+    setUpcomingTests([]);
+    setNotices([]);
+    setShowProfileModal(false);
+    setShowSettingsDrawer(false);
+    setShowNotificationDrawer(false);
+    toast.success('Logged out successfully');
+  };
+
+  // Clear All Notifications Handler
+  const handleClearAllNotifications = () => {
+    const allIds = allNotifications.map(n => n.id);
+    setClearedNotifIds(allIds);
+    try {
+      localStorage.setItem('parent_cleared_notifs', JSON.stringify(allIds));
+    } catch {}
+    toast.success('🧹 Notifications cleared!');
+  };
+
   useEffect(() => {
     if (activeTab === 'schedule' && notices.length > 0) {
       markNoticesAsRead();
@@ -151,6 +190,13 @@ export default function ParentPortalWeb() {
       setDeferredPrompt(null);
       window.deferredPrompt = null;
       toast.success('🎉 Career Xone App successfully installed!');
+      
+      // Auto-prompt to enable lock-screen notifications
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        setTimeout(() => {
+          handleRequestNotification();
+        }, 1200);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
@@ -164,11 +210,10 @@ export default function ParentPortalWeb() {
     };
   }, []);
 
-  // Format batch & class helper
+  // Format clean course / batch name without duplicate class prefix
   const formatBatchName = (batch, studentClass) => {
     const b = String(batch || '').trim();
-    const c = String(studentClass || '').trim();
-    if (!b && !c) return 'General Course';
+    if (!b) return studentClass || 'General Course';
 
     const bLower = b.toLowerCase();
     let courseName = '';
@@ -190,10 +235,7 @@ export default function ParentPortalWeb() {
       courseName = b.replace(/^batch-?/i, 'Batch ').replace(/\b\w/g, l => l.toUpperCase());
     }
 
-    if (c && courseName && !courseName.toLowerCase().includes(c.toLowerCase())) {
-      return `${c} • ${courseName}`;
-    }
-    return courseName || c || 'General Course';
+    return courseName || studentClass || 'General Course';
   };
 
   // Check device and browser environments
@@ -437,19 +479,6 @@ export default function ParentPortalWeb() {
       return () => clearInterval(interval);
     }
   }, [isLoggedIn]);
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setStudentData(null);
-    setAttendanceRecords([]);
-    setTestResults([]);
-    setUpcomingTests([]);
-    setNotices([]);
-    localStorage.removeItem('parentSession');
-    localStorage.removeItem('parentToken');
-    sessionStorage.removeItem('parentSession');
-    toast.success('Logged out successfully');
-  };
 
   // Download OMR Sheet Helper to save permanently before 30-day expiry
   const handleDownloadOmr = async (imageUrl, testName = 'OMR_Sheet') => {
@@ -706,7 +735,7 @@ export default function ParentPortalWeb() {
       time: getTestDate(t)
     }))),
     ...(notices.map(n => ({
-      id: n.id,
+      id: n.id || `${n.title}_${n.createdAt || n.time}`,
       title: n.title,
       message: n.message,
       type: 'NOTICE',
@@ -714,9 +743,11 @@ export default function ParentPortalWeb() {
     })))
   ];
 
+  const visibleNotifications = allNotifications.filter(n => !clearedNotifIds.includes(n.id));
+
   const unreadNoticeCount = notices.filter(n => {
     const id = n.id || n._id || `${n.title}_${n.createdAt || n.time}`;
-    return !readNoticeIds.has(id);
+    return !readNoticeIds.has(id) && !clearedNotifIds.includes(id);
   }).length;
 
   // PRE-LOGIN APP INSTALL GATEWAY (Enforce Mobile App Installation)
@@ -1123,8 +1154,9 @@ export default function ParentPortalWeb() {
           </div>
         </div>
 
-        {/* Right: Quick Refresh & Settings Actions Menu */}
+        {/* Right: Quick Refresh, Notifications, Settings, & Logout Actions Menu */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          {/* Refresh Button */}
           <button
             onClick={handleManualRefresh}
             title="Refresh Latest Student Data"
@@ -1147,12 +1179,14 @@ export default function ParentPortalWeb() {
             <RefreshCw size={15} style={{ animation: isRefreshing ? 'spin 0.8s linear infinite' : 'none' }} />
           </button>
 
+          {/* Notifications Button */}
           <button
             onClick={() => {
               setShowNotificationDrawer(true);
               markNoticesAsRead();
             }}
-            title="Notifications & Settings"
+            title="Notification Center"
+            aria-label="Notifications"
             style={{
               background: '#ffffff',
               border: '1.5px solid #cbd5e1',
@@ -1168,16 +1202,61 @@ export default function ParentPortalWeb() {
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
             }}
           >
-            <Settings size={16} />
-            {unreadNoticeCount > 0 && (
+            <Bell size={16} color="#0284c7" />
+            {visibleNotifications.length > 0 && (
               <span style={{
                 position: 'absolute', top: '-3px', right: '-3px', background: '#ef4444',
                 color: '#ffffff', fontSize: '0.55rem', fontWeight: 900, width: '14px',
                 height: '14px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
-                {unreadNoticeCount}
+                {visibleNotifications.length}
               </span>
             )}
+          </button>
+
+          {/* Settings & Menu Drawer Button */}
+          <button
+            onClick={() => setShowSettingsDrawer(true)}
+            title="Settings & Menu"
+            aria-label="Settings"
+            style={{
+              background: '#f8fafc',
+              border: '1.5px solid #cbd5e1',
+              color: '#475569',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+            }}
+          >
+            <Settings size={15} color="#475569" />
+          </button>
+
+          {/* 1-Tap Quick Logout Button */}
+          <button
+            onClick={handleLogout}
+            title="Logout Account"
+            aria-label="Logout"
+            style={{
+              background: '#fff1f2',
+              border: '1.5px solid #fecdd3',
+              color: '#e11d48',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(225, 29, 72, 0.08)',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <LogOut size={15} color="#e11d48" />
           </button>
         </div>
       </header>
@@ -2305,46 +2384,64 @@ export default function ParentPortalWeb() {
                   Notification Center
                 </h3>
               </div>
-              <button
-                onClick={() => setShowNotificationDrawer(false)}
-                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <X size={18} color="#64748b" />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {visibleNotifications.length > 0 && (
+                  <button
+                    onClick={handleClearAllNotifications}
+                    style={{
+                      background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px',
+                      padding: '4px 10px', fontSize: '0.72rem', fontWeight: 800, color: '#475569',
+                      cursor: 'pointer', transition: 'all 0.15s ease'
+                    }}
+                    title="Clear All Notifications"
+                  >
+                    Clear All
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowNotificationDrawer(false)}
+                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <X size={18} color="#64748b" />
+                </button>
+              </div>
             </div>
 
-            {/* Lock-Screen Web Push Enable Banner */}
-            <div style={{
-              background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)', border: '1.5px solid #bae6fd',
-              borderRadius: '14px', padding: '14px', marginBottom: '14px', display: 'flex',
-              flexDirection: 'column', gap: '8px'
-            }}>
-              <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0369a1' }}>
-                🔔 Enable Lock-Screen Alerts
+            {/* Lock-Screen Web Push Enable Banner - Only shown if permission is not yet granted */}
+            {notificationPermission !== 'granted' && (
+              <div style={{
+                background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)', border: '1.5px solid #bae6fd',
+                borderRadius: '14px', padding: '14px', marginBottom: '14px', display: 'flex',
+                flexDirection: 'column', gap: '8px'
+              }}>
+                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0369a1' }}>
+                  🔔 Enable Lock-Screen Alerts
+                </div>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                  Get instant notification on phone lock-screen whenever your child punches attendance or result is published.
+                </p>
+                <button
+                  onClick={handleRequestNotification}
+                  style={{
+                    background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 14px',
+                    borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer'
+                  }}
+                >
+                  ⚡ Enable Lock-Screen Push
+                </button>
               </div>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
-                Get instant notification on phone lock-screen whenever your child punches attendance or result is published.
-              </p>
-              <button
-                onClick={handleRequestNotification}
-                style={{
-                  background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 14px',
-                  borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer'
-                }}
-              >
-                {notificationPermission === 'granted' ? '✅ Push Notifications Active' : '⚡ Enable Lock-Screen Push'}
-              </button>
-            </div>
+            )}
 
             {/* Notifications Feed */}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {allNotifications.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '36px 0', color: '#94a3b8' }}>
-                  <Bell size={32} style={{ marginBottom: '8px' }} />
-                  <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600 }}>No new notifications.</p>
+              {visibleNotifications.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>
+                  <Bell size={36} style={{ marginBottom: '8px', opacity: 0.4 }} />
+                  <p style={{ margin: 0, fontSize: '0.90rem', fontWeight: 700, color: '#64748b' }}>No active notifications</p>
+                  <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>All alerts are up to date.</span>
                 </div>
               ) : (
-                allNotifications.map((notif, idx) => (
+                visibleNotifications.map((notif, idx) => (
                   <div
                     key={idx}
                     onClick={() => {
@@ -2379,16 +2476,28 @@ export default function ParentPortalWeb() {
               )}
             </div>
 
-            <button
-              onClick={() => setShowNotificationDrawer(false)}
-              style={{
-                marginTop: '14px', width: '100%', background: '#0f172a', color: '#ffffff',
-                border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800,
-                fontSize: '0.88rem', cursor: 'pointer'
-              }}
-            >
-              Close
-            </button>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+              <button
+                onClick={handleLogout}
+                style={{
+                  flex: 1, background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3',
+                  padding: '11px', borderRadius: '12px', fontWeight: 800, fontSize: '0.84rem',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                }}
+              >
+                <LogOut size={15} /> Logout
+              </button>
+              <button
+                onClick={() => setShowNotificationDrawer(false)}
+                style={{
+                  flex: 1, background: '#0f172a', color: '#ffffff',
+                  border: 'none', padding: '11px', borderRadius: '12px', fontWeight: 800,
+                  fontSize: '0.84rem', cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2809,9 +2918,20 @@ export default function ParentPortalWeb() {
                 <FileText size={15} /> Official Report Card
               </button>
               <button
+                onClick={handleLogout}
+                style={{
+                  padding: '11px 14px', background: '#fff1f2', color: '#e11d48',
+                  border: '1px solid #fecdd3', borderRadius: '12px', fontWeight: 800, fontSize: '0.82rem',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                }}
+                title="Logout Parent Portal"
+              >
+                <LogOut size={14} /> Logout
+              </button>
+              <button
                 onClick={() => setShowProfileModal(false)}
                 style={{
-                  padding: '11px 16px', background: '#f1f5f9', color: '#334155',
+                  padding: '11px 14px', background: '#f1f5f9', color: '#334155',
                   border: '1px solid #cbd5e1', borderRadius: '12px', fontWeight: 800, fontSize: '0.82rem',
                   cursor: 'pointer'
                 }}

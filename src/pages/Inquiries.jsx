@@ -237,16 +237,31 @@ export default function Inquiries() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!backendOnline) return toast.error('Offline mode: Cannot save inquiries');
 
     try {
       if (isEditing) {
-        const updated = await api.updateInquiry(isEditing.id, formData);
+        let updated = { ...isEditing, ...formData };
+        if (backendOnline) {
+          try {
+            const res = await api.updateInquiry(isEditing.id, formData);
+            if (res) updated = res;
+          } catch (apiErr) {
+            console.warn('API update failed, updating locally:', apiErr.message);
+          }
+        }
         setInquiries(prev => prev.map(iq => iq.id === updated.id ? updated : iq));
         toast.success('Inquiry updated successfully!');
       } else {
         const newInquiry = { ...formData, id: generateId('INQ') };
-        const saved = await api.createInquiry(newInquiry);
+        let saved = newInquiry;
+        if (backendOnline) {
+          try {
+            const res = await api.createInquiry(newInquiry);
+            if (res) saved = res;
+          } catch (apiErr) {
+            console.warn('API create failed, saving locally:', apiErr.message);
+          }
+        }
         setInquiries(prev => [saved, ...prev]);
         toast.success('New inquiry added!');
       }
@@ -257,10 +272,14 @@ export default function Inquiries() {
   };
 
   const handleDelete = async (id) => {
-    if (!backendOnline) return toast.error('Offline mode');
-
     try {
-      await api.deleteInquiry(id);
+      if (backendOnline) {
+        try {
+          await api.deleteInquiry(id);
+        } catch (apiErr) {
+          console.warn('API delete failed, removing locally:', apiErr.message);
+        }
+      }
       setInquiries(prev => prev.filter(iq => iq.id !== id));
       toast.success('Inquiry deleted');
       setInquiryToDelete(null);

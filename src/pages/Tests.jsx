@@ -48,8 +48,15 @@ export default function Tests() {
   const { 
     tests, testResults, students, batches, 
     addTest, updateTest, updateTestAnswerKey, deleteTest, submitTestResults,
-    appCardTheme, toggleAppCardTheme
+    appCardTheme, toggleAppCardTheme, refreshAllData
   } = useApp();
+
+  // Auto-sync fresh tests and results on mount
+  React.useEffect(() => {
+    if (typeof refreshAllData === 'function') {
+      refreshAllData();
+    }
+  }, []);
 
   const getCourseName = (batchId) => {
     return formatBatchName(batchId, batches);
@@ -2235,15 +2242,35 @@ export default function Tests() {
           <h1>Test & Exam Management</h1>
           <p>Create tests, record scores, automatically calculate ranks and notify parents instantly.</p>
         </div>
-        <a 
-          href={omrTemplatePdf} 
-          download="OMR_Templates.pdf"
-          className="btn btn-primary" 
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-        >
-          <Download size={18} />
-          Download OMR Template
-        </a>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={async () => {
+              const toastId = toast.loading('Syncing latest tests...');
+              try {
+                if (typeof refreshAllData === 'function') await refreshAllData();
+                toast.success('Tests refreshed!', { id: toastId });
+              } catch (e) {
+                toast.dismiss(toastId);
+              }
+            }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            title="Refresh Tests list from Database"
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+          <a 
+            href={omrTemplatePdf} 
+            download="OMR_Templates.pdf"
+            className="btn btn-primary" 
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Download size={18} />
+            Download OMR Template
+          </a>
+        </div>
       </div>
 
       {/* Tabs */}

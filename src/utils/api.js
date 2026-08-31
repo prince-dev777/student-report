@@ -158,6 +158,11 @@ export const api = {
   updateStudent: (id, updates) => apiRequest(`/students/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
   deleteStudent: (id) => apiRequest(`/students/${id}`, { method: 'DELETE' }),
 
+  // Classes Management
+  getClasses: () => apiRequest('/classes'),
+  renameClass: (oldName, newName) => apiRequest('/classes/rename', { method: 'POST', body: JSON.stringify({ oldName, newName }) }),
+  mergeClasses: (sourceClasses, targetClass) => apiRequest('/classes/merge', { method: 'POST', body: JSON.stringify({ sourceClasses, targetClass }) }),
+
   // Attendance
   getAttendance: () => apiRequest('/attendance'),
   markAttendance: (record) => apiRequest('/attendance', { method: 'POST', body: JSON.stringify(record) }),
@@ -336,4 +341,12 @@ export const api = {
     }
     return await response.blob();
   },
+
+  // 🏫 Classes Management API
+  getClasses: () => 
+    apiRequest('/classes'),
+  renameClass: (oldName, newName) => 
+    apiRequest('/classes/rename', { method: 'POST', body: JSON.stringify({ oldName, newName }) }),
+  mergeClasses: (sourceClasses, targetClass) => 
+    apiRequest('/classes/merge', { method: 'POST', body: JSON.stringify({ sourceClasses, targetClass }) }),
 };
