@@ -589,6 +589,26 @@ export default function ParentPortalWeb() {
     return sub.includes(filter) || nm.includes(filter);
   });
 
+  // Normalize date string to YYYY-MM-DD for accurate comparison
+  const normalizeToISODate = (dStr) => {
+    if (!dStr) return '';
+    const clean = String(dStr).trim();
+    const parts = clean.split(/[./-]/);
+    if (parts.length === 3) {
+      if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+      if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+    const d = new Date(clean);
+    return isNaN(d.getTime()) ? clean : d.toISOString().split('T')[0];
+  };
+
+  const todayISODate = new Date().toISOString().split('T')[0];
+  const activeUpcomingTests = (upcomingTests || []).filter(t => {
+    if (!t?.date) return false;
+    const iso = normalizeToISODate(t.date);
+    return iso >= todayISODate;
+  });
+
   // Calculate Today's Live Attendance Status strictly from database records
   const getTodayAttendanceInfo = () => {
     const today = new Date();
@@ -2032,14 +2052,14 @@ export default function ParentPortalWeb() {
                 </span>
               </div>
 
-              {upcomingTests.length === 0 ? (
+              {activeUpcomingTests.length === 0 ? (
                 <div style={{ padding: '20px 12px', textAlign: 'center', color: '#64748b', background: '#faf5ff', borderRadius: '10px', border: '1px dashed #d8b4fe' }}>
                   <Calendar size={26} color="#a855f7" style={{ marginBottom: '6px' }} />
                   <p style={{ margin: 0, fontSize: '0.78rem', fontWeight: 600 }}>No upcoming exams scheduled right now.</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {upcomingTests.map((t, idx) => (
+                  {activeUpcomingTests.map((t, idx) => (
                     <div key={idx} style={{
                       background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '10px',
                       padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '5px'

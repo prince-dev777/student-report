@@ -67,6 +67,9 @@ async function syncToCloud() {
 
       const docs = await localColl.find({}).toArray();
       if (docs.length === 0) {
+        if (collName === 'smslogs') {
+          await cloudColl.deleteMany({});
+        }
         continue;
       }
 

@@ -229,6 +229,21 @@ function buildTestLookup(testId, instituteId) {
   return query;
 }
 
+function normalizeDateToISO(dateStr) {
+  if (!dateStr) return '';
+  const clean = String(dateStr).trim();
+  const parts = clean.split(/[./-]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    } else if (parts[2].length === 4) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  const d = new Date(clean);
+  return isNaN(d.getTime()) ? clean : d.toISOString().split('T')[0];
+}
+
 function safeUnlink(filePath) {
   try {
     fs.unlinkSync(filePath);
@@ -1046,36 +1061,45 @@ app.post('/api/parent/login', async (req, res) => {
     const presentAtt = attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length;
     const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
 
-    // Fetch upcoming scheduled tests for student's batch (future dates only)
+    // Fetch upcoming scheduled tests for student's batch (future dates only, normalized ISO comparison)
     const todayDateStr = new Date().toISOString().split('T')[0];
-    const studentBatch = student.batch || '';
-    const batchFilters = [
-      { batch: studentBatch },
-      { batch: 'All' },
-      { batch: 'ALL' }
-    ];
-    if (studentBatch) {
-      batchFilters.push({ batch: new RegExp(studentBatch, 'i') });
-    }
+    const studentBatch = String(student.batch || '').trim().toLowerCase();
+    const studentClass = String(student.class || '').trim().toLowerCase();
 
-    const upcomingTestsRaw = await Test.find({
+    const candidateTests = await Test.find({
       isDeleted: { $ne: true },
-      instituteId: student.instituteId,
-      date: { $gte: todayDateStr },
-      $or: batchFilters
-    })
-      .sort({ date: 1 })
-      .limit(6);
+      instituteId: student.instituteId
+    }).lean();
 
-    const upcomingTests = upcomingTestsRaw.map(t => ({
-      id: t.id,
-      name: t.name,
-      subject: t.subject,
-      date: t.date,
-      totalMarks: t.totalMarks,
-      batch: t.batch,
-      targetClass: t.targetClass || ''
-    }));
+    const upcomingTests = candidateTests
+      .filter(t => {
+        if (!t.date) return false;
+        const testISODate = normalizeDateToISO(t.date);
+        // Strictly only show tests scheduled on or after today
+        if (!testISODate || testISODate < todayDateStr) return false;
+
+        // Match student's batch or class or 'All'
+        const tBatch = String(t.batch || '').trim().toLowerCase();
+        const tClass = String(t.targetClass || '').trim().toLowerCase();
+        const tName = String(t.name || '').trim().toLowerCase();
+
+        if (tBatch === 'all' || tBatch === '') return true;
+        if (studentBatch && (tBatch === studentBatch || tBatch.includes(studentBatch) || studentBatch.includes(tBatch))) return true;
+        if (studentClass && (tClass === studentClass || tClass.includes(studentClass) || studentClass.includes(tClass) || tName.includes(studentClass))) return true;
+
+        return false;
+      })
+      .sort((a, b) => normalizeDateToISO(a.date).localeCompare(normalizeDateToISO(b.date)))
+      .slice(0, 6)
+      .map(t => ({
+        id: t.id,
+        name: t.name,
+        subject: t.subject,
+        date: t.date,
+        totalMarks: t.totalMarks,
+        batch: t.batch,
+        targetClass: t.targetClass || ''
+      }));
 
     // Fetch notices / notifications for student & institute
     const noticesRaw = await Notification.find({
