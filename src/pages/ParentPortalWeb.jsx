@@ -332,12 +332,14 @@ export default function ParentPortalWeb() {
             setAttendanceRecords(data.attendance || []);
             setTestResults(data.tests || []);
             setNotices(data.notifications || []);
+            setUpcomingTests(data.upcomingTests || []);
             
             const updatedSession = {
               ...session,
               studentData: data.student,
               attendanceRecords: data.attendance || [],
               testResults: data.tests || [],
+              upcomingTests: data.upcomingTests || [],
               notices: data.notifications || []
             };
             localStorage.setItem('parentSession', JSON.stringify(updatedSession));

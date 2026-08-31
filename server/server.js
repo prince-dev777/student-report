@@ -252,6 +252,48 @@ function safeUnlink(filePath) {
   }
 }
 
+async function getUpcomingTestsForStudent(student, instituteId) {
+  if (!student) return [];
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  const studentBatch = String(student.batch || '').trim().toLowerCase();
+  const studentClass = String(student.class || '').trim().toLowerCase();
+
+  const candidateTests = await Test.find({
+    isDeleted: { $ne: true },
+    instituteId: instituteId || student.instituteId
+  }).lean();
+
+  return candidateTests
+    .filter(t => {
+      if (!t.date) return false;
+      const testISODate = normalizeDateToISO(t.date);
+      // Strictly only show tests scheduled on or after today
+      if (!testISODate || testISODate < todayDateStr) return false;
+
+      // Match student's batch or class or 'All'
+      const tBatch = String(t.batch || '').trim().toLowerCase();
+      const tClass = String(t.targetClass || '').trim().toLowerCase();
+      const tName = String(t.name || '').trim().toLowerCase();
+
+      if (tBatch === 'all' || tBatch === '') return true;
+      if (studentBatch && (tBatch === studentBatch || tBatch.includes(studentBatch) || studentBatch.includes(tBatch))) return true;
+      if (studentClass && (tClass === studentClass || tClass.includes(studentClass) || studentClass.includes(tClass) || tName.includes(studentClass))) return true;
+
+      return false;
+    })
+    .sort((a, b) => normalizeDateToISO(a.date).localeCompare(normalizeDateToISO(b.date)))
+    .slice(0, 6)
+    .map(t => ({
+      id: t.id,
+      name: t.name,
+      subject: t.subject,
+      date: t.date,
+      totalMarks: t.totalMarks,
+      batch: t.batch,
+      targetClass: t.targetClass || ''
+    }));
+}
+
 async function attachTestDetailsToResults(results, instituteId) {
   const testIds = [...new Set(results.map((result) => result.testId).filter(Boolean))];
   const testDocs = testIds.length > 0
@@ -1062,44 +1104,7 @@ app.post('/api/parent/login', async (req, res) => {
     const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
 
     // Fetch upcoming scheduled tests for student's batch (future dates only, normalized ISO comparison)
-    const todayDateStr = new Date().toISOString().split('T')[0];
-    const studentBatch = String(student.batch || '').trim().toLowerCase();
-    const studentClass = String(student.class || '').trim().toLowerCase();
-
-    const candidateTests = await Test.find({
-      isDeleted: { $ne: true },
-      instituteId: student.instituteId
-    }).lean();
-
-    const upcomingTests = candidateTests
-      .filter(t => {
-        if (!t.date) return false;
-        const testISODate = normalizeDateToISO(t.date);
-        // Strictly only show tests scheduled on or after today
-        if (!testISODate || testISODate < todayDateStr) return false;
-
-        // Match student's batch or class or 'All'
-        const tBatch = String(t.batch || '').trim().toLowerCase();
-        const tClass = String(t.targetClass || '').trim().toLowerCase();
-        const tName = String(t.name || '').trim().toLowerCase();
-
-        if (tBatch === 'all' || tBatch === '') return true;
-        if (studentBatch && (tBatch === studentBatch || tBatch.includes(studentBatch) || studentBatch.includes(tBatch))) return true;
-        if (studentClass && (tClass === studentClass || tClass.includes(studentClass) || studentClass.includes(tClass) || tName.includes(studentClass))) return true;
-
-        return false;
-      })
-      .sort((a, b) => normalizeDateToISO(a.date).localeCompare(normalizeDateToISO(b.date)))
-      .slice(0, 6)
-      .map(t => ({
-        id: t.id,
-        name: t.name,
-        subject: t.subject,
-        date: t.date,
-        totalMarks: t.totalMarks,
-        batch: t.batch,
-        targetClass: t.targetClass || ''
-      }));
+    const upcomingTests = await getUpcomingTestsForStudent(student, student.instituteId);
 
     // Fetch notices / notifications for student & institute
     const noticesRaw = await Notification.find({
@@ -1428,11 +1433,12 @@ app.get('/api/parent/data', async (req, res) => {
     }).sort({ createdAt: -1 });
     const tests = await attachTestDetailsToResults(resultDocs, instituteId);
     const notifications = await Notification.find({ studentId: student._id, instituteId }).sort({ createdAt: -1 });
+    const upcomingTests = await getUpcomingTestsForStudent(student, instituteId);
 
     // Get institute info
     const institute = await Institute.findById(instituteId);
 
-    res.json({ student, attendance, tests, notifications, instituteName: institute?.name || '' });
+    res.json({ student, attendance, tests, notifications, upcomingTests, instituteName: institute?.name || '' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -2392,8 +2398,9 @@ app.delete('/api/tests/:id', authenticateToken, async (req, res) => {
     const test = await Test.findOne(testLookup);
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
-    await dualDelete('tests', { _id: test._id }, [
-      { collection: 'testresults', filter: { testId: test.id } }
+    const testIdKeys = [test.id, String(test.id), test._id, test._id.toString()].filter(Boolean);
+    await dualDelete('tests', { $or: [{ _id: test._id }, { id: test.id }] }, [
+      { collection: 'testresults', filter: { testId: { $in: testIdKeys } } }
     ]);
 
     triggerBackgroundCloudSync();
