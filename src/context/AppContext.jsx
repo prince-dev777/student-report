@@ -41,6 +41,35 @@ export function AppProvider({ children }) {
   const [startupSyncing, setStartupSyncing] = useState(true);
   const [startupSyncText, setStartupSyncText] = useState('Initializing Database & Cloud Connection...');
   
+  // 🎨 Global Card Background Theme (Solid White vs Gradient Theme)
+  const [appCardTheme, setAppCardTheme] = useState(() => {
+    try {
+      return localStorage.getItem('app_card_theme') || localStorage.getItem('tests_create_card_theme') || 'white';
+    } catch {
+      return 'white';
+    }
+  });
+
+  const toggleAppCardTheme = useCallback((theme) => {
+    setAppCardTheme((prev) => {
+      const nextTheme = theme || (prev === 'white' ? 'gradient' : 'white');
+      try {
+        localStorage.setItem('app_card_theme', nextTheme);
+        localStorage.setItem('tests_create_card_theme', nextTheme);
+        document.documentElement.setAttribute('data-card-theme', nextTheme);
+        if (document.body) document.body.setAttribute('data-card-theme', nextTheme);
+      } catch {}
+      return nextTheme;
+    });
+  }, []);
+
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute('data-card-theme', appCardTheme);
+      if (document.body) document.body.setAttribute('data-card-theme', appCardTheme);
+    } catch {}
+  }, [appCardTheme]);
+
   const { user } = useAuth();
   const initRanRef = useRef(false);
 
@@ -96,7 +125,7 @@ export function AppProvider({ children }) {
       setStartupSyncing(true);
       setStartupSyncText('Connecting to Local & Cloud Database...');
 
-      const isOnline = await checkBackendStatus();
+      const isOnline = await checkBackendStatus(8, 600);
       setBackendOnline(isOnline);
 
       if (isOnline) {
@@ -116,13 +145,12 @@ export function AppProvider({ children }) {
       } else {
         console.log('⚠️ [DEBUG] Backend offline. Loading from localStorage...');
         loadFallbackData();
-        toast('Offline Mode: Operating from local offline storage.', { id: 'backend-status-toast', icon: 'ℹ️' });
 
         // Background retry loop: if backend was spinning up, auto-sync when ready
         let attempts = 0;
         const retryTimer = setInterval(async () => {
           attempts++;
-          if (attempts > 5) {
+          if (attempts > 8) {
             clearInterval(retryTimer);
             return;
           }
@@ -132,10 +160,10 @@ export function AppProvider({ children }) {
             setBackendOnline(true);
             try {
               await loadServerData();
-              toast.success('Connected & Synced with Cloud Database!', { id: 'backend-status-toast' });
+              toast.success('Connected & Synced with Database!', { id: 'backend-status-toast' });
             } catch (e) {}
           }
-        }, 2500);
+        }, 1500);
       }
 
       setTimeout(() => {
@@ -336,7 +364,7 @@ export function AppProvider({ children }) {
   }, [backendOnline]);
 
   // ---- Attendance ----
-  const markAttendance = useCallback(async (studentId, type) => {
+  const markAttendance = useCallback(async (studentId, type, customSessionName = null) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
 
@@ -358,6 +386,7 @@ export function AppProvider({ children }) {
         status: 'present',
         entryTime: currentTime,
         exitTime: existing ? existing.exitTime : null,
+        sessionName: customSessionName || existing?.sessionName || null,
         smsSent: true,
       };
     } else {
@@ -372,6 +401,7 @@ export function AppProvider({ children }) {
       updatedRecord = {
         ...existing,
         exitTime: currentTime,
+        ...(customSessionName ? { sessionName: customSessionName } : {})
       };
     }
 
@@ -880,6 +910,8 @@ export function AppProvider({ children }) {
     deleteBulkSMS,
     deleteAllSMS,
     resetData,
+    appCardTheme,
+    toggleAppCardTheme,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

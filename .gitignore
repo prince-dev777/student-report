@@ -60,4 +60,7 @@ server/.wwebjs_cache/
 # Test output files
 server/test_scan_out*.txt
 server/warped_*.png
+OMR_checking/
+server/omr_engine_bin/
 .md
+

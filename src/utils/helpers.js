@@ -20,14 +20,87 @@ export function formatDateShort(dateStr) {
   return `${day}/${month}/${date.getFullYear()}`;
 }
 
-// Format time to 12-hour format
+// Format time to 12-hour format cleanly
 export function formatTime(timeStr) {
-  if (!timeStr) return '-';
-  const [hours, minutes] = timeStr.split(':');
-  const h = parseInt(hours);
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${minutes} ${ampm}`;
+  if (!timeStr || timeStr === '-' || timeStr === '--') return '-';
+  const str = String(timeStr).trim();
+  if (!str || str.toLowerCase().includes('undefined') || str.toLowerCase().includes('nan')) return '-';
+
+  // If already matches "HH:MM AM/PM" or "H:MM AM/PM"
+  const ampmMatch = str.match(/^(\d{1,2}):(\d{1,2})(?::\d{2})?\s*(AM|PM)$/i);
+  if (ampmMatch) {
+    const h = parseInt(ampmMatch[1], 10);
+    const m = ampmMatch[2].padStart(2, '0');
+    const ampm = ampmMatch[3].toUpperCase();
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${m} ${ampm}`;
+  }
+
+  // If Date / ISO format
+  if (str.includes('T') || (str.includes('-') && str.length > 10)) {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      let h = d.getHours();
+      const m = String(d.getMinutes()).padStart(2, '0');
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${m} ${ampm}`;
+    }
+  }
+
+  // If 24-hour "HH:MM" or "HH:MM:SS"
+  const parts = str.split(':');
+  if (parts.length >= 2) {
+    const h = parseInt(parts[0], 10);
+    const mPart = parseInt(parts[1], 10);
+    if (!isNaN(h)) {
+      const m = (isNaN(mPart) ? 0 : mPart).toString().padStart(2, '0');
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const hour12 = h % 12 || 12;
+      return `${hour12}:${m} ${ampm}`;
+    }
+  }
+
+  return str;
+}
+
+// Calculate duration between entry and exit cleanly (e.g. "1h 15m", "45m", "In Institute")
+export function calcDuration(entry, exit) {
+  if (!entry || entry === '-' || entry === '--') return '-';
+  if (!exit || exit === '-' || exit === '--') return 'In Institute';
+  
+  const parseToMins = (tStr) => {
+    if (!tStr) return null;
+    const str = String(tStr).trim();
+    if (str.toLowerCase().includes('undefined') || str.toLowerCase().includes('nan')) return null;
+
+    const ampmMatch = str.match(/^(\d{1,2}):(\d{1,2})(?::\d{2})?\s*(AM|PM)?$/i);
+    if (ampmMatch) {
+      let h = parseInt(ampmMatch[1], 10);
+      const m = parseInt(ampmMatch[2], 10) || 0;
+      const mod = ampmMatch[3] ? ampmMatch[3].toUpperCase() : null;
+      if (mod === 'PM' && h < 12) h += 12;
+      if (mod === 'AM' && h === 12) h = 0;
+      return h * 60 + m;
+    }
+    const parts = str.split(':');
+    if (parts.length >= 2) {
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) || 0;
+      if (!isNaN(h)) return h * 60 + m;
+    }
+    return null;
+  };
+
+  const eMins = parseToMins(entry);
+  const xMins = parseToMins(exit);
+  if (eMins === null || xMins === null) return '-';
+
+  const diffMins = xMins - eMins;
+  if (diffMins < 0 || isNaN(diffMins)) return '-';
+  const hrs = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
 }
 
 // Get relative time (e.g., "2 hours ago")

@@ -1,0 +1,185 @@
+================================================================================
+   BIOMAX BIOMETRIC -> RENDER CLOUD -> 100% FREE WHATSAPP ALERT & PC SYNC
+   (Bina Kisi Paid API / UltraMsg Ke - 100% Free WhatsApp Web On Cloud)
+================================================================================
+
+Target Cloud Server: https://student-report-4j6t.onrender.com
+Target Machine: Biomax / FK-Series / Realtime / ZKTeco Biometric Terminal
+Cost: Rs. 0 (100% FREE - UltraMsg / Twilio khareedne ki koi zaroorat nahi hai)
+
+Goal:
+1. Biometric machine seedhe Wi-Fi se Render Cloud Server par punch bhejegi.
+2. Render Server par 100% FREE WhatsApp Web Client chalega (Scan QR once).
+3. PC OFF hone par bhi har Punch (Check-in/Check-out) ka WhatsApp instant jayega.
+4. PC ON hone par saare attendance records aur WhatsApp delivery logs dashboard
+   par automatically display ho jayenge.
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS:
+--------------------------------------------------------------------------------
+1. 100% FREE WHATSAPP ON CLOUD - YE KAISE KAAM KAREGA? (ZERO COST)
+2. COMPLETE SYSTEM ARCHITECTURE (MACHINE -> RENDER -> FREE WA -> PARENTS)
+3. RENDER PAR FREE WHATSAPP WEB SETUP (PUPPETEER / BAILEYS + MONGODB SESSION)
+4. BIOMETRIC MACHINE ON-SCREEN CONFIGURATION (DOMAIN & DNS)
+5. PC OFF TO ON: AUTOMATIC SYNC & LOG VIEWING MECHANISM
+6. STEP-BY-STEP IMPLEMENTATION & TESTING GUIDE
+
+================================================================================
+1. 100% FREE WHATSAPP ON CLOUD - YE KAISE KAAM KAREGA? (ZERO COST)
+================================================================================
+
+Aapko UltraMsg, Twilio ya kisi bhi 3rd party ko 1 rupya bhi dene ki zaroorat nahi hai!
+
+Aapke `student-report` mein jo `whatsappClient.js` (whatsapp-web.js) hai, wahi
+same concept Cloud Server (Render) par run hoga:
+
+KAISE?
+1. Render Server par hamara WhatsApp Web engine chalega.
+2. Aap apne Web Dashboard (student-report-4j6t.onrender.com) par jayenge.
+3. Wahan screen par ek baar WhatsApp QR Code aayega.
+4. Apne Institute wale WhatsApp se QR Code Scan (Linked Devices) kar lenge.
+5. WhatsApp Session automatically aapke Cloud Database (MongoDB Atlas) mein
+   store ho jayega (RemoteAuth / MongoStore).
+6. Iska fayda: Render restart bhi hoga toh bhi QR code dobara scan nahi karna
+   padega, session database se auto-load ho jayega!
+
+RESULT:
+- Biometric Machine par student ne finger rakha.
+- Machine ne Render ko punch bheja.
+- Render ne Cloud par chal rahe Free WhatsApp Client se instant message bhej diya.
+- Total Cost = Rs. 0 (Hamesha ke liye Free).
+- Institute PC band rahe ya chaloo, message 24/7 deliver hoga!
+
+
+================================================================================
+2. COMPLETE SYSTEM ARCHITECTURE (DATA FLOW DIAGRAM)
+================================================================================
+
++-------------------------------------------------------------------------+
+| STEP 1: STUDENT / STAFF PUNCHES AT BIOMETRIC TERMINAL                  |
+| Fingerprint / Face / RFID Scan on Biomax Terminal                       |
++-------------------------------------------------------------------------+
+                                    │
+                                    ▼ (Over Institute Wi-Fi Internet)
++-------------------------------------------------------------------------+
+| STEP 2: RENDER CLOUD BACKEND RECEIVER                                  |
+| POST https://student-report-4j6t.onrender.com/hdata.aspx               |
+| - Render Server receives User ID & Punch Timestamp                     |
+| - Server returns mandatory 200 OK + ACK headers to machine              |
++-------------------------------------------------------------------------+
+                                    │
+               ┌────────────────────┴────────────────────┐
+               ▼                                         ▼
++-----------------------------+           +-----------------------------+
+| STEP 3A: DATABASE STORAGE   |           | STEP 3B: FREE WHATSAPP WEB  |
+| - Save Attendance in        |           | - Render Free WA Client     |
+|   MongoDB Atlas Cloud DB    |           |   (whatsapp-web.js/Baileys) |
+| - Mark Entry/Exit time      |           | - Sends WhatsApp directly   |
+| - Save WhatsApp SMSLog      |           |   via Web Session (Rs. 0)   |
+|   (Delivered status)        |           | - Delivered in 1-2 seconds  |
++-----------------------------+           +-----------------------------+
+               │
+               ▼
++-------------------------------------------------------------------------+
+| STEP 4: INSTITUTE PC SYNC (WHEN PC IS POWERED ON)                      |
+| - PC opens Student Report Application                                   |
+| - Fetches latest attendance records & WhatsApp logs from MongoDB Atlas  |
+| - Live Dashboard displays all punches and delivered messages in real time|
++-------------------------------------------------------------------------+
+
+
+================================================================================
+3. RENDER PAR FREE WHATSAPP WEB SETUP (PUPPETEER / BAILEYS + MONGODB)
+================================================================================
+
+Render (Linux Cloud) par Free WhatsApp chalane ke 2 best solutions:
+
+--------------------------------------------------------------------------------
+OPTION 1: WhatsApp-Web.js + RemoteAuth (MongoDB Atlas Store)
+--------------------------------------------------------------------------------
+- Code: `wwebjs-mongo` ya Baileys MongoDB auth store.
+- Session save: MongoDB Atlas ke `wwebjs_sessions` collection mein session save
+  hota hai.
+- Puppeteer on Linux Render:
+  Render pe Chromium ke saath headless browser run hota hai.
+  Puppeteer launch flags:
+  `['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--single-process', '--no-zygote']`
+
+--------------------------------------------------------------------------------
+OPTION 2: Baileys Engine (@whiskeysockets/baileys) - (ULTRA LIGHTWEIGHT)
+--------------------------------------------------------------------------------
+- Baileys direct WhatsApp WebSocket use karta hai (No Chrome / No Puppeteer).
+- Memory: Sirf 25MB RAM leta hai (Render ke 512MB free tier pe super-fast chalta hai).
+- 100% Free, QR code scan once, session stores in MongoDB Atlas.
+
+
+================================================================================
+4. BIOMETRIC MACHINE ON-SCREEN CONFIGURATION (STEP-BY-STEP)
+================================================================================
+
+Apni Biomax / FK Machine ke screen par yeh settings karein:
+
+STEP 1: NETWORK & WI-FI SETUP
+------------------------------
+1. Machine Menu > [Comm.] > [Wi-Fi / Network] mein jayein.
+2. Institute ke Wi-Fi se connect karein.
+3. Settings:
+   - Gateway: 192.168.0.1 (Aapke Wi-Fi Router ka IP)
+   - DNS Server: 8.8.8.8 (Google DNS - zaroori hai domain resolve karne ke liye)
+
+STEP 2: CLOUD SERVER / WEB SERVER SETTINGS
+-------------------------------------------
+1. Machine Menu > [Comm.] > [Cloud Server] / [Web Server] / [ADMS] mein jayein.
+2. Values fill karein:
+   - Enable Server / Cloud: ON / YES
+   - Server Address / Domain: student-report-4j6t.onrender.com
+     *(Note: "https://" mat lagana, sirf domain name likhna)*
+   - Server Port: 80 (ya 443)
+   - Request URL / Protocol: FK Web Protocol (ya /hdata.aspx)
+   - Push Interval: Realtime (1s)
+
+3. [M/OK] press karke save karein aur Home screen par aa jayein.
+4. Screen par Cloud icon Connected (Green) show hoga.
+
+
+================================================================================
+5. PC OFF TO ON: AUTOMATIC SYNC & LOG VIEWING MECHANISM
+================================================================================
+
+1. Jab PC OFF hai:
+   - Machine Wi-Fi ke zariye Render Server par punch bhejti hai.
+   - Render Server punch ko MongoDB Atlas mein save karta hai aur free WhatsApp
+     se parent ko message bhej deta hai.
+   - SMSLog collection mein message ka text, parent number, date-time aur status
+     'delivered' save ho jata hai.
+
+2. Jab PC ON hota hai:
+   - PC par jab aap software start karte hain, software seedhe MongoDB Atlas
+     (Cloud Database) se data read karta hai.
+   - PC dashboard par:
+     * Aaj ki poori Attendance list aa jati hai.
+     * Konsa student kis time IN hua / OUT hua dikhta hai.
+     * "WhatsApp Logs / SMS Reports" section mein har message ka delivery time
+       aur status dikhta hai.
+   - Kisi manual sync button ki zaroorat nahi padti, automatically update ho jata hai!
+
+
+================================================================================
+6. STEP-BY-STEP IMPLEMENTATION & TESTING GUIDE
+================================================================================
+
+[ ] Step 1: Render Server par RemoteAuth / MongoDB Session Store configure karein.
+[ ] Step 2: `https://student-report-4j6t.onrender.com` open karke Settings > WhatsApp
+            mein jaakar QR Code apne mobile se ek baar Scan karein.
+[ ] Step 3: Biometric machine mein Server Domain `student-report-4j6t.onrender.com` aur
+            DNS `8.8.8.8` set karein.
+[ ] Step 4: Machine par kisi student ka test fingerprint punch karein.
+[ ] Step 5: Check karein:
+    - Render logs mein punch receive hua.
+    - Parent ke WhatsApp par free message deliver hua.
+[ ] Step 6: PC ko shut down karein aur machine par punch karein -> Message WhatsApp par jayega!
+[ ] Step 7: PC ko start karein -> Software open karte hi saare punches aur message logs samne honge!
+
+================================================================================
+  ZERO-COST CLOUD BIOMETRIC & WHATSAPP PLAN READY FOR CAREER XONE
+================================================================================

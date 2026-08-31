@@ -140,10 +140,10 @@ export default function TeacherPortalWeb() {
       }
     }
 
-    // Tier 4: Try Cloud Atlas Render API
+    // Tier 4: Try API_BASE
     if (!successData) {
       try {
-        const res = await fetch('https://student-report-ezgw.onrender.com/api/teacher/data');
+        const res = await fetch(`${API_BASE}/teacher/data`);
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.students) && data.students.length > 0) {

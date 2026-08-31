@@ -1125,13 +1125,23 @@ export default function ParentPortalWeb() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
             <div className="student-avatar" style={{
-              width: '34px', height: '34px', borderRadius: '8px',
+              width: '38px', height: '38px', borderRadius: '10px',
               background: 'linear-gradient(135deg, #0284c7, #0369a1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '0.95rem', fontWeight: 800, color: '#ffffff',
-              boxShadow: '0 1px 5px rgba(2, 132, 199, 0.18)', flexShrink: 0
+              boxShadow: '0 1px 5px rgba(2, 132, 199, 0.18)', flexShrink: 0,
+              overflow: 'hidden', border: '1.5px solid #bae6fd'
             }}>
-              {studentData?.name ? studentData.name.charAt(0) : 'S'}
+              {studentData?.photo ? (
+                <img
+                  src={studentData.photo}
+                  alt={studentData.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                studentData?.name ? studentData.name.charAt(0) : 'S'
+              )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h2 className="student-name" style={{

@@ -1,0 +1,371 @@
+================================================================================
+  BIOMAX & FK-SERIES BIOMETRIC MACHINE COMPLETE INTEGRATION GUIDE (A to Z)
+  Multi-Device Support (1 to 10+ Machines), Real-Time Push, & Implementation
+================================================================================
+
+TABLE OF CONTENTS:
+1. EXECUTIVE SUMMARY & HOW BIOMAX COMMUNICATES
+2. PROTOCOL 1: FK WEB PROTOCOL (/hdata.aspx) - DEEP DIVE (YOUR EXACT DEVICE)
+3. PROTOCOL 2: ADMS / ICLOCK PUSH PROTOCOL (/iclock/cdata)
+4. PROTOCOL 3: DIRECT ZK TCP/UDP PROTOCOL (Port 4370)
+5. MULTI-DEVICE SETUP (Connecting 3-4+ Biometric Machines Simultaneously)
+6. COMPLETE PYTHON IMPLEMENTATION CODE & COPY-PASTE MODULES
+7. HOW TO INTEGRATE INTO YOUR OTHER PROJECTS (FastAPI, Node.js, Django, PHP)
+8. BIOMETRIC DEVICE HARDWARE ON-SCREEN CONFIGURATION STEPS
+9. TROUBLESHOOTING & COMMON PITFALLS
+
+
+================================================================================
+1. EXECUTIVE SUMMARY & HOW BIOMAX COMMUNICATES
+================================================================================
+
+Biomax / FK / Realand / ZKTeco biometric attendance terminals use 2 primary 
+architectures to transmit punch records to a central server:
+
+[A] PUSH ARCHITECTURE (Used by your Biomax FK device):
+    - The biometric device acts as an HTTP CLIENT on your local Wi-Fi / LAN.
+    - Whenever an employee scans their finger, face, or card (or on background sync),
+      the device sends an HTTP POST request to your PC's IP and Port.
+    - Path: POST /hdata.aspx (FK Series) OR POST /iclock/cdata (ADMS Series).
+    - Advantage: Works across multiple machines simultaneously, ultra-fast (<50ms),
+      requires zero polling overhead, and handles device sleep seamlessly.
+
+[B] PULL ARCHITECTURE (Direct TCP/UDP Socket):
+    - The server connects outward to the biometric machine's IP on Port 4370.
+    - The server queries get_users(), get_attendance(), or listens on live_capture.
+
+
+================================================================================
+2. PROTOCOL 1: FK WEB PROTOCOL (/hdata.aspx) - DEEP DIVE
+================================================================================
+Your Biomax machine is an "FK Web Protocol" terminal. Here is the exact binary 
+and HTTP specification:
+
+A. INCOMING PUNCH REQUEST (Device -> Server):
+   HTTP Method: POST /hdata.aspx HTTP/1.0
+   Headers sent by device:
+     - request_code: realtime_glog
+     - cmd_id: RTLogSendAction
+     - dev_id: C26288221F101830 (Unique Serial / Hardware ID of device)
+     - blk_no: 0
+     - blk_len: 142
+     - Content-Type: application/octet-stream
+     - Content-Length: <length>
+     - HOST: 192.168.0.162:8000
+
+   Payload Body (Binary Header + JSON):
+     \x8a\x00\x00\x00{"fk_bin_data_lib":"FKDataHS102","io_mode":16777216,"io_time":"20260829161400","log_image":null,"user_id":"340","verify_mode":268435456}\n\x00
+
+   Key Fields Explained:
+     - user_id: Employee ID or Roll Number (e.g. "340" for Prince Kumar).
+     - io_time: Format "YYYYMMDDHHMMSS" (e.g. "20260829161400" = 2026-08-29 16:14:00).
+     - io_mode: Bitmask representing attendance state:
+         * 16777216 (0x01000000): Check-In / Duty-On
+         * 33554432 (0x02000000): Check-Out / Duty-Off
+         * 50331648 (0x03000000): Break-Out
+         * 67108864 (0x04000000): Break-In
+     - verify_mode:
+         * 268435456 or 1: Fingerprint
+         * 2: Face
+         * 3: RFID Card
+         * 4: Password
+
+B. MANDATORY ACKNOWLEDGEMENT RESPONSE (Server -> Device):
+   If your server does NOT respond with these exact headers, the machine will 
+   assume transmission failed and enter an infinite retry loop!
+
+   Response Status: 200 OK
+   Response Headers:
+     - Server: Biomax-Server
+     - Connection: close
+     - response_code: OK
+     - cmd_id: RTLogSendAction (must match incoming cmd_id)
+     - dev_id: <incoming dev_id>
+     - blk_no: <incoming blk_no>
+     - blk_len: 0
+     - Content-Type: application/octet-stream
+     - Content-Length: 0
+
+C. INCOMING ENROLL DATA REQUEST (When new user/fingerprint registered):
+   Headers: request_code: realtime_enroll_data, cmd_id: RTEnrollDataAction
+   Body: {"user_id":"340","user_name":"Prince Kumar","user_privilege":"USER",...}
+
+
+================================================================================
+3. PROTOCOL 2: ADMS / ICLOCK PUSH PROTOCOL (/iclock/cdata)
+================================================================================
+For ZKTeco / Biomax machines in ADMS Mode:
+
+A. Handshake:
+   GET /iclock/cdata?SN=<SERIAL_NUMBER>&options=all
+   Server Response:
+     GET OPTION FROM: <SN>
+     Stamp=9999
+     OpStamp=9999
+     ErrorDelay=30
+     Delay=10
+     TransTimes=00:00;14:00
+     TransInterval=1
+     TransFlag=1111000000
+     TimeZone=5.5
+     Realtime=1
+     Encrypt=0
+
+B. Attendance Push:
+   POST /iclock/cdata?SN=<SERIAL_NUMBER>&table=ATTLOG
+   Body: Tab/Space separated log lines:
+     <PIN>\t<YYYY-MM-DD HH:MM:SS>\t<STATE>\t<VERIFY_TYPE>\t<WORK_CODE>
+     Example: 340\t2026-08-29 16:15:00\t0\t1\t0\t0
+   Server Response: OK: 1
+
+
+================================================================================
+4. PROTOCOL 3: DIRECT ZK TCP/UDP PROTOCOL (Port 4370)
+================================================================================
+Using Python 'pyzk':
+```python
+from zk import ZK
+
+zk = ZK('192.168.0.12', port=4370, timeout=5, force_udp=False)
+conn = zk.connect()
+users = conn.get_users()
+attendance = conn.get_attendance()
+for log in attendance:
+    print(log.user_id, log.timestamp, log.punch)
+conn.disconnect()
+```
+
+
+================================================================================
+5. MULTI-DEVICE SETUP (Connecting 3 to 4+ Machines Simultaneously)
+================================================================================
+
+How Multi-Device Works:
+Because our server operates on HTTP Push architecture (/hdata.aspx & /iclock/cdata),
+YOU DO NOT NEED TO WRITE COMPLEX THREAD POLLING FOR EACH MACHINE!
+
+Architecture Diagram:
++------------------------+
+| Biomax Machine 1       | IP: 192.168.0.12 | dev_id: "MAIN_GATE"      |
+| (ServerIP: 192.168.0.162:8000)                                       |
++------------------------+                     \
+                                                \  HTTP POST /hdata.aspx
++------------------------+                       \ (with unique dev_id)
+| Biomax Machine 2       | IP: 192.168.0.13 |     \
+| (ServerIP: 192.168.0.162:8000)                   +---> [ CENTRAL SERVER ]
++------------------------+                        /      (192.168.0.162:8000)
+                                                 /       Single endpoint handles
++------------------------+                      /        all 4 machines at once!
+| Biomax Machine 3       | IP: 192.168.0.14 |  /
+| (ServerIP: 192.168.0.162:8000)              /
++------------------------+                   /
+                                            /
++------------------------+                 /
+| Biomax Machine 4       | IP: 192.168.0.15 |
+| (ServerIP: 192.168.0.162:8000)
++------------------------+
+
+Configuration on All 4 Machines:
+1. Connect all 4 machines to the SAME Wi-Fi / Local Network.
+2. On Machine 1, Machine 2, Machine 3, Machine 4:
+   - Menu > Comm. / Network > Server Settings:
+     * ServerIP: 192.168.0.162  (Your Central Server PC IP)
+     * ServerPort: 8000         (or 5000)
+3. The server automatically identifies which machine the punch came from using:
+   - dev_id: Hardware Serial Number from HTTP Header.
+   - client_ip: Machine's local Wi-Fi IP (192.168.0.12, 192.168.0.13, etc.).
+
+
+================================================================================
+6. COMPLETE PYTHON IMPLEMENTATION CODE & COPY-PASTE MODULES
+================================================================================
+
+--- FILE 1: requirements.txt ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.9.0
+websockets>=13.0
+requests>=2.32.0
+
+
+--- FILE 2: fk_engine.py (The Core Biomax Push Receiver) ---
+import re
+import json
+import datetime
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(title="Biomax Multi-Device Attendance Engine")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+def parse_fk_time(io_time_str):
+    try:
+        clean = re.sub(r"[^0-9]", "", str(io_time_str))
+        if len(clean) >= 14:
+            return datetime.datetime(
+                int(clean[0:4]), int(clean[4:6]), int(clean[6:8]),
+                int(clean[8:10]), int(clean[10:12]), int(clean[12:14])
+            )
+    except Exception:
+        pass
+    return datetime.datetime.now()
+
+def map_io_mode(mode):
+    mapping = {
+        16777216: "Check-In", 0: "Check-In", 1: "Check-In",
+        33554432: "Check-Out", 2: "Check-Out",
+        50331648: "Break-Out", 3: "Break-Out",
+        67108864: "Break-In", 4: "Break-In"
+    }
+    return mapping.get(mode, "Check-In")
+
+@app.api_route("/hdata.aspx", methods=["GET", "POST"])
+async def receive_biomax_push(request: Request):
+    client_ip = request.client.host if request.client else ""
+    body_bytes = await request.body()
+    body_text = body_bytes.decode("latin1", errors="ignore")
+    
+    headers = {k.lower(): v for k, v in request.headers.items()}
+    cmd_id = headers.get("cmd_id", "RTLogSendAction")
+    dev_id = headers.get("dev_id", "Biomax-Device")
+    blk_no = headers.get("blk_no", "0")
+    
+    # Parse JSON enclosed in binary envelope
+    json_match = re.search(r"\{.*\}", body_text, re.DOTALL)
+    if json_match:
+        try:
+            payload = json.loads(json_match.group(0))
+            
+            # ATTENDANCE LOG
+            if "io_time" in payload or "user_id" in payload:
+                user_id = str(payload.get("user_id")).strip()
+                punch_time = parse_fk_time(payload.get("io_time"))
+                punch_state = map_io_mode(payload.get("io_mode"))
+                
+                # Check user profile
+                user_name = "Prince Kumar" if user_id == "340" else f"User #{user_id}"
+                
+                print(f"[LIVE PUNCH] Machine: {dev_id} ({client_ip}) | User: {user_id} ({user_name}) | State: {punch_state} | Time: {punch_time}")
+                
+                # ---> SAVE TO YOUR DATABASE HERE <---
+                
+            # USER ENROLLMENT
+            elif "user_name" in payload and "user_id" in payload:
+                uid = str(payload.get("user_id")).strip()
+                uname = payload.get("user_name")
+                print(f"[ENROLLED USER] Machine: {dev_id} | User ID: {uid} | Name: {uname}")
+                
+                # ---> SAVE USER TO DATABASE HERE <---
+                
+        except Exception as e:
+            print("JSON parse error:", e)
+
+    # REQUIRED ACKNOWLEDGEMENT HEADERS FOR BIOMAX
+    ack_headers = {
+        "Server": "Biomax-Server",
+        "Connection": "close",
+        "response_code": "OK",
+        "cmd_id": cmd_id,
+        "dev_id": dev_id,
+        "blk_no": blk_no,
+        "blk_len": "0",
+        "Content-Type": "application/octet-stream"
+    }
+    return Response(content=b"", status_code=200, headers=ack_headers)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+================================================================================
+7. HOW TO INTEGRATE INTO YOUR OTHER PROJECTS
+================================================================================
+
+A. In a Node.js / Express Project:
+----------------------------------
+```javascript
+const express = require('express');
+const app = express();
+
+app.use(express.raw({ type: '*/*' }));
+
+app.post('/hdata.aspx', (req, res) => {
+    const rawBody = req.body.toString('latin1');
+    const headers = req.headers;
+    
+    const jsonMatch = rawBody.match(/\{.*\}/s);
+    if (jsonMatch) {
+        try {
+            const data = JSON.parse(jsonMatch[0]);
+            console.log('Punch received:', data.user_id, data.io_time);
+            // Save to DB
+        } catch(e) {}
+    }
+    
+    res.set({
+        'Server': 'Biomax-Server',
+        'Connection': 'close',
+        'response_code': 'OK',
+        'cmd_id': headers['cmd_id'] || 'RTLogSendAction',
+        'dev_id': headers['dev_id'] || 'Biomax',
+        'blk_no': headers['blk_no'] || '0',
+        'blk_len': '0',
+        'Content-Type': 'application/octet-stream'
+    });
+    res.status(200).send('');
+});
+
+app.listen(8000, '0.0.0.0');
+```
+
+B. In a Django / Flask / PHP Project:
+------------------------------------
+- Route the endpoint `/hdata.aspx` (both GET and POST).
+- Extract raw request body string.
+- Find `{...}` using Regex `\{.*\}` and JSON parse.
+- Extract `user_id` and `io_time`.
+- Always respond with HTTP 200, `response_code: OK`, and `Connection: close`.
+
+
+================================================================================
+8. BIOMETRIC DEVICE HARDWARE ON-SCREEN CONFIGURATION STEPS
+================================================================================
+
+To configure any new Biomax machine on the network:
+1. Press [Menu] / [M/OK] on the machine keypad.
+2. Go to [Comm.] (Communication) > [Network] or [Wireless Network (Wi-Fi)].
+3. Connect machine to your Wi-Fi router.
+4. Go to [Server Settings] or [Cloud Server]:
+   - Server IP: <Your PC / Server IP, e.g. 192.168.0.162>
+   - Server Port: 8000 (or 5000)
+   - Enable Server: Yes (ON)
+5. Press [OK] and [ESC] to save and exit to the main screen.
+
+
+================================================================================
+9. TROUBLESHOOTING & COMMON PITFALLS
+================================================================================
+
+1. Problem: Machine is punching, but punches do not reach PC.
+   Solution: Check if Windows Firewall is blocking inbound connections on port 8000.
+   Command to open firewall port:
+   netsh advfirewall firewall add rule name="Biomax Port 8000" dir=in action=allow protocol=TCP localport=8000
+
+2. Problem: Machine keeps repeatedly sending old punches over and over.
+   Solution: Your server is not returning the exact "response_code: OK" header in 
+   HTTP 200 response with "Connection: close".
+
+3. Problem: IP changed after router reboot.
+   Solution: Set a Static IP for your Server PC on your Wi-Fi router, or use DHCP Reservation.
+
+================================================================================
+  END OF INTEGRATION GUIDE - GENERATED FOR PRINCE KUMAR (ID: 340)
+================================================================================

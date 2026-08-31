@@ -221,10 +221,12 @@ export function initializeWhatsAppClient() {
           processedMsgIds.delete(first);
         }
 
-        console.log(`[WhatsAppBot][${eventName}] ✅ Passing to handleIncomingWhatsAppMessage...`);
-        const { handleIncomingWhatsAppMessage } = await import('./whatsappBotService.js');
+        const { getBotConfig, handleIncomingWhatsAppMessage } = await import('./whatsappBotService.js');
+        const currentBotConfig = getBotConfig ? getBotConfig() : null;
+        if (!currentBotConfig || !currentBotConfig.enabled || currentBotConfig.paused === true) {
+          return;
+        }
         await handleIncomingWhatsAppMessage(client, msg);
-        console.log(`[WhatsAppBot][${eventName}] ✅ handleIncomingWhatsAppMessage completed for ${msgId}`);
       } catch (botErr) {
         console.error(`[WhatsAppBot][${eventName}] ❌ Error handling message:`, botErr.message, botErr.stack);
       }

@@ -9,7 +9,8 @@ const __dirname = path.dirname(__filename);
 const CONFIG_FILE = path.join(__dirname, '../whatsapp_ai_config.json');
 
 let botConfig = {
-  enabled: true,
+  enabled: false,
+  paused: true,
   coachingName: 'Career Xone',
   welcomeHeader: 'Namaste! Welcome to Career Xone Intelligent Academic Assistant.',
   counselingPhone1: '9673383561',
@@ -156,7 +157,8 @@ export function getBotLogs() {
 // 4. Main Incoming Message Handler (Ultra-Smart NLP & AI Engine)
 export async function handleIncomingWhatsAppMessage(client, msg) {
   try {
-    if (!botConfig.enabled) return;
+    // 🛑 PERMANENTLY PAUSED GUARD: Zero automated replies
+    if (!botConfig.enabled || botConfig.paused === true) return;
     if (!msg || !client) return;
 
     const fromId = msg.from || '';

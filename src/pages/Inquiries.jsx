@@ -40,13 +40,14 @@ export default function Inquiries() {
       // Also query direct cloud fallback to guarantee 0-delay sync
       let cloudInquiries = [];
       try {
-        const cloudRes = await fetch('https://student-report-ezgw.onrender.com/api/inquiries', {
+        const cloudRes = await fetch(`${API_BASE}/inquiries`, {
           headers: { 'Accept': 'application/json' },
           signal: (typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(6000) : undefined
         });
         if (cloudRes.ok) {
           const cData = await cloudRes.json();
           if (Array.isArray(cData)) cloudInquiries = cData;
+          else if (cData && cData.inquiries) cloudInquiries = cData.inquiries;
         }
       } catch (e) {}
 

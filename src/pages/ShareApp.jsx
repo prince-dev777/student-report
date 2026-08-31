@@ -51,7 +51,9 @@ export default function ShareApp() {
     localStorage.getItem('inquiry_passcode') || '1234'
   );
 
-  // Fetch from server settings
+  const [tunnelUrl, setTunnelUrl] = useState('');
+
+  // Fetch from server settings & active Cloudflare tunnel
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -73,14 +75,26 @@ export default function ShareApp() {
       } catch (err) {
         console.warn('Failed to load remote settings, using local passcodes:', err);
       }
+
+      // Check active Cloudflare tunnel URL
+      try {
+        const res = await fetch('/api/tunnel/status');
+        if (res.ok) {
+          const tData = await res.json();
+          if (tData && tData.url) {
+            setTunnelUrl(tData.url);
+          }
+        }
+      } catch (e) {}
     };
     loadSettings();
   }, []);
 
-  const parentAppLink = "https://studentreport.cxjeeneet.com/parent?app=parent#/parent";
-  const staffWebLink = "https://studentreport.cxjeeneet.com/staff?app=staff#/staff";
-  const teacherWebLink = "https://studentreport.cxjeeneet.com/teacher?app=teacher#/teacher";
+  const baseDomain = "https://studentreport.cxjeeneet.com";
+  const parentAppLink = "https://studentreport.cxjeeneet.com/?app=parent#/parent";
+  const teacherWebLink = "https://studentreport.cxjeeneet.com/?app=teacher#/teacher";
   const inquiryWebLink = "https://studentreport.cxjeeneet.com/inquiry?app=inquiry#/inquiry";
+  const staffWebLink = "https://studentreport.cxjeeneet.com/staff?app=staff#/staff";
 
   const [copiedParentUrl, setCopiedParentUrl] = useState(false);
   const [copiedStaffUrl, setCopiedStaffUrl] = useState(false);

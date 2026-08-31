@@ -1982,4 +1982,103 @@ h4 { font-size: 1.1rem; }
   }
 }
 
+/* ============================================
+   🎨 Global Card Theme Switching (Solid White vs Gradient Theme)
+   ============================================ */
+:root,
+[data-card-theme="white"],
+body[data-card-theme="white"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #ffffff;
+  --bg-glass: #ffffff;
+  --surface-color: #ffffff;
+  --border-color: #e2e8f0;
+  --border-color-light: #f1f5f9;
+  --border-glass: #e2e8f0;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.06);
+}
+
+[data-card-theme="white"] .card,
+[data-card-theme="white"] .glass-card,
+[data-card-theme="white"] .stat-card,
+[data-card-theme="white"] .dash-card,
+[data-card-theme="white"] .modal-content,
+[data-card-theme="white"] .table-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-card-theme="white"] .stat-card.green,
+[data-card-theme="white"] .stat-card.orange,
+[data-card-theme="white"] .stat-card.blue,
+[data-card-theme="white"] .stat-card.purple {
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+}
+
+[data-card-theme="white"] .topbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-card-theme="gradient"],
+body[data-card-theme="gradient"] {
+  --bg-primary: #f0f5fc;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --bg-card-hover: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --surface-color: #ffffff;
+  --border-color: #dbeafe;
+  --border-color-light: #eff6ff;
+  --border-glass: rgba(255, 255, 255, 0.6);
+  --shadow-sm: 0 2px 8px rgba(37, 99, 235, 0.04);
+  --shadow-md: 0 6px 20px rgba(37, 99, 235, 0.07);
+  --shadow-lg: 0 12px 36px rgba(37, 99, 235, 0.12);
+}
+
+[data-card-theme="gradient"] .card,
+[data-card-theme="gradient"] .glass-card,
+[data-card-theme="gradient"] .stat-card,
+[data-card-theme="gradient"] .dash-card {
+  background: linear-gradient(145deg, #ffffff 0%, #f4f8ff 100%) !important;
+  border: 1.5px solid #dbeafe !important;
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.07) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-card-theme="gradient"] .modal-content,
+[data-card-theme="gradient"] .table-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-card-theme="gradient"] .topbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Ensure inner card elements NEVER inherit borders or background boxes */
+.stat-card-top,
+.stat-card-value,
+.stat-card-label,
+.card-header,
+.card-title,
+.card-subtitle,
+.card-body,
+.card-footer,
+.card-content {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 

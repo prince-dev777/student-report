@@ -5,10 +5,8 @@
 // and handles fallback to localStorage if backend is down.
 
 const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
-const isDev = window.location.port === '5173';
-// Use Cloud API server as the primary source of truth for the database
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || ((isLocalhost || isElectron) ? 'http://localhost:5000/api' : 'https://student-report-ezgw.onrender.com/api');
+const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || ((isLocalhost || isElectron) ? 'http://localhost:5000/api' : 'https://student-report-4j6t.onrender.com/api');
 
 // Helper to check if backend is online with automatic retry for smooth startup
 export async function checkBackendStatus(retries = (isElectron ? 5 : 2), delay = 800) {
@@ -85,6 +83,20 @@ async function apiRequest(endpoint, options = {}) {
 }
 
 export const api = {
+  // Generic HTTP Methods
+  get: (endpoint, options = {}) => apiRequest(endpoint, { method: 'GET', ...options }),
+  post: (endpoint, body = {}, options = {}) => apiRequest(endpoint, { 
+    method: 'POST', 
+    body: body instanceof FormData ? body : JSON.stringify(body), 
+    ...options 
+  }),
+  put: (endpoint, body = {}, options = {}) => apiRequest(endpoint, { 
+    method: 'PUT', 
+    body: body instanceof FormData ? body : JSON.stringify(body), 
+    ...options 
+  }),
+  delete: (endpoint, options = {}) => apiRequest(endpoint, { method: 'DELETE', ...options }),
+
   // Auth
   login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   register: (data) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
@@ -238,8 +250,22 @@ export const api = {
     apiRequest('/biometric/auto-sync', { method: 'POST', body: JSON.stringify(data) }),
   getBiometricStatus: () => 
     apiRequest('/biometric/status'),
-  saveBiometricConfig: (data) => 
-    apiRequest('/biometric/config', { method: 'POST', body: JSON.stringify(data) }),
+  getRecentBiometricPunches: (limit = 25) =>
+    apiRequest(`/biometric/recent-punches?limit=${limit}`),
+  manualBiometricPunch: (data) =>
+    apiRequest('/biometric/manual-punch', { method: 'POST', body: JSON.stringify(data) }),
+  cleanBiometricHistory: () =>
+    apiRequest('/biometric/clean-history', { method: 'POST' }),
+
+  // 👥 Staff / Employee Attendance Control Center
+  getStaffAttendance: (date) =>
+    apiRequest(`/staff-attendance${date ? `?date=${date}` : ''}`),
+  manualStaffPunch: (data) =>
+    apiRequest('/staff-attendance/punch', { method: 'POST', body: JSON.stringify(data) }),
+  getStaffMembers: () =>
+    apiRequest('/staff-members'),
+  createStaffMember: (data) =>
+    apiRequest('/staff-members', { method: 'POST', body: JSON.stringify(data) }),
 
   // WhatsApp Parent Auto-Reply Bot
   getWhatsAppBotConfig: () => 

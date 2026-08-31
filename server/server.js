@@ -28,7 +28,7 @@ import Inquiry from './models/Inquiry.js';
 import { protect, authenticateToken } from './middleware/authMiddleware.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { sendWhatsAppAlert } from './services/whatsappService.js';
+import { sendWhatsAppAlert, getOutboundMessagingStatus, setOutboundMessagingStatus } from './services/whatsappService.js';
 import os from 'os';
 import {
   initializeWhatsAppClient,
@@ -52,8 +52,9 @@ import {
   processPunchRecord,
   scanLocalSubnetForBiometricDevices,
   recordAdmsActivity,
-  getLocalNetworkIp
-} from './services/biometricService.js';
+  getLocalNetworkIp,
+  setupBiometricRoutes
+} from './biometric.js';
 import {
   synthesizeSpeech,
   processVoiceTurn,
@@ -74,6 +75,11 @@ import {
 import { uploadStudentPhoto } from './services/cloudinaryService.js';
 import { generateDatabaseSnapshot } from './services/jsonBackupService.js';
 import { mergeDuplicatesOnDb } from './db/duplicateCleaner.js';
+import {
+  startCloudflareTunnel,
+  stopCloudflareTunnel,
+  getTunnelState
+} from './services/tunnelService.js';
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -102,8 +108,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use((req, res, next) => {
+  if (req.ip?.includes('192.168.0.12') || req.socket?.remoteAddress?.includes('192.168.0.12') || req.path.includes('data') || req.path.includes('iclock') || req.path.includes('push') || req.path.includes('attlog') || req.path.includes('hdata')) {
+    console.log(`[HARDWARE TRACE] ${req.method} ${req.originalUrl} from ${req.ip} Query:`, req.query);
+  }
+  next();
+});
 app.use(cors());
-app.use(['/iclock', '/cdata', '/getrequest', '/devicecmd', '/fdata', '/rtlog', '/registry', '/push', '/ping'], express.text({ type: '*/*', limit: '50mb' }));
+app.use(['/iclock', '/cdata', '/getrequest', '/devicecmd', '/fdata', '/rtlog', '/registry', '/push', '/ping', '/hdata.aspx', '/hdata', '/data.aspx', '/data', '/FKWeb.aspx', '/FKWeb'], express.text({ type: '*/*', limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -118,8 +130,11 @@ app.get('/ping', (req, res) => {
   res.status(200).send('pong');
 });
 
-// 🔄 24/7 Keep-Alive Self-Ping Service (Keeps Render Cloud Server permanently awake)
-const CLOUD_APP_URL = process.env.CLOUD_APP_URL || 'https://student-report-ezgw.onrender.com';
+// 📡 Register Biometric Engine Routes (FK Web Protocol /hdata.aspx, ADMS /iclock/cdata, Staff & Student attendance)
+setupBiometricRoutes(app);
+
+// 🔄 24/7 Keep-Alive Self-Ping Service (Keeps Cloud Server awake)
+const CLOUD_APP_URL = process.env.CLOUD_APP_URL || process.env.VITE_API_BASE_URL?.replace('/api', '') || '';
 const KEEP_ALIVE_INTERVAL = 10 * 60 * 1000; // 10 minutes
 
 function startKeepAlivePing() {
@@ -1113,144 +1128,6 @@ app.post('/api/parent/login', async (req, res) => {
   }
 });
 
-// NOTE: Biometric webhook endpoint moved to line ~853 (before protect middleware)
-// to avoid duplicate route registration.
-
-// ---- 📡 Biometric ADMS API (Direct Machine Connection for ZKTeco / eSSL / Realtime / FK) ----
-
-// 1. Initialization / Handshake Request (ZKTeco / eSSL / Realtime ADMS Protocol)
-app.get(['/iclock/cdata', '/cdata'], (req, res) => {
-  const sn = req.query.SN || req.query.sn || req.query.DevSN || 'BIOMETRIC_DEV';
-  console.log(`[ADMS] Handshake request from device SN: ${sn}`);
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('ServerVersion', '3.1.1');
-  res.status(200).send(`GET OPTION FROM: ${sn}\nStamp=9999\nOpStamp=9999\nErrorDelay=60\nDelay=30\nResStamp=9999\nTransTimes=00:00;14:05\nTransInterval=1\nTransFlag=1111000000\nTimeZone=330\nRealtime=1\nEncrypt=0\nServerVersion=3.1.1\n`);
-});
-
-// 2. Command Request Polling & Registry
-app.get(['/iclock/getrequest', '/getrequest', '/iclock/registry', '/registry', '/iclock/push', '/push', '/iclock/ping', '/ping'], (req, res) => {
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('ServerVersion', '3.1.1');
-  res.status(200).send('OK\n');
-});
-
-// 3. Data Push Request (ATTLOG, OPERLOG, USERINFO from ZKTeco, eSSL, Realtime, FK)
-app.post(['/iclock/cdata', '/cdata'], async (req, res) => {
-  try {
-    const sn = req.query.SN || req.query.sn || 'BIOMETRIC_DEV';
-    const table = (req.query.table || req.query.tablename || 'ATTLOG').toUpperCase();
-    let rawData = req.body;
-    if (!rawData) {
-      return res.setHeader('Content-Type', 'text/plain').send('OK');
-    }
-    if (typeof rawData !== 'string') rawData = rawData.toString();
-
-    recordAdmsActivity(sn, rawData.length, req.ip);
-    logInfo('ADMS', `📥 Received push from SN: ${sn}, Table: ${table}, Body size: ${rawData.length} bytes`);
-
-    const lines = rawData.split(/\r?\n/);
-    let successCount = 0;
-
-    for (let line of lines) {
-      line = line.trim();
-      if (!line) continue;
-
-      let rollNumber = '';
-      let dateStr = '';
-      let timeStr = '';
-      let statusVal = '0';
-
-      if (line.includes('\t')) {
-        const tParts = line.split('\t').map(p => p.trim()).filter(Boolean);
-        rollNumber = tParts[0] || '';
-        const dtPart = tParts[1] || '';
-        if (dtPart.includes(' ')) {
-          const [d, t] = dtPart.split(' ');
-          dateStr = d;
-          timeStr = t;
-        } else {
-          dateStr = dtPart;
-          timeStr = tParts[2] || '';
-        }
-        statusVal = tParts[2] && !tParts[2].includes(':') ? tParts[2] : (tParts[3] || '0');
-      } else if (line.includes('PIN=') || line.includes('pin=')) {
-        const matchPin = line.match(/PIN=([0-9a-zA-Z]+)/i);
-        const matchTime = line.match(/TIME=([^&\t\n]+)/i);
-        const matchStatus = line.match(/STATUS=([0-9]+)/i);
-        if (matchPin) rollNumber = matchPin[1].replace(/^0+/, '');
-        if (matchTime) {
-          const d = new Date(matchTime[1]);
-          if (!isNaN(d.getTime())) {
-            dateStr = d.toISOString().split('T')[0];
-            timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-          }
-        }
-        if (matchStatus && matchStatus[1] === '1') statusVal = '1';
-      } else {
-        const sParts = line.split(/\s+/).map(p => p.trim()).filter(Boolean);
-        rollNumber = sParts[0] || '';
-        dateStr = sParts[1] || '';
-        timeStr = sParts[2] || '';
-        statusVal = sParts[3] || '0';
-      }
-
-      if (!rollNumber) continue;
-
-      let type = (statusVal === '1' || String(statusVal).toLowerCase() === 'out') ? 'OUT' : 'IN';
-
-      let formattedTime = timeStr;
-      if (timeStr.includes(':')) {
-        const tParts = timeStr.split(':');
-        let hours = parseInt(tParts[0], 10);
-        const minutes = (tParts[1] || '00').padStart(2, '0');
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12;
-        formattedTime = `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
-      } else {
-        formattedTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-      }
-
-      const punchRes = await processPunchRecord({
-        rollNumber,
-        type,
-        punchTime: formattedTime,
-        punchDate: dateStr,
-        deviceSN: sn
-      });
-
-      if (punchRes.success && punchRes.isNew) {
-        successCount++;
-      }
-    }
-
-    if (successCount > 0) {
-      triggerBackgroundCloudSync();
-    }
-
-    logInfo('ADMS', `✅ Successfully processed ${successCount} new attendance logs.`);
-    res.setHeader('Content-Type', 'text/plain');
-    res.send('OK');
-  } catch (err) {
-    logError('ADMS', `Processing Error: ${err.message}`);
-    res.setHeader('Content-Type', 'text/plain');
-    res.send('OK');
-  }
-});
-
-// 4. Catch-all for other machine commands / queries
-app.all(['/iclock/*', '/iclock', '/devicecmd', '/fdata', '/rtlog', '/registry', '/ping', '/query', '/exchange', '/cdata', '/cdata/*', '/getrequest', '/getrequest/*'], (req, res) => {
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('ServerVersion', '3.1.1');
-  res.status(200).send('OK\n');
-});
-
 // ---- 📞 Cloud WhatsApp Queue Endpoints (Token Authenticated) ----
 app.get('/api/whatsapp/pending', async (req, res) => {
   const token = req.query.token || req.headers['x-whatsapp-token'];
@@ -1360,74 +1237,7 @@ app.post('/api/whatsapp/bot/simulate', async (req, res) => {
   }
 });
 
-// ---- 📟 Biometric Control Center API (Direct IP Socket & Auto-Sync) ----
-app.post('/api/biometric/scan', async (req, res) => {
-  try {
-    const result = await scanLocalSubnetForBiometricDevices();
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-app.post('/api/biometric/test', async (req, res) => {
-  try {
-    const { ip, port } = req.body;
-    const result = await testBiometricDevice(ip, port);
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.post('/api/biometric/sync', async (req, res) => {
-  try {
-    const { ip, port, instituteId } = req.body;
-    const result = await syncBiometricLogs(ip, port, instituteId);
-    // Real-time Cloud Sync Trigger
-    triggerBackgroundCloudSync();
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/biometric/sync-all', async (req, res) => {
-  try {
-    const { devices, instituteId } = req.body;
-    const result = await syncAllBiometricDevices(devices, instituteId);
-    // Real-time Cloud Sync Trigger
-    triggerBackgroundCloudSync();
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/biometric/auto-sync', async (req, res) => {
-  try {
-    const { enabled, ip, port, devices, intervalSeconds, instituteId } = req.body;
-    if (enabled) {
-      const target = Array.isArray(devices) && devices.length > 0 ? devices : ip;
-      const result = startBiometricAutoSync(target, port, intervalSeconds, instituteId);
-      res.json(result);
-    } else {
-      const result = stopBiometricAutoSync();
-      res.json(result);
-    }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/biometric/status', (req, res) => {
-  try {
-    const status = getBiometricStatus();
-    res.json(status);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 app.post('/api/biometric/config', async (req, res) => {
   try {
@@ -1713,13 +1523,15 @@ app.post('/api/students/bulk', async (req, res) => {
 
       const rollNo = String(data.rollNo).trim();
 
-      // Check if student exists (by rollNo, id, or phone)
+      const lookupConditions = [{ rollNo: rollNo }];
+      if (data.id && String(data.id).trim()) {
+        lookupConditions.push({ id: String(data.id).trim() });
+      }
+
+      // Check if student exists (by rollNo or explicit ID)
       const existingStudent = await Student.findOne({ 
         isDeleted: { $ne: true }, 
-        $or: [
-          { rollNo: rollNo },
-          { id: data.id || '' }
-        ],
+        $or: lookupConditions,
         ...(instId ? { instituteId: instId } : {})
       });
 
@@ -2401,6 +2213,112 @@ app.post('/api/tests', authenticateToken, async (req, res) => {
   }
 });
 
+// Reusable helper to re-grade all results for a test using its current answer key + marking scheme
+async function regradeTestResultsHelper(test, instituteId) {
+  let flatAnswerKey = [];
+  if (Array.isArray(test.answerKey)) {
+    flatAnswerKey = test.answerKey;
+  } else if (test.answerKey && typeof test.answerKey === 'object') {
+    const subjectKeys = Object.keys(test.answerKey);
+    if (test.subject) {
+      const orderedSubjects = test.subject.split(',').map(s => s.trim());
+      subjectKeys.sort((a, b) => {
+        const idxA = orderedSubjects.indexOf(a);
+        const idxB = orderedSubjects.indexOf(b);
+        if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+      });
+    }
+    for (const subj of subjectKeys) {
+      flatAnswerKey = flatAnswerKey.concat(test.answerKey[subj]);
+    }
+  }
+
+  if (flatAnswerKey.length === 0) return { regradedCount: 0 };
+
+  const marksPerQ = test.marksPerQuestion || 1;
+  const negMarks = test.negativeMarking || 0;
+
+  // Fetch all results for this test that have studentAnswers
+  const results = await TestResult.find({ isDeleted: { $ne: true }, testId: test.id, instituteId });
+  let regradedCount = 0;
+
+  for (const result of results) {
+    if (!result.studentAnswers || result.studentAnswers.length === 0) continue;
+
+    let correct = 0;
+    let wrong = 0;
+
+    let dynamicTotalMarks = test.totalMarks;
+    if (test.subjectMapping && test.subjectMapping.length > 0) {
+      let selectedQuestionsCount = 0;
+      test.subjectMapping.forEach(m => {
+        selectedQuestionsCount += (m.toQ - m.fromQ + 1);
+      });
+      dynamicTotalMarks = selectedQuestionsCount * marksPerQ;
+    }
+
+    result.studentAnswers.forEach((ans, idx) => {
+      const qNum = idx + 1;
+
+      // Subject Mapping Filter
+      if (test.subjectMapping && test.subjectMapping.length > 0) {
+        const isSelected = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
+        if (!isSelected) return;
+      }
+
+      const ansStr = String(ans).trim().toUpperCase();
+      if (idx < flatAnswerKey.length && flatAnswerKey[idx]) {
+        const corStr = String(flatAnswerKey[idx]).trim().toUpperCase();
+        const isBonus = corStr === '*' || corStr.startsWith('*') || corStr.endsWith('*') || corStr.includes('BONUS') || corStr.includes('STAR');
+        
+        if (isBonus) {
+          correct++;
+        } else if (ansStr && ansStr !== 'NULL') {
+          let matched = false;
+          if (ansStr === corStr) {
+            matched = true;
+          } else {
+            const parsedAns = parseFloat(ansStr);
+            const parsedCor = parseFloat(corStr);
+            if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
+              matched = true;
+            }
+          }
+
+          if (matched) {
+            correct++;
+          } else {
+            wrong++;
+          }
+        }
+      }
+    });
+
+    const newMarks = (correct * marksPerQ) - (wrong * negMarks);
+    const newPercentage = dynamicTotalMarks > 0 ? Math.round((newMarks / dynamicTotalMarks) * 1000) / 10 : 0;
+
+    result.marks = newMarks;
+    result.percentage = newPercentage;
+    await result.save();
+    mirrorWrite('testresults', result.toObject()).catch(() => {});
+    regradedCount++;
+  }
+
+  // Recalculate ranks
+  const allResults = await TestResult.find({ isDeleted: { $ne: true }, testId: test.id, instituteId }).sort({ marks: -1 });
+  for (let i = 0; i < allResults.length; i++) {
+    allResults[i].rank = i + 1;
+    allResults[i].totalStudents = allResults.length;
+    await allResults[i].save();
+    mirrorWrite('testresults', allResults[i].toObject()).catch(() => {});
+  }
+
+  return { regradedCount };
+}
+
 app.put('/api/tests/:id', authenticateToken, async (req, res) => {
   try {
     const testLookup = buildTestLookup(req.params.id, req.user.instituteId);
@@ -2421,9 +2339,25 @@ app.put('/api/tests/:id', authenticateToken, async (req, res) => {
       { new: true }
     );
 
+    let regradedCount = 0;
+    if (updateData.answerKey || updateData.marksPerQuestion !== undefined || updateData.negativeMarking !== undefined || updateData.subjectMapping) {
+      try {
+        const regradeRes = await regradeTestResultsHelper(test, req.user.instituteId);
+        regradedCount = regradeRes.regradedCount;
+      } catch (regradeErr) {
+        console.warn('Auto regrade warning on test update:', regradeErr.message);
+      }
+    }
+
     mirrorWrite('tests', test.toObject()).catch(() => {});
     triggerBackgroundCloudSync();
-    res.json(test);
+    res.json({
+      ...test.toObject(),
+      regradedCount,
+      message: regradedCount > 0 
+        ? `✅ Test saved and ${regradedCount} student test marks & ranks recalculated successfully!`
+        : 'Test updated successfully'
+    });
   } catch (err) {
     console.error('Error updating test:', err);
     res.status(400).json({ error: err.message });
@@ -2453,111 +2387,7 @@ app.post('/api/tests/:id/regrade', authenticateToken, async (req, res) => {
     const test = await Test.findOne(buildTestLookup(req.params.id, req.user.instituteId));
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
-    // Build flat answer key from test
-    let flatAnswerKey = [];
-    if (Array.isArray(test.answerKey)) {
-      flatAnswerKey = test.answerKey;
-    } else if (test.answerKey && typeof test.answerKey === 'object') {
-      const subjectKeys = Object.keys(test.answerKey);
-      if (test.subject) {
-        const orderedSubjects = test.subject.split(',').map(s => s.trim());
-        subjectKeys.sort((a, b) => {
-          const idxA = orderedSubjects.indexOf(a);
-          const idxB = orderedSubjects.indexOf(b);
-          if (idxA === -1 && idxB === -1) return a.localeCompare(b);
-          if (idxA === -1) return 1;
-          if (idxB === -1) return -1;
-          return idxA - idxB;
-        });
-      }
-      for (const subj of subjectKeys) {
-        flatAnswerKey = flatAnswerKey.concat(test.answerKey[subj]);
-      }
-    }
-
-    if (flatAnswerKey.length === 0) {
-      return res.status(400).json({ error: 'No answer key found for this test' });
-    }
-
-    const marksPerQ = test.marksPerQuestion || 1;
-    const negMarks = test.negativeMarking || 0;
-
-    // Fetch all results for this test that have studentAnswers
-    const results = await TestResult.find({ isDeleted: { $ne: true },  testId: test.id, instituteId: req.user.instituteId });
-    let regradedCount = 0;
-
-    for (const result of results) {
-      if (!result.studentAnswers || result.studentAnswers.length === 0) continue;
-
-      let correct = 0;
-      let wrong = 0;
-
-      let dynamicTotalMarks = test.totalMarks;
-      if (test.subjectMapping && test.subjectMapping.length > 0) {
-        let selectedQuestionsCount = 0;
-        test.subjectMapping.forEach(m => {
-          selectedQuestionsCount += (m.toQ - m.fromQ + 1);
-        });
-        dynamicTotalMarks = selectedQuestionsCount * marksPerQ;
-      }
-
-      result.studentAnswers.forEach((ans, idx) => {
-        const qNum = idx + 1;
-
-        // Subject Mapping Filter
-        if (test.subjectMapping && test.subjectMapping.length > 0) {
-          const isSelected = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
-          if (!isSelected) {
-            return; // Skip this unmapped question
-          }
-        }
-
-        const ansStr = String(ans).trim().toUpperCase();
-        if (idx < flatAnswerKey.length && flatAnswerKey[idx]) {
-          const corStr = String(flatAnswerKey[idx]).trim().toUpperCase();
-          const isBonus = corStr === '*' || corStr.startsWith('*') || corStr.endsWith('*') || corStr.includes('BONUS') || corStr.includes('STAR');
-          
-          if (isBonus) {
-            // ⭐ Bonus Question: full marks awarded unconditionally, zero negative deduction
-            correct++;
-          } else if (ansStr && ansStr !== 'NULL') {
-            let matched = false;
-            if (ansStr === corStr) {
-              matched = true;
-            } else {
-              const parsedAns = parseFloat(ansStr);
-              const parsedCor = parseFloat(corStr);
-              if (!isNaN(parsedAns) && !isNaN(parsedCor) && parsedAns === parsedCor) {
-                matched = true;
-              }
-            }
-
-            if (matched) {
-              correct++;
-            } else {
-              wrong++;
-            }
-          }
-        }
-      });
-
-      const newMarks = (correct * marksPerQ) - (wrong * negMarks);
-      const newPercentage = dynamicTotalMarks > 0 ? Math.round((newMarks / dynamicTotalMarks) * 1000) / 10 : 0;
-
-      result.marks = newMarks;
-      result.percentage = newPercentage;
-      await result.save();
-      regradedCount++;
-    }
-
-    // Recalculate ranks
-    const allResults = await TestResult.find({ isDeleted: { $ne: true },  testId: test.id, instituteId: req.user.instituteId }).sort({ marks: -1 });
-    for (let i = 0; i < allResults.length; i++) {
-      allResults[i].rank = i + 1;
-      allResults[i].totalStudents = allResults.length;
-      await allResults[i].save();
-    }
-
+    const { regradedCount } = await regradeTestResultsHelper(test, req.user.instituteId);
     triggerBackgroundCloudSync();
     res.json({ message: `Re-graded ${regradedCount} results successfully`, regradedCount });
   } catch (err) {
@@ -3017,21 +2847,42 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
 
     fs.writeFileSync(tempArgsPath, JSON.stringify(jsonPayload));
 
-    let pythonProcess;
-    const exePath = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_v2.exe');
+    const standaloneDirExe = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_bin', 'omr_engine_v2.exe');
+    const standaloneSingleExe = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'omr_engine_v2.exe');
     const isPackaged = __dirname.includes('app.asar');
 
-    if (isPackaged && fs.existsSync(exePath)) {
-      // Spawn compiled executable directly
-      pythonProcess = spawn(exePath, [tempArgsPath]);
-    } else {
-      let pythonCmd = process.env.PYTHON_CMD;
-      if (!pythonCmd) {
-        const python3Check = spawnSync('python3', ['--version']);
-        pythonCmd = python3Check.error ? 'python' : 'python3';
+    const spawnOptions = {
+      cwd: __dirname,
+      env: { ...process.env, PYTHONPATH: __dirname }
+    };
+
+    let pythonCmd = process.env.PYTHON_CMD;
+    if (!pythonCmd) {
+      const python3Check = spawnSync('python3', ['--version']);
+      if (!python3Check.error) {
+        pythonCmd = 'python3';
+      } else {
+        const pythonCheck = spawnSync('python', ['--version']);
+        if (!pythonCheck.error) {
+          pythonCmd = 'python';
+        }
       }
-      // Spawn Python Process
-      pythonProcess = spawn(pythonCmd, [pythonScriptPath, tempArgsPath]);
+    }
+
+    if (fs.existsSync(standaloneDirExe)) {
+      // 1. Standalone Binary Runtime (Works 100% on Boss & Client PCs with NO Python installed)
+      pythonProcess = spawn(standaloneDirExe, [tempArgsPath], {
+        cwd: path.dirname(standaloneDirExe),
+        env: { ...process.env }
+      });
+    } else if (pythonCmd && fs.existsSync(pythonScriptPath)) {
+      // 2. Direct Python source (When Python runtime exists)
+      pythonProcess = spawn(pythonCmd, [pythonScriptPath, tempArgsPath], spawnOptions);
+    } else if (fs.existsSync(standaloneSingleExe)) {
+      // 3. Fallback binary
+      pythonProcess = spawn(standaloneSingleExe, [tempArgsPath], spawnOptions);
+    } else {
+      pythonProcess = spawn(pythonCmd || 'python', [pythonScriptPath, tempArgsPath], spawnOptions);
     }
 
     let pythonOutput = '';
@@ -3243,16 +3094,16 @@ app.delete('/api/sms-logs/bulk', async (req, res) => {
     const objectIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
     const stringIds = ids.map(id => String(id));
 
-    const orClauses = [{ id: { $in: stringIds } }];
+    const orClauses = [
+      { id: { $in: stringIds } },
+      { _id: { $in: stringIds } }
+    ];
     if (objectIds.length > 0) {
       orClauses.push({ _id: { $in: objectIds } });
     }
 
     const query = { $or: orClauses };
-    if (req.user && req.user.instituteId) {
-      query.instituteId = new mongoose.Types.ObjectId(req.user.instituteId);
-    }
-
+    await SMSLog.updateMany(query, { $set: { isDeleted: true, deletedAt: new Date() } }).catch(() => {});
     const result = await dualDelete('smslogs', query);
 
     triggerBackgroundCloudSync();
@@ -3266,11 +3117,21 @@ app.delete('/api/sms-logs/bulk', async (req, res) => {
 // Clear All SMS Logs for Current Institute
 app.delete('/api/sms-logs/all', async (req, res) => {
   try {
-    const query = {};
+    let query = {};
     if (req.user && req.user.instituteId) {
-      query.instituteId = new mongoose.Types.ObjectId(req.user.instituteId);
+      const instId = req.user.instituteId;
+      query = {
+        $or: [
+          { instituteId: instId },
+          { instituteId: String(instId) },
+          ...(mongoose.Types.ObjectId.isValid(instId) ? [{ instituteId: new mongoose.Types.ObjectId(instId) }] : []),
+          { instituteId: { $exists: false } },
+          { instituteId: null }
+        ]
+      };
     }
 
+    await SMSLog.updateMany(query, { $set: { isDeleted: true, deletedAt: new Date() } }).catch(() => {});
     const result = await dualDelete('smslogs', query);
 
     triggerBackgroundCloudSync();
@@ -3288,13 +3149,13 @@ app.delete('/api/sms-logs/:id', async (req, res) => {
     const query = {
       $or: [
         { id: rawId },
+        { id: String(rawId) },
+        { _id: rawId },
         ...(isObjId ? [{ _id: new mongoose.Types.ObjectId(rawId) }] : [])
       ]
     };
-    if (req.user && req.user.instituteId) {
-      query.instituteId = new mongoose.Types.ObjectId(req.user.instituteId);
-    }
 
+    await SMSLog.updateMany(query, { $set: { isDeleted: true, deletedAt: new Date() } }).catch(() => {});
     const result = await dualDelete('smslogs', query);
 
     triggerBackgroundCloudSync();
@@ -3472,32 +3333,33 @@ for (const dir of possibleStaticDirs) {
 cron.schedule('0 0 * * *', async () => {
   console.log('Running daily cron job for OMR auto-deletion...');
   try {
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      return;
+    }
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     // Find records older than 30 days that have a Cloudinary public ID
-    const recordsToDelete = await TestResult.find({ isDeleted: { $ne: true }, 
+    const recordsToDelete = await TestResult.find({ 
+      isDeleted: { $ne: true }, 
       createdAt: { $lt: thirtyDaysAgo },
       omrSheetPublicId: { $ne: null }
     });
 
     if (recordsToDelete.length > 0) {
       console.log(`Found ${recordsToDelete.length} OMR images to delete from Cloudinary.`);
-      if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-        for (const record of recordsToDelete) {
-          try {
-            await cloudinary.uploader.destroy(record.omrSheetPublicId);
-            record.omrSheetImage = null;
-            record.omrSheetPublicId = null;
-            await record.save();
-          } catch (err) {
-            console.error(`Failed to delete Cloudinary image ${record.omrSheetPublicId}:`, err.message);
-          }
+      for (const record of recordsToDelete) {
+        try {
+          await cloudinary.uploader.destroy(record.omrSheetPublicId);
+          record.omrSheetImage = null;
+          record.omrSheetPublicId = null;
+          await record.save();
+        } catch (err) {
+          console.error(`Failed to delete Cloudinary image ${record.omrSheetPublicId}:`, err.message);
         }
-        console.log('Daily cron job for OMR auto-deletion completed.');
-      } else {
-        console.warn('Cloudinary keys missing. Skipping cron delete.');
       }
+      console.log('Daily cron job for OMR auto-deletion completed.');
     }
   } catch (err) {
     console.error('Cron job error:', err.message);
@@ -3521,6 +3383,16 @@ app.post('/api/whatsapp/local-disconnect', async (req, res) => {
 
 app.get('/api/whatsapp/local-status', (req, res) => {
   res.json(getWhatsAppClientState());
+});
+
+app.get('/api/whatsapp/outbound-status', (req, res) => {
+  res.json({ enabled: getOutboundMessagingStatus() });
+});
+
+app.post('/api/whatsapp/outbound-toggle', (req, res) => {
+  const { enabled } = req.body;
+  const nextVal = setOutboundMessagingStatus(enabled);
+  res.json({ success: true, enabled: nextVal });
 });
 
 // ---- 🖥️ System Info API ----
@@ -3547,6 +3419,7 @@ app.get('/api/system/local-ip', (req, res) => {
 let isPolling = false;
 async function pollPendingWhatsAppMessages() {
   if (isPolling) return;
+  if (!getOutboundMessagingStatus()) return;
   if (process.env.WHATSAPP_PROVIDER !== 'whatsapp-web') return;
 
   const state = getWhatsAppClientState();
@@ -4365,6 +4238,27 @@ app.post('/api/test-series/generate-pdf', async (req, res) => {
   }
 });
 
+// ==========================================
+// --- 🌐 CLOUDFLARE ZERO-TRUST TUNNEL API ---
+// ==========================================
+app.get('/api/tunnel/status', (req, res) => {
+  res.json({ success: true, ...getTunnelState() });
+});
+
+app.post('/api/tunnel/start', async (req, res) => {
+  try {
+    const result = await startCloudflareTunnel(PORT);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/tunnel/stop', (req, res) => {
+  stopCloudflareTunnel();
+  res.json({ success: true, status: 'stopped' });
+});
+
 app.get('*', (req, res) => {
   const indexLocations = [
     path.join(__dirname, '../dist/index.html'),
@@ -4409,10 +4303,15 @@ app.get('*', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server listening at http://0.0.0.0:${PORT} (LAN reachable at ${getLocalNetworkIp()}:${PORT})`);
 
-  // Self-ping service to prevent Render free-tier spin down (every 10 minutes)
+  // Auto-start Cloudflare Tunnel for seamless 24/7 remote mobile access to Parent & Teacher app
+  startCloudflareTunnel(PORT).catch((err) => {
+    console.warn('[CloudflareTunnel] Notice:', err.message);
+  });
+
+  // Self-ping service to prevent free-tier spin down (every 10 minutes)
   // Only activate when running as a cloud server (not inside Electron desktop)
   const isElectronChild = !!process.env.ELECTRON_RUN_AS_NODE;
-  const SELF_PING_URL = process.env.SELF_PING_URL || 'https://student-report-ezgw.onrender.com';
+  const SELF_PING_URL = process.env.SELF_PING_URL || process.env.VITE_API_BASE_URL?.replace('/api', '') || '';
   if (SELF_PING_URL && !isElectronChild) {
     setInterval(() => {
       https.get(SELF_PING_URL, (res) => {
@@ -4423,6 +4322,16 @@ app.listen(PORT, '0.0.0.0', () => {
     }, 10 * 60 * 1000);
   }
 });
+
+// Also bind secondary listener on port 8000 for Biomax FK Web Protocol
+try {
+  const biomaxServer = app.listen(8000, '0.0.0.0', () => {
+    console.log(`📡 Biomax FK Push Receiver active on port 8000 (LAN: ${getLocalNetworkIp()}:8000)`);
+  });
+  biomaxServer.on('error', (e) => {
+    // Port 8000 might be handled by proxy, ignore
+  });
+} catch (e) {}
 
 // Also bind secondary listener on port 71 if free (to catch FK/Realtime biometric pushes)
 try {

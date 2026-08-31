@@ -153,8 +153,17 @@ export async function performFullSync() {
         // Fetch Cloud docs
         const cloudDocs = await cloudColl.find({}).toArray();
 
-        // 1. If Local is completely empty and Cloud has data: AUTO-PULL from Cloud!
+        // 1. If Local is completely empty and Cloud has data: AUTO-PULL from Cloud (for core entities ONLY, never resurrect cleared logs)
+        const logCollections = ['smslogs', 'notifications', 'voicecalllogs'];
         if (activeLocalDocs.length === 0 && cloudDocs.length > 0) {
+          if (logCollections.includes(collName)) {
+            // If local logs were cleared, purge cloud logs as well so deleted logs never resurrect
+            await cloudColl.deleteMany({}).catch(() => {});
+            totalPurged += cloudDocs.length;
+            logInfo('SYNC', `🧹 Cleared ${cloudDocs.length} cloud records for empty local log collection [${collName}]`);
+            continue;
+          }
+
           const fixedCloudDocs = cloudDocs.map(fixObjectIds);
           for (let i = 0; i < fixedCloudDocs.length; i += 500) {
             const batch = fixedCloudDocs.slice(i, i + 500).map(doc => ({
@@ -190,7 +199,7 @@ export async function performFullSync() {
         // 4. Pull any Cloud docs that are not yet in Local (Safe Two-Way Merge)
         if (cloudDocs.length > 0) {
           const localIdsSet = new Set(localDocs.map(d => String(d._id)));
-          const missingInLocal = cloudDocs.filter(cd => !localIdsSet.has(String(cd._id)));
+          const missingInLocal = cloudDocs.filter(cd => !localIdsSet.has(String(cd._id)) && !cd.isDeleted);
           if (missingInLocal.length > 0) {
             const fixedMissing = missingInLocal.map(fixObjectIds);
             for (let i = 0; i < fixedMissing.length; i += 500) {

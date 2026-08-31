@@ -51,7 +51,9 @@ import {
   Flame,
   CheckCheck,
   Eye,
-  Camera
+  Camera,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import idLogo from '../assets/id-logo.png';
@@ -69,6 +71,7 @@ import {
   getFirstDayOfMonth,
   monthNames,
   dayNames,
+  calcDuration,
 } from '../utils/helpers';
 import { getInitials, getAvatarClass } from '../data/sampleData';
 
@@ -128,7 +131,7 @@ const playKioskSound = (type = 'entry') => {
 };
 
 export default function Attendance() {
-  const { students, batches, attendance, markAttendance, refreshAttendance, refreshSMSLogs, user } = useApp();
+  const { students, batches, attendance, markAttendance, refreshAttendance, refreshSMSLogs, user, sessions = [] } = useApp();
   const [activeTab, setActiveTab] = useState('kiosk');
   const [selectedStudent, setSelectedStudent] = useState('');
   const [todaySearch, setTodaySearch] = useState('');
@@ -139,6 +142,8 @@ export default function Attendance() {
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calStudent, setCalStudent] = useState('all');
   const [attendanceFilter, setAttendanceFilter] = useState('all'); // 'all' | 'present' | 'late' | 'absent'
+  const [todayPage, setTodayPage] = useState(1);
+  const [todayPageSize, setTodayPageSize] = useState(25);
   
   // History Date Range States
   const [historyRangeType, setHistoryRangeType] = useState('custom'); // 'today' | '7days' | '30days' | 'custom' | 'heatmap'
@@ -149,6 +154,7 @@ export default function Attendance() {
   // ⚡ Live QR Scanner Kiosk Mode States
   const [kioskCode, setKioskCode] = useState('');
   const [kioskMode, setKioskMode] = useState('auto'); // 'auto' | 'entry' | 'exit'
+  const [selectedSessionId, setSelectedSessionId] = useState('auto'); // 'auto' | session.id
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showIdCardsModal, setShowIdCardsModal] = useState(false);
@@ -161,7 +167,283 @@ export default function Attendance() {
   const [idCardShowAll, setIdCardShowAll] = useState(false);
   const [lastPunch, setLastPunch] = useState(null);
   const [lastScannedMap, setLastScannedMap] = useState({});
+  const lastSeenBiometricEventIdRef = useRef(null);
   const kioskInputRef = useRef(null);
+
+  // 📡 Biometric Machine Integration States
+  const [biometricStatus, setBiometricStatus] = useState({
+    connected: true,
+    targetIp: '192.168.0.12',
+    targetPort: 8000,
+    autoSyncEnabled: true,
+    lastSyncTime: null,
+    recentPunches: [],
+    admsStatus: { active: true, listenerPort: 8000 }
+  });
+  const [isBiometricSyncing, setIsBiometricSyncing] = useState(false);
+  const [isBiometricScanning, setIsBiometricScanning] = useState(false);
+  const [showBiometricGuideModal, setShowBiometricGuideModal] = useState(false);
+  const [detectedDevices, setDetectedDevices] = useState([
+    { ip: '192.168.0.12', port: 8000, name: 'Biomax FK Hardware', protocol: 'HTTP Push 8000', status: 'Online' }
+  ]);
+  // 👥 Employee / Staff Attendance States
+  const [staffRoster, setStaffRoster] = useState([]);
+  const [staffDate, setStaffDate] = useState(getTodayStr());
+  const [staffSearch, setStaffSearch] = useState('');
+  const [isStaffLoading, setIsStaffLoading] = useState(false);
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [newStaffForm, setNewStaffForm] = useState({
+    staffId: '',
+    name: '',
+    designation: 'Faculty / Staff',
+    department: 'Engineering',
+    phone: '',
+    role: 'staff'
+  });
+
+  // Fetch Staff Attendance Roster
+  const fetchStaffAttendance = async (date = staffDate) => {
+    setIsStaffLoading(true);
+    try {
+      const res = await api.getStaffAttendance(date);
+      const data = res?.data || res;
+      if (data?.success) {
+        setStaffRoster(data.roster || []);
+      }
+    } catch (e) {
+      console.warn('Failed to load staff attendance:', e);
+    } finally {
+      setIsStaffLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaffAttendance(staffDate);
+  }, [staffDate, activeTab]);
+
+  const handleManualStaffPunch = async (staffId, type) => {
+    const toastId = toast.loading(`Recording ${type} for staff #${staffId}...`);
+    try {
+      const res = await api.manualStaffPunch({
+        staffId,
+        type,
+        date: staffDate
+      });
+      const data = res?.data || res;
+      if (data?.success) {
+        toast.success(`✅ Recorded ${type} for ${data.name || staffId}!`, { id: toastId });
+        fetchStaffAttendance(staffDate);
+      } else {
+        toast.error(data?.error || 'Failed to record punch', { id: toastId });
+      }
+    } catch (err) {
+      toast.error(`Error: ${err.message}`, { id: toastId });
+    }
+  };
+
+  const handleCleanBiometricHistory = async () => {
+    if (!confirm('Are you sure you want to clean old historical backlog data? (Only today from 16:00 and Prince Kumar #340 will remain)')) return;
+    const toastId = toast.loading('Cleaning old historical logs from database...');
+    try {
+      const res = await api.cleanBiometricHistory();
+      const data = res?.data || res;
+      if (data?.success) {
+        toast.success(`🧹 Cleaned ${data.deletedStudentAttendance || 0} student logs and ${data.deletedStaffAttendance || 0} staff logs!`, { id: toastId });
+        fetchStaffAttendance(staffDate);
+        if (refreshAttendance) refreshAttendance();
+      }
+    } catch (err) {
+      toast.error(`Clean failed: ${err.message}`, { id: toastId });
+    }
+  };
+
+  const handleSaveStaffMember = async (e) => {
+    e.preventDefault();
+    if (!newStaffForm.staffId || !newStaffForm.name) {
+      return toast.error('Please enter Staff ID and Full Name');
+    }
+    const toastId = toast.loading('Saving staff member...');
+    try {
+      const res = await api.createStaffMember(newStaffForm);
+      const data = res?.data || res;
+      if (data?.success) {
+        toast.success(`✅ Added ${newStaffForm.name} (#${newStaffForm.staffId})!`, { id: toastId });
+        setShowAddStaffModal(false);
+        setNewStaffForm({ staffId: '', name: '', designation: 'Faculty / Staff', department: 'Engineering', phone: '', role: 'staff' });
+        fetchStaffAttendance(staffDate);
+      } else {
+        toast.error(data?.error || 'Failed to add staff', { id: toastId });
+      }
+    } catch (err) {
+      toast.error(`Error: ${err.message}`, { id: toastId });
+    }
+  };
+
+  const exportStaffAttendanceCsv = () => {
+    if (staffRoster.length === 0) return toast.error('No staff records to export');
+    const headers = ['Employee ID,Name,Department,Designation,Status,Check-In,Check-Out,Duration,Device SN'];
+    const rows = staffRoster.map(r => {
+      return `"${r.staffId}","${r.name}","${r.department}","${r.designation}","${r.status}","${r.entryTime}","${r.exitTime}","${r.workHoursFormatted || '0h 0m'}","${r.deviceSN || '--'}"`;
+    });
+    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `staff_attendance_${staffDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Fetch Biometric Status & Listen for Live Physical Hardware Punches
+  const fetchBiometricStatus = async () => {
+    try {
+      const res = await api.get('/biometric/status');
+      const data = res?.data || res;
+      if (data && typeof data === 'object') {
+        const safePort = parseInt(data.targetPort, 10) || 8000;
+        setBiometricStatus(prev => ({
+          ...prev,
+          ...data,
+          targetIp: data.targetIp || '192.168.0.12',
+          targetPort: safePort
+        }));
+      }
+
+      // Check for real-time live biometric event to trigger visual/sound chime
+      const evtRes = await api.get('/biometric/latest-event');
+      const evt = evtRes?.latestEvent || evtRes?.data?.latestEvent;
+      if (evt && evt.id && evt.id !== lastSeenBiometricEventIdRef.current) {
+        const isRecent = (Date.now() - (evt.timestamp || 0)) < 25000;
+        lastSeenBiometricEventIdRef.current = evt.id;
+
+        if (isRecent) {
+          setLastPunch({
+            student: evt.student,
+            punchType: evt.punchType,
+            time: evt.time,
+            timestamp: evt.timestamp,
+            duration: evt.duration || '',
+            sessionName: evt.sessionName || '',
+            parentPhone: evt.parentPhone || '',
+            isStaff: evt.isStaff || false
+          });
+          setScannerState('success');
+          setTimeout(() => setScannerState('default'), 3500);
+
+          if (soundEnabled) {
+            playKioskSound(evt.punchType === 'entry' ? 'entry' : 'exit');
+          }
+          toast.success(`⚡ Biometric Punch: ${evt.student.name} marked ${evt.punchType.toUpperCase()}!`, { icon: '👆' });
+        }
+      }
+    } catch (e) {}
+  };
+
+  // Poll Biometric Status & Latest Attendance every 2.5 seconds
+  useEffect(() => {
+    fetchBiometricStatus();
+    if (typeof refreshAttendance === 'function') refreshAttendance();
+    const interval = setInterval(() => {
+      fetchBiometricStatus();
+      if (typeof refreshAttendance === 'function') refreshAttendance();
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [activeTab, refreshAttendance, soundEnabled]);
+
+  // Clean Historical Attendance Backlog
+  const handleClearAttendanceBacklog = async () => {
+    if (!confirm(`🧹 Clear previous historical attendance backlog from database? Today's records will be kept.`)) return;
+    const toastId = toast.loading('Clearing past backlog records...');
+    try {
+      const res = await api.post('/biometric/clear-attendance', { mode: 'before-date', beforeDate: getTodayStr() });
+      const data = res?.data || res;
+      toast.success(data.message || '✅ Past attendance backlog cleared successfully!', { id: toastId });
+      if (typeof refreshAttendance === 'function') await refreshAttendance();
+      fetchStaffAttendance(staffDate);
+      fetchBiometricStatus();
+    } catch (err) {
+      toast.error(`Failed to clear backlog: ${err.message}`, { id: toastId });
+    }
+  };
+
+  // Sync Biometric Logs Now
+  const handleSyncBiometric = async (ip = '192.168.0.12', port = 71) => {
+    setIsBiometricSyncing(true);
+    const toastId = toast.loading(`📡 Connecting & Syncing from Biometric Machine (${ip}:${port})...`);
+    try {
+      const res = await api.post('/biometric/sync', { ip, port });
+      const data = res?.data || res;
+      if (data?.success) {
+        toast.success(data.message || `✅ Successfully synchronized logs from Biometric Machine!`, { id: toastId });
+        if (refreshAttendance) await refreshAttendance();
+        fetchBiometricStatus();
+      } else {
+        toast.error(data?.error || `Failed to sync from Biometric Machine`, { id: toastId });
+      }
+    } catch (err) {
+      toast.error(`Sync error: ${err.response?.data?.error || err.message}`, { id: toastId });
+    } finally {
+      setIsBiometricSyncing(false);
+    }
+  };
+
+  // Scan Subnet for Devices
+  const handleScanSubnet = async () => {
+    setIsBiometricScanning(true);
+    const toastId = toast.loading('🔍 Scanning Wi-Fi network for Biometric Machines...');
+    try {
+      const res = await api.post('/biometric/scan');
+      const data = res?.data || res;
+      if (data?.success) {
+        const devices = data.devices || [];
+        setDetectedDevices(devices.length > 0 ? devices : detectedDevices);
+        if (devices.length > 0) {
+          // Auto-update status with primary device
+          const primary = devices[0];
+          setBiometricStatus(prev => ({
+            ...prev,
+            connected: true,
+            targetIp: primary.ip,
+            targetPort: primary.port,
+            error: null
+          }));
+          toast.success(`✅ Found ${data.count} Biometric Machine(s) — Primary: ${primary.ip}:${primary.port}`, { id: toastId });
+        } else {
+          toast.success('🔍 Scan complete — No new devices found (existing device retained)', { id: toastId });
+        }
+        fetchBiometricStatus();
+      } else {
+        toast.error(data?.error || 'Scan finished with no devices found', { id: toastId });
+      }
+    } catch (err) {
+      toast.error(`Scan error: ${err.message}`, { id: toastId });
+    } finally {
+      setIsBiometricScanning(false);
+    }
+  };
+
+  // Toggle Auto-Sync
+  const handleToggleAutoSync = async () => {
+    const nextState = !biometricStatus.autoSyncEnabled;
+    try {
+      // Always use port 71 for FK/Realtime/BioMax hardware (our confirmed device type)
+      const syncIp = biometricStatus.targetIp || '192.168.0.12';
+      const syncPort = 71; // ← HARDCODED: FK machines always use port 71
+      const res = await api.post('/biometric/auto-sync', {
+        enabled: nextState,
+        intervalMs: 15000,
+        devices: [{ ip: syncIp, port: syncPort }]
+      });
+      const data = res?.data || res;
+      if (data?.success) {
+        setBiometricStatus(prev => ({ ...prev, autoSyncEnabled: nextState }));
+        toast.success(nextState ? `⚡ Auto-Sync enabled — ${syncIp}:${syncPort} (Every 15s)!` : '🛑 Auto-Sync paused.');
+      }
+    } catch (err) {
+      toast.error(`Failed to toggle auto-sync: ${err.message}`);
+    }
+  };
 
   // Auto-dismiss last punch celebration after 6 seconds
   useEffect(() => {
@@ -326,18 +608,24 @@ export default function Attendance() {
     });
   }, [todayTableData, attendanceFilter, todaySearch]);
 
-  // Calculate duration between entry and exit
-  const calcDuration = (entry, exit) => {
-    if (!entry) return '-';
-    if (!exit) return 'In progress';
-    const [eh, em] = entry.split(':').map(Number);
-    const [xh, xm] = exit.split(':').map(Number);
-    const diffMins = (xh * 60 + xm) - (eh * 60 + em);
-    if (diffMins < 0) return '-';
-    const hrs = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
-    return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-  };
+  // Reset page when filter or search changes
+  useEffect(() => {
+    setTodayPage(1);
+  }, [todaySearch, attendanceFilter, todayPageSize]);
+
+  // Calculate paginated today records
+  const totalTodayPages = useMemo(() => {
+    if (todayPageSize === 'all') return 1;
+    const size = typeof todayPageSize === 'number' ? todayPageSize : parseInt(todayPageSize, 10) || 25;
+    return Math.ceil(filteredTodayStudents.length / size) || 1;
+  }, [filteredTodayStudents.length, todayPageSize]);
+
+  const paginatedTodayStudents = useMemo(() => {
+    if (todayPageSize === 'all') return filteredTodayStudents;
+    const size = typeof todayPageSize === 'number' ? todayPageSize : parseInt(todayPageSize, 10) || 25;
+    const start = (todayPage - 1) * size;
+    return filteredTodayStudents.slice(start, start + size);
+  }, [filteredTodayStudents, todayPage, todayPageSize]);
 
   // Calendar helpers
   const daysInMonth = getDaysInMonth(calYear, calMonth);
@@ -676,8 +964,13 @@ export default function Attendance() {
     // Update debounce map
     setLastScannedMap((prev) => ({ ...prev, [matchedStudent.id]: now }));
 
+    // Determine active session name
+    const activeSession = selectedSessionId !== 'auto'
+      ? sessions.find(s => s.id === selectedSessionId || s._id === selectedSessionId)
+      : null;
+
     // Mark attendance
-    markAttendance(matchedStudent.id, determinedType);
+    markAttendance(matchedStudent.id, determinedType, activeSession?.name);
 
     // Audio confirmation
     if (soundEnabled) playKioskSound(determinedType);
@@ -708,7 +1001,8 @@ export default function Attendance() {
   };
 
   const tabs = [
-    { key: 'kiosk', label: '⚡ Live QR Kiosk Mode' },
+    { key: 'kiosk', label: '📡 Biometric Machine & Kiosk' },
+    { key: 'staff', label: '👥 Employee / Staff Attendance' },
     { key: 'mark', label: 'Manual Mark' },
     { key: 'today', label: "Today's Record" },
     { key: 'history', label: 'History' },
@@ -884,6 +1178,434 @@ export default function Attendance() {
 
       {/* Tab Content */}
       <AnimatePresence mode="wait">
+        {/* ========== TAB: 👥 Employee / Staff Attendance ========== */}
+        {activeTab === 'staff' && (
+          <motion.div
+            key="staff"
+            variants={tabVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.3 }}
+            className="flex flex-col gap-24"
+          >
+            {/* Top Toolbar & Controls */}
+            <div className="card" style={{ padding: '20px 24px', background: 'var(--surface-color)', border: '1.5px solid var(--border-color)', borderRadius: 18 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    👥 Employee &amp; Faculty Attendance Portal
+                  </h2>
+                  <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                    Real-time biometric attendance tracking for teachers, admins, and staff members (Separate from students).
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  {/* Date Picker */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-color)', padding: '6px 12px', borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                    <Calendar size={15} color="var(--accent-blue)" />
+                    <input
+                      type="date"
+                      value={staffDate}
+                      onChange={(e) => setStaffDate(e.target.value)}
+                      style={{ border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.84rem', fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  {/* Refresh Button */}
+                  <button
+                    type="button"
+                    onClick={() => fetchStaffAttendance(staffDate)}
+                    disabled={isStaffLoading}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.80rem', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <RefreshCw size={14} className={isStaffLoading ? 'spin' : ''} />
+                    <span>Refresh</span>
+                  </button>
+
+                  {/* Clear Old Backlog Button */}
+                  <button
+                    type="button"
+                    onClick={handleCleanBiometricHistory}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.80rem', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6, borderColor: 'rgba(239, 68, 68, 0.4)', color: '#ef4444' }}
+                    title="Clean old historical backlog from machine memory"
+                  >
+                    <X size={14} />
+                    <span>Clear Old Backlog</span>
+                  </button>
+
+                  {/* Export CSV Button */}
+                  <button
+                    type="button"
+                    onClick={exportStaffAttendanceCsv}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.80rem', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Download size={14} />
+                    <span>Export CSV</span>
+                  </button>
+
+                  {/* Add Staff Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowAddStaffModal(true)}
+                    className="btn btn-primary btn-sm"
+                    style={{ fontSize: '0.80rem', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Plus size={14} />
+                    <span>+ Add Employee</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Staff Stats Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 20 }}>
+                <div style={{ background: 'var(--bg-color)', padding: '16px 18px', borderRadius: 14, border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>TOTAL EMPLOYEES</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>{staffRoster.length}</div>
+                </div>
+
+                <div style={{ background: 'var(--bg-color)', padding: '16px 18px', borderRadius: 14, border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>PRESENT TODAY</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#10b981', marginTop: 4 }}>
+                    {staffRoster.filter(s => s.status === 'present' || s.entryTime !== '--').length}
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--bg-color)', padding: '16px 18px', borderRadius: 14, border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>ON LEAVE / ABSENT</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f59e0b', marginTop: 4 }}>
+                    {staffRoster.filter(s => s.status !== 'present' && s.entryTime === '--').length}
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--bg-color)', padding: '16px 18px', borderRadius: 14, border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>DEPARTMENTS</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--accent-blue)', marginTop: 4 }}>
+                    {new Set(staffRoster.map(s => s.department || 'General')).size}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Staff Attendance Table Card */}
+            <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 18, border: '1.5px solid var(--border-color)' }}>
+              <div style={{ padding: '16px 20px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
+                  Employee Attendance Roster ({staffDate})
+                </h3>
+
+                <div style={{ position: 'relative', width: 280 }}>
+                  <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                  <input
+                    type="text"
+                    value={staffSearch}
+                    onChange={(e) => setStaffSearch(e.target.value)}
+                    placeholder="Search employee name or ID..."
+                    style={{ width: '100%', padding: '7px 12px 7px 32px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.82rem', outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div className="table-container" style={{ margin: 0 }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Staff ID</th>
+                      <th>Department</th>
+                      <th>Check-In</th>
+                      <th>Check-Out</th>
+                      <th>Work Duration</th>
+                      <th>Status</th>
+                      <th>Manual Punch</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffRoster
+                      .filter(st => {
+                        if (!staffSearch) return true;
+                        const q = staffSearch.toLowerCase();
+                        return (st.name || '').toLowerCase().includes(q) || String(st.staffId || '').toLowerCase().includes(q);
+                      })
+                      .map((st, idx) => {
+                        const isPrince = st.staffId === '340';
+                        const isPresent = st.status === 'present' || st.entryTime !== '--';
+                        return (
+                          <tr key={idx} style={{ background: isPrince ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: '50%',
+                                  background: isPrince ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#334155',
+                                  color: '#ffffff',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 800,
+                                  fontSize: '0.82rem'
+                                }}>
+                                  {getInitials(st.name)}
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 800, fontSize: '0.90rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    {st.name}
+                                    {isPrince && (
+                                      <span style={{ background: '#3b82f6', color: '#ffffff', fontSize: '0.65rem', padding: '1px 6px', borderRadius: 10, fontWeight: 800 }}>
+                                        ⭐ You
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                    {st.designation || 'Faculty'}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.86rem' }}>
+                                #{st.staffId}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                                {st.department || 'General'}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ color: st.entryTime !== '--' ? '#10b981' : 'var(--text-secondary)', fontWeight: 700, fontSize: '0.86rem' }}>
+                                {st.entryTime}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ color: st.exitTime !== '--' ? '#3b82f6' : 'var(--text-secondary)', fontWeight: 700, fontSize: '0.86rem' }}>
+                                {st.exitTime}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>
+                                {st.workHoursFormatted || '0h 0m'}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{
+                                padding: '4px 10px',
+                                borderRadius: 14,
+                                fontSize: '0.74rem',
+                                fontWeight: 800,
+                                background: isPresent ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                color: isPresent ? '#10b981' : '#ef4444',
+                                border: `1px solid ${isPresent ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                              }}>
+                                {isPresent ? 'PRESENT' : 'ABSENT'}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleManualStaffPunch(st.staffId, 'IN')}
+                                  style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #10b981', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}
+                                  title="Punch IN"
+                                >
+                                  IN
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleManualStaffPunch(st.staffId, 'OUT')}
+                                  style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #3b82f6', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}
+                                  title="Punch OUT"
+                                >
+                                  OUT
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Add Staff Modal */}
+            {showAddStaffModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(15, 23, 42, 0.75)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 99999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 16
+              }}>
+                <div style={{
+                  width: '100%',
+                  maxWidth: 500,
+                  padding: 28,
+                  borderRadius: 22,
+                  background: 'var(--surface-color, #ffffff)',
+                  border: '1.5px solid var(--border-color, #e2e8f0)',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+                  color: 'var(--text-primary, #0f172a)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottom: '1px solid var(--border-color, #e2e8f0)', paddingBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Users size={20} color="var(--accent-blue, #3b82f6)" />
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>Add New Employee</h3>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Faculty, teacher, or administration staff</p>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => setShowAddStaffModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 4 }}>
+                      <X size={22} />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveStaffMember} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: 6, color: 'var(--text-primary)' }}>
+                        Employee / Biometric User ID *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. 340, 101, EMP05"
+                        value={newStaffForm.staffId}
+                        onChange={(e) => setNewStaffForm({ ...newStaffForm, staffId: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: 10,
+                          border: '1.5px solid var(--border-color, #cbd5e1)',
+                          background: 'var(--bg-color, #f8fafc)',
+                          color: 'var(--text-primary, #0f172a)',
+                          fontSize: '0.90rem',
+                          fontWeight: 600,
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: 6, color: 'var(--text-primary)' }}>
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Faculty / Staff Name"
+                        value={newStaffForm.name}
+                        onChange={(e) => setNewStaffForm({ ...newStaffForm, name: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: 10,
+                          border: '1.5px solid var(--border-color, #cbd5e1)',
+                          background: 'var(--bg-color, #f8fafc)',
+                          color: 'var(--text-primary, #0f172a)',
+                          fontSize: '0.90rem',
+                          fontWeight: 600,
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: 6, color: 'var(--text-primary)' }}>
+                          Department
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Engineering"
+                          value={newStaffForm.department}
+                          onChange={(e) => setNewStaffForm({ ...newStaffForm, department: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            border: '1.5px solid var(--border-color, #cbd5e1)',
+                            background: 'var(--bg-color, #f8fafc)',
+                            color: 'var(--text-primary, #0f172a)',
+                            fontSize: '0.88rem',
+                            fontWeight: 600,
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: 6, color: 'var(--text-primary)' }}>
+                          Designation
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Senior Faculty"
+                          value={newStaffForm.designation}
+                          onChange={(e) => setNewStaffForm({ ...newStaffForm, designation: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            border: '1.5px solid var(--border-color, #cbd5e1)',
+                            background: 'var(--bg-color, #f8fafc)',
+                            color: 'var(--text-primary, #0f172a)',
+                            fontSize: '0.88rem',
+                            fontWeight: 600,
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: 6, color: 'var(--text-primary)' }}>
+                        Mobile Phone Number
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 9876543210"
+                        value={newStaffForm.phone}
+                        onChange={(e) => setNewStaffForm({ ...newStaffForm, phone: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: 10,
+                          border: '1.5px solid var(--border-color, #cbd5e1)',
+                          background: 'var(--bg-color, #f8fafc)',
+                          color: 'var(--text-primary, #0f172a)',
+                          fontSize: '0.88rem',
+                          fontWeight: 600,
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 12, borderTop: '1px solid var(--border-color, #e2e8f0)', paddingTop: 16 }}>
+                      <button type="button" onClick={() => setShowAddStaffModal(false)} className="btn btn-secondary" style={{ padding: '8px 18px', fontWeight: 600 }}>
+                        Cancel
+                      </button>
+                      <button type="submit" className="btn btn-primary" style={{ padding: '8px 22px', fontWeight: 700 }}>
+                        Save Employee
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {/* ========== TAB 1: Mark Attendance ========== */}
         {activeTab === 'mark' && (
           <motion.div
@@ -1334,12 +2056,12 @@ export default function Attendance() {
                         </td>
                       </tr>
                     ) : (
-                      filteredTodayStudents.map((row, idx) => (
+                      paginatedTodayStudents.map((row, idx) => (
                         <motion.tr
-                          key={row.student.id}
+                          key={row.student.id || idx}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.02 }}
+                          transition={{ delay: (idx % (todayPageSize === 'all' ? 25 : todayPageSize)) * 0.02 }}
                         >
                           <td>
                             <div className="flex items-center gap-12">
@@ -1351,7 +2073,7 @@ export default function Attendance() {
                                   style={{ objectFit: 'cover', border: '1px solid var(--border-color)' }} 
                                 />
                               ) : (
-                                <div className={`student-avatar ${getAvatarClass(row.idx)}`}>
+                                <div className={`student-avatar ${getAvatarClass(row.idx || idx)}`}>
                                   {getInitials(row.student.name)}
                                 </div>
                               )}
@@ -1411,6 +2133,128 @@ export default function Attendance() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Smooth Pagination Footer */}
+              {filteredTodayStudents.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '14px 20px',
+                  borderTop: '1px solid var(--border-color)',
+                  background: 'var(--surface-color)',
+                  flexWrap: 'wrap',
+                  gap: 12
+                }}>
+                  {/* Left: Summary & Per-Page Selector */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      Showing {todayPageSize === 'all' ? 1 : Math.min((todayPage - 1) * (typeof todayPageSize === 'number' ? todayPageSize : 25) + 1, filteredTodayStudents.length)} to {todayPageSize === 'all' ? filteredTodayStudents.length : Math.min(todayPage * (typeof todayPageSize === 'number' ? todayPageSize : 25), filteredTodayStudents.length)} of <strong style={{ color: 'var(--text-primary)' }}>{filteredTodayStudents.length}</strong> students
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <label style={{ fontSize: '0.80rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Per page:</label>
+                      <select
+                        value={todayPageSize}
+                        onChange={(e) => {
+                          const val = e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10);
+                          setTodayPageSize(val);
+                          setTodayPage(1);
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: 8,
+                          border: '1px solid var(--border-color)',
+                          background: 'var(--bg-color)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          outline: 'none',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                        <option value={250}>250</option>
+                        <option value="all">All ({filteredTodayStudents.length})</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Right: Page Switcher */}
+                  {todayPageSize !== 'all' && totalTodayPages > 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => setTodayPage(1)}
+                        disabled={todayPage === 1}
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '4px 8px', fontSize: '0.78rem', cursor: todayPage === 1 ? 'not-allowed' : 'pointer', opacity: todayPage === 1 ? 0.5 : 1 }}
+                        title="First Page"
+                      >
+                        First
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTodayPage(prev => Math.max(prev - 1, 1))}
+                        disabled={todayPage === 1}
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', cursor: todayPage === 1 ? 'not-allowed' : 'pointer', opacity: todayPage === 1 ? 0.5 : 1 }}
+                      >
+                        <ChevronLeft size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Prev
+                      </button>
+
+                      {/* Current Page Info & Jump */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, margin: '0 6px', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        <span>Page</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={totalTodayPages}
+                          value={todayPage}
+                          onChange={(e) => {
+                            const p = parseInt(e.target.value, 10);
+                            if (p >= 1 && p <= totalTodayPages) setTodayPage(p);
+                          }}
+                          style={{
+                            width: 48,
+                            padding: '3px 6px',
+                            textAlign: 'center',
+                            borderRadius: 6,
+                            border: '1px solid var(--border-color)',
+                            background: 'var(--bg-color)',
+                            color: 'var(--text-primary)',
+                            fontWeight: 800,
+                            fontSize: '0.82rem'
+                          }}
+                        />
+                        <span>of {totalTodayPages}</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setTodayPage(prev => Math.min(prev + 1, totalTodayPages))}
+                        disabled={todayPage === totalTodayPages}
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', cursor: todayPage === totalTodayPages ? 'not-allowed' : 'pointer', opacity: todayPage === totalTodayPages ? 0.5 : 1 }}
+                      >
+                        Next <ChevronRight size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTodayPage(totalTodayPages)}
+                        disabled={todayPage === totalTodayPages}
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '4px 8px', fontSize: '0.78rem', cursor: todayPage === totalTodayPages ? 'not-allowed' : 'pointer', opacity: todayPage === totalTodayPages ? 0.5 : 1 }}
+                        title="Last Page"
+                      >
+                        Last
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
@@ -1443,14 +2287,24 @@ export default function Attendance() {
                     Select custom date range (From Date to To Date) or calendar view to analyze and export records.
                   </div>
                 </div>
-                <button 
-                  onClick={exportHistoryAttendance} 
-                  className="btn btn-secondary" 
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontWeight: 600 }}
-                  title="Download Attendance Report in Excel format"
-                >
-                  <Download size={16} color="#10b981" /> Download Excel
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button 
+                    type="button"
+                    onClick={() => { if (typeof refreshAttendance === 'function') refreshAttendance(); toast.success('🔄 Attendance records refreshed!'); }}
+                    className="btn btn-secondary" 
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontWeight: 600 }}
+                  >
+                    <RefreshCw size={15} /> Refresh Records
+                  </button>
+                  <button 
+                    onClick={exportHistoryAttendance} 
+                    className="btn btn-secondary" 
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontWeight: 600 }}
+                    title="Download Attendance Report in Excel format"
+                  >
+                    <Download size={16} color="#10b981" /> Download Excel
+                  </button>
+                </div>
               </div>
 
               {/* Filter Controls Bar */}
@@ -1787,28 +2641,28 @@ export default function Attendance() {
             exit="exit"
             className="flex flex-col gap-24"
           >
-            {/* Top Kiosk Control Bar */}
-            <div className="card" style={{ padding: '18px 24px', background: 'var(--surface-color)', border: '1.5px solid var(--border-color)', borderRadius: 18 }}>
+            {/* Top Biometric Machine & Kiosk Control Bar */}
+            <div className="card" style={{ padding: '20px 24px', background: 'var(--surface-color)', border: '1.5px solid var(--border-color)', borderRadius: 18, boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                 {/* Left: Status & Hardware Indicator */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    width: 48,
+                    height: 48,
+                    borderRadius: 14,
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: '#ffffff',
-                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+                    boxShadow: '0 4px 16px rgba(59, 130, 246, 0.35)'
                   }}>
-                    <QrCode size={24} />
+                    <Fingerprint size={26} />
                   </div>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <h2 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, color: 'var(--text-primary)' }}>
-                        Live QR Scanner Kiosk Mode
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <h2 style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        Biometric Machine & Smart Kiosk
                       </h2>
                       <span style={{
                         background: 'rgba(16, 185, 129, 0.12)',
@@ -1816,24 +2670,118 @@ export default function Attendance() {
                         border: '1px solid rgba(16, 185, 129, 0.3)',
                         fontSize: '0.72rem',
                         fontWeight: 800,
-                        padding: '2px 8px',
+                        padding: '3px 10px',
                         borderRadius: 20,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 4
+                        gap: 5
                       }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }} />
-                        USB SCANNER READY
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
+                        BIOMAX PUSH ONLINE (Port 8000 & 5000)
                       </span>
                     </div>
-                    <p style={{ margin: '2px 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                      Plug & Play Tabletop Scanner Ready • Instant Auto Punch • WhatsApp Dispatched Instantly
+                    <p style={{ margin: '3px 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                      Biomax FK Hardware Connected • Real-Time HTTP Push Active • Instant Live Attendance
                     </p>
                   </div>
                 </div>
 
-                {/* Right: Mode Selector & Action Buttons */}
+                {/* Right: Quick Biometric Actions & Mode Switcher */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  {/* One-Click Sync Biometric Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleSyncBiometric(biometricStatus.targetIp || '192.168.0.12', 8000)}
+                    disabled={isBiometricSyncing}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: 10,
+                      border: '1.5px solid rgba(59, 130, 246, 0.4)',
+                      background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.15) 100%)',
+                      color: 'var(--accent-blue)',
+                      fontSize: '0.80rem',
+                      fontWeight: 800,
+                      cursor: isBiometricSyncing ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: '0 2px 8px rgba(59, 130, 246, 0.12)'
+                    }}
+                  >
+                    <RefreshCw size={15} className={isBiometricSyncing ? 'spin' : ''} />
+                    <span>{isBiometricSyncing ? 'Syncing Logs...' : '🔄 Sync Machine Logs'}</span>
+                  </button>
+
+                  {/* Auto-Sync Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={handleToggleAutoSync}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      border: `1.5px solid ${biometricStatus.autoSyncEnabled ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-color)'}`,
+                      background: biometricStatus.autoSyncEnabled ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-color)',
+                      color: biometricStatus.autoSyncEnabled ? '#10b981' : 'var(--text-secondary)',
+                      fontSize: '0.80rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                    title="Auto-fetch punches from Biometric Machine every 15 seconds"
+                  >
+                    <Radio size={15} />
+                    <span>{biometricStatus.autoSyncEnabled ? '⚡ Auto-Sync: ON' : '⚡ Auto-Sync: OFF'}</span>
+                  </button>
+
+                  {/* Scan Subnet Button */}
+                  <button
+                    type="button"
+                    onClick={handleScanSubnet}
+                    disabled={isBiometricScanning}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      border: '1.5px solid var(--border-color)',
+                      background: 'var(--bg-color)',
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.80rem',
+                      fontWeight: 800,
+                      cursor: isBiometricScanning ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                    title="Scan local network for any other Biometric Devices"
+                  >
+                    <Radar size={15} className={isBiometricScanning ? 'spin' : ''} />
+                    <span>{isBiometricScanning ? 'Scanning...' : '🔍 Scan Wi-Fi'}</span>
+                  </button>
+
+                  {/* Machine Setup Guide Modal Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowBiometricGuideModal(true)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      border: '1.5px solid rgba(245, 158, 11, 0.4)',
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      color: '#f59e0b',
+                      fontSize: '0.80rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                    title="View Machine IP & Port Configuration Guide"
+                  >
+                    <HelpCircle size={15} />
+                    <span>Machine Guide</span>
+                  </button>
+
                   {/* Punch Mode Switcher */}
                   <div style={{
                     display: 'flex',
@@ -1861,7 +2809,7 @@ export default function Attendance() {
                       }}
                     >
                       <Zap size={13} />
-                      <span>Smart Auto (In/Out)</span>
+                      <span>Smart Auto</span>
                     </button>
 
                     <button
@@ -1883,7 +2831,7 @@ export default function Attendance() {
                       }}
                     >
                       <LogIn size={13} />
-                      <span>Entry Only (Morning)</span>
+                      <span>Entry</span>
                     </button>
 
                     <button
@@ -1905,9 +2853,65 @@ export default function Attendance() {
                       }}
                     >
                       <LogOut size={13} />
-                      <span>Exit Only (Departure)</span>
+                      <span>Exit</span>
                     </button>
                   </div>
+
+                  {/* Inline Session Selector */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: 'var(--bg-color)',
+                    padding: '4px 10px',
+                    borderRadius: 12,
+                    border: '1.5px solid var(--border-color)',
+                    gap: 6
+                  }}>
+                    <Clock size={14} color="var(--accent-blue)" />
+                    <select
+                      value={selectedSessionId}
+                      onChange={(e) => setSelectedSessionId(e.target.value)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="auto">✨ Auto Session (By Time)</option>
+                      {sessions.map(s => (
+                        <option key={s.id || s._id} value={s.id || s._id}>
+                          🕒 {s.name} ({s.startTime} - {s.endTime})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Clear Backlog Button */}
+                  <button
+                    type="button"
+                    onClick={handleClearAttendanceBacklog}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      border: '1.5px solid rgba(239, 68, 68, 0.4)',
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      color: '#ef4444',
+                      fontSize: '0.80rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                    title="Clear old machine backlog attendance from database before today"
+                  >
+                    <Trash2 size={14} />
+                    <span>Clear Backlog</span>
+                  </button>
 
                   {/* Sound Toggle */}
                   <button
@@ -1929,7 +2933,6 @@ export default function Attendance() {
                     }}
                   >
                     {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-                    <span>{soundEnabled ? 'Sound ON' : 'Muted'}</span>
                   </button>
 
                   {/* Print QR ID Cards Button */}
@@ -1952,7 +2955,7 @@ export default function Attendance() {
                     }}
                   >
                     <Printer size={15} />
-                    <span>🪪 Print Student QR Cards</span>
+                    <span>🪪 ID Cards</span>
                   </button>
 
                   {/* Fullscreen Toggle */}
@@ -1975,7 +2978,6 @@ export default function Attendance() {
                     }}
                   >
                     {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-                    <span>{isFullscreen ? 'Exit Fullscreen' : '⛶ Fullscreen'}</span>
                   </button>
                 </div>
               </div>
@@ -3798,6 +4800,171 @@ export default function Attendance() {
                       <br />
                       • <strong style={{ color: '#ffffff' }}>Honeywell HF680 2D Hands-Free Scanner</strong> (~₹5,999)
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ---------------------------------------------------------------- */}
+            {/* 📟 MODAL: BIOMETRIC MACHINE SETUP & CONFIGURATION GUIDE         */}
+            {/* ---------------------------------------------------------------- */}
+            {showBiometricGuideModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.75)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 20
+              }}>
+                <div style={{
+                  background: '#0f172a',
+                  borderRadius: 20,
+                  width: '100%',
+                  maxWidth: 640,
+                  padding: 28,
+                  border: '1.5px solid rgba(59, 130, 246, 0.3)',
+                  boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
+                  position: 'relative'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowBiometricGuideModal(false)}
+                    style={{
+                      position: 'absolute',
+                      top: 20,
+                      right: 20,
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                      padding: '6px 8px',
+                      borderRadius: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <X size={18} />
+                  </button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+                    <div style={{ padding: 12, borderRadius: 14, background: 'rgba(59, 130, 246, 0.25)', color: '#60a5fa' }}>
+                      <Fingerprint size={28} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#ffffff' }}>
+                        Biometric Machine Setup Guide
+                      </h3>
+                      <p style={{ margin: '3px 0 0', fontSize: '0.84rem', color: '#cbd5e1' }}>
+                        FK / Realtime / BioMax / eSSL Machine Setup
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Active Network Parameters Card */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.4) 0%, rgba(15, 23, 42, 0.85) 100%)',
+                    border: '1.5px solid rgba(59, 130, 246, 0.4)',
+                    borderRadius: 16,
+                    padding: '18px 20px',
+                    marginBottom: 16
+                  }}>
+                    <div style={{ fontSize: '0.80rem', fontWeight: 800, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+                      📋 Machine Communication Settings (Menu ➔ Comm. ➔ Cloud/ADMS)
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '0.88rem' }}>
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10 }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.76rem', display: 'block' }}>Server IP (Laptop Wi-Fi IP)</span>
+                        <strong style={{ color: '#38bdf8', fontSize: '1.05rem', fontFamily: 'monospace' }}>
+                          {biometricStatus.localIp || '192.168.0.162'}
+                        </strong>
+                      </div>
+
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10 }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.76rem', display: 'block' }}>Server Port</span>
+                        <strong style={{ color: '#34d399', fontSize: '1.05rem', fontFamily: 'monospace' }}>5000</strong>
+                      </div>
+
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10 }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.76rem', display: 'block' }}>Device Hardware Port</span>
+                        <strong style={{ color: '#cbd5e1', fontSize: '1.05rem', fontFamily: 'monospace' }}>71</strong> (or 4370)
+                      </div>
+
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10 }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.76rem', display: 'block' }}>Device Detected IP</span>
+                        <strong style={{ color: '#fbbf24', fontSize: '1.05rem', fontFamily: 'monospace' }}>
+                          {biometricStatus.targetIp || '192.168.0.12'}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step-by-Step Instructions */}
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: 14,
+                    padding: '14px 18px',
+                    fontSize: '0.84rem',
+                    color: '#cbd5e1',
+                    lineHeight: 1.7,
+                    marginBottom: 16
+                  }}>
+                    <strong style={{ color: '#ffffff' }}>⚙️ Quick Steps on Machine:</strong>
+                    <ol style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+                      <li>Press <strong>Menu</strong> ➔ <strong>Comm.</strong> ➔ <strong>Cloud / Server Setting</strong>.</li>
+                      <li>Set <strong>Server IP</strong> to <code style={{ color: '#38bdf8' }}>{biometricStatus.localIp || '192.168.0.162'}</code> and <strong>Server Port</strong> to <code style={{ color: '#34d399' }}>5000</code>.</li>
+                      <li>Save &amp; Restart the machine.</li>
+                      <li>Punch any student finger on the machine — the punch is recorded instantly and sent to parents via WhatsApp!</li>
+                    </ol>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleSyncBiometric(biometricStatus.targetIp || '192.168.0.12', biometricStatus.targetPort || 71)}
+                      style={{
+                        padding: '10px 18px',
+                        borderRadius: 10,
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: '0.86rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                    >
+                      <RefreshCw size={15} />
+                      <span>Test &amp; Sync Now</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowBiometricGuideModal(false)}
+                      style={{
+                        padding: '10px 16px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        color: '#ffffff',
+                        fontWeight: 700,
+                        fontSize: '0.86rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
               </div>

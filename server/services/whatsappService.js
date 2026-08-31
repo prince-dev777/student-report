@@ -1,18 +1,100 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import SMSLog from '../models/SMSLog.js';
 import { sendWhatsAppMessageWeb, getWhatsAppClientState } from './whatsappClient.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const MESSAGING_CONFIG_FILE = path.join(__dirname, '../whatsapp_messaging_config.json');
+
+// --- Persistent Outbound Messaging Switch ---
+let outboundMessagingEnabled = true;
+try {
+  if (fs.existsSync(MESSAGING_CONFIG_FILE)) {
+    const raw = fs.readFileSync(MESSAGING_CONFIG_FILE, 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.outboundMessagingEnabled === 'boolean') {
+      outboundMessagingEnabled = parsed.outboundMessagingEnabled;
+    }
+  }
+} catch (e) {}
+
+export function getOutboundMessagingStatus() {
+  return outboundMessagingEnabled;
+}
+
+export function setOutboundMessagingStatus(enabled) {
+  outboundMessagingEnabled = !!enabled;
+  try {
+    fs.writeFileSync(MESSAGING_CONFIG_FILE, JSON.stringify({ outboundMessagingEnabled }, null, 2), 'utf-8');
+  } catch (e) {}
+  return outboundMessagingEnabled;
+}
+
+// --- Multi-PC / Peer Instance De-duplication Lock ---
+// Timed Lock Map to prevent multi-PC or concurrent duplicate triggers (retains for 10 minutes)
+const sentAlertLockMap = new Map();
+
+function isDuplicateAlert(studentId, type, dateStr) {
+  const lockKey = `${studentId}_${type}_${dateStr}`;
+  const now = Date.now();
+  if (sentAlertLockMap.has(lockKey)) {
+    const timestamp = sentAlertLockMap.get(lockKey);
+    if (now - timestamp < 10 * 60 * 1000) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function recordSentAlert(studentId, type, dateStr) {
+  const lockKey = `${studentId}_${type}_${dateStr}`;
+  sentAlertLockMap.set(lockKey, Date.now());
+  if (sentAlertLockMap.size > 500) {
+    const now = Date.now();
+    for (const [k, v] of sentAlertLockMap.entries()) {
+      if (now - v > 15 * 60 * 1000) sentAlertLockMap.delete(k);
+    }
+  }
+}
 
 /**
  * Sends a WhatsApp message to the specified parent phone number.
  * Logs the message details to the database (SMSLog).
- * 
- * @param {string} instituteId - Mongoose ObjectId of the Institute
- * @param {string} studentId - Custom student ID (e.g. STU...)
- * @param {string} parentPhone - Parent phone number
- * @param {string} studentName - Name of the student
- * @param {string} type - 'IN' | 'OUT' | 'ABSENT' | 'TEST_RESULT' | 'WELCOME'
- * @param {string|object} detail - time (for IN/OUT), date (for ABSENT), or object with marks info (for TEST_RESULT)
+ * Includes multi-PC duplicate lock and persistent messaging check.
  */
 export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail }) {
+  // 1. Check persistent Master Messaging Switch
+  if (!getOutboundMessagingStatus()) {
+    console.log(`[WhatsAppService] ⏸️ Outbound messaging is currently PAUSED/OFF. Skipping WhatsApp message for ${studentName} (${type}).`);
+    return { success: true, skipped: true, reason: 'Messaging is paused by user' };
+  }
+
+  // 2. Multi-PC De-duplication Guard (In-Memory Lock)
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (isDuplicateAlert(studentId, type, todayStr)) {
+    console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented for ${studentName} (${type}) - Already sent by connected PC instance!`);
+    return { success: true, skipped: true, reason: 'Duplicate alert prevented' };
+  }
+
+  // 3. Multi-PC De-duplication Guard (Database Cross-Check across all local & shared PCs)
+  try {
+    const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const mappedType = type === 'WELCOME' ? 'welcome' : (type === 'ABSENT' ? 'absent' : (type === 'TEST_RESULT' ? 'test-result' : (type === 'OUT' ? 'attendance-exit' : 'attendance-entry')));
+    const existingLog = await SMSLog.findOne({
+      studentId,
+      type: mappedType,
+      createdAt: { $gte: tenMinsAgo },
+      status: { $in: ['delivered', 'sent'] }
+    });
+    if (existingLog) {
+      recordSentAlert(studentId, type, todayStr);
+      console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented in DB for ${studentName} (${type}) - Already logged by peer PC!`);
+      return { success: true, skipped: true, reason: 'Duplicate alert already logged' };
+    }
+  } catch (dbErr) {}
+
   const provider = (process.env.WHATSAPP_PROVIDER || 'mock').toLowerCase();
   let status = 'sent';
 
@@ -26,11 +108,11 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   } else if (type === 'ABSENT') {
     messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} is absent from the institute today (${detail}). - Career Xone`;
   } else if (type === 'TEST_RESULT' && typeof detail === 'object') {
-    const portalUrl = 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
+    const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
     const percent = detail.percentage ?? (detail.totalMarks ? Math.round((Number(detail.marks) / detail.totalMarks) * 1000) / 10 : 0);
     messageText = `📊 *Test Result Announcement - Career Xone*\n\nDear Parent, your ward *${studentName}* has appeared for *${detail.testName || detail.subject || 'Exam'}*.\n\n🎯 *Marks Scored:* ${detail.marks}/${detail.totalMarks} (${percent}%)\n🏆 *Rank:* ${detail.rank || '-'}/${detail.totalStudents || '-'}\n\n📱 *View Complete Report & Scanned OMR Sheet:*\n🔗 ${portalUrl}\n\n- Career Xone (CX Career Academy)`;
   } else if (type === 'WELCOME') {
-    const portalUrl = 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
+    const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
     messageText = `🎉 Welcome to Career Xone!\n\n${studentName} has been registered successfully.\n\n📱 *Download/Access Parents App:*\n🔗 Link: ${portalUrl}\n\n*Login Credentials:*\nUser ID: ${detail.parentUserId}\nPassword: ${detail.parentPassword}\n\nPlease login to track attendance and test results regularly.`;
   } else {
     messageText = `Notification for ${studentName}: ${detail || 'No details provided.'}`;
@@ -39,9 +121,9 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   const phoneNumbers = parentPhone.split(',').map(p => p.trim()).filter(Boolean);
 
   for (const phone of phoneNumbers) {
-    let formattedPhone = phone.replace(/\D/g, ''); // strip non-digits
+    let formattedPhone = phone.replace(/\D/g, '');
     if (formattedPhone.length === 10) {
-      formattedPhone = '91' + formattedPhone; // default to India country code if 10 digits
+      formattedPhone = '91' + formattedPhone;
     }
     if (!formattedPhone.startsWith('+') && formattedPhone.length > 0) {
       formattedPhone = '+' + formattedPhone;
@@ -50,11 +132,11 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
     console.log(`[WhatsAppService] Sending WhatsApp alert to ${formattedPhone} (Type: ${type})`);
 
     try {
-      // 1. Primary: If local WhatsApp Web client is linked and ready, send via connected WhatsApp account
       const waState = getWhatsAppClientState();
       if (waState && waState.status === 'ready') {
         await sendWhatsAppMessageWeb(formattedPhone, messageText);
         status = 'delivered';
+        recordSentAlert(studentId, type, todayStr);
         console.log(`[WhatsAppService] Successfully sent WhatsApp message via local client to ${formattedPhone}`);
       } else if (provider === 'ultramsg') {
         const instanceId = process.env.WHATSAPP_INSTANCE_ID;

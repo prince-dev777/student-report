@@ -34,7 +34,7 @@ let lastSyncStatus = {
   lastSyncedCount: 0,
   autoSyncEnabled: false,
   targetIp: '192.168.0.12',
-  targetPort: 4370,
+  targetPort: 71,
   error: null
 };
 
@@ -391,9 +391,9 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 }
 
 // 2. Test Device Connection (Hybrid: ZKTeco socket + TCP probe)
-export async function testBiometricDevice(ip, port = 4370) {
+export async function testBiometricDevice(ip, port = 71) {
   const targetIp = (ip || '192.168.0.12').trim();
-  const targetPort = parseInt(port, 10) || 4370;
+  const targetPort = parseInt(port, 10) || 71;
 
   if (!targetIp) {
     return { success: false, error: 'Please enter a valid Biometric Machine IP address.' };
@@ -412,7 +412,7 @@ export async function testBiometricDevice(ip, port = 4370) {
     };
   }
 
-  // Try ZKTeco binary protocol handshake (for port 4370)
+  // Try ZKTeco binary protocol handshake (for port 4370 or 71)
   let zkSuccess = false;
   let zkInfo = {};
   if (targetPort === 4370) {
@@ -449,13 +449,13 @@ export async function testBiometricDevice(ip, port = 4370) {
 }
 
 // 3. Sync Attendance Logs From Device
-export async function syncBiometricLogs(ip, port = 4370, instituteId = null) {
+export async function syncBiometricLogs(ip, port = 71, instituteId = null) {
   if (isSyncing) {
     return { success: true, message: 'Sync already in progress...', newlyAdded: 0, totalOnDevice: 0 };
   }
 
   const targetIp = (ip || lastSyncStatus.targetIp || '192.168.0.12').trim();
-  const targetPort = parseInt(port || lastSyncStatus.targetPort, 10) || 4370;
+  const targetPort = parseInt(port || lastSyncStatus.targetPort, 10) || 71;
 
   isSyncing = true;
 
@@ -534,8 +534,11 @@ export async function syncBiometricLogs(ip, port = 4370, instituteId = null) {
       }
     }
 
-    // For other ports
+    // For other ports (e.g. FK / Realtime on Port 71)
     lastSyncStatus.connected = true;
+    lastSyncStatus.targetPort = targetPort;
+    lastSyncStatus.targetIp = targetIp;
+    lastSyncStatus.error = null;
     lastSyncStatus.lastSyncTime = new Date().toISOString();
     return {
       success: true,
@@ -545,6 +548,7 @@ export async function syncBiometricLogs(ip, port = 4370, instituteId = null) {
       lastSyncTime: lastSyncStatus.lastSyncTime
     };
   } catch (err) {
+    lastSyncStatus.error = err.message;
     return {
       success: false,
       error: `Sync error: ${err.message}`
@@ -612,7 +616,7 @@ export async function syncAllBiometricDevices(deviceList = [], instituteId = nul
 }
 
 // 4. Start Auto Background Polling (Supports single IP or list of devices)
-export function startBiometricAutoSync(devicesOrIp, port = 4370, intervalSeconds = 15, instituteId = null) {
+export function startBiometricAutoSync(devicesOrIp, port = 71, intervalSeconds = 15, instituteId = null) {
   stopBiometricAutoSync();
   const intervalMs = Math.max(10, parseInt(intervalSeconds, 10) || 15) * 1000;
 

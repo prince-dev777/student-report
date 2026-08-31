@@ -46,7 +46,8 @@ export const isStudentInTestClasses = (studentClass, test) => {
 export default function Tests() {
   const { 
     tests, testResults, students, batches, 
-    addTest, updateTest, updateTestAnswerKey, deleteTest, submitTestResults 
+    addTest, updateTest, updateTestAnswerKey, deleteTest, submitTestResults,
+    appCardTheme, toggleAppCardTheme
   } = useApp();
 
   const getCourseName = (batchId) => {
@@ -80,6 +81,19 @@ export default function Tests() {
     setTestViewMode(mode);
     try {
       localStorage.setItem('tests_view_mode', mode);
+    } catch (e) {}
+  };
+
+  // 🎨 Card Background Theme (Solid White vs Gradient Theme - Connected to Global Switch)
+  const createTestCardTheme = appCardTheme || 'white';
+
+  const handleCardThemeToggle = (theme) => {
+    if (toggleAppCardTheme) {
+      toggleAppCardTheme(theme);
+    }
+    try {
+      localStorage.setItem('tests_create_card_theme', theme);
+      localStorage.setItem('app_card_theme', theme);
     } catch (e) {}
   };
 
@@ -1882,6 +1896,15 @@ export default function Tests() {
       metaCell2.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF64748B' } };
       metaCell2.alignment = { vertical: 'middle', horizontal: 'left' };
 
+      const appearedResults = selectedTestResults.results.filter(r => !r.isNotScanned);
+      const totalAppeared = appearedResults.length;
+      const calcPercentile = (score) => {
+        if (totalAppeared === 0) return 0;
+        const countLessOrEqual = appearedResults.filter(r => (Number(r.marks) || 0) <= (Number(score) || 0)).length;
+        const p = (countLessOrEqual / totalAppeared) * 100;
+        return (Math.round(p * 100) / 100).toFixed(2);
+      };
+
       // Columns Definition
       const columns = [
         { header: 'Rank', key: 'rank', width: 10 },
@@ -1902,6 +1925,7 @@ export default function Tests() {
       columns.push(
         { header: 'Total Marks', key: 'marks', width: 18 },
         { header: 'Percentage', key: 'percentage', width: 16 },
+        { header: 'Percentile', key: 'percentile', width: 16 },
         { header: 'Status', key: 'status', width: 22 }
       );
 
@@ -1941,8 +1965,9 @@ export default function Tests() {
           let colIdx = 1;
           // Rank
           const rankCell = row.getCell(colIdx++);
-          rankCell.value = '-';
+          rankCell.value = 'A';
           rankCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          rankCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFDC2626' } };
 
           // Roll No
           const rollCell = row.getCell(colIdx++);
@@ -1955,37 +1980,43 @@ export default function Tests() {
           nameCell.alignment = { vertical: 'middle', horizontal: 'left' };
           nameCell.font = { name: 'Calibri', size: 11, bold: false, color: { argb: 'FF64748B' } };
 
-          // Subject Mapping
+          // Subject Mapping - 'A' for absent
           if (test.subjectMapping && test.subjectMapping.length > 0) {
             test.subjectMapping.forEach(() => {
               const sc = row.getCell(colIdx++);
-              sc.value = '-';
+              sc.value = 'A';
               sc.alignment = { vertical: 'middle', horizontal: 'center' };
-              sc.font = { color: { argb: 'FF94A3B8' } };
+              sc.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFDC2626' } };
             });
           }
 
-          // Total Marks
+          // Total Marks - 'A'
           const marksCell = row.getCell(colIdx++);
-          marksCell.value = '-';
+          marksCell.value = 'A';
           marksCell.alignment = { vertical: 'middle', horizontal: 'center' };
-          marksCell.font = { color: { argb: 'FF94A3B8' } };
+          marksCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFDC2626' } };
 
-          // Percentage
+          // Percentage - 'A'
           const pctCell = row.getCell(colIdx++);
-          pctCell.value = '-';
+          pctCell.value = 'A';
           pctCell.alignment = { vertical: 'middle', horizontal: 'center' };
-          pctCell.font = { color: { argb: 'FF94A3B8' } };
+          pctCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFDC2626' } };
+
+          // Percentile - 'A'
+          const pctlCell = row.getCell(colIdx++);
+          pctlCell.value = 'A';
+          pctlCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          pctlCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFDC2626' } };
 
           // Status
           const statusCell = row.getCell(colIdx++);
-          statusCell.value = 'OMR Not Scanned';
+          statusCell.value = 'ABSENT';
           statusCell.alignment = { vertical: 'middle', horizontal: 'center' };
-          statusCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFD97706' } };
+          statusCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFDC2626' } };
           statusCell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFFFFBEB' }
+            fgColor: { argb: 'FFFEE2E2' }
           };
         } else {
           let colIdx = 1;
@@ -2038,6 +2069,12 @@ export default function Tests() {
           pctCell.value = res.percentage !== undefined ? `${res.percentage}%` : 'N/A';
           pctCell.alignment = { vertical: 'middle', horizontal: 'center' };
           pctCell.font = { name: 'Calibri', size: 11, bold: true, color: (res.percentage >= 60 ? { argb: 'FF16A34A' } : { argb: 'FFDC2626' }) };
+
+          // Percentile
+          const pctlCell = row.getCell(colIdx++);
+          pctlCell.value = `${calcPercentile(res.marks)}%ile`;
+          pctlCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          pctlCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF2563EB' } };
 
           // Status
           const statusCell = row.getCell(colIdx++);
@@ -2900,6 +2937,63 @@ export default function Tests() {
             exit={{ opacity: 0, y: -10 }}
             style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}
           >
+            {/* ⚪ Solid White vs 🎨 Gradient Theme Switcher */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: 'var(--surface-color)',
+                padding: '4px',
+                borderRadius: '12px',
+                border: '1px solid var(--border-color)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleCardThemeToggle('white')}
+                  style={{
+                    padding: '6px 14px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: createTestCardTheme === 'white' ? '#ffffff' : 'transparent',
+                    color: createTestCardTheme === 'white' ? '#0f172a' : 'var(--text-secondary)',
+                    boxShadow: createTestCardTheme === 'white' ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+                  ⚪ Solid White Cards
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCardThemeToggle('gradient')}
+                  style={{
+                    padding: '6px 14px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: createTestCardTheme === 'gradient' ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 'transparent',
+                    color: createTestCardTheme === 'gradient' ? '#ffffff' : 'var(--text-secondary)',
+                    boxShadow: createTestCardTheme === 'gradient' ? '0 2px 8px rgba(37,99,235,0.3)' : 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span>🎨 Gradient Theme</span>
+                </button>
+              </div>
+            </div>
+
             <form onSubmit={handleCreateTest}>
               <div style={{
                 display: 'grid',
@@ -2912,11 +3006,11 @@ export default function Tests() {
                   
                   {/* Card 1: Basic Exam Information */}
                   <div className="card" style={{
-                    background: 'var(--surface-color)',
-                    border: '1.5px solid var(--border-color)',
+                    background: createTestCardTheme === 'white' ? '#ffffff' : 'var(--surface-color)',
+                    border: createTestCardTheme === 'white' ? '1.5px solid #e2e8f0' : '1.5px solid var(--border-color)',
                     borderRadius: '18px',
                     padding: '24px',
-                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.04)',
+                    boxShadow: createTestCardTheme === 'white' ? '0 6px 24px rgba(0, 0, 0, 0.05)' : '0 8px 30px rgba(0, 0, 0, 0.04)',
                     position: 'relative',
                     zIndex: 20
                   }}>
@@ -3014,11 +3108,11 @@ export default function Tests() {
 
                   {/* Card 2: OMR Template & Subject Mapping */}
                   <div className="card" style={{
-                    background: 'var(--surface-color)',
-                    border: '1.5px solid var(--border-color)',
+                    background: createTestCardTheme === 'white' ? '#ffffff' : 'var(--surface-color)',
+                    border: createTestCardTheme === 'white' ? '1.5px solid #e2e8f0' : '1.5px solid var(--border-color)',
                     borderRadius: '18px',
                     padding: '24px',
-                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.04)',
+                    boxShadow: createTestCardTheme === 'white' ? '0 6px 24px rgba(0, 0, 0, 0.05)' : '0 8px 30px rgba(0, 0, 0, 0.04)',
                     position: 'relative',
                     zIndex: 10
                   }}>
@@ -3288,11 +3382,11 @@ export default function Tests() {
                 {/* ================= RIGHT COLUMN: LIVE TEST ARCHITECTURE BLUEPRINT ================= */}
                 <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div className="card" style={{
-                    background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.04) 0%, rgba(59, 130, 246, 0.06) 100%)',
-                    border: '1.5px solid rgba(59, 130, 246, 0.25)',
+                    background: createTestCardTheme === 'white' ? '#ffffff' : 'linear-gradient(135deg, rgba(30, 58, 138, 0.04) 0%, rgba(59, 130, 246, 0.06) 100%)',
+                    border: createTestCardTheme === 'white' ? '1.5px solid #e2e8f0' : '1.5px solid rgba(59, 130, 246, 0.25)',
                     borderRadius: '20px',
                     padding: '24px',
-                    boxShadow: '0 12px 36px rgba(37, 99, 235, 0.08)'
+                    boxShadow: createTestCardTheme === 'white' ? '0 6px 24px rgba(0, 0, 0, 0.05)' : '0 12px 36px rgba(37, 99, 235, 0.08)'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -3315,28 +3409,28 @@ export default function Tests() {
 
                     {/* Stat Badges Grid 2x2 */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
-                      <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <div style={{ background: createTestCardTheme === 'white' ? '#f8fafc' : 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: createTestCardTheme === 'white' ? '1px solid #e2e8f0' : '1px solid var(--border-color)' }}>
                         <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Total Marks</div>
                         <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#10b981', marginTop: '2px' }}>
                           {testForm.totalMarks || 0}
                         </div>
                       </div>
 
-                      <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <div style={{ background: createTestCardTheme === 'white' ? '#f8fafc' : 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: createTestCardTheme === 'white' ? '1px solid #e2e8f0' : '1px solid var(--border-color)' }}>
                         <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Questions</div>
                         <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#2563eb', marginTop: '2px' }}>
                           {testForm.questionsToDetect || 0} Qs
                         </div>
                       </div>
 
-                      <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <div style={{ background: createTestCardTheme === 'white' ? '#f8fafc' : 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: createTestCardTheme === 'white' ? '1px solid #e2e8f0' : '1px solid var(--border-color)' }}>
                         <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Scoring Ratio</div>
                         <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
                           +{testForm.marksPerQuestion || 0} / -{testForm.negativeMarking || 0}
                         </div>
                       </div>
 
-                      <div style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <div style={{ background: createTestCardTheme === 'white' ? '#f8fafc' : 'var(--surface-color)', padding: '12px 14px', borderRadius: '12px', border: createTestCardTheme === 'white' ? '1px solid #e2e8f0' : '1px solid var(--border-color)' }}>
                         <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Date</div>
                         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {formatDate(testForm.date) || 'Today'}
@@ -4492,95 +4586,96 @@ export default function Tests() {
                       }
                       <th style={{ width: '120px' }}>Total Marks</th>
                       <th>Percentage</th>
+                      <th>Percentile</th>
                       <th>OMR Sheet</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedTestResults.results
-                      .filter(res => {
-                        if (!searchLeaderboardQuery) return true;
-                        const query = searchLeaderboardQuery.toLowerCase();
-                        return (res.studentName && res.studentName.toLowerCase().includes(query)) ||
-                               (res.rollNo && String(res.rollNo).toLowerCase().includes(query));
-                      })
-                      .map((res) => {
-                      if (res.isNotScanned) {
+                    {(() => {
+                      const appearedList = (selectedTestResults.results || []).filter(r => !r.isNotScanned);
+                      const totApp = appearedList.length;
+                      const getPctile = (score) => {
+                        if (totApp === 0) return '0.00';
+                        const cnt = appearedList.filter(r => (Number(r.marks) || 0) <= (Number(score) || 0)).length;
+                        return ((cnt / totApp) * 100).toFixed(2);
+                      };
+
+                      return selectedTestResults.results
+                        .filter(res => {
+                          if (!searchLeaderboardQuery) return true;
+                          const query = searchLeaderboardQuery.toLowerCase();
+                          return (res.studentName && res.studentName.toLowerCase().includes(query)) ||
+                                 (res.rollNo && String(res.rollNo).toLowerCase().includes(query));
+                        })
+                        .map((res) => {
+                        if (res.isNotScanned) {
+                          return (
+                            <tr key={res.id} style={{ opacity: 0.85, background: 'rgba(254, 226, 226, 0.25)' }}>
+                              <td>
+                                <span style={{ fontSize: '0.78rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: '#fee2e2', color: '#dc2626' }}>
+                                  A
+                                </span>
+                              </td>
+                              <td>{res.rollNo}</td>
+                              <td>
+                                <strong>{res.studentName}</strong>
+                              </td>
+                              {selectedTestResults.test.subjectMapping?.length > 0 && 
+                                selectedTestResults.test.subjectMapping.map((m, i) => (
+                                  <td key={i} style={{ color: '#dc2626', fontWeight: 700 }}>A</td>
+                                ))
+                              }
+                              <td style={{ color: '#dc2626', fontWeight: 700 }}>A</td>
+                              <td style={{ color: '#dc2626', fontWeight: 700 }}>A</td>
+                              <td style={{ color: '#dc2626', fontWeight: 700 }}>A</td>
+                              <td>
+                                <span style={{ fontSize: '0.78rem', color: '#dc2626', fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'rgba(220, 38, 38, 0.1)' }}>
+                                  ABSENT
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        const rankClass = res.rank !== undefined ? getRankBadgeClass(res.rank) : 'rank-badge-default';
+                        const marksCategory = res.percentage !== undefined ? getMarksCategory(res.percentage) : 'badge-default';
+
                         return (
-                          <tr key={res.id} style={{ opacity: 0.85, background: 'rgba(241, 245, 249, 0.4)' }}>
+                          <tr key={res.id}>
                             <td>
-                              <span className="badge badge-secondary" style={{ fontSize: '0.75rem', opacity: 0.7, padding: '2px 8px' }}>
-                                -
+                              <span className={`rank-badge ${rankClass}`}>
+                                {res.rank !== undefined ? res.rank : 'N/A'}
                               </span>
                             </td>
                             <td>{res.rollNo}</td>
-                            <td>
-                              <strong>{res.studentName}</strong>
-                            </td>
+                            <td><strong>{res.studentName}</strong></td>
+                            
                             {selectedTestResults.test.subjectMapping?.length > 0 && 
-                              selectedTestResults.test.subjectMapping.map((m, i) => (
-                                <td key={i} style={{ color: 'var(--text-tertiary)' }}>-</td>
+                              calculateSubjectStats(res, selectedTestResults.test).map((stat, i) => (
+                                <td key={i}>{stat.marks}</td>
                               ))
                             }
-                            <td style={{ color: 'var(--text-tertiary)' }}>- / {res.totalMarks}</td>
+
+                            <td>{res.marks} / {res.totalMarks}</td>
                             <td>
-                              <span 
-                                style={{ 
-                                  fontSize: '0.75rem', 
-                                  fontWeight: 600, 
-                                  padding: '4px 8px', 
-                                  borderRadius: '6px', 
-                                  background: 'rgba(234, 179, 8, 0.12)', 
-                                  color: '#b45309', 
-                                  border: '1px solid rgba(234, 179, 8, 0.3)',
-                                  display: 'inline-block'
-                                }}
-                              >
-                                OMR Not Scanned
+                              <span className={`marks-pill ${marksCategory}`}>
+                                {res.percentage !== undefined ? `${res.percentage}%` : 'N/A'}
                               </span>
                             </td>
                             <td>
-                              <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
-                                OMR Not Scanned
+                              <span style={{ fontSize: '0.78rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', border: '1px solid rgba(37, 99, 235, 0.2)' }}>
+                                {getPctile(res.marks)}%ile
                               </span>
                             </td>
-                          </tr>
-                        );
-                      }
-
-                      const rankClass = res.rank !== undefined ? getRankBadgeClass(res.rank) : 'rank-badge-default';
-                      const marksCategory = res.percentage !== undefined ? getMarksCategory(res.percentage) : 'badge-default';
-
-                      return (
-                        <tr key={res.id}>
-                          <td>
-                            <span className={`rank-badge ${rankClass}`}>
-                              {res.rank !== undefined ? res.rank : 'N/A'}
-                            </span>
-                          </td>
-                          <td>{res.rollNo}</td>
-                          <td><strong>{res.studentName}</strong></td>
-                          
-                          {selectedTestResults.test.subjectMapping?.length > 0 && 
-                            calculateSubjectStats(res, selectedTestResults.test).map((stat, i) => (
-                              <td key={i}>{stat.marks}</td>
-                            ))
-                          }
-
-                          <td>{res.marks} / {res.totalMarks}</td>
-                          <td>
-                            <span className={`marks-pill ${marksCategory}`}>
-                              {res.percentage !== undefined ? `${res.percentage}%` : 'N/A'}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="flex gap-2 items-center">
-                              <button 
-                                onClick={() => setSelectedStudentResult(res)}
-                                className="btn btn-ghost btn-xs text-primary"
-                                style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
-                              >
-                                View Results
-                              </button>
+                            <td>
+                              <div className="flex gap-2 items-center">
+                                <button 
+                                  onClick={() => setSelectedStudentResult(res)}
+                                  className="btn btn-ghost btn-xs text-primary"
+                                  style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
+                                >
+                                  View Results
+                                </button>
                               {res.omrSheetImage && (
                                 <>
                                   <button 
@@ -4611,7 +4706,8 @@ export default function Tests() {
                           </td>
                         </tr>
                       );
-                    })}
+                    });
+                  })()}
                   </tbody>
                 </table>
               </div>
@@ -4934,31 +5030,67 @@ export default function Tests() {
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button 
                       type="button" 
-                      className="btn btn-outline-danger btn-sm" 
                       onClick={() => {
                         if (window.confirm('Are you sure you want to clear all answer boxes for this test?')) {
                           setManualAnswersGrid(new Array(questionNumbers.length).fill(''));
                         }
                       }}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '0.78rem' }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 14px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        background: '#ef4444',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
+                      }}
                       title="Clear all entered answers"
                     >
-                      <Trash2 size={13} /> Clear All
+                      <Trash2 size={14} /> Clear All
                     </button>
                     <button 
                       type="button" 
-                      className="btn btn-outline-primary btn-sm" 
                       onClick={handleCopyAnswerKey}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '0.78rem', fontWeight: 600 }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 14px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
+                      }}
                       title="Copy all answers as comma-separated text to paste in Notepad or another test"
                     >
-                      <Copy size={13} /> Copy Answer Key
+                      <Copy size={14} /> Copy Answer Key
                     </button>
                     <button 
                       type="button" 
-                      className="btn btn-secondary btn-sm" 
                       onClick={handleManualGridPaste}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '0.78rem' }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 14px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, #059669, #10b981)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)'
+                      }}
                       title="Quick paste comma-separated answers from clipboard"
                     >
                       <ClipboardList size={14} /> Quick Paste

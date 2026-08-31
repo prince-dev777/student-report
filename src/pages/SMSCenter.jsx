@@ -96,14 +96,47 @@ export default function SMSCenter() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Tab Management ('logs' | 'bot')
+  // Tab Management ('logs' | 'bot' | 'voice')
   const [activeTab, setActiveTab] = useState(() => {
     try {
-      return localStorage.getItem('cx_smscenter_tab') || 'bot';
+      return localStorage.getItem('cx_smscenter_tab') || 'logs';
     } catch {
-      return 'bot';
+      return 'logs';
     }
   });
+
+  const [outboundMessagingActive, setOutboundMessagingActive] = useState(true);
+
+  // Fetch persistent outbound messaging status on mount
+  useEffect(() => {
+    fetch(`${API_BASE}/whatsapp/outbound-status`)
+      .then(res => res.json())
+      .then(data => {
+        if (typeof data.enabled === 'boolean') {
+          setOutboundMessagingActive(data.enabled);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleToggleOutboundMessaging = async () => {
+    const nextVal = !outboundMessagingActive;
+    setOutboundMessagingActive(nextVal);
+    try {
+      await fetch(`${API_BASE}/whatsapp/outbound-toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: nextVal })
+      });
+      if (nextVal) {
+        toast.success('🟢 Automated WhatsApp Messaging ACTIVATED!');
+      } else {
+        toast('⏸️ Automated WhatsApp Messaging PAUSED (No alerts will be sent)', { icon: '⏸️' });
+      }
+    } catch (e) {
+      toast.error('Failed to update messaging toggle');
+    }
+  };
 
   const handleTabSwitch = (tab) => {
     setActiveTab(tab);
@@ -609,71 +642,8 @@ export default function SMSCenter() {
         flexWrap: 'wrap',
         gap: '8px'
       }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={() => handleTabSwitch('bot')}
-            style={{
-              padding: '10px 22px',
-              borderRadius: '10px',
-              border: 'none',
-              fontWeight: 800,
-              fontSize: '0.92rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: activeTab === 'bot' ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' : 'transparent',
-              color: activeTab === 'bot' ? '#ffffff' : 'var(--text-secondary)',
-              boxShadow: activeTab === 'bot' ? '0 4px 14px rgba(99, 102, 241, 0.35)' : 'none',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <Sparkles size={18} />
-            <span>✨ Career Xone AI Assistant</span>
-            <span style={{
-              background: botConfig.enabled ? '#22c55e' : '#ef4444',
-              color: '#ffffff',
-              padding: '2px 8px',
-              borderRadius: '10px',
-              fontSize: '0.72rem',
-              fontWeight: 800
-            }}>
-              {botConfig.enabled ? 'ACTIVE' : 'PAUSED'}
-            </span>
-          </button>
-
-          <button
-            onClick={() => handleTabSwitch('voice')}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '10px',
-              border: 'none',
-              fontWeight: 800,
-              fontSize: '0.92rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: activeTab === 'voice' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
-              color: activeTab === 'voice' ? '#ffffff' : 'var(--text-secondary)',
-              boxShadow: activeTab === 'voice' ? '0 4px 14px rgba(16, 185, 129, 0.35)' : 'none',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <PhoneCall size={18} />
-            <span>🎙️ AI Voice Calling</span>
-            <span style={{
-              background: '#10b981',
-              color: '#ffffff',
-              padding: '2px 8px',
-              borderRadius: '10px',
-              fontSize: '0.72rem',
-              fontWeight: 800
-            }}>
-              FREE
-            </span>
-          </button>
-
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* 1. Primary Tab: Outbound Logs */}
           <button
             onClick={() => handleTabSwitch('logs')}
             style={{
@@ -695,13 +665,70 @@ export default function SMSCenter() {
             <MessageSquare size={18} />
             <span>Outbound Notification Logs</span>
             <span style={{
-              background: activeTab === 'logs' ? 'rgba(255,255,255,0.2)' : 'var(--bg-card)',
+              background: activeTab === 'logs' ? 'rgba(255,255,255,0.25)' : 'var(--bg-tertiary)',
+              color: activeTab === 'logs' ? '#ffffff' : 'var(--text-primary)',
               padding: '2px 8px',
               borderRadius: '10px',
-              fontSize: '0.75rem'
+              fontSize: '0.72rem',
+              fontWeight: 800
             }}>
-              {stats.total}
+              {smsHistory.length}
             </span>
+          </button>
+
+          {/* 2. Secondary Tab: AI Assistant */}
+          <button
+            onClick={() => handleTabSwitch('bot')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '10px',
+              border: 'none',
+              fontWeight: 800,
+              fontSize: '0.92rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: activeTab === 'bot' ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' : 'transparent',
+              color: activeTab === 'bot' ? '#ffffff' : 'var(--text-secondary)',
+              boxShadow: activeTab === 'bot' ? '0 4px 14px rgba(99, 102, 241, 0.35)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <Sparkles size={18} />
+            <span>✨ AI Assistant & Bot</span>
+          </button>
+        </div>
+
+        {/* Persistent Master Outbound Messaging Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={handleToggleOutboundMessaging}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '10px',
+              border: outboundMessagingActive ? '1.5px solid #86efac' : '1.5px solid #fca5a5',
+              background: outboundMessagingActive ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+              color: outboundMessagingActive ? '#15803d' : '#b91c1c',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease'
+            }}
+            title="Click to Toggle Automated WhatsApp Alerts"
+          >
+            <span style={{
+              width: 9,
+              height: 9,
+              borderRadius: '50%',
+              background: outboundMessagingActive ? '#22c55e' : '#ef4444',
+              boxShadow: outboundMessagingActive ? '0 0 8px #22c55e' : 'none'
+            }} />
+            <span>{outboundMessagingActive ? '🟢 Live WhatsApp Alerts: ACTIVE' : '⏸️ Live WhatsApp Alerts: PAUSED'}</span>
           </button>
         </div>
 

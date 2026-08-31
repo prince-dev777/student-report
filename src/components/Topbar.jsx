@@ -8,7 +8,7 @@ import { api } from '../utils/api';
 import SettingsModal from './SettingsModal';
 
 export default function Topbar() {
-  const { setSidebarOpen, smsHistory, students } = useApp();
+  const { setSidebarOpen, smsHistory, students, appCardTheme, toggleAppCardTheme } = useApp();
   const { logout, user } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -178,6 +178,66 @@ export default function Topbar() {
               </motion.button>
             </div>
           )}
+
+          {/* 🎨 Solid White Cards vs Gradient Theme Global Switcher */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: 'rgba(255, 255, 255, 0.85)',
+            padding: '3px 4px',
+            borderRadius: '12px',
+            border: '1.5px solid var(--border-color, #cbd5e1)',
+            gap: '3px',
+            marginRight: '6px',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+          }}>
+            <button
+              type="button"
+              onClick={() => toggleAppCardTheme('white')}
+              style={{
+                padding: '5px 11px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: appCardTheme === 'white' ? '#ffffff' : 'transparent',
+                color: appCardTheme === 'white' ? '#0f172a' : 'var(--text-secondary)',
+                boxShadow: appCardTheme === 'white' ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                transition: 'all 0.2s ease'
+              }}
+              title="Apply Solid White Cards across all pages"
+            >
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: appCardTheme === 'white' ? '#10b981' : '#94a3b8', display: 'inline-block' }} />
+              <span>⚪ Solid White Cards</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => toggleAppCardTheme('gradient')}
+              style={{
+                padding: '5px 11px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: appCardTheme === 'gradient' ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 'transparent',
+                color: appCardTheme === 'gradient' ? '#ffffff' : 'var(--text-secondary)',
+                boxShadow: appCardTheme === 'gradient' ? '0 2px 8px rgba(37,99,235,0.3)' : 'none',
+                transition: 'all 0.2s ease'
+              }}
+              title="Apply Gradient Theme across all pages"
+            >
+              <span>🎨 Gradient Theme</span>
+            </button>
+          </div>
 
           {/* Fullscreen Toggle Button */}
           <button 

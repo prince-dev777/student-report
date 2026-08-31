@@ -22,6 +22,7 @@ import Register from './pages/Register';
 import Tests from './pages/Tests';
 import TestSeries from './pages/TestSeries';
 import Settings from './pages/Settings';
+import { API_BASE } from './utils/api';
 
 import StaffAttendanceWeb from './pages/StaffAttendanceWeb';
 import SaaSShowcaseLandingPage from './pages/SaaSShowcaseLandingPage';
@@ -206,11 +207,11 @@ function AppLayout() {
 const isElectron = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 
 export default function App() {
-  // 🔄 24/7 Keep-Alive: Ping Render Cloud every 10 minutes so it never goes to sleep
+  // 🔄 24/7 Keep-Alive: Ping API health every 10 minutes
   React.useEffect(() => {
     const pingCloud = async () => {
       try {
-        await fetch('https://student-report-ezgw.onrender.com/api/health', {
+        await fetch(`${API_BASE}/health`, {
           headers: { 'User-Agent': 'CareerXone-WebPWA-KeepAlive/1.0' }
         });
       } catch (e) {}
@@ -278,7 +279,7 @@ export default function App() {
           } />
         </Routes>
         <Toaster
-          position="top-right"
+          position="bottom-right"
           toastOptions={{
             duration: 3000,
             style: {

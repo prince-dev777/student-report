@@ -1,8 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { api } from '../utils/api';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
+
+// Re-export useAuth so existing imports from './AuthContext' keep working
+export { useAuth } from './useAuth';
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
@@ -67,10 +70,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
 }
