@@ -133,16 +133,18 @@ function recordBotLog({ phone, studentName, rollNo, incomingText, botReply, stat
 export function getBotConfig() {
   return {
     ...botConfig,
+    enabled: false,
+    paused: true,
     totalLogsCount: botLogs.length
   };
 }
 
 // 2. Update Bot Configuration
 export function updateBotConfig(newConfig) {
-  botConfig = { ...botConfig, ...newConfig };
+  botConfig = { ...botConfig, ...newConfig, enabled: false, paused: true };
   try {
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(botConfig, null, 2), 'utf-8');
-    logInfo('WHATSAPP_AI', `💾 Persisted updated AI settings to disk (Helpline 1: ${botConfig.counselingPhone1}, Helpline 2: ${botConfig.counselingPhone2})`);
+    logInfo('WHATSAPP_AI', `💾 Persisted updated AI settings to disk (AI Bot strictly paused)`);
   } catch (e) {
     logError('WHATSAPP_AI', 'Failed to persist AI config to disk', e);
   }
@@ -154,241 +156,10 @@ export function getBotLogs() {
   return [...botLogs];
 }
 
-// 4. Main Incoming Message Handler (Ultra-Smart NLP & AI Engine)
+// 4. Main Incoming Message Handler (Hardcode Paused)
 export async function handleIncomingWhatsAppMessage(client, msg) {
-  try {
-    // 🛑 PERMANENTLY PAUSED GUARD: Zero automated replies
-    if (!botConfig.enabled || botConfig.paused === true) return;
-    if (!msg || !client) return;
-
-    const fromId = msg.from || '';
-    const toId = msg.to || '';
-    const remoteId = msg.id?.remote || fromId || toId;
-
-    // Ignore group chats and broadcast status
-    if (fromId.endsWith('@g.us') || toId.endsWith('@g.us') || remoteId.endsWith('@g.us') || fromId === 'status@broadcast') {
-      return;
-    }
-
-    const bodyText = (msg.body || '').trim();
-    if (!bodyText) return;
-
-    // If this message was generated and sent by our AI, ignore it immediately!
-    if (sentBotTexts.has(bodyText)) return;
-
-    const myWid = client.info?.wid?._serialized || '';
-    const myPhone = client.info?.wid ? cleanPhone(client.info.wid.user) : '';
-
-    // Resolve Real Sender Phone & Push Name (Handles WhatsApp LID & Multi-Device JIDs)
-    let senderRaw = remoteId || fromId;
-    let pushName = '';
-
-    try {
-      if (typeof msg.getContact === 'function') {
-        const contact = await msg.getContact();
-        if (contact) {
-          if (contact.number && !contact.number.includes('@lid')) {
-            senderRaw = contact.number;
-          } else if (contact.id?.user && !contact.id._serialized?.endsWith('@lid')) {
-            senderRaw = contact.id.user;
-          }
-          pushName = contact.pushname || contact.name || '';
-        }
-      }
-    } catch (contactErr) {}
-
-    // Additional Fallback for LID participants
-    if (senderRaw.includes('@lid') || (fromId && fromId.includes('@lid'))) {
-      if (msg.author && !msg.author.includes('@lid')) {
-        senderRaw = msg.author;
-      } else if (msg._data?.id?.participant && !msg._data.id.participant.includes('@lid')) {
-        senderRaw = msg._data.id.participant;
-      }
-    }
-
-    const remotePhone = cleanPhone(remoteId);
-    const fromPhone = cleanPhone(fromId);
-    const toPhone = cleanPhone(toId);
-
-    // Self-Chat Detection: When user messages themselves ("Message yourself" / chat with own number)
-    const isSelfChat = (myPhone && (remotePhone === myPhone || fromPhone === myPhone && toPhone === myPhone)) || 
-                       (myWid && (remoteId === myWid || fromId === toId));
-
-    // If message is outgoing to someone else (e.g. an SMS notification to a parent), do not auto-reply
-    if (msg.fromMe && !isSelfChat) {
-      return;
-    }
-
-    let targetChatId = remoteId || fromId || (isSelfChat ? myWid : '');
-    const cleanNumber = isSelfChat ? myPhone : (cleanPhone(senderRaw) || remotePhone || fromPhone);
-    if (!cleanNumber || cleanNumber.length < 6) return;
-
-    if (cleanNumber && (targetChatId.includes('@lid') || targetChatId.includes(':'))) {
-      targetChatId = `${cleanNumber.length === 10 ? '91' + cleanNumber : cleanNumber}@c.us`;
-    }
-
-    // Loop protection signatures
-    if (
-      bodyText.includes('Academic Assistant') ||
-      bodyText.includes('Career Xone AI') ||
-      bodyText.includes('ATTENDANCE REPORT') ||
-      bodyText.includes('LATEST TEST RESULT') ||
-      bodyText.includes('CLASS TIMETABLE') ||
-      bodyText.includes('PERFORMANCE SUMMARY') ||
-      bodyText.includes('Admission & Fee Counseling Desk') ||
-      bodyText.includes('Empowering Students')
-    ) {
-      return;
-    }
-
-    // Anti-loop rate limiting: only debounce identical duplicate text within 2 seconds
-    const now = Date.now();
-    const lastData = lastRepliedTimeMap.get(cleanNumber) || { time: 0, text: '' };
-    if (lastData.text === bodyText && (now - lastData.time < 2000)) {
-      logWarn('WHATSAPP_AI', `⏳ Duplicate message ignored for ${cleanNumber}: "${bodyText}"`);
-      return;
-    }
-    lastRepliedTimeMap.set(cleanNumber, { time: now, text: bodyText });
-
-    logInfo('WHATSAPP_AI', `📩 Processing AI Query from ${cleanNumber}${isSelfChat ? ' (Self-Test)' : ''}: "${bodyText.slice(0, 80)}"`);
-
-    // Lookup Student from DB by parent phone, student phone, or rollNo
-    const Student = mongoose.model('Student');
-    const studentQuery = {
-      isDeleted: { $ne: true },
-      $or: [
-        { parentPhone: { $regex: cleanNumber } },
-        { parentPhone2: { $regex: cleanNumber } },
-        { phone: { $regex: cleanNumber } },
-        { rollNo: cleanNumber }
-      ]
-    };
-
-    let students = await Student.find(studentQuery).limit(3);
-    let hasExplicitRollQuery = false;
-    let replyText = null;
-
-    let explicitNotFoundRollOrName = null;
-
-    // If not linked by phone, check if user provided a Roll Number in text
-    if (!students || students.length === 0) {
-      const rollMatch = bodyText.match(/\b(?:roll\s*no\.?|roll\s*number|rollno|roll|id)\s*[:\-#]?\s*([0-9a-zA-Z]+)\b/i) ||
-                        bodyText.match(/^\s*([0-9]{1,8})\s*$/);
-      if (rollMatch) {
-        const potentialRoll = rollMatch[1].trim();
-        const foundByRoll = await Student.findOne({
-          isDeleted: { $ne: true },
-          $or: [
-            { rollNo: potentialRoll },
-            { rollNo: potentialRoll.replace(/^0+/, '') },
-            { rollNo: String(parseInt(potentialRoll, 10)) },
-            { id: potentialRoll }
-          ]
-        });
-        if (foundByRoll) {
-          students = [foundByRoll];
-          hasExplicitRollQuery = true;
-          userSessionStudentMap.set(cleanNumber, { student: foundByRoll, timestamp: Date.now() });
-        } else {
-          explicitNotFoundRollOrName = potentialRoll;
-        }
-      }
-    }
-
-    // If still not found by roll, search if user mentioned a student's full or first name in text (e.g. "Prince", "Prince Kumar")
-    if ((!students || students.length === 0) && !explicitNotFoundRollOrName) {
-      const cleanWords = bodyText.replace(/[^a-zA-Z\s]/g, ' ').trim().split(/\s+/).filter(w => w.length >= 3 && !/^(kya|hai|mere|mera|meri|bete|beta|beti|bacha|bachha|bache|bachi|batao|bata|sakta|dekhna|janna|please|sir|madam|coaching|class|test|marks|report|result|attendance|kaun|kab|kahan|kaise|hello|menu|fees|course)$/i.test(w));
-      
-      if (cleanWords.length >= 1 && cleanWords.length <= 3) {
-        const nameQuery = cleanWords.join(' ');
-        const matchingStudents = await Student.find({
-          isDeleted: { $ne: true },
-          name: { $regex: new RegExp(nameQuery, 'i') }
-        }).limit(5);
-
-        if (matchingStudents && matchingStudents.length === 1) {
-          students = matchingStudents;
-          userSessionStudentMap.set(cleanNumber, { student: matchingStudents[0], timestamp: Date.now() });
-        } else if (matchingStudents && matchingStudents.length > 1) {
-          replyText = `🔍 *${matchingStudents.length} Students Mile:* Kripya student ka Roll Number likhkar bhejein:\n` +
-            matchingStudents.map(s => `• *${s.name}* ➔ \`ROLL ${s.rollNo}\``).join('\n');
-        }
-      }
-    }
-
-    // If still not found, check conversation session memory (within 2 hours)
-    if (!students || students.length === 0) {
-      const activeSession = userSessionStudentMap.get(cleanNumber);
-      if (activeSession && (Date.now() - activeSession.timestamp < 2 * 3600 * 1000)) {
-        students = [activeSession.student];
-      }
-    }
-
-    let studentName = '';
-    let rollNo = '';
-
-    if (!replyText) {
-      if (students && students.length > 0) {
-        const student = students[0];
-        studentName = student.name;
-        rollNo = student.rollNo;
-        userSessionStudentMap.set(cleanNumber, { student, timestamp: Date.now() });
-
-        // If user specifically searched / provided this roll number, show their 360° Academic Summary immediately!
-        if (hasExplicitRollQuery) {
-          replyText = await getReportSummaryReply(student);
-        } else {
-          replyText = await generateSmartStudentReply(student, bodyText, cleanNumber);
-        }
-      } else if (explicitNotFoundRollOrName) {
-        const p1 = botConfig.counselingPhone1 || '9673383561';
-        replyText = `❌ *Student Record Nahi Mila*
-
-Roll Number \`${explicitNotFoundRollOrName}\` hamare registered database me nahi mila.
-
-🔍 *Kripya check karein:*
-1. Student ka sahi **Roll Number** (jaise: \`340\`)
-2. Ya student ka **Full Name** (jaise: \`Prince Kumar\`) likhkar bhejein.
-
-📞 Direct Helpdesk: *+91 ${p1}*`;
-      } else {
-        studentName = pushName ? `${pushName} (Guest)` : 'Guest / Inquiry';
-        replyText = await generateSmartGuestReply(bodyText, cleanNumber);
-      }
-    }
-
-    if (replyText) {
-      markBotSent(replyText); // Remember AI text to prevent loop
-      
-      let finalSendChatId = targetChatId;
-      if (!finalSendChatId || finalSendChatId.includes('@lid') || finalSendChatId.includes(':')) {
-        const digits = cleanNumber.replace(/\D/g, '');
-        finalSendChatId = `${digits.length === 10 ? '91' + digits : digits}@c.us`;
-      }
-
-      try {
-        if (typeof msg.reply === 'function' && !isSelfChat) {
-          await msg.reply(replyText);
-        } else {
-          await client.sendMessage(finalSendChatId, replyText);
-        }
-      } catch (sendErr) {
-        logWarn('WHATSAPP_AI', `Failed to send via primary route, falling back to finalSendChatId: ${sendErr.message}`);
-        await client.sendMessage(finalSendChatId, replyText);
-      }
-      logInfo('WHATSAPP_AI', `📤 Replied to ${cleanNumber} [Student: ${studentName || 'Guest'}]: "${replyText.slice(0, 80)}..."`);
-      recordBotLog({
-        phone: cleanNumber,
-        studentName,
-        rollNo,
-        incomingText: bodyText,
-        botReply: replyText,
-        status: 'replied'
-      });
-    }
-  } catch (err) {
-    logError('WHATSAPP_AI', 'Error processing incoming WhatsApp message', err);
-  }
+  // 🛑 HARDCODE-PAUSED: Zero automated replies to incoming WhatsApp messages
+  return;
 }
 
 // =========================================================================================

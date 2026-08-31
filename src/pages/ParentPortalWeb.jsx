@@ -59,6 +59,8 @@ export default function ParentPortalWeb() {
   const [showReportCardModal, setShowReportCardModal] = useState(false);
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showFullPhotoModal, setShowFullPhotoModal] = useState(false);
   const [noticeFilter, setNoticeFilter] = useState('ALL');
   const [notificationPermission, setNotificationPermission] = useState(() => {
     return (typeof window !== 'undefined' && 'Notification' in window) ? Notification.permission : 'default';
@@ -135,8 +137,11 @@ export default function ParentPortalWeb() {
     };
   }, []);
 
-  // Format batch helper
-  const formatBatchName = (batch) => {
+  // Format batch & class helper
+  const formatBatchName = (batch, studentClass) => {
+    if (studentClass && String(studentClass).trim()) {
+      return String(studentClass).trim();
+    }
     if (!batch) return 'JEE Mains';
     const b = String(batch).trim().toLowerCase();
     if (b === 'batch-4' || b === 'batch 4' || b === '4') return 'JEE Mains';
@@ -1126,18 +1131,36 @@ export default function ParentPortalWeb() {
           marginBottom: '6px',
           boxShadow: '0 2px 6px rgba(2, 132, 199, 0.04)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-            <div className="student-avatar" style={{
-              width: '38px', height: '38px', borderRadius: '10px',
-              background: 'linear-gradient(135deg, #0284c7, #0369a1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.95rem', fontWeight: 800, color: '#ffffff',
-              boxShadow: '0 1px 5px rgba(2, 132, 199, 0.18)', flexShrink: 0,
-              overflow: 'hidden', border: '1.5px solid #bae6fd'
-            }}>
+          <div
+            onClick={() => setShowProfileModal(true)}
+            title="Click to view full student profile & details"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '9px', cursor: 'pointer',
+              borderRadius: '10px', padding: '2px', transition: 'all 0.15s ease'
+            }}
+          >
+            <div
+              onClick={(e) => {
+                if (studentData?.photo) {
+                  e.stopPropagation();
+                  setShowFullPhotoModal(true);
+                }
+              }}
+              className="student-avatar"
+              style={{
+                width: '42px', height: '42px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1rem', fontWeight: 800, color: '#ffffff',
+                boxShadow: '0 2px 6px rgba(2, 132, 199, 0.22)', flexShrink: 0,
+                overflow: 'hidden', border: '1.5px solid #bae6fd',
+                cursor: studentData?.photo ? 'zoom-in' : 'pointer'
+              }}
+              title={studentData?.photo ? 'Click to view photo in full-screen' : 'Student Photo'}
+            >
               {studentData?.photo ? (
                 <img
-                  src={studentData.photo}
+                  src={getMediaUrl(studentData.photo)}
                   alt={studentData.name}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -1148,17 +1171,19 @@ export default function ParentPortalWeb() {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h2 className="student-name" style={{
-                margin: 0, fontSize: '0.90rem', fontWeight: 900, color: '#0f172a',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2
+                margin: 0, fontSize: '0.92rem', fontWeight: 900, color: '#0f172a',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2,
+                display: 'flex', alignItems: 'center', gap: '4px'
               }}>
                 {studentData?.name}
+                <ChevronRight size={13} color="#94a3b8" />
               </h2>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', fontSize: '0.68rem', color: '#64748b', alignItems: 'center', marginTop: '2px' }}>
                 <span style={{ background: '#f1f5f9', padding: '1.5px 6px', borderRadius: '4px', fontWeight: 700, color: '#334155' }}>
                   Roll: <strong style={{ color: '#0f172a' }}>{studentData?.rollNo}</strong>
                 </span>
                 <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '1.5px 6px', borderRadius: '4px', fontWeight: 800 }}>
-                  {formatBatchName(studentData?.batch)}
+                  {formatBatchName(studentData?.batch, studentData?.class)}
                 </span>
               </div>
             </div>
@@ -2323,25 +2348,46 @@ export default function ParentPortalWeb() {
               </button>
             </div>
 
-            {/* Student Info Pill */}
-            <div style={{
-              background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
-              padding: '10px 12px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px'
-            }}>
+            {/* Student Info Pill (Click to open full profile modal) */}
+            <div
+              onClick={() => {
+                setShowSettingsDrawer(false);
+                setShowProfileModal(true);
+              }}
+              title="Click to view full student profile & credentials"
+              style={{
+                background: '#f8fafc', border: '1.5px solid #bae6fd', borderRadius: '14px',
+                padding: '11px 12px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px',
+                cursor: 'pointer', transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f0f9ff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+            >
               <div style={{
-                width: '34px', height: '34px', borderRadius: '10px',
+                width: '38px', height: '38px', borderRadius: '11px',
                 background: 'linear-gradient(135deg, #0284c7, #0369a1)',
                 color: '#ffffff', fontWeight: 800, fontSize: '0.95rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                overflow: 'hidden', border: '1.5px solid #e0f2fe'
               }}>
-                {studentData?.name ? studentData.name.charAt(0) : 'S'}
+                {studentData?.photo ? (
+                  <img
+                    src={getMediaUrl(studentData.photo)}
+                    alt={studentData.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                ) : (
+                  studentData?.name ? studentData.name.charAt(0) : 'S'
+                )}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {studentData?.name}
+                  <ChevronRight size={13} color="#94a3b8" />
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
-                  Roll: {studentData?.rollNo} • {formatBatchName(studentData?.batch)}
+                <div style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 600 }}>
+                  Roll: {studentData?.rollNo} • {formatBatchName(studentData?.batch, studentData?.class)}
                 </div>
               </div>
             </div>
@@ -2551,6 +2597,182 @@ export default function ParentPortalWeb() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 👤 Interactive Student Profile Modal */}
+      {showProfileModal && studentData && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', padding: '16px'
+        }}>
+          <div style={{
+            background: '#ffffff', borderRadius: '20px', maxWidth: '440px', width: '100%',
+            padding: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', position: 'relative',
+            maxHeight: '90vh', overflowY: 'auto'
+          }}>
+            {/* Close Button */}
+            <button
+              onClick={() => setShowProfileModal(false)}
+              style={{
+                position: 'absolute', top: '14px', right: '14px', background: '#f1f5f9',
+                border: 'none', borderRadius: '50%', width: '32px', height: '32px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <X size={18} color="#64748b" />
+            </button>
+
+            {/* Profile Avatar Header */}
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <div
+                onClick={() => {
+                  if (studentData?.photo) {
+                    setShowProfileModal(false);
+                    setShowFullPhotoModal(true);
+                  }
+                }}
+                style={{
+                  width: '78px', height: '78px', borderRadius: '22px',
+                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                  margin: '0 auto 10px auto', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', fontSize: '2rem', fontWeight: 900, color: '#ffffff',
+                  boxShadow: '0 8px 20px rgba(2, 132, 199, 0.3)', overflow: 'hidden',
+                  border: '3px solid #e0f2fe', cursor: studentData?.photo ? 'zoom-in' : 'default'
+                }}
+                title={studentData?.photo ? 'Tap to view full-size photo' : 'Student Photo'}
+              >
+                {studentData?.photo ? (
+                  <img
+                    src={getMediaUrl(studentData.photo)}
+                    alt={studentData.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                ) : (
+                  studentData?.name ? studentData.name.charAt(0) : 'S'
+                )}
+              </div>
+              <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
+                {studentData?.name}
+              </h3>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>
+                  {formatBatchName(studentData?.batch, studentData?.class)}
+                </span>
+                <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>
+                  Active Student
+                </span>
+              </div>
+            </div>
+
+            {/* Credentials & Academic Details Card */}
+            <div style={{
+              background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '14px',
+              padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px',
+              marginBottom: '16px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Roll Number:</span>
+                <strong style={{ fontSize: '0.84rem', color: '#0f172a', fontWeight: 800 }}>{studentData?.rollNo || '-'}</strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Parent User ID:</span>
+                <strong style={{ fontSize: '0.84rem', color: '#0284c7', fontWeight: 900, letterSpacing: '0.5px' }}>
+                  {studentData?.parentUserId || `CAREER${studentData?.rollNo}`}
+                </strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Class / Course:</span>
+                <strong style={{ fontSize: '0.84rem', color: '#0f172a', fontWeight: 800 }}>
+                  {studentData?.class || formatBatchName(studentData?.batch)}
+                </strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Parent Name:</span>
+                <strong style={{ fontSize: '0.84rem', color: '#0f172a', fontWeight: 800 }}>{studentData?.parentName || 'Parent / Guardian'}</strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Registered Mobile:</span>
+                <strong style={{ fontSize: '0.84rem', color: '#0f172a', fontWeight: 800 }}>{studentData?.parentPhone || '-'}</strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Overall Attendance:</span>
+                <strong style={{ fontSize: '0.84rem', color: '#16a34a', fontWeight: 900 }}>
+                  {studentData?.attendanceRate !== undefined ? `${studentData.attendanceRate}%` : '100%'}
+                </strong>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  setShowReportCardModal(true);
+                }}
+                style={{
+                  flex: 1, background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
+                  border: 'none', padding: '11px', borderRadius: '12px', fontWeight: 800, fontSize: '0.82rem',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                }}
+              >
+                <FileText size={15} /> Official Report Card
+              </button>
+              <button
+                onClick={() => setShowProfileModal(false)}
+                style={{
+                  padding: '11px 16px', background: '#f1f5f9', color: '#334155',
+                  border: '1px solid #cbd5e1', borderRadius: '12px', fontWeight: 800, fontSize: '0.82rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🖼️ Full-Size Photo Modal */}
+      {showFullPhotoModal && studentData?.photo && (
+        <div
+          onClick={() => setShowFullPhotoModal(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.92)',
+            backdropFilter: 'blur(8px)', zIndex: 1100, display: 'flex',
+            flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px'
+          }}
+        >
+          <div style={{ position: 'relative', maxWidth: '480px', width: '100%', textAlign: 'center' }}>
+            <button
+              onClick={() => setShowFullPhotoModal(false)}
+              style={{
+                position: 'absolute', top: '-44px', right: '0', background: 'rgba(255,255,255,0.2)',
+                color: '#ffffff', border: 'none', borderRadius: '50%', width: '36px', height: '36px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <X size={20} color="#ffffff" />
+            </button>
+            <img
+              src={getMediaUrl(studentData.photo)}
+              alt={studentData.name}
+              style={{
+                width: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: '16px',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', border: '2px solid rgba(255,255,255,0.2)'
+              }}
+            />
+            <div style={{ marginTop: '12px', color: '#f8fafc', fontSize: '0.92rem', fontWeight: 800 }}>
+              {studentData.name} (Roll: {studentData.rollNo})
+            </div>
           </div>
         </div>
       )}
