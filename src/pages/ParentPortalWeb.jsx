@@ -401,15 +401,19 @@ export default function ParentPortalWeb() {
 
   // Download OMR Sheet Helper to save permanently before 30-day expiry
   const handleDownloadOmr = async (imageUrl, testName = 'OMR_Sheet') => {
-    if (!imageUrl) {
+    const resolvedUrl = getMediaUrl(imageUrl);
+    if (!resolvedUrl) {
       toast.error('OMR Sheet image not available.');
       return;
     }
     const toastId = toast.loading('Downloading OMR Sheet...');
     try {
-      const response = await fetch(imageUrl);
+      const response = await fetch(resolvedUrl);
       if (!response.ok) throw new Error('Failed to fetch image');
       const blob = await response.blob();
+      if (blob.type.includes('html') || blob.size < 500) {
+        throw new Error('Server returned invalid image data');
+      }
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
@@ -423,10 +427,9 @@ export default function ParentPortalWeb() {
       toast.success('OMR Sheet downloaded successfully!', { id: toastId });
     } catch (err) {
       console.error('Download error:', err);
-      // Fallback: direct window open
-      window.open(imageUrl, '_blank');
+      window.open(resolvedUrl, '_blank');
       toast.dismiss(toastId);
-      toast('Opening OMR Sheet in new tab to save.', { icon: 'ℹ️' });
+      toast('Opening OMR Sheet in new tab to view & save.', { icon: 'ℹ️' });
     }
   };
 
