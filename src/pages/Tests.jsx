@@ -18,6 +18,7 @@ import { api, getMediaUrl } from '../utils/api';
 import omrTemplatePdf from '../assets/OMR_Templates.pdf';
 import EditTestModal from '../components/EditTestModal';
 import MultiClassSelect from '../components/MultiClassSelect';
+import { sendTestResultSMS } from '../utils/smsService';
 
 // Helper to identify bonus questions in answer keys (e.g. '*', '*A', '*B', '*1', 'BONUS')
 export const isBonusAnswer = (key) => {

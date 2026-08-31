@@ -66,6 +66,33 @@ export default function ParentPortalWeb() {
     return (typeof window !== 'undefined' && 'Notification' in window) ? Notification.permission : 'default';
   });
 
+  // Track Read Notice IDs in localStorage so badges disappear once seen
+  const [readNoticeIds, setReadNoticeIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem('parent_read_notices');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const markNoticesAsRead = () => {
+    const allIds = notices.map(n => n.id || n._id || `${n.title}_${n.createdAt || n.time}`);
+    setReadNoticeIds(prev => {
+      const updated = new Set([...prev, ...allIds]);
+      try {
+        localStorage.setItem('parent_read_notices', JSON.stringify(Array.from(updated)));
+      } catch {}
+      return updated;
+    });
+  };
+
+  useEffect(() => {
+    if (activeTab === 'schedule' && notices.length > 0) {
+      markNoticesAsRead();
+    }
+  }, [activeTab, notices]);
+
   // Institute Branding Defaults
   const instituteName = "CAREER XONE";
   const instituteLogo = "/logo.png";
@@ -139,16 +166,34 @@ export default function ParentPortalWeb() {
 
   // Format batch & class helper
   const formatBatchName = (batch, studentClass) => {
-    if (studentClass && String(studentClass).trim()) {
-      return String(studentClass).trim();
+    const b = String(batch || '').trim();
+    const c = String(studentClass || '').trim();
+    if (!b && !c) return 'General Course';
+
+    const bLower = b.toLowerCase();
+    let courseName = '';
+    if (bLower.startsWith('j') && /^[jJ]\d+$/.test(bLower)) {
+      const num = bLower.replace(/\D/g, '');
+      courseName = `JEE (Mains + Adv) • J${num}`;
+    } else if (bLower.startsWith('n') && /^[nN]\d+$/.test(bLower)) {
+      const num = bLower.replace(/\D/g, '');
+      courseName = `NEET • N${num}`;
+    } else if (bLower.includes('batch-4') || bLower === 'batch 4' || bLower === '4') {
+      courseName = 'JEE Mains';
+    } else if (bLower.includes('batch-1') || bLower === 'batch 1' || bLower === '1') {
+      courseName = 'JEE Advanced';
+    } else if (bLower.includes('batch-2') || bLower === 'batch 2' || bLower === '2') {
+      courseName = 'NEET Medical';
+    } else if (bLower.includes('batch-3') || bLower === 'batch 3' || bLower === '3') {
+      courseName = 'MHCET';
+    } else if (b) {
+      courseName = b.replace(/^batch-?/i, 'Batch ').replace(/\b\w/g, l => l.toUpperCase());
     }
-    if (!batch) return 'JEE Mains';
-    const b = String(batch).trim().toLowerCase();
-    if (b === 'batch-4' || b === 'batch 4' || b === '4') return 'JEE Mains';
-    if (b === 'batch-1' || b === 'batch 1' || b === '1') return 'JEE Advanced';
-    if (b === 'batch-2' || b === 'batch 2' || b === '2') return 'NEET';
-    if (b === 'batch-3' || b === 'batch 3' || b === '3') return 'MHCET';
-    return batch.replace(/^batch-?/i, 'Batch ').replace(/\b\w/g, l => l.toUpperCase());
+
+    if (c && courseName && !courseName.toLowerCase().includes(c.toLowerCase())) {
+      return `${c} • ${courseName}`;
+    }
+    return courseName || c || 'General Course';
   };
 
   // Check device and browser environments
@@ -669,6 +714,11 @@ export default function ParentPortalWeb() {
     })))
   ];
 
+  const unreadNoticeCount = notices.filter(n => {
+    const id = n.id || n._id || `${n.title}_${n.createdAt || n.time}`;
+    return !readNoticeIds.has(id);
+  }).length;
+
   // PRE-LOGIN APP INSTALL GATEWAY (Enforce Mobile App Installation)
   if (!isLoggedIn && !isAppInstalled && !proceedToWeb) {
     return (
@@ -1098,15 +1148,18 @@ export default function ParentPortalWeb() {
           </button>
 
           <button
-            onClick={() => setShowSettingsDrawer(true)}
-            aria-label="Settings & Menu"
+            onClick={() => {
+              setShowNotificationDrawer(true);
+              markNoticesAsRead();
+            }}
+            title="Notifications & Settings"
             style={{
-              position: 'relative',
-              background: '#f1f5f9',
-              border: '1px solid #cbd5e1',
-              color: '#334155',
+              background: '#ffffff',
+              border: '1.5px solid #cbd5e1',
+              color: '#475569',
               width: '32px',
               height: '32px',
+              position: 'relative',
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
@@ -1116,13 +1169,13 @@ export default function ParentPortalWeb() {
             }}
           >
             <Settings size={16} />
-            {allNotifications.length > 0 && (
+            {unreadNoticeCount > 0 && (
               <span style={{
                 position: 'absolute', top: '-3px', right: '-3px', background: '#ef4444',
                 color: '#ffffff', fontSize: '0.55rem', fontWeight: 900, width: '14px',
                 height: '14px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
-                {allNotifications.length}
+                {unreadNoticeCount}
               </span>
             )}
           </button>
@@ -2709,9 +2762,16 @@ export default function ParentPortalWeb() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
-                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Class / Course:</span>
+                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Class / Standard:</span>
                 <strong style={{ fontSize: '0.84rem', color: '#0f172a', fontWeight: 800 }}>
-                  {studentData?.class || formatBatchName(studentData?.batch)}
+                  {studentData?.class || '11th'}
+                </strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Target Course & Batch:</span>
+                <strong style={{ fontSize: '0.84rem', color: '#0284c7', fontWeight: 900 }}>
+                  {formatBatchName(studentData?.batch, studentData?.class)}
                 </strong>
               </div>
 
@@ -2949,7 +3009,7 @@ export default function ParentPortalWeb() {
           { id: 'analytics', label: 'Analytics', icon: TrendingUp, activeColor: '#0284c7', count: null },
           { id: 'tests', label: 'Tests', icon: Award, activeColor: '#059669', count: testResults.length },
           { id: 'attendance', label: 'Attendance', icon: Calendar, activeColor: '#d97706', count: null },
-          { id: 'schedule', label: 'Notices', icon: Bell, activeColor: '#7c3aed', count: notices.length }
+          { id: 'schedule', label: 'Notices', icon: Bell, activeColor: '#7c3aed', count: unreadNoticeCount }
         ].map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;

@@ -66,10 +66,7 @@ function recordSentAlert(studentId, type, dateStr) {
  */
 export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail }) {
   // 1. Check persistent Master Messaging Switch
-  if (!getOutboundMessagingStatus()) {
-    console.log(`[WhatsAppService] ⏸️ Outbound messaging is currently PAUSED/OFF. Skipping WhatsApp message for ${studentName} (${type}).`);
-    return { success: true, skipped: true, reason: 'Messaging is paused by user' };
-  }
+  const isMessagingPaused = !getOutboundMessagingStatus();
 
   // 2. Multi-PC De-duplication Guard (In-Memory Lock)
   const todayStr = new Date().toISOString().split('T')[0];
@@ -96,7 +93,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   } catch (dbErr) {}
 
   const provider = (process.env.WHATSAPP_PROVIDER || 'mock').toLowerCase();
-  let status = 'sent';
+  let status = isMessagingPaused ? 'pending' : 'sent';
 
   // Build message text based on type
   const pName = parentName || 'Parent';
@@ -118,26 +115,29 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
     messageText = `Notification for ${studentName}: ${detail || 'No details provided.'}`;
   }
 
-  const phoneNumbers = parentPhone.split(',').map(p => p.trim()).filter(Boolean);
+  const phoneNumbers = parentPhone ? parentPhone.split(',').map(p => p.trim()).filter(Boolean) : [];
 
-  for (const phone of phoneNumbers) {
-    let formattedPhone = phone.replace(/\D/g, '');
-    if (formattedPhone.length === 10) {
-      formattedPhone = '91' + formattedPhone;
-    }
-    if (!formattedPhone.startsWith('+') && formattedPhone.length > 0) {
-      formattedPhone = '+' + formattedPhone;
-    }
+  if (isMessagingPaused) {
+    console.log(`[WhatsAppService] ⏸️ Outbound messaging is PAUSED. Logging SMS in SMS Center as pending for ${studentName} (${type}).`);
+  } else {
+    for (const phone of phoneNumbers) {
+      let formattedPhone = phone.replace(/\D/g, '');
+      if (formattedPhone.length === 10) {
+        formattedPhone = '91' + formattedPhone;
+      }
+      if (!formattedPhone.startsWith('+') && formattedPhone.length > 0) {
+        formattedPhone = '+' + formattedPhone;
+      }
 
-    console.log(`[WhatsAppService] Sending WhatsApp alert to ${formattedPhone} (Type: ${type})`);
+      console.log(`[WhatsAppService] Sending WhatsApp alert to ${formattedPhone} (Type: ${type})`);
 
-    try {
-      const waState = getWhatsAppClientState();
-      if (waState && waState.status === 'ready') {
-        await sendWhatsAppMessageWeb(formattedPhone, messageText);
-        status = 'delivered';
-        recordSentAlert(studentId, type, todayStr);
-        console.log(`[WhatsAppService] Successfully sent WhatsApp message via local client to ${formattedPhone}`);
+      try {
+        const waState = getWhatsAppClientState();
+        if (waState && waState.status === 'ready') {
+          await sendWhatsAppMessageWeb(formattedPhone, messageText);
+          status = 'delivered';
+          recordSentAlert(studentId, type, todayStr);
+          console.log(`[WhatsAppService] Successfully sent WhatsApp message via local client to ${formattedPhone}`);
       } else if (provider === 'ultramsg') {
         const instanceId = process.env.WHATSAPP_INSTANCE_ID;
         const token = process.env.WHATSAPP_TOKEN;

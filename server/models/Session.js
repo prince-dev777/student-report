@@ -8,6 +8,8 @@ const sessionSchema = new mongoose.Schema({
   endTime: { type: String, required: true },   // Format HH:MM (24-hour)
   batchId: { type: String, default: 'all' }, // Specific Course/Batch ID or 'all'
   className: { type: String, default: 'all' }, // Specific Class name or 'all'
+  batchIds: { type: [String], default: [] }, // Array of Course/Batch IDs
+  targetClasses: { type: [String], default: [] }, // Array of Class names
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null }
 }, { timestamps: true });

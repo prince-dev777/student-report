@@ -5,6 +5,8 @@ import { useApp } from '../context/AppContext';
 import { api } from '../utils/api';
 import { generateId } from '../utils/helpers';
 import toast from 'react-hot-toast';
+import MultiCourseSelect from '../components/MultiCourseSelect';
+import MultiClassSelect from '../components/MultiClassSelect';
 
 export default function Sessions() {
   const { sessions, setSessions, backendOnline, batches, students } = useApp();
@@ -17,8 +19,8 @@ export default function Sessions() {
     name: '',
     startTime: '',
     endTime: '',
-    batchId: 'all',
-    className: 'all'
+    batchIds: [],
+    targetClasses: []
   });
 
   const handleSubmit = async (e) => {
@@ -28,28 +30,35 @@ export default function Sessions() {
       return;
     }
 
+    const payload = {
+      ...formData,
+      // Maintain backward compatibility for single-field consumers
+      batchId: formData.batchIds.length === 1 ? formData.batchIds[0] : (formData.batchIds.length === 0 ? 'all' : formData.batchIds.join(',')),
+      className: formData.targetClasses.length === 1 ? formData.targetClasses[0] : (formData.targetClasses.length === 0 ? 'all' : formData.targetClasses.join(','))
+    };
+
     try {
       if (isEditing) {
-        const updated = await api.updateSession(isEditing.id, formData);
+        const updated = await api.updateSession(isEditing.id, payload);
         setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
-        toast.success('Session updated!');
+        toast.success('Session updated successfully!');
       } else {
-        const newSession = { ...formData, id: generateId('SESS') };
+        const newSession = { ...payload, id: generateId('SESS') };
         const saved = await api.createSession(newSession);
         setSessions(prev => [...prev, saved]);
-        toast.success('Session created!');
+        toast.success('Session created successfully!');
       }
       setIsAdding(false);
       setIsEditing(null);
-      setFormData({ name: '', startTime: '', endTime: '', batchId: 'all', className: 'all' });
+      setFormData({ name: '', startTime: '', endTime: '', batchIds: [], targetClasses: [] });
     } catch (err) {
-      toast.error('Failed to save session');
+      toast.error('Failed to save session: ' + (err.message || 'Error'));
     }
   };
 
   const handleDelete = async (id) => {
     if (!backendOnline) return toast.error('Offline mode');
-    if (!window.confirm('Delete this session?')) return;
+    if (!window.confirm('Are you sure you want to delete this session?')) return;
     
     try {
       await api.deleteSession(id);
@@ -62,12 +71,26 @@ export default function Sessions() {
 
   const handleEdit = (session) => {
     setIsEditing(session);
+    let bIds = [];
+    if (Array.isArray(session.batchIds)) {
+      bIds = session.batchIds;
+    } else if (session.batchId && session.batchId !== 'all') {
+      bIds = session.batchId.split(',').map(s => s.trim()).filter(Boolean);
+    }
+
+    let tClasses = [];
+    if (Array.isArray(session.targetClasses)) {
+      tClasses = session.targetClasses;
+    } else if (session.className && session.className !== 'all') {
+      tClasses = session.className.split(',').map(s => s.trim()).filter(Boolean);
+    }
+
     setFormData({
-      name: session.name,
-      startTime: session.startTime,
-      endTime: session.endTime,
-      batchId: session.batchId || 'all',
-      className: session.className || 'all'
+      name: session.name || '',
+      startTime: session.startTime || '',
+      endTime: session.endTime || '',
+      batchIds: bIds,
+      targetClasses: tClasses
     });
     setIsAdding(true);
   };
@@ -81,10 +104,14 @@ export default function Sessions() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Session Management</h1>
-          <p className="page-subtitle">Configure automated message rules based on punch-in time.</p>
+          <p className="page-subtitle">Configure automated biometric punch-in sessions with multi-course & multi-class selection.</p>
         </div>
         {!isAdding && (
-          <button className="btn btn-primary" onClick={() => setIsAdding(true)}>
+          <button className="btn btn-primary" onClick={() => {
+            setIsEditing(null);
+            setFormData({ name: '', startTime: '', endTime: '', batchIds: [], targetClasses: [] });
+            setIsAdding(true);
+          }}>
             <Plus size={20} />
             Add Session
           </button>
@@ -92,71 +119,91 @@ export default function Sessions() {
       </div>
 
       {isAdding && (
-        <div className="card mb-4">
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div>
-              <label className="form-label">Session Name (e.g., Class, Self-Study)</label>
-              <input 
-                type="text" 
-                className="form-input"
-                required
-                value={formData.name}
-                onChange={e => setFormData({...formData, name: e.target.value})}
-              />
+        <div className="card mb-4" style={{ border: '1.5px solid #93c5fd', boxShadow: '0 4px 16px rgba(59, 130, 246, 0.08)' }}>
+          <div style={{ marginBottom: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary, #0f172a)', margin: 0 }}>
+              {isEditing ? '✏️ Edit Session Rule' : '➕ Create New Session Rule'}
+            </h3>
+            <p style={{ fontSize: '0.80rem', color: 'var(--text-secondary, #64748b)', margin: '2px 0 0' }}>
+              Select target courses and classes. If none selected, the session applies to all students.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            {/* Row 1: Basic Timing Information */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="form-label" style={{ fontWeight: 600 }}>Session Name <span style={{ color: '#ef4444' }}>*</span></label>
+                <input 
+                  type="text" 
+                  className="form-input"
+                  required
+                  placeholder="e.g., Morning Class, Self Study, Doubt Session"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="form-label" style={{ fontWeight: 600 }}>Start Time (24-Hour) <span style={{ color: '#ef4444' }}>*</span></label>
+                <input 
+                  type="time" 
+                  className="form-input"
+                  required
+                  value={formData.startTime}
+                  onChange={e => setFormData({ ...formData, startTime: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="form-label" style={{ fontWeight: 600 }}>End Time (24-Hour) <span style={{ color: '#ef4444' }}>*</span></label>
+                <input 
+                  type="time" 
+                  className="form-input"
+                  required
+                  value={formData.endTime}
+                  onChange={e => setFormData({ ...formData, endTime: e.target.value })}
+                />
+              </div>
             </div>
-            <div>
-              <label className="form-label">Start Time</label>
-              <input 
-                type="time" 
-                className="form-input"
-                required
-                value={formData.startTime}
-                onChange={e => setFormData({...formData, startTime: e.target.value})}
-              />
+
+            {/* Row 2: Multi-Course & Multi-Class Selectors */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <MultiCourseSelect
+                  availableBatches={batches}
+                  selectedBatchIds={formData.batchIds}
+                  onChange={(ids) => setFormData({ ...formData, batchIds: ids })}
+                  label="Target Courses / Batches (Multi-Select)"
+                  placeholder="All Courses"
+                />
+              </div>
+
+              <div>
+                <MultiClassSelect
+                  availableClasses={uniqueClasses}
+                  selectedClasses={formData.targetClasses}
+                  onChange={(classes) => setFormData({ ...formData, targetClasses: classes })}
+                  label="Target Classes (Multi-Select)"
+                  placeholder="All Classes"
+                />
+              </div>
             </div>
-            <div>
-              <label className="form-label">End Time</label>
-              <input 
-                type="time" 
-                className="form-input"
-                required
-                value={formData.endTime}
-                onChange={e => setFormData({...formData, endTime: e.target.value})}
-              />
-            </div>
-            <div>
-              <label className="form-label">Course (Optional)</label>
-              <select 
-                className="form-select"
-                value={formData.batchId}
-                onChange={e => setFormData({...formData, batchId: e.target.value})}
+
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+              <button 
+                type="button" 
+                className="btn btn-outline" 
+                onClick={() => {
+                  setIsAdding(false);
+                  setIsEditing(null);
+                  setFormData({ name: '', startTime: '', endTime: '', batchIds: [], targetClasses: [] });
+                }}
               >
-                <option value="all">All Courses</option>
-                {batches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="form-label">Class (Optional)</label>
-              <select 
-                className="form-select"
-                value={formData.className}
-                onChange={e => setFormData({...formData, className: e.target.value})}
-              >
-                <option value="all">All Classes</option>
-                {uniqueClasses.map((c, i) => (
-                  <option key={i} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" className="btn btn-primary flex-1">Save</button>
-              <button type="button" className="btn btn-outline flex-1" onClick={() => {
-                setIsAdding(false);
-                setIsEditing(null);
-                setFormData({ name: '', startTime: '', endTime: '', batchId: 'all', className: 'all' });
-              }}>Cancel</button>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary" style={{ minWidth: '120px' }}>
+                {isEditing ? 'Update Session' : 'Save Session'}
+              </button>
             </div>
           </form>
         </div>
@@ -166,49 +213,94 @@ export default function Sessions() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Session Name</th>
-              <th>Applies To</th>
-              <th>Start Time</th>
-              <th>End Time</th>
-              <th className="text-right">Actions</th>
+              <th style={{ width: '22%' }}>Session Name</th>
+              <th style={{ width: '45%' }}>Applies To</th>
+              <th style={{ width: '13%' }}>Start Time</th>
+              <th style={{ width: '13%' }}>End Time</th>
+              <th style={{ width: '7%', textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {sessions.length === 0 ? (
               <tr>
-                <td colSpan="4" className="text-center py-4 text-muted">No sessions configured.</td>
+                <td colSpan="5" className="text-center py-4 text-muted">No sessions configured yet. Click "Add Session" to create one.</td>
               </tr>
             ) : (
-              sessions.map(s => (
-                <tr key={s.id}>
-                  <td className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <Clock size={16} className="text-primary" />
-                      {s.name}
-                    </div>
-                  </td>
-                  <td>
-                    {s.batchId !== 'all' || s.className !== 'all' ? (
-                      <div className="flex items-center gap-2 flex-wrap">
-                         {s.batchId !== 'all' && <span className="badge" style={{background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6'}}>{batches.find(b => b.id === s.batchId)?.name || s.batchId}</span>}
-                         {s.className !== 'all' && <span className="badge" style={{background: 'rgba(16, 185, 129, 0.1)', color: '#10b981'}}>{s.className}</span>}
+              sessions.map(s => {
+                const bIds = Array.isArray(s.batchIds) && s.batchIds.length > 0
+                  ? s.batchIds
+                  : (s.batchId && s.batchId !== 'all' ? s.batchId.split(',').map(x => x.trim()).filter(Boolean) : []);
+                const cNames = Array.isArray(s.targetClasses) && s.targetClasses.length > 0
+                  ? s.targetClasses
+                  : (s.className && s.className !== 'all' ? s.className.split(',').map(x => x.trim()).filter(Boolean) : []);
+
+                return (
+                  <tr key={s.id}>
+                    <td className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Clock size={16} className="text-primary" />
+                        <strong>{s.name}</strong>
                       </div>
-                    ) : (
-                      <span className="text-muted" style={{fontSize: '0.85rem'}}>All Students</span>
-                    )}
-                  </td>
-                  <td>{s.startTime}</td>
-                  <td>{s.endTime}</td>
-                  <td className="text-right">
-                    <button className="btn btn-icon mr-2" onClick={() => handleEdit(s)}>
-                      <Edit size={18} className="text-primary" />
-                    </button>
-                    <button className="btn btn-icon text-danger" onClick={() => handleDelete(s.id)}>
-                      <Trash2 size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td>
+                      {bIds.length === 0 && cNames.length === 0 ? (
+                        <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>
+                          🌟 All Students (All Courses & Classes)
+                        </span>
+                      ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', alignItems: 'center' }}>
+                          {bIds.map(id => {
+                            const b = batches.find(item => item.id === id);
+                            const name = b ? b.name : id;
+                            return (
+                              <span 
+                                key={id} 
+                                style={{ 
+                                  background: 'rgba(59, 130, 246, 0.12)', 
+                                  color: '#1d4ed8', 
+                                  border: '1px solid rgba(59, 130, 246, 0.28)', 
+                                  fontWeight: 700, 
+                                  fontSize: '0.76rem',
+                                  padding: '2px 8px', 
+                                  borderRadius: '6px' 
+                                }}
+                              >
+                                📚 {name}
+                              </span>
+                            );
+                          })}
+                          {cNames.map(cls => (
+                            <span 
+                              key={cls} 
+                              style={{ 
+                                background: 'rgba(16, 185, 129, 0.12)', 
+                                color: '#047857', 
+                                border: '1px solid rgba(16, 185, 129, 0.28)', 
+                                fontWeight: 700, 
+                                fontSize: '0.76rem',
+                                padding: '2px 8px', 
+                                borderRadius: '6px' 
+                              }}
+                            >
+                              🎓 Class {cls}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td><strong style={{ color: '#0f172a' }}>{s.startTime}</strong></td>
+                    <td><strong style={{ color: '#0f172a' }}>{s.endTime}</strong></td>
+                    <td className="text-right">
+                      <button className="btn btn-icon mr-2" onClick={() => handleEdit(s)} title="Edit session">
+                        <Edit size={17} className="text-primary" />
+                      </button>
+                      <button className="btn btn-icon text-danger" onClick={() => handleDelete(s.id)} title="Delete session">
+                        <Trash2 size={17} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
