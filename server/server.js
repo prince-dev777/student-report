@@ -2653,6 +2653,19 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
     let publishCount = 0;
     
     for (const r of results) {
+      // Upload OMR image to Cloudinary on Publish if not already an HTTPS URL
+      if (r.omrSheetImage && !r.omrSheetImage.startsWith('http')) {
+        try {
+          const uploaded = await uploadOMRScan(r.omrSheetImage, `${r.testId}_${r.studentId || r.rollNo}`);
+          if (uploaded && uploaded.url) {
+            r.omrSheetImage = uploaded.url;
+            r.omrSheetPublicId = uploaded.publicId;
+          }
+        } catch (err) {
+          console.error('Cloudinary OMR upload error on publish:', err.message);
+        }
+      }
+
       r.status = 'Published';
       await r.save();
       publishCount++;

@@ -178,7 +178,7 @@ export default function ShareApp() {
       setIsSending(true);
       try {
         const studentIds = students.map(s => s.id);
-        const message = `Dear Parent ({{studentName}}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: {{studentName}} (Roll: {{rollNo}})\n🔑 User ID: {{parentPhone}} (or Roll No: {{rollNo}})\n🔒 Password: {{password}}`;
+        const message = `Dear Parent ({{studentName}}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: {{studentName}} (Roll: {{rollNo}})\n🔑 User ID: {{parentUserId}}\n🔒 Password: {{password}}`;
         await sendBulkManualSMS(studentIds, message);
         toast.success(`WhatsApp blast queued for ${students.length} parents!`);
       } catch (error) {
@@ -201,7 +201,9 @@ export default function ShareApp() {
     setIsSending(true);
     try {
       const instName = user?.instituteName || 'Career Xone';
-      const message = `Dear Parent (${student.name}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: ${student.name} (Roll: ${student.rollNo})\n🔑 User ID: ${student.parentPhone || student.phone || student.rollNo} (or Roll No: ${student.rollNo})\n🔒 Password: ${student.parentPasswordPlain || student.password || '123456'}\n\n- ${instName}`;
+      const pUserId = student.parentUserId || `CAREER${student.rollNo}` || String(student.rollNo);
+      const pPass = student.parentPasswordPlain || student.password || String(student.rollNo || '123456');
+      const message = `Dear Parent (${student.name}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: ${student.name} (Roll: ${student.rollNo})\n🔑 User ID: ${pUserId}\n🔒 Password: ${pPass}\n\n- ${instName}`;
       
       await sendManualSMS(student.id, message);
       toast.success(`App link sent to ${student.name}'s parent via WhatsApp!`);
@@ -481,7 +483,7 @@ export default function ShareApp() {
                       INDIVIDUAL PREVIEW FOR {selectedStudent.name.toUpperCase()}:
                     </span>
                     <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontStyle: 'italic' }}>
-                      "Dear Parent ({selectedStudent.name}), download Parents App... User ID: {selectedStudent.parentPhone}, Password: {selectedStudent.parentPasswordPlain || '123456'}"
+                      "Dear Parent ({selectedStudent.name}), download Parents App... User ID: {selectedStudent.parentUserId || `CAREER${selectedStudent.rollNo}`}, Password: {selectedStudent.parentPasswordPlain || selectedStudent.password || selectedStudent.rollNo || '123456'}"
                     </p>
                   </div>
                 )}

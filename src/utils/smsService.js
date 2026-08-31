@@ -102,14 +102,17 @@ export async function sendCustomSMS(student, message, instituteName = 'Institute
   const pName = student.parentName || 'Parent';
   const sName = student.name || 'Student';
   const pPhone = student.parentPhone || student.phone || '';
-  const sPass = student.parentPasswordPlain || student.password || '123456';
+  const sPass = student.parentPasswordPlain || student.password || String(student.rollNo || '123456');
   const sRoll = String(student.rollNo || '');
   const sBatch = student.batch || '';
+  const pUserId = student.parentUserId || `CAREER${sRoll}` || sRoll;
 
   let parsedMessage = message
     .replace(/\{\{studentName\}\}/gi, sName)
     .replace(/\{\{parentName\}\}/gi, pName)
     .replace(/\{\{parentPhone\}\}/gi, pPhone)
+    .replace(/\{\{parentUserId\}\}/gi, pUserId)
+    .replace(/\{\{userId\}\}/gi, pUserId)
     .replace(/\{\{rollNo\}\}/gi, sRoll)
     .replace(/\{\{batch\}\}/gi, sBatch)
     .replace(/\{\{password\}\}/gi, sPass);

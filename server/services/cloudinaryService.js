@@ -2,6 +2,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { logInfo, logError, logWarn } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -93,13 +94,25 @@ export async function uploadOMRScan(imageInput, identifier = '') {
 
     if (!imageInput.startsWith('data:image')) {
       const rel = imageInput.replace(/^\/+/, '');
+      const baseName = path.basename(rel);
+      const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(os.homedir(), 'Library', 'Application Support') : path.join(os.homedir(), '.config'));
+      const userData = process.env.USER_DATA_PATH || '';
+
       const candidates = [
+        path.isAbsolute(imageInput) ? imageInput : null,
+        userData ? path.join(userData, rel) : null,
+        userData ? path.join(userData, 'uploads', 'omr', baseName) : null,
+        appData ? path.join(appData, 'student-report', rel) : null,
+        appData ? path.join(appData, 'student-report', 'uploads', 'omr', baseName) : null,
+        appData ? path.join(appData, 'Career Xone Pro', rel) : null,
+        appData ? path.join(appData, 'Career Xone Pro', 'uploads', 'omr', baseName) : null,
         path.join(process.cwd(), 'server', rel),
         path.join(process.cwd(), rel),
         path.join(__dirname, '..', '..', rel),
         path.join(__dirname, '..', rel),
-        path.join(__dirname, '..', 'uploads', 'omr', path.basename(rel))
-      ];
+        path.join(__dirname, '..', 'uploads', 'omr', baseName)
+      ].filter(Boolean);
+
       const found = candidates.find(p => fs.existsSync(p));
       if (!found) {
         logWarn('CLOUDINARY', `Local OMR file not found on disk: ${imageInput}`);
