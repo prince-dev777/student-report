@@ -4357,6 +4357,24 @@ app.listen(PORT, '0.0.0.0', () => {
   }
 });
 
+// SPA Wildcard Route Fallback: Any non-API route serves index.html
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/') || req.path.startsWith('/iclock/') || req.path.endsWith('.aspx')) {
+    return next();
+  }
+  const indexHtmlPaths = [
+    path.join(__dirname, 'public', 'index.html'),
+    path.join(__dirname, '../dist', 'index.html'),
+    path.join(__dirname, 'dist', 'index.html')
+  ];
+  for (const p of indexHtmlPaths) {
+    if (fs.existsSync(p)) {
+      return res.sendFile(p);
+    }
+  }
+  res.status(200).send('Career Xone Pro');
+});
+
 // Also bind secondary listener on port 8000 for Biomax FK Web Protocol
 try {
   const biomaxServer = app.listen(8000, '0.0.0.0', () => {
