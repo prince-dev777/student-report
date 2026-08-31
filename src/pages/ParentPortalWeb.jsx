@@ -563,8 +563,8 @@ export default function ParentPortalWeb() {
   const analyticsData = calculateAnalytics();
 
   // Safe Test Metadata Getters (Resilient to various payload structures)
-  const getTestName = (t) => t?.testName || t?.test?.name || t?.name || '12TH NEET ALL BATCH ( 25-27 ) 18.08.2026';
-  const getTestDate = (t) => t?.testDate || t?.test?.date || (t?.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : '18/08/2026');
+  const getTestName = (t) => t?.testName || t?.test?.name || t?.name || 'Test Exam';
+  const getTestDate = (t) => t?.testDate || t?.test?.date || (t?.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : '-');
 
   // Available Test Subjects for Quick Filter Chips
   const availableTestSubjects = ['ALL', ...Array.from(new Set(testResults.map(t => {

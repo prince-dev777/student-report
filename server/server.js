@@ -277,16 +277,12 @@ async function attachTestDetailsToResults(results, instituteId) {
     testStatsMap[tId].count += 1;
   }
 
-  return results.map((result) => {
+  // Filter out any orphaned test results whose parent test has been deleted or does not exist
+  const validResults = results.filter(result => result.testId && testsById.has(result.testId));
+
+  return validResults.map((result) => {
     const resObj = typeof result.toObject === 'function' ? result.toObject() : result;
-    const foundTest = testsById.get(result.testId) || {
-      id: result.testId,
-      name: '12TH NEET ALL BATCH ( 25-27 ) 18.08.2026',
-      subject: 'NEET Complete',
-      date: result.createdAt ? new Date(result.createdAt).toLocaleDateString('en-IN') : '18/08/2026',
-      totalMarks: result.totalMarks || 360,
-      batch: 'All'
-    };
+    const foundTest = testsById.get(result.testId);
 
     const stats = testStatsMap[result.testId] || {
       maxMarks: Number(resObj.marks) || 0,
@@ -302,10 +298,10 @@ async function attachTestDetailsToResults(results, instituteId) {
     return {
       ...resObj,
       test: foundTest,
-      testName: foundTest.name || resObj.testName || '12TH NEET ALL BATCH ( 25-27 ) 18.08.2026',
-      testDate: foundTest.date || resObj.testDate || (resObj.createdAt ? new Date(resObj.createdAt).toLocaleDateString('en-IN') : '18/08/2026'),
-      subject: foundTest.subject || resObj.subject || 'NEET Complete',
-      totalMarks: resObj.totalMarks || foundTest.totalMarks || 360,
+      testName: foundTest?.name || resObj.testName || 'Test Exam',
+      testDate: foundTest?.date || resObj.testDate || (resObj.createdAt ? new Date(resObj.createdAt).toLocaleDateString('en-IN') : '-'),
+      subject: foundTest?.subject || resObj.subject || 'All Subjects',
+      totalMarks: resObj.totalMarks || foundTest?.totalMarks || 360,
       topperMarks: realTopper,
       avgMarks: realAvg,
       totalStudents: realTotalStudents
