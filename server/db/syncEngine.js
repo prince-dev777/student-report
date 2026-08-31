@@ -196,20 +196,31 @@ export async function performFullSync() {
           totalPushed += activeLocalDocs.length;
         }
 
-        // 4. Pull any Cloud docs that are not yet in Local (Safe Two-Way Merge)
+        // 4. Pull any Cloud docs that are not yet in Local (Safe Two-Way Merge for core entities)
         if (cloudDocs.length > 0) {
-          const localIdsSet = new Set(localDocs.map(d => String(d._id)));
-          const missingInLocal = cloudDocs.filter(cd => !localIdsSet.has(String(cd._id)) && !cd.isDeleted);
-          if (missingInLocal.length > 0) {
-            const fixedMissing = missingInLocal.map(fixObjectIds);
-            for (let i = 0; i < fixedMissing.length; i += 500) {
-              const batch = fixedMissing.slice(i, i + 500).map(doc => ({
-                replaceOne: { filter: { _id: doc._id }, replacement: doc, upsert: true }
-              }));
-              await localColl.bulkWrite(batch, { ordered: false });
+          if (logCollections.includes(collName)) {
+            // For log collections, ensure Cloud purges any records that were deleted locally so they never resurrect
+            const activeLocalIds = new Set(activeLocalDocs.map(d => String(d._id)));
+            const cloudIdsToPurge = cloudDocs.filter(cd => !activeLocalIds.has(String(cd._id))).map(cd => cd._id);
+            if (cloudIdsToPurge.length > 0) {
+              await cloudColl.deleteMany({ _id: { $in: cloudIdsToPurge } }).catch(() => {});
+              totalPurged += cloudIdsToPurge.length;
+              logInfo('SYNC', `🧹 Purged ${cloudIdsToPurge.length} deleted logs from Cloud [${collName}]`);
             }
-            totalPulled += missingInLocal.length;
-            logInfo('SYNC', `📥 Pulled ${missingInLocal.length} new records from Cloud into [${collName}]`);
+          } else {
+            const localIdsSet = new Set(localDocs.map(d => String(d._id)));
+            const missingInLocal = cloudDocs.filter(cd => !localIdsSet.has(String(cd._id)) && !cd.isDeleted);
+            if (missingInLocal.length > 0) {
+              const fixedMissing = missingInLocal.map(fixObjectIds);
+              for (let i = 0; i < fixedMissing.length; i += 500) {
+                const batch = fixedMissing.slice(i, i + 500).map(doc => ({
+                  replaceOne: { filter: { _id: doc._id }, replacement: doc, upsert: true }
+                }));
+                await localColl.bulkWrite(batch, { ordered: false });
+              }
+              totalPulled += missingInLocal.length;
+              logInfo('SYNC', `📥 Pulled ${missingInLocal.length} new records from Cloud into [${collName}]`);
+            }
           }
         }
 

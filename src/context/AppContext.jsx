@@ -38,9 +38,14 @@ export function AppProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [startupSyncing, setStartupSyncing] = useState(true);
-  const [startupSyncText, setStartupSyncText] = useState('Initializing Database & Cloud Connection...');
+  const [startupSyncing, setStartupSyncing] = useState(false);
+  const [startupSyncText, setStartupSyncText] = useState('Ready');
   
+  // ☁️ Cloud Atlas Live Sync State
+  const [cloudSyncStatus, setCloudSyncStatus] = useState('syncing'); // 'syncing' | 'synced' | 'error' | 'idle'
+  const [cloudSyncMessage, setCloudSyncMessage] = useState('Auto-syncing with Cloud Atlas...');
+  const [lastCloudSyncTime, setLastCloudSyncTime] = useState(null);
+
   // 🎨 Global Card Background Theme (Solid White vs Gradient Theme)
   const [appCardTheme, setAppCardTheme] = useState(() => {
     try {
@@ -73,14 +78,27 @@ export function AppProvider({ children }) {
   const { user } = useAuth();
   const initRanRef = useRef(false);
 
-  // Sync / Load data on startup
-  useEffect(() => {
-    if (initRanRef.current) return;
-    initRanRef.current = true;
+  const loadServerData = useCallback(async () => {
+    try {
+      const [
+        studentsRes,
+        serverAttendance,
+        serverTests,
+        serverResults,
+        serverSMS,
+        serverSessions,
+        serverInquiries
+      ] = await Promise.all([
+        api.getStudents(1, 10000).catch(() => ({ students: [] })),
+        api.getAttendance().catch(() => []),
+        api.getTests().catch(() => []),
+        api.getTestResults().catch(() => []),
+        api.getSMSLogs().catch(() => []),
+        api.getSessions().catch(() => []),
+        api.getInquiries().catch(() => [])
+      ]);
 
-    async function loadServerData() {
-      const studentsRes = await api.getStudents(1, 10000);
-      const serverStudents = studentsRes.students || [];
+      const serverStudents = studentsRes?.students || [];
       
       if (serverStudents.length === 0) {
         console.log('🌱 Database is empty. Starting fresh...');
@@ -92,18 +110,6 @@ export function AppProvider({ children }) {
         setSessions([]);
         setInquiries([]);
       } else {
-        const serverAttendance = await api.getAttendance();
-        const serverTests = await api.getTests();
-        const serverResults = await api.getTestResults();
-        const serverSMS = await api.getSMSLogs();
-        
-        let serverSessions = [];
-        let serverInquiries = [];
-        try {
-          serverSessions = await api.getSessions();
-          serverInquiries = await api.getInquiries();
-        } catch(e) { console.warn('Failed to load new schemas', e); }
-
         const validIds = new Set(serverStudents.map((s) => s.id));
         setStudents(serverStudents);
         setAttendance(Array.isArray(serverAttendance) ? serverAttendance : []);
@@ -113,40 +119,95 @@ export function AppProvider({ children }) {
         setSessions(serverSessions);
         setInquiries(serverInquiries);
 
-        // Update local storage backup
+        // Update local storage backup asynchronously
         try {
           localStorage.setItem('edutrack_students', JSON.stringify(serverStudents));
           localStorage.setItem('edutrack_tests', JSON.stringify(serverTests));
         } catch(e) {}
       }
+    } catch (e) {
+      console.warn('loadServerData error:', e);
+    }
+  }, []);
+
+  const triggerCloudSync = useCallback(async (showToasts = true) => {
+    setCloudSyncStatus('syncing');
+    setCloudSyncMessage('Syncing latest data from Cloud Atlas...');
+    if (showToasts) {
+      toast.loading('☁️ Syncing with Cloud Atlas...', { id: 'cloud-sync-toast' });
+    }
+    try {
+      const pullRes = await api.pullCloudData();
+      await loadServerData();
+      setCloudSyncStatus('synced');
+      setCloudSyncMessage('Cloud Atlas Data Successfully Loaded');
+      setLastCloudSyncTime(new Date());
+      if (showToasts) {
+        toast.success('✅ Cloud Atlas Data Successfully Loaded & Synced!', { id: 'cloud-sync-toast' });
+      }
+      setTimeout(() => {
+        setCloudSyncStatus('idle');
+      }, 5000);
+    } catch (err) {
+      console.warn('Cloud sync note:', err.message);
+      setCloudSyncStatus('error');
+      setCloudSyncMessage('Cloud Atlas Offline / Local Mode');
+      if (showToasts) {
+        toast.dismiss('cloud-sync-toast');
+      }
+      setTimeout(() => {
+        setCloudSyncStatus('idle');
+      }, 4000);
+    }
+  }, [loadServerData]);
+
+  // Sync / Load data on startup
+  useEffect(() => {
+    if (initRanRef.current) return;
+    initRanRef.current = true;
+
+    function loadFallbackData() {
+      let localStudents = loadLocalData('students', []);
+      const validIds = new Set(localStudents.map((s) => s.id));
+      
+      setStudents(localStudents);
+      setAttendance(loadLocalData('attendance', []).filter((a) => validIds.has(a.studentId)));
+      setTests(loadLocalData('tests', []));
+      setTestResults(loadLocalData('testResults', []).filter((r) => validIds.has(r.studentId)));
+      setSMSHistory(loadLocalData('smsHistory', []).filter((sms) => validIds.has(sms.studentId)));
+      setSessions(loadLocalData('sessions', []));
+      setInquiries(loadLocalData('inquiries', []));
     }
 
     async function initData() {
-      setStartupSyncing(true);
-      setStartupSyncText('Connecting to Local & Cloud Database...');
-
-      const isOnline = await checkBackendStatus(8, 600);
+      // 1. Instant local check (<300ms)
+      const isOnline = await checkBackendStatus(3, 200);
       setBackendOnline(isOnline);
 
       if (isOnline) {
         try {
-          setStartupSyncText('Syncing latest student records from Cloud Atlas...');
-          // Trigger background pull from cloud if available
-          try {
-            await api.pullCloudData().catch(() => {});
-          } catch(e) {}
-
-          setStartupSyncText('Loading updated student dossiers & roll numbers...');
+          // Parallel fast load of local DB (<300ms)
           await loadServerData();
+          setStartupSyncing(false);
+          setLoading(false);
+
+          // 2. Trigger Cloud Sync in background with header badge & toast
+          setTimeout(() => {
+            triggerCloudSync(true);
+          }, 800);
         } catch (e) {
-          console.error('❌ [DEBUG] Failed to load from server. Error:', e.message);
+          console.error('Failed to load from server:', e.message);
           loadFallbackData();
+          setStartupSyncing(false);
+          setLoading(false);
         }
       } else {
-        console.log('⚠️ [DEBUG] Backend offline. Loading from localStorage...');
+        console.log('Backend offline. Loading from localStorage...');
         loadFallbackData();
+        setStartupSyncing(false);
+        setLoading(false);
 
-        // Background retry loop: if backend was spinning up, auto-sync when ready
+        // Background retry loop
         let attempts = 0;
         const retryTimer = setInterval(async () => {
           attempts++;
@@ -160,29 +221,10 @@ export function AppProvider({ children }) {
             setBackendOnline(true);
             try {
               await loadServerData();
-              toast.success('Connected & Synced with Database!', { id: 'backend-status-toast' });
             } catch (e) {}
           }
         }, 1500);
       }
-
-      setTimeout(() => {
-        setStartupSyncing(false);
-        setLoading(false);
-      }, 600);
-    }
-
-    function loadFallbackData() {
-      let localStudents = loadLocalData('students', []);
-      const validIds = new Set(localStudents.map((s) => s.id));
-      
-      setStudents(localStudents);
-      setAttendance(loadLocalData('attendance', []).filter((a) => validIds.has(a.studentId)));
-      setTests(loadLocalData('tests', []));
-      setTestResults(loadLocalData('testResults', []).filter((r) => validIds.has(r.studentId)));
-      setSMSHistory(loadLocalData('smsHistory', []).filter((sms) => validIds.has(sms.studentId)));
-      setSessions(loadLocalData('sessions', []));
-      setInquiries(loadLocalData('inquiries', []));
     }
 
     initData();
@@ -205,7 +247,7 @@ export function AppProvider({ children }) {
     // Periodic Background Auto-Sync (Every 60 Seconds)
     const periodicSync = setInterval(() => {
       if (navigator.onLine) {
-        api.syncDataToCloud().catch(() => {});
+        triggerCloudSync(false);
       }
     }, 60000);
 
@@ -213,7 +255,7 @@ export function AppProvider({ children }) {
       window.removeEventListener('online', handleOnline);
       clearInterval(periodicSync);
     };
-  }, []);
+  }, [loadServerData, triggerCloudSync]);
 
   // Save local fallbacks so Demo Mode always has the latest data
   useEffect(() => {
@@ -912,6 +954,10 @@ export function AppProvider({ children }) {
     resetData,
     appCardTheme,
     toggleAppCardTheme,
+    cloudSyncStatus,
+    cloudSyncMessage,
+    lastCloudSyncTime,
+    triggerCloudSync,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

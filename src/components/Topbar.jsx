@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Bell, LogOut, MessageSquare, UserPlus, ClipboardCheck, X, Sparkles, Maximize2, Minimize2 } from 'lucide-react';
+import { Menu, Bell, LogOut, MessageSquare, UserPlus, ClipboardCheck, X, Sparkles, Maximize2, Minimize2, Cloud, RefreshCw, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,7 +8,7 @@ import { api } from '../utils/api';
 import SettingsModal from './SettingsModal';
 
 export default function Topbar() {
-  const { setSidebarOpen, smsHistory, students, appCardTheme, toggleAppCardTheme } = useApp();
+  const { setSidebarOpen, smsHistory, students, appCardTheme, toggleAppCardTheme, cloudSyncStatus, cloudSyncMessage, triggerCloudSync, lastCloudSyncTime } = useApp();
   const { logout, user } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -178,6 +178,81 @@ export default function Topbar() {
               </motion.button>
             </div>
           )}
+
+          {/* ☁️ Cloud Atlas Live Sync Indicator in Top Header */}
+          <div style={{ marginRight: '8px', display: 'flex', alignItems: 'center' }}>
+            {cloudSyncStatus === 'syncing' ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%)',
+                  border: '1.5px solid rgba(59, 130, 246, 0.4)',
+                  color: '#38bdf8',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  boxShadow: '0 0 15px rgba(56, 189, 248, 0.25)'
+                }}
+              >
+                <div style={{
+                  width: '12px',
+                  height: '12px',
+                  border: '2px solid rgba(56, 189, 248, 0.3)',
+                  borderTopColor: '#38bdf8',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite'
+                }} />
+                <span>☁️ Loading Data from Cloud...</span>
+              </div>
+            ) : cloudSyncStatus === 'synced' ? (
+              <div
+                onClick={() => triggerCloudSync(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
+                  border: '1.5px solid rgba(16, 185, 129, 0.4)',
+                  color: '#10b981',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+                title="✅ Cloud Atlas 100% Synced! (Click to force re-sync)"
+              >
+                <CheckCircle2 size={14} color="#10b981" />
+                <span>Cloud Synced</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => triggerCloudSync(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 11px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.85)',
+                  border: '1.5px solid var(--border-color, #cbd5e1)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                }}
+                title="Click to sync latest data with Cloud Atlas"
+              >
+                <Cloud size={14} color="var(--accent-blue)" />
+                <span>Cloud Sync</span>
+              </button>
+            )}
+          </div>
 
           {/* 🎨 Solid White Cards vs Gradient Theme Global Switcher */}
           <div style={{

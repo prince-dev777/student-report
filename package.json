@@ -46,8 +46,7 @@
       "!server/test_scan_out*.txt"
     ],
     "asarUnpack": [
-      "server/**/*.py",
-      "server/**/*.exe"
+      "server/**/*"
     ],
     "artifactName": "Career-Xone-Pro-Setup-${version}.${ext}",
     "compression": "normal",

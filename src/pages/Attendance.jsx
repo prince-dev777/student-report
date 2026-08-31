@@ -53,7 +53,8 @@ import {
   Eye,
   Camera,
   Plus,
-  Trash2
+  Trash2,
+  Lock
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import idLogo from '../assets/id-logo.png';
@@ -186,6 +187,85 @@ export default function Attendance() {
   const [detectedDevices, setDetectedDevices] = useState([
     { ip: '192.168.0.12', port: 8000, name: 'Biomax FK Hardware', protocol: 'HTTP Push 8000', status: 'Online' }
   ]);
+
+  // 🌐 Network & 1-Click Static IP (192.168.0.162) State
+  const [networkInfo, setNetworkInfo] = useState({
+    currentIp: '192.168.0.162',
+    targetIp: '192.168.0.162',
+    isStaticLocked: true,
+    status: 'Locked & Active',
+    wifiSsid: 'CXJEE2',
+    adapterName: 'Wi-Fi',
+    gateway: '192.168.0.1',
+    supportedDevices: []
+  });
+  const [isLockingIp, setIsLockingIp] = useState(false);
+
+  const fetchNetworkInfo = async () => {
+    try {
+      const res = await api.getBiometricNetworkStatus();
+      if (res?.success) {
+        setNetworkInfo(res);
+      }
+    } catch (e) {
+      console.warn('Network info error:', e);
+    }
+  };
+
+  const handleLockStaticIp = async () => {
+    setIsLockingIp(true);
+    const toastId = toast.loading('🔒 Locking Permanent Static IP (192.168.0.162)...');
+    try {
+      const res = await api.lockBiometricStaticIp({
+        targetIp: '192.168.0.162',
+        gateway: networkInfo.gateway || '192.168.0.1',
+        adapterName: networkInfo.adapterName || 'Wi-Fi'
+      });
+      if (res?.success) {
+        toast.success(`✅ ${res.message || 'Permanent Static IP locked!'}`, { id: toastId });
+        await fetchNetworkInfo();
+      } else {
+        toast.error(res?.error || 'Failed to lock static IP', { id: toastId });
+      }
+    } catch (err) {
+      toast.error(`Error: ${err.message}`, { id: toastId });
+    } finally {
+      setIsLockingIp(false);
+    }
+  };
+
+  const handleResetDhcp = async () => {
+    setIsLockingIp(true);
+    const toastId = toast.loading('Resetting adapter to automatic dynamic IP (DHCP)...');
+    try {
+      const res = await api.resetBiometricDhcp({ adapterName: networkInfo.adapterName || 'Wi-Fi' });
+      if (res?.success) {
+        toast.success(`Adapter reset to automatic DHCP!`, { id: toastId });
+        await fetchNetworkInfo();
+      } else {
+        toast.error(res?.error || 'Failed to reset DHCP', { id: toastId });
+      }
+    } catch (err) {
+      toast.error(`Error: ${err.message}`, { id: toastId });
+    } finally {
+      setIsLockingIp(false);
+    }
+  };
+
+  const handleTestDevicePing = async (ip = '192.168.0.12', port = 71) => {
+    const toastId = toast.loading(`📡 Testing connection with ${ip}...`);
+    try {
+      const res = await api.testBiometricConnection({ ip, port });
+      if (res?.success) {
+        toast.success(`✅ Terminal ${ip} is ONLINE & responsive!`, { id: toastId });
+      } else {
+        toast.error(`❌ Terminal ${ip} unreachable: ${res?.message || 'Check power/Wi-Fi'}`, { id: toastId });
+      }
+    } catch (err) {
+      toast.error(`Error: ${err.message}`, { id: toastId });
+    }
+  };
+
   // 👥 Employee / Staff Attendance States
   const [staffRoster, setStaffRoster] = useState([]);
   const [staffDate, setStaffDate] = useState(getTodayStr());
@@ -202,16 +282,22 @@ export default function Attendance() {
   });
 
   // Fetch Staff Attendance Roster
-  const fetchStaffAttendance = async (date = staffDate) => {
+  const fetchStaffAttendance = async (date = staffDate, showToast = false) => {
     setIsStaffLoading(true);
     try {
       const res = await api.getStaffAttendance(date);
       const data = res?.data || res;
       if (data?.success) {
         setStaffRoster(data.roster || []);
+        if (showToast) {
+          toast.success(`✅ Employee roster refreshed (${data.roster?.length || 0} employees found)!`);
+        }
+      } else if (showToast) {
+        toast.error(data?.error || 'Failed to refresh staff roster');
       }
     } catch (e) {
       console.warn('Failed to load staff attendance:', e);
+      if (showToast) toast.error(`Refresh error: ${e.message}`);
     } finally {
       setIsStaffLoading(false);
     }
@@ -1216,7 +1302,7 @@ export default function Attendance() {
                   {/* Refresh Button */}
                   <button
                     type="button"
-                    onClick={() => fetchStaffAttendance(staffDate)}
+                    onClick={() => fetchStaffAttendance(staffDate, true)}
                     disabled={isStaffLoading}
                     className="btn btn-secondary btn-sm"
                     style={{ fontSize: '0.80rem', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}
@@ -2935,6 +3021,35 @@ export default function Attendance() {
                     {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
                   </button>
 
+                  {/* 4x Biometric & 1-Click Static IP (192.168.0.162) Setup */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      fetchNetworkInfo();
+                      setShowBiometricGuideModal(true);
+                    }}
+                    title="4x Biometric Hardware & Static IP Configurator"
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: 10,
+                      border: networkInfo.isStaticLocked ? '1.5px solid rgba(16, 185, 129, 0.5)' : '1.5px solid rgba(245, 158, 11, 0.5)',
+                      background: networkInfo.isStaticLocked
+                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)'
+                        : 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.15) 100%)',
+                      color: networkInfo.isStaticLocked ? '#10b981' : '#f59e0b',
+                      fontSize: '0.80rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+                    }}
+                  >
+                    <Fingerprint size={15} />
+                    <span>📶 4x Biometric ({networkInfo.wifiSsid || 'CXJEE2'})</span>
+                  </button>
+
                   {/* Print QR ID Cards Button */}
                   <button
                     type="button"
@@ -2993,11 +3108,11 @@ export default function Attendance() {
                 {/* Digital LED Clock & Status Bar */}
                 <div className="card" style={{
                   padding: '24px 28px',
-                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
-                  border: '1.5px solid rgba(59, 130, 246, 0.3)',
+                  background: 'var(--surface-color)',
+                  border: '1.5px solid var(--border-color)',
                   borderRadius: 20,
-                  color: '#ffffff',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
+                  color: 'var(--text-primary)',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
                   position: 'relative',
                   overflow: 'hidden'
                 }}>
@@ -3009,13 +3124,13 @@ export default function Attendance() {
                     width: 140,
                     height: 140,
                     borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%)',
+                    background: 'radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%)',
                     pointerEvents: 'none'
                   }} />
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                     <div>
-                      <div style={{ fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase' }}>
+                      <div style={{ fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.08em', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
                         LIVE RECEPTION KIOSK TIME
                       </div>
                       <div style={{
@@ -3023,13 +3138,13 @@ export default function Attendance() {
                         fontWeight: 900,
                         fontFamily: "'Outfit', monospace, sans-serif",
                         letterSpacing: '-0.02em',
-                        color: '#ffffff',
-                        textShadow: '0 0 20px rgba(59, 130, 246, 0.5)',
+                        color: '#0f172a',
+                        textShadow: 'none',
                         marginTop: 2
                       }}>
                         {clockStr}
                       </div>
-                      <div style={{ fontSize: '0.88rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <div style={{ fontSize: '0.88rem', color: '#475569', fontWeight: 600 }}>
                         {dateStr}
                       </div>
                     </div>
@@ -3446,7 +3561,7 @@ export default function Attendance() {
 
                   <button
                     type="button"
-                    onClick={() => { if (typeof refreshAttendance === 'function') refreshAttendance(); }}
+                    onClick={async () => { await fetchBiometricStatus(); if (typeof refreshAttendance === 'function') await refreshAttendance(); toast.success('⚡ Live punch stream refreshed!'); }}
                     className="btn btn-secondary btn-sm"
                     style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 4 }}
                   >
@@ -4806,7 +4921,7 @@ export default function Attendance() {
             )}
 
             {/* ---------------------------------------------------------------- */}
-            {/* 📟 MODAL: BIOMETRIC MACHINE SETUP & CONFIGURATION GUIDE         */}
+            {/* 🌐 MODAL: 4x BIOMETRIC & 1-CLICK STATIC IP (192.168.0.162) LOCK  */}
             {/* ---------------------------------------------------------------- */}
             {showBiometricGuideModal && (
               <div style={{
@@ -4827,7 +4942,9 @@ export default function Attendance() {
                   background: '#0f172a',
                   borderRadius: 20,
                   width: '100%',
-                  maxWidth: 640,
+                  maxWidth: 720,
+                  maxHeight: '90vh',
+                  overflowY: 'auto',
                   padding: 28,
                   border: '1.5px solid rgba(59, 130, 246, 0.3)',
                   boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
@@ -4860,100 +4977,218 @@ export default function Attendance() {
                     </div>
                     <div>
                       <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#ffffff' }}>
-                        Biometric Machine Setup Guide
+                        🌐 4x Biometric &amp; Wi-Fi IP Configurator
                       </h3>
                       <p style={{ margin: '3px 0 0', fontSize: '0.84rem', color: '#cbd5e1' }}>
-                        FK / Realtime / BioMax / eSSL Machine Setup
+                        Auto-bind Static IP <strong style={{ color: '#38bdf8' }}>192.168.0.162</strong> for Career Xone Institute Terminals
                       </p>
                     </div>
                   </div>
 
-                  {/* Active Network Parameters Card */}
+                  {/* 🔒 1-Click Wi-Fi & Static IP Lock Banner */}
                   <div style={{
-                    background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.4) 0%, rgba(15, 23, 42, 0.85) 100%)',
-                    border: '1.5px solid rgba(59, 130, 246, 0.4)',
+                    background: networkInfo.isStaticLocked
+                      ? 'linear-gradient(135deg, rgba(6, 78, 59, 0.5) 0%, rgba(15, 23, 42, 0.9) 100%)'
+                      : 'linear-gradient(135deg, rgba(120, 53, 15, 0.5) 0%, rgba(15, 23, 42, 0.9) 100%)',
+                    border: networkInfo.isStaticLocked
+                      ? '1.5px solid rgba(16, 185, 129, 0.5)'
+                      : '1.5px solid rgba(245, 158, 11, 0.5)',
                     borderRadius: 16,
                     padding: '18px 20px',
-                    marginBottom: 16
+                    marginBottom: 18
                   }}>
-                    <div style={{ fontSize: '0.80rem', fontWeight: 800, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
-                      📋 Machine Communication Settings (Menu ➔ Comm. ➔ Cloud/ADMS)
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{
+                          display: 'inline-block',
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          background: networkInfo.isStaticLocked ? '#10b981' : '#f59e0b',
+                          boxShadow: networkInfo.isStaticLocked ? '0 0 10px #10b981' : '0 0 10px #f59e0b'
+                        }} />
+                        <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#ffffff' }}>
+                          Wi-Fi: <span style={{ color: '#38bdf8' }}>{networkInfo.wifiSsid || 'CXJEE2'}</span> ({networkInfo.adapterName || 'Wi-Fi'})
+                        </span>
+                      </div>
+
+                      <span style={{
+                        background: networkInfo.isStaticLocked ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                        color: networkInfo.isStaticLocked ? '#34d399' : '#fbbf24',
+                        padding: '4px 10px',
+                        borderRadius: 12,
+                        fontSize: '0.76rem',
+                        fontWeight: 800
+                      }}>
+                        {networkInfo.isStaticLocked ? '✅ STATIC IP 192.168.0.162 LOCKED' : '⚠️ DYNAMIC IP DETECTED'}
+                      </span>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '0.88rem' }}>
-                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10 }}>
-                        <span style={{ color: '#94a3b8', fontSize: '0.76rem', display: 'block' }}>Server IP (Laptop Wi-Fi IP)</span>
-                        <strong style={{ color: '#38bdf8', fontSize: '1.05rem', fontFamily: 'monospace' }}>
-                          {biometricStatus.localIp || '192.168.0.162'}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 14, fontSize: '0.84rem' }}>
+                      <div style={{ background: 'rgba(0,0,0,0.35)', padding: '8px 12px', borderRadius: 8 }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.72rem', display: 'block' }}>Current PC IP</span>
+                        <strong style={{ color: networkInfo.isStaticLocked ? '#34d399' : '#fbbf24', fontFamily: 'monospace' }}>
+                          {networkInfo.currentIp || '192.168.0.162'}
                         </strong>
                       </div>
-
-                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10 }}>
-                        <span style={{ color: '#94a3b8', fontSize: '0.76rem', display: 'block' }}>Server Port</span>
-                        <strong style={{ color: '#34d399', fontSize: '1.05rem', fontFamily: 'monospace' }}>5000</strong>
+                      <div style={{ background: 'rgba(0,0,0,0.35)', padding: '8px 12px', borderRadius: 8 }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.72rem', display: 'block' }}>Target Static IP</span>
+                        <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>192.168.0.162</strong>
                       </div>
-
-                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10 }}>
-                        <span style={{ color: '#94a3b8', fontSize: '0.76rem', display: 'block' }}>Device Hardware Port</span>
-                        <strong style={{ color: '#cbd5e1', fontSize: '1.05rem', fontFamily: 'monospace' }}>71</strong> (or 4370)
+                      <div style={{ background: 'rgba(0,0,0,0.35)', padding: '8px 12px', borderRadius: 8 }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.72rem', display: 'block' }}>Gateway</span>
+                        <strong style={{ color: '#cbd5e1', fontFamily: 'monospace' }}>{networkInfo.gateway || '192.168.0.1'}</strong>
                       </div>
-
-                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10 }}>
-                        <span style={{ color: '#94a3b8', fontSize: '0.76rem', display: 'block' }}>Device Detected IP</span>
-                        <strong style={{ color: '#fbbf24', fontSize: '1.05rem', fontFamily: 'monospace' }}>
-                          {biometricStatus.targetIp || '192.168.0.12'}
-                        </strong>
+                      <div style={{ background: 'rgba(0,0,0,0.35)', padding: '8px 12px', borderRadius: 8 }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.72rem', display: 'block' }}>Server Push Port</span>
+                        <strong style={{ color: '#34d399', fontFamily: 'monospace' }}>8000 / 5000</strong>
                       </div>
+                    </div>
+
+                    {/* 1-Click Action Buttons */}
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={handleLockStaticIp}
+                        disabled={isLockingIp}
+                        style={{
+                          flex: 1,
+                          minWidth: 200,
+                          padding: '10px 16px',
+                          borderRadius: 10,
+                          border: 'none',
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          color: '#ffffff',
+                          fontWeight: 800,
+                          fontSize: '0.86rem',
+                          cursor: isLockingIp ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                        }}
+                      >
+                        {isLockingIp ? <RefreshCw size={14} className="spin" /> : <Lock size={14} />}
+                        <span>🔒 1-Click Lock Static IP (192.168.0.162)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleResetDhcp}
+                        disabled={isLockingIp}
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          color: '#cbd5e1',
+                          fontWeight: 700,
+                          fontSize: '0.80rem',
+                          cursor: isLockingIp ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        Reset to DHCP
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={fetchNetworkInfo}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(59, 130, 246, 0.4)',
+                          background: 'rgba(59, 130, 246, 0.1)',
+                          color: '#60a5fa',
+                          cursor: 'pointer'
+                        }}
+                        title="Re-check Network"
+                      >
+                        <RefreshCw size={14} />
+                      </button>
                     </div>
                   </div>
 
-                  {/* Step-by-Step Instructions */}
+                  {/* 📟 4x Biometric Machines Live Matrix */}
                   <div style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
+                    background: 'rgba(255, 255, 255, 0.04)',
                     border: '1px solid rgba(255, 255, 255, 0.12)',
                     borderRadius: 14,
-                    padding: '14px 18px',
-                    fontSize: '0.84rem',
-                    color: '#cbd5e1',
-                    lineHeight: 1.7,
+                    padding: '16px 18px',
                     marginBottom: 16
                   }}>
-                    <strong style={{ color: '#ffffff' }}>⚙️ Quick Steps on Machine:</strong>
-                    <ol style={{ margin: '8px 0 0', paddingLeft: 18 }}>
-                      <li>Press <strong>Menu</strong> ➔ <strong>Comm.</strong> ➔ <strong>Cloud / Server Setting</strong>.</li>
-                      <li>Set <strong>Server IP</strong> to <code style={{ color: '#38bdf8' }}>{biometricStatus.localIp || '192.168.0.162'}</code> and <strong>Server Port</strong> to <code style={{ color: '#34d399' }}>5000</code>.</li>
-                      <li>Save &amp; Restart the machine.</li>
-                      <li>Punch any student finger on the machine — the punch is recorded instantly and sent to parents via WhatsApp!</li>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+                      🏢 4x Career Xone Biometric Terminals Status
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
+                      {[
+                        { name: 'Machine 1 (Main Gate)', ip: '192.168.0.12', port: 71 },
+                        { name: 'Machine 2 (Classroom A)', ip: '192.168.0.13', port: 71 },
+                        { name: 'Machine 3 (Classroom B)', ip: '192.168.0.14', port: 71 },
+                        { name: 'Machine 4 (Staff Room)', ip: '192.168.0.15', port: 71 }
+                      ].map((m, idx) => (
+                        <div key={idx} style={{
+                          background: 'rgba(0, 0, 0, 0.3)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: 10,
+                          padding: '10px 14px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div>
+                            <strong style={{ color: '#ffffff', fontSize: '0.84rem', display: 'block' }}>{m.name}</strong>
+                            <span style={{ color: '#94a3b8', fontSize: '0.74rem', fontFamily: 'monospace' }}>
+                              IP: <span style={{ color: '#38bdf8' }}>{m.ip}</span> • Target: <span style={{ color: '#34d399' }}>192.168.0.162:8000</span>
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleTestDevicePing(m.ip, m.port)}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: 8,
+                              border: '1px solid rgba(59, 130, 246, 0.4)',
+                              background: 'rgba(59, 130, 246, 0.15)',
+                              color: '#60a5fa',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Test Ping
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ⚙️ Setup Instructions on Machine Screen */}
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: 12,
+                    padding: '12px 16px',
+                    fontSize: '0.80rem',
+                    color: '#cbd5e1',
+                    lineHeight: 1.6,
+                    marginBottom: 16
+                  }}>
+                    <strong style={{ color: '#ffffff' }}>💡 How it works on another PC / Wi-Fi:</strong>
+                    <ol style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                      <li>Connect the PC to Institute Wi-Fi (<strong style={{ color: '#38bdf8' }}>CXJEE2</strong>).</li>
+                      <li>Click the green <strong style={{ color: '#34d399' }}>"Lock Static IP (192.168.0.162)"</strong> button above.</li>
+                      <li>All 4 Biometric Terminals will immediately start pushing student &amp; staff punches automatically!</li>
                     </ol>
                   </div>
 
                   <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                     <button
                       type="button"
-                      onClick={() => handleSyncBiometric(biometricStatus.targetIp || '192.168.0.12', biometricStatus.targetPort || 71)}
-                      style={{
-                        padding: '10px 18px',
-                        borderRadius: 10,
-                        border: 'none',
-                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                        color: '#ffffff',
-                        fontWeight: 800,
-                        fontSize: '0.86rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6
-                      }}
-                    >
-                      <RefreshCw size={15} />
-                      <span>Test &amp; Sync Now</span>
-                    </button>
-
-                    <button
-                      type="button"
                       onClick={() => setShowBiometricGuideModal(false)}
                       style={{
-                        padding: '10px 16px',
+                        padding: '10px 18px',
                         borderRadius: 10,
                         border: '1px solid rgba(255, 255, 255, 0.2)',
                         background: 'rgba(255, 255, 255, 0.08)',

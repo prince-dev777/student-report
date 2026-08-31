@@ -14,6 +14,7 @@ node_modules
 dist
 dist-ssr
 *.local
+*.txt
 
 # Editor directories and files
 .vscode/*
@@ -59,8 +60,9 @@ server/.wwebjs_cache/
 
 # Test output files
 server/test_scan_out*.txt
+server/test_*.js
+server/verify_*.py
 server/warped_*.png
 OMR_checking/
 server/omr_engine_bin/
-.md
 

@@ -3103,39 +3103,50 @@ app.delete('/api/sms-logs/bulk', async (req, res) => {
     }
 
     const query = { $or: orClauses };
-    await SMSLog.updateMany(query, { $set: { isDeleted: true, deletedAt: new Date() } }).catch(() => {});
-    const result = await dualDelete('smslogs', query);
+    const localRes = await SMSLog.deleteMany(query);
 
+    // Delete from Cloud Atlas as well
+    let cloudDeleted = 0;
+    try {
+      const cloudColl = await getCloudCollection('smslogs');
+      if (cloudColl) {
+        const cloudRes = await cloudColl.deleteMany(query);
+        cloudDeleted = cloudRes.deletedCount || 0;
+      }
+    } catch (cErr) {
+      console.warn('Cloud Atlas bulk SMS delete notice:', cErr.message);
+    }
+
+    logInfo('SMS_LOGS', `🗑️ Bulk deleted ${localRes.deletedCount} local & ${cloudDeleted} cloud SMS logs`);
     triggerBackgroundCloudSync();
-    res.json({ message: `Successfully deleted ${result.localDeleted || 0} SMS logs`, deletedCount: result.localDeleted });
+    res.json({ message: `Successfully deleted ${localRes.deletedCount} SMS logs`, deletedCount: localRes.deletedCount });
   } catch (err) {
     console.error('Error in SMSLog bulk delete:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Clear All SMS Logs for Current Institute
+// Clear All SMS Logs Permanently from Local and Cloud
 app.delete('/api/sms-logs/all', async (req, res) => {
   try {
-    let query = {};
-    if (req.user && req.user.instituteId) {
-      const instId = req.user.instituteId;
-      query = {
-        $or: [
-          { instituteId: instId },
-          { instituteId: String(instId) },
-          ...(mongoose.Types.ObjectId.isValid(instId) ? [{ instituteId: new mongoose.Types.ObjectId(instId) }] : []),
-          { instituteId: { $exists: false } },
-          { instituteId: null }
-        ]
-      };
+    // 1. Delete all from Local MongoDB
+    const localRes = await SMSLog.deleteMany({});
+
+    // 2. Delete all from Cloud MongoDB Atlas
+    let cloudDeleted = 0;
+    try {
+      const cloudColl = await getCloudCollection('smslogs');
+      if (cloudColl) {
+        const cloudRes = await cloudColl.deleteMany({});
+        cloudDeleted = cloudRes.deletedCount || 0;
+      }
+    } catch (cErr) {
+      console.warn('Cloud Atlas clear all SMS notice:', cErr.message);
     }
 
-    await SMSLog.updateMany(query, { $set: { isDeleted: true, deletedAt: new Date() } }).catch(() => {});
-    const result = await dualDelete('smslogs', query);
-
+    logInfo('SMS_LOGS', `🧹 Cleared ALL SMS logs: ${localRes.deletedCount} local, ${cloudDeleted} cloud records`);
     triggerBackgroundCloudSync();
-    res.json({ message: `Cleared all ${result.localDeleted || 0} SMS logs successfully`, deletedCount: result.localDeleted });
+    res.json({ message: `Cleared all ${localRes.deletedCount} SMS logs permanently from both Local and Cloud storage.`, deletedCount: localRes.deletedCount });
   } catch (err) {
     console.error('Error clearing all SMS logs:', err);
     res.status(500).json({ error: err.message });
@@ -3155,8 +3166,16 @@ app.delete('/api/sms-logs/:id', async (req, res) => {
       ]
     };
 
-    await SMSLog.updateMany(query, { $set: { isDeleted: true, deletedAt: new Date() } }).catch(() => {});
-    const result = await dualDelete('smslogs', query);
+    // 1. Delete from Local DB
+    const localRes = await SMSLog.deleteMany(query);
+
+    // 2. Delete from Cloud DB
+    try {
+      const cloudColl = await getCloudCollection('smslogs');
+      if (cloudColl) {
+        await cloudColl.deleteMany(query);
+      }
+    } catch (cErr) {}
 
     triggerBackgroundCloudSync();
     res.json({ message: 'SMS log permanently deleted successfully' });

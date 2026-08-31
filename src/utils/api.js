@@ -4,9 +4,13 @@
 // Interacts with Node.js + Express backend (http://localhost:5000)
 // and handles fallback to localStorage if backend is down.
 
-const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
+const isElectron = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || ((isLocalhost || isElectron) ? 'http://localhost:5000/api' : 'https://student-report-4j6t.onrender.com/api');
+
+// In Electron / Local desktop app, always prioritize local fast backend on port 5000
+export const API_BASE = (isLocalhost || isElectron)
+  ? 'http://localhost:5000/api'
+  : (import.meta.env.VITE_API_BASE_URL || 'https://student-report-4j6t.onrender.com/api');
 
 // Helper to check if backend is online with automatic retry for smooth startup
 export async function checkBackendStatus(retries = (isElectron ? 5 : 2), delay = 800) {
@@ -74,12 +78,29 @@ async function apiRequest(endpoint, options = {}) {
     headers,
   });
 
+  const text = await response.text();
+
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP error! status: ${response.status}`);
+    let errMsg = `HTTP error! status: ${response.status}`;
+    try {
+      const err = JSON.parse(text);
+      errMsg = err.error || err.message || errMsg;
+    } catch (_) {
+      if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+        errMsg = `Server endpoint ${endpoint} not found (HTTP ${response.status})`;
+      }
+    }
+    throw new Error(errMsg);
   }
 
-  return response.json();
+  try {
+    return JSON.parse(text);
+  } catch (parseErr) {
+    if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+      throw new Error(`Server returned HTML instead of JSON for ${endpoint}`);
+    }
+    return text;
+  }
 }
 
 export const api = {
@@ -256,6 +277,12 @@ export const api = {
     apiRequest('/biometric/manual-punch', { method: 'POST', body: JSON.stringify(data) }),
   cleanBiometricHistory: () =>
     apiRequest('/biometric/clean-history', { method: 'POST' }),
+  getBiometricNetworkStatus: () =>
+    apiRequest('/biometric/network-status'),
+  lockBiometricStaticIp: (data = {}) =>
+    apiRequest('/biometric/lock-static-ip', { method: 'POST', body: JSON.stringify(data) }),
+  resetBiometricDhcp: (data = {}) =>
+    apiRequest('/biometric/reset-dhcp', { method: 'POST', body: JSON.stringify(data) }),
 
   // 👥 Staff / Employee Attendance Control Center
   getStaffAttendance: (date) =>

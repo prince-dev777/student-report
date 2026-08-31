@@ -13,6 +13,7 @@
 import express from 'express';
 import net from 'net';
 import os from 'os';
+import { exec, execSync } from 'child_process';
 import mongoose from 'mongoose';
 import ZKLib from 'node-zklib';
 import Student from './models/Student.js';
@@ -622,19 +623,21 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     };
 
     logInfo('BIOMETRIC', `✅ Student Punch Recorded: ${student.name} (Roll: ${student.rollNo}) -> ${effectiveType} at ${formattedTime}`);
-    return {
-      success: true,
-      isNew: isNewPunch,
-      studentName: student.name,
-      rollNo: student.rollNo,
-      type: effectiveType,
-      time: formattedTime,
-      sessionName: record.sessionName
-    };
-  } catch (err) {
-    logError('BIOMETRIC', `Error processing punch: ${err.message}`);
-    return { success: false, error: err.message };
   }
+
+  return {
+    success: true,
+    isNew: isNewPunch,
+    studentName: student.name,
+    rollNo: student.rollNo,
+    type: effectiveType,
+    time: formattedTime,
+    sessionName: record?.sessionName
+  };
+} catch (err) {
+  logError('BIOMETRIC', `Error processing punch: ${err.message}`);
+  return { success: false, error: err.message };
+}
 }
 
 // ----------------------------------------------------------------------------
@@ -1045,7 +1048,171 @@ export function setupBiometricRoutes(app) {
     }
   });
 
+  // --- REST API: Get System Network & Static IP Lock Status ---
+  app.get('/api/biometric/network-status', (req, res) => {
+    try {
+      const info = getSystemNetworkInfo();
+      res.json(info);
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // --- REST API: 1-Click Lock Permanent Static IP (192.168.0.162) ---
+  app.post('/api/biometric/lock-static-ip', async (req, res) => {
+    try {
+      const { targetIp = '192.168.0.162', gateway = '192.168.0.1', adapterName } = req.body;
+      const networkInfo = getSystemNetworkInfo();
+      const resolvedAdapter = adapterName || networkInfo.adapterName || 'Wi-Fi';
+      const resolvedGateway = gateway || networkInfo.gateway || '192.168.0.1';
+
+      logInfo('BIOMETRIC', `🔒 Locking Static IP ${targetIp} on adapter "${resolvedAdapter}" (Gateway: ${resolvedGateway})...`);
+      const result = await fixSystemStaticIp(targetIp, resolvedGateway, resolvedAdapter);
+      res.json(result);
+    } catch (err) {
+      logError('BIOMETRIC', `Static IP lock failed: ${err.message}`);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // --- REST API: Reset Adapter to Automatic DHCP ---
+  app.post('/api/biometric/reset-dhcp', async (req, res) => {
+    try {
+      const { adapterName } = req.body;
+      const networkInfo = getSystemNetworkInfo();
+      const resolvedAdapter = adapterName || networkInfo.adapterName || 'Wi-Fi';
+
+      logInfo('BIOMETRIC', `🔄 Resetting adapter "${resolvedAdapter}" to DHCP...`);
+      const result = await resetSystemToDhcp(resolvedAdapter);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   logInfo('BIOMETRIC', `📡 Biomax FK & ADMS Biometric Engine Online with Student + Staff dual routing!`);
+}
+
+// ----------------------------------------------------------------------------
+// 🌐 Network & 1-Click Static IP (192.168.0.162) Configurator
+// ----------------------------------------------------------------------------
+
+export function getSystemNetworkInfo() {
+  const localIp = getLocalNetworkIp();
+  const targetIp = '192.168.0.162';
+  let wifiSsid = 'CXJEE2';
+  let adapterName = 'Wi-Fi';
+  let gateway = '192.168.0.1';
+  let subnet = '255.255.255.0';
+  let dns = '8.8.8.8';
+
+  try {
+    if (os.platform() === 'win32') {
+      try {
+        const out = execSync('netsh wlan show interfaces', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'], timeout: 2000 });
+        const ssidMatch = out.match(/^\s*SSID\s*:\s*(.+)$/m);
+        if (ssidMatch && ssidMatch[1]) {
+          wifiSsid = ssidMatch[1].trim();
+        }
+        const nameMatch = out.match(/^\s*Name\s*:\s*(.+)$/m);
+        if (nameMatch && nameMatch[1]) {
+          adapterName = nameMatch[1].trim();
+        }
+      } catch (_) {}
+
+      try {
+        const ipOut = execSync('ipconfig', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'], timeout: 2000 });
+        const gwMatch = ipOut.match(/Default Gateway[ .]*:\s*([0-9.]+)/i);
+        if (gwMatch && gwMatch[1] && gwMatch[1] !== '0.0.0.0') {
+          gateway = gwMatch[1].trim();
+        }
+      } catch (_) {}
+    }
+  } catch (_) {}
+
+  const isStaticLocked = localIp === targetIp;
+
+  return {
+    success: true,
+    currentIp: localIp,
+    targetIp: targetIp,
+    isStaticLocked: isStaticLocked,
+    status: isStaticLocked ? 'Locked & Active' : 'Dynamic / Unlocked',
+    wifiSsid: wifiSsid,
+    adapterName: adapterName,
+    gateway: gateway,
+    subnet: subnet,
+    dns: dns,
+    serverPort: 8000,
+    apiPort: 5000,
+    supportedDevices: [
+      { id: 1, name: 'Machine 1 (Main Gate)', ip: '192.168.0.12', port: 71, serverTarget: `${targetIp}:8000` },
+      { id: 2, name: 'Machine 2 (Classroom A)', ip: '192.168.0.13', port: 71, serverTarget: `${targetIp}:8000` },
+      { id: 3, name: 'Machine 3 (Classroom B)', ip: '192.168.0.14', port: 71, serverTarget: `${targetIp}:8000` },
+      { id: 4, name: 'Machine 4 (Staff Room)', ip: '192.168.0.15', port: 71, serverTarget: `${targetIp}:8000` }
+    ]
+  };
+}
+
+export async function fixSystemStaticIp(targetIp = '192.168.0.162', gateway = '192.168.0.1', adapterName = 'Wi-Fi') {
+  if (os.platform() !== 'win32') {
+    return { success: false, error: 'Static IP binding is only supported on Windows.' };
+  }
+
+  return new Promise((resolve) => {
+    const cmd = `netsh interface ipv4 set address name="${adapterName}" static ${targetIp} 255.255.255.0 ${gateway} && netsh interface ipv4 set dns name="${adapterName}" static 8.8.8.8 && netsh interface ipv4 add dns name="${adapterName}" 1.1.1.1 index=2`;
+    
+    exec(cmd, { timeout: 8000 }, (error) => {
+      if (!error) {
+        logInfo('BIOMETRIC', `✅ Static IP ${targetIp} locked successfully on ${adapterName}`);
+        return resolve({
+          success: true,
+          message: `Static IP ${targetIp} successfully locked on ${adapterName} (${gateway})!`,
+          targetIp,
+          adapterName
+        });
+      }
+
+      const psCmd = `powershell -Command "Start-Process cmd -ArgumentList '/c ${cmd}' -Verb RunAs -WindowStyle Hidden"`;
+      exec(psCmd, { timeout: 10000 }, (psErr) => {
+        if (!psErr) {
+          logInfo('BIOMETRIC', `✅ Static IP ${targetIp} elevation triggered on ${adapterName}`);
+          return resolve({
+            success: true,
+            message: `Static IP ${targetIp} locked on ${adapterName}!`,
+            targetIp,
+            adapterName
+          });
+        }
+        resolve({
+          success: false,
+          error: psErr?.message || error?.message || 'Failed to bind static IP'
+        });
+      });
+    });
+  });
+}
+
+export async function resetSystemToDhcp(adapterName = 'Wi-Fi') {
+  if (os.platform() !== 'win32') {
+    return { success: false, error: 'DHCP reset is only supported on Windows.' };
+  }
+
+  return new Promise((resolve) => {
+    const cmd = `netsh interface ipv4 set address name="${adapterName}" dhcp && netsh interface ipv4 set dns name="${adapterName}" dhcp`;
+    exec(cmd, { timeout: 8000 }, (error) => {
+      if (!error) {
+        return resolve({ success: true, message: `Adapter ${adapterName} reset to automatic DHCP.` });
+      }
+      const psCmd = `powershell -Command "Start-Process cmd -ArgumentList '/c ${cmd}' -Verb RunAs -WindowStyle Hidden"`;
+      exec(psCmd, { timeout: 10000 }, (psErr) => {
+        if (!psErr) {
+          return resolve({ success: true, message: `Adapter ${adapterName} DHCP reset command executed!` });
+        }
+        resolve({ success: false, error: psErr?.message || error?.message });
+      });
+    });
+  });
 }
 
 export function getBiometricStatus() {

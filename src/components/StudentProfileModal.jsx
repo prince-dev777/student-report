@@ -4,14 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, User, Phone, MapPin, Calendar, CheckCircle2, 
   AlertTriangle, BookOpen, Clock, Mail, LineChart, BarChart2,
-  CreditCard, Printer
+  CreditCard, Printer, GraduationCap, Layers
 } from 'lucide-react';
 import { 
   LineChart as ReLineChart, Line, XAxis, YAxis, Tooltip, 
   ResponsiveContainer, CartesianGrid 
 } from 'recharts';
 import { getAvatarClass, getInitials } from '../data/sampleData';
-import { formatDate, formatTime, calcAttendancePercent } from '../utils/helpers';
+import { formatDate, formatTime, calcAttendancePercent, formatBatchName } from '../utils/helpers';
 import { useApp } from '../context/AppContext';
 import { QRCodeSVG } from 'qrcode.react';
 import idLogo from '../assets/id-logo.png';
@@ -30,6 +30,22 @@ export default function StudentProfileModal({
   const student = useMemo(() => {
     return students.find((s) => s.id === initialStudent.id) || initialStudent;
   }, [students, initialStudent]);
+
+  // Resolve Course and Class
+  const resolvedCourse = useMemo(() => {
+    return formatBatchName(student.batch || student.course || student.targetClass, batches);
+  }, [student, batches]);
+
+  const resolvedClass = useMemo(() => {
+    if (student.class) return student.class;
+    if (student.targetClass && (student.targetClass.toLowerCase().includes('11') || student.targetClass.toLowerCase().includes('12'))) {
+      return student.targetClass;
+    }
+    const bStr = String(student.batch || '').toLowerCase();
+    if (bStr.includes('11')) return '11th';
+    if (bStr.includes('12')) return '12th';
+    return student.targetClass || '12th';
+  }, [student]);
 
   const handleRegenCreds = async () => {
     if (window.confirm('Are you sure you want to regenerate new parent portal credentials? The old password will stop working.')) {
@@ -104,17 +120,31 @@ export default function StudentProfileModal({
                     src={student.photo} 
                     alt={student.name} 
                     className="student-avatar" 
-                    style={{ width: '48px', height: '48px', objectFit: 'cover', border: '1px solid var(--border-color)' }} 
+                    style={{ width: '52px', height: '52px', objectFit: 'cover', border: '1px solid var(--border-color)', borderRadius: '12px' }} 
                   />
                 ) : (
-                  <div className={`student-avatar av-1`} style={{ width: '48px', height: '48px', fontSize: '1.2rem' }}>
+                  <div className={`student-avatar av-1`} style={{ width: '52px', height: '52px', fontSize: '1.2rem', borderRadius: '12px' }}>
                     {getInitials(student.name)}
                   </div>
                 )}
                 <div>
-                  <h3 style={{ fontSize: '1.4rem', margin: 0 }}>{student.name}</h3>
-                  <p className="card-subtitle" style={{ margin: 0 }}>
-                    Roll No: <strong>{student.rollNo}</strong> | ID: <strong>{student.id}</strong>
+                  <div className="flex items-center gap-8 flex-wrap">
+                    <h3 style={{ fontSize: '1.4rem', margin: 0 }}>{student.name}</h3>
+                    <span className="badge" style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', fontSize: '0.75rem', padding: '3px 9px', borderRadius: '6px', fontWeight: 600 }}>
+                      {resolvedCourse}
+                    </span>
+                    <span className="badge" style={{ background: 'rgba(139, 92, 246, 0.15)', color: '#a78bfa', border: '1px solid rgba(139, 92, 246, 0.3)', fontSize: '0.75rem', padding: '3px 9px', borderRadius: '6px', fontWeight: 600 }}>
+                      {resolvedClass}
+                    </span>
+                  </div>
+                  <p className="card-subtitle" style={{ margin: '4px 0 0 0', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', fontSize: '0.85rem' }}>
+                    <span>Roll No: <strong>{student.rollNo}</strong></span>
+                    <span>•</span>
+                    <span>ID: <strong>{student.id}</strong></span>
+                    <span>•</span>
+                    <span>Course: <strong style={{ color: '#38bdf8' }}>{resolvedCourse}</strong></span>
+                    <span>•</span>
+                    <span>Class: <strong style={{ color: '#c084fc' }}>{resolvedClass}</strong></span>
                   </p>
                 </div>
               </div>
@@ -187,6 +217,20 @@ export default function StudentProfileModal({
                       <div className="flex-1">
                         <h4 className="mb-16" style={{ marginTop: 0 }}>Personal & Contact Info</h4>
                       <div className="flex flex-col gap-12" style={{ fontSize: '0.9rem' }}>
+                        <div className="flex items-center gap-12 text-secondary">
+                          <GraduationCap size={16} className="text-accent" />
+                          <div>
+                            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Course / Batch</span>
+                            <strong style={{ color: '#38bdf8' }}>{resolvedCourse}</strong>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-12 text-secondary">
+                          <Layers size={16} className="text-accent" />
+                          <div>
+                            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Class / Standard</span>
+                            <strong style={{ color: '#c084fc' }}>{resolvedClass}</strong>
+                          </div>
+                        </div>
                         <div className="flex items-center gap-12 text-secondary">
                           <User size={16} className="text-accent" />
                           <div>
@@ -280,14 +324,22 @@ export default function StudentProfileModal({
                       </div>
 
                       <div className="border-glass pt-12" style={{ borderTop: '1px solid var(--border-color-light)', fontSize: '0.85rem' }}>
-                        <div className="flex justify-between mb-4">
+                        <div className="flex justify-between mb-8">
+                          <span className="text-secondary">Course / Batch:</span>
+                          <strong style={{ color: '#38bdf8' }}>{resolvedCourse}</strong>
+                        </div>
+                        <div className="flex justify-between mb-8">
+                          <span className="text-secondary">Class / Standard:</span>
+                          <strong style={{ color: '#c084fc' }}>{resolvedClass}</strong>
+                        </div>
+                        <div className="flex justify-between mb-8">
                           <span className="text-secondary">Tests Attempted:</span>
                           <strong>{studentResults.length} exams</strong>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-secondary">Enrollment Status:</span>
                           <span className={`badge ${student.status === 'active' ? 'badge-success' : 'badge-danger'}`}>
-                            {student.status}
+                            {student.status || 'ACTIVE'}
                           </span>
                         </div>
                       </div>

@@ -4,7 +4,9 @@
 
 // Format date to readable string
 export function formatDate(dateStr) {
+  if (!dateStr || dateStr === 'Invalid Date') return 'Not specified';
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return 'Not specified';
   return date.toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',

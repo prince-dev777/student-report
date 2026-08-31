@@ -115,8 +115,36 @@ function createWindow() {
     } catch(e) {}
     mainWindow.loadURL('http://localhost:5173');
   } else {
-    // Load from local Express server to avoid file:// cross-origin issues
-    mainWindow.loadURL('http://localhost:5000');
+    // Retry loading from local Express server until port 5000 is ready
+    const loadProductionApp = async () => {
+      const http = require('http');
+      const isServerUp = () => new Promise((resolve) => {
+        const req = http.get('http://127.0.0.1:5000/api/health', (res) => {
+          resolve(res.statusCode < 500);
+        });
+        req.on('error', () => resolve(false));
+        req.setTimeout(800, () => { req.destroy(); resolve(false); });
+      });
+
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const ready = await isServerUp();
+        if (ready) break;
+        await new Promise(r => setTimeout(r, 400));
+      }
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.loadURL('http://localhost:5000');
+      }
+    };
+
+    loadProductionApp();
+
+    mainWindow.webContents.on('did-fail-load', () => {
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.loadURL('http://localhost:5000');
+        }
+      }, 1000);
+    });
   }
   // Prevent window from closing, hide it instead
   mainWindow.on('close', (event) => {
@@ -202,8 +230,10 @@ async function startServer() {
   // Kill any leftover process on port 5000 from a previous session
   await killPort(5000);
 
-  // Path to local main server
-  const localOmrPath = path.join(__dirname, 'server', 'server.js');
+  // Path to local main server (unpacked in production for Node ESM compatibility)
+  const localOmrPath = app.isPackaged 
+    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'server.js')
+    : path.join(__dirname, 'server', 'server.js');
   
   const logFile = path.join(app.getPath('userData'), 'electron_debug.log');
   try {
