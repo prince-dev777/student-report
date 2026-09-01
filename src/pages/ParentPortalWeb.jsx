@@ -638,6 +638,55 @@ export default function ParentPortalWeb() {
 
   const analyticsData = calculateAnalytics();
 
+  // Calculate dynamic Month-Wise Attendance Statistics
+  const calculateMonthAttendance = (targetDate = new Date()) => {
+    const targetMonth = targetDate.getMonth() + 1; // 1-12
+    const targetYear = targetDate.getFullYear();
+    const monthName = targetDate.toLocaleDateString('en-IN', { month: 'short' });
+    const fullMonthName = targetDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+    let total = 0;
+
+    (attendanceRecords || []).forEach(a => {
+      if (!a?.date) return;
+      const parts = String(a.date).trim().split(/[-/]/);
+      if (parts.length === 3) {
+        const m = parseInt(parts[1], 10);
+        const y = parseInt(parts[0], 10) > 31 ? parseInt(parts[0], 10) : parseInt(parts[2], 10);
+        if (m === targetMonth && (y === targetYear || y === (targetYear % 100))) {
+          total += 1;
+          const st = String(a.status || '').toLowerCase();
+          if (st === 'present') present += 1;
+          else if (st === 'absent') absent += 1;
+          else if (st === 'late') late += 1;
+        }
+      }
+    });
+
+    const rate = total > 0 ? Math.round((present / total) * 100) : (present > 0 ? 100 : '-');
+    return {
+      monthName,
+      fullMonthName,
+      targetMonth,
+      targetYear,
+      present,
+      absent,
+      late,
+      total,
+      rate: rate === '-' ? '-' : `${rate}%`,
+      numericRate: typeof rate === 'number' ? rate : (total === 0 ? 100 : 0)
+    };
+  };
+
+  // Current active month stats for top dashboard pill
+  const currentMonthStats = calculateMonthAttendance(new Date());
+  const activeMonthDisplay = currentMonthStats.total > 0 
+    ? currentMonthStats 
+    : (attendanceRecords.length > 0 ? calculateMonthAttendance(new Date(attendanceRecords[0].date)) : currentMonthStats);
+
   // Safe Test Metadata Getters (Resilient to various payload structures)
   const getTestName = (t) => t?.testName || t?.test?.name || t?.name || 'Test Exam';
   const getTestDate = (t) => t?.testDate || t?.test?.date || (t?.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : '-');
@@ -1154,7 +1203,7 @@ export default function ParentPortalWeb() {
           </div>
         </div>
 
-        {/* Right: Quick Refresh, Notifications, Settings, & Logout Actions Menu */}
+        {/* Right: Quick Refresh & Notifications */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
           {/* Refresh Button */}
           <button
@@ -1212,53 +1261,6 @@ export default function ParentPortalWeb() {
                 {visibleNotifications.length}
               </span>
             )}
-          </button>
-
-          {/* Settings & Menu Drawer Button */}
-          <button
-            onClick={() => setShowSettingsDrawer(true)}
-            title="Settings & Menu"
-            aria-label="Settings"
-            style={{
-              background: '#f8fafc',
-              border: '1.5px solid #cbd5e1',
-              color: '#475569',
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-            }}
-          >
-            <Settings size={15} color="#475569" />
-          </button>
-
-          {/* 1-Tap Quick Logout Button */}
-          <button
-            onClick={handleLogout}
-            title="Logout from Parent App"
-            aria-label="Logout"
-            style={{
-              background: 'linear-gradient(135deg, #fff1f2, #ffe4e6)',
-              border: '1.5px solid #fecdd3',
-              color: '#e11d48',
-              padding: '0 8px',
-              height: '32px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(225, 29, 72, 0.12)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <LogOut size={14} color="#e11d48" />
-            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#e11d48' }}>Logout</span>
           </button>
         </div>
       </header>
@@ -1350,7 +1352,7 @@ export default function ParentPortalWeb() {
             <div
               className="metric-box"
               onClick={() => setActiveTab('attendance')}
-              title="Click to view Attendance"
+              title={`Click to view ${activeMonthDisplay.fullMonthName} Attendance`}
               style={{
                 background: '#f0f9ff', border: '1px solid #bae6fd', padding: '7px 4px',
                 borderRadius: '9px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
@@ -1358,9 +1360,11 @@ export default function ParentPortalWeb() {
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#0284c7'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bae6fd'; e.currentTarget.style.transform = 'none'; }}
             >
-              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#0369a1', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Attendance</span>
+              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#0369a1', fontWeight: 700, display: 'block', marginBottom: '1px' }}>
+                {activeMonthDisplay.monthName} Rate
+              </span>
               <strong className="metric-value" style={{ fontSize: '0.88rem', color: '#0284c7', fontWeight: 900 }}>
-                {studentData?.attendanceRate !== undefined ? studentData.attendanceRate : (attendanceRecords.length > 0 ? Math.round((attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length / attendanceRecords.length) * 100) : 100)}%
+                {activeMonthDisplay.rate !== '-' ? activeMonthDisplay.rate : (attendanceRecords.length > 0 ? '100%' : '-')}
               </strong>
             </div>
 
@@ -1375,9 +1379,11 @@ export default function ParentPortalWeb() {
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#16a34a'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bbf7d0'; e.currentTarget.style.transform = 'none'; }}
             >
-              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#15803d', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Present</span>
+              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#15803d', fontWeight: 700, display: 'block', marginBottom: '1px' }}>
+                Total Present
+              </span>
               <strong className="metric-value" style={{ fontSize: '0.88rem', color: '#16a34a', fontWeight: 900 }}>
-                {studentData?.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length}d
+                {studentData?.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length} Days
               </strong>
             </div>
 
@@ -1997,6 +2003,54 @@ export default function ParentPortalWeb() {
                     </button>
                   </div>
 
+                  {/* Dynamic Month-Wise Summary Card */}
+                  {(() => {
+                    const monthStats = calculateMonthAttendance(calendarDate);
+                    return (
+                      <div style={{
+                        background: 'linear-gradient(135deg, #f0fdf4, #e0f2fe)',
+                        border: '1.5px solid #bae6fd',
+                        borderRadius: '10px',
+                        padding: '9px 12px',
+                        marginBottom: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#0369a1', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <TrendingUp size={13} color="#0284c7" /> {monthName} Attendance:
+                          </span>
+                          <span style={{
+                            background: monthStats.numericRate >= 75 ? '#dcfce7' : '#fef3c7',
+                            color: monthStats.numericRate >= 75 ? '#15803d' : '#b45309',
+                            fontSize: '0.72rem', fontWeight: 900, padding: '2px 8px', borderRadius: '6px',
+                            border: `1px solid ${monthStats.numericRate >= 75 ? '#bbf7d0' : '#fde68a'}`
+                          }}>
+                            {monthStats.rate !== '-' ? `${monthStats.rate} Present` : 'No Punches'}
+                          </span>
+                        </div>
+                        
+                        {/* Visual Progress Bar */}
+                        <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{
+                            width: monthStats.total > 0 ? `${monthStats.numericRate}%` : (monthStats.present > 0 ? '100%' : '0%'),
+                            height: '100%',
+                            background: monthStats.numericRate >= 75 ? 'linear-gradient(90deg, #10b981, #16a34a)' : 'linear-gradient(90deg, #f59e0b, #d97706)',
+                            borderRadius: '4px',
+                            transition: 'width 0.4s ease'
+                          }} />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.66rem', color: '#475569', fontWeight: 700 }}>
+                          <span>🟢 Present: <strong style={{ color: '#15803d' }}>{monthStats.present}d</strong></span>
+                          <span>🔴 Absent: <strong style={{ color: '#b91c1c' }}>{monthStats.absent}d</strong></span>
+                          <span>📅 Total Marked: <strong style={{ color: '#0f172a' }}>{monthStats.total}d</strong></span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Day of Week Headers */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center', marginBottom: '6px' }}>
                     {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
@@ -2478,26 +2532,16 @@ export default function ParentPortalWeb() {
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-              <button
-                onClick={handleLogout}
-                style={{
-                  flex: 1, background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3',
-                  padding: '11px', borderRadius: '12px', fontWeight: 800, fontSize: '0.84rem',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-                }}
-              >
-                <LogOut size={15} /> Logout
-              </button>
+            <div style={{ marginTop: '14px' }}>
               <button
                 onClick={() => setShowNotificationDrawer(false)}
                 style={{
-                  flex: 1, background: '#0f172a', color: '#ffffff',
-                  border: 'none', padding: '11px', borderRadius: '12px', fontWeight: 800,
-                  fontSize: '0.84rem', cursor: 'pointer'
+                  width: '100%', background: '#0f172a', color: '#ffffff',
+                  border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800,
+                  fontSize: '0.86rem', cursor: 'pointer'
                 }}
               >
-                Close
+                Close (बंद करें)
               </button>
             </div>
           </div>
@@ -2894,43 +2938,48 @@ export default function ParentPortalWeb() {
               </button>
 
               {/* Install App */}
-              <button
-                onClick={() => {
-                  setShowSettingsDrawer(false);
-                  handleInstallApp();
-                }}
-                style={{
-                  width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
-                  padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  cursor: 'pointer', textAlign: 'left'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Smartphone size={17} color="#10b981" />
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
-                    Install Parents App to Home Screen
-                  </span>
-                </div>
-                <ChevronRight size={16} color="#94a3b8" />
-              </button>
+              {/* Install App (Only show if not already installed as PWA) */}
+              {!isAppInstalled && (
+                <button
+                  onClick={() => {
+                    setShowSettingsDrawer(false);
+                    handleInstallApp();
+                  }}
+                  style={{
+                    width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                    padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    cursor: 'pointer', textAlign: 'left'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Smartphone size={17} color="#10b981" />
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
+                      Install Parents App to Home Screen
+                    </span>
+                  </div>
+                  <ChevronRight size={16} color="#94a3b8" />
+                </button>
+              )}
 
-              {/* Notifications Setting */}
-              <button
-                onClick={handleRequestNotification}
-                style={{
-                  width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
-                  padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  cursor: 'pointer', textAlign: 'left'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Bell size={17} color="#8b5cf6" />
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
-                    Lock-Screen Alerts ({notificationPermission === 'granted' ? 'Active 🔔' : 'Enable'})
-                  </span>
-                </div>
-                <ChevronRight size={16} color="#94a3b8" />
-              </button>
+              {/* Notifications Setting (Only show if not already active/granted) */}
+              {notificationPermission !== 'granted' && (
+                <button
+                  onClick={handleRequestNotification}
+                  style={{
+                    width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                    padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    cursor: 'pointer', textAlign: 'left'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Bell size={17} color="#8b5cf6" />
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
+                      Enable Lock-Screen Alerts
+                    </span>
+                  </div>
+                  <ChevronRight size={16} color="#94a3b8" />
+                </button>
+              )}
 
               {/* Refresh Sync */}
               <button
