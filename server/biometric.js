@@ -362,6 +362,20 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 
       await record.save();
 
+      // Trigger Staff WhatsApp / SMS Alert & Log in SMS Center
+      if (isNew && staffMember.phone) {
+        sendWhatsAppAlert({
+          instituteId: staffMember.instituteId || resolvedInstituteId,
+          studentId: staffMember.staffId || staffMember.id,
+          parentPhone: staffMember.phone,
+          studentName: staffMember.name,
+          parentName: staffMember.name,
+          type: type === 'IN' ? 'IN' : 'OUT',
+          detail: `${formattedTime} (Staff Attendance)`,
+          sessionName: `${staffMember.department || 'Staff'} Duty`
+        }).catch((err) => console.warn('[Biometric] Staff WhatsApp alert warning:', err.message));
+      }
+
       // Add to live punch feed
       const punchEvent = {
         id: `PUNCH_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
@@ -574,15 +588,19 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 
     // Trigger Parent WhatsApp Alert (Uses de-duplication lock)
     if (student.parentPhone) {
-      sendWhatsAppAlert({
-        instituteId: resolvedInstituteId,
-        studentId: student.id,
-        parentPhone: student.parentPhone,
-        studentName: student.name,
-        parentName: student.parentName,
-        type: effectiveType,
-        detail: `${formattedTime}${record.sessionName ? ` for ${record.sessionName}` : ''}`
-      }).catch((err) => console.warn('[Biometric] WhatsApp alert warning:', err.message));
+      try {
+        await sendWhatsAppAlert({
+          instituteId: resolvedInstituteId,
+          studentId: student.id,
+          parentPhone: student.parentPhone,
+          studentName: student.name,
+          parentName: student.parentName,
+          type: effectiveType,
+          detail: `${formattedTime}${record.sessionName ? ` for ${record.sessionName}` : ''}`
+        });
+      } catch (err) {
+        console.warn('[Biometric] WhatsApp alert warning:', err.message);
+      }
     }
 
     // Add to live punch feed

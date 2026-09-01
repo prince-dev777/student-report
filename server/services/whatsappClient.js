@@ -78,7 +78,10 @@ function killLeftoverChromium() {
   });
 }
 
+let isManualDisconnecting = false;
+
 export async function disconnectWhatsAppClient() {
+  isManualDisconnecting = true;
   if (client) {
     try {
       // First destroy the client (closes Puppeteer browser)
@@ -97,11 +100,12 @@ export async function disconnectWhatsAppClient() {
     // Wait for Puppeteer/Chromium processes to fully exit
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Now safely delete session folder
+    // Now safely delete session folder on manual disconnect
     const dataPath = getAuthDataPath();
     await safeDeleteDir(path.join(dataPath, 'data', '.wwebjs_auth'));
     await safeDeleteDir(path.join(dataPath, '.wwebjs_auth'));
 
+    isManualDisconnecting = false;
     return true;
   }
   
@@ -109,6 +113,7 @@ export async function disconnectWhatsAppClient() {
   clientStatus = 'disconnected';
   qrCodeData = null;
   initRetryCount = 0;
+  isManualDisconnecting = false;
   return false;
 }
 
@@ -251,6 +256,20 @@ export function initializeWhatsAppClient() {
       clientStatus = 'disconnected';
       qrCodeData = null;
       client = null;
+
+      // If this was NOT a manual disconnect and NOT an explicit logout on phone, auto-reconnect!
+      if (!isManualDisconnecting && reason !== 'LOGOUT') {
+        const dataPath = getAuthDataPath();
+        const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth');
+        if (fs.existsSync(sessionDir)) {
+          console.log('[WhatsAppClient] 🔄 Transient network disconnect detected. Auto-reconnecting saved session in 5 seconds...');
+          setTimeout(() => {
+            if (clientStatus === 'disconnected') {
+              initializeWhatsAppClient();
+            }
+          }, 5000);
+        }
+      }
     });
 
     client.initialize().catch(err => {

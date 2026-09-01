@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import SMSLog from '../models/SMSLog.js';
+import MessageLock from '../models/MessageLock.js';
 import { sendWhatsAppMessageWeb, getWhatsAppClientState } from './whatsappClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,12 +34,11 @@ export function setOutboundMessagingStatus(enabled) {
   return outboundMessagingEnabled;
 }
 
-// --- Multi-PC / Peer Instance De-duplication Lock ---
-// Timed Lock Map to prevent multi-PC or concurrent duplicate triggers (retains for 10 minutes)
+// --- Multi-PC / Peer Instance In-Memory De-duplication Lock ---
 const sentAlertLockMap = new Map();
 
-function isDuplicateAlert(studentId, type, dateStr) {
-  const lockKey = `${studentId}_${type}_${dateStr}`;
+function isDuplicateAlert(studentId, type, dateStr, sessionName = null) {
+  const lockKey = `${studentId}_${type}_${dateStr}_${sessionName || 'GEN'}`;
   const now = Date.now();
   if (sentAlertLockMap.has(lockKey)) {
     const timestamp = sentAlertLockMap.get(lockKey);
@@ -48,8 +49,8 @@ function isDuplicateAlert(studentId, type, dateStr) {
   return false;
 }
 
-function recordSentAlert(studentId, type, dateStr) {
-  const lockKey = `${studentId}_${type}_${dateStr}`;
+function recordSentAlert(studentId, type, dateStr, sessionName = null) {
+  const lockKey = `${studentId}_${type}_${dateStr}_${sessionName || 'GEN'}`;
   sentAlertLockMap.set(lockKey, Date.now());
   if (sentAlertLockMap.size > 500) {
     const now = Date.now();
@@ -62,20 +63,41 @@ function recordSentAlert(studentId, type, dateStr) {
 /**
  * Sends a WhatsApp message to the specified parent phone number.
  * Logs the message details to the database (SMSLog).
- * Includes multi-PC duplicate lock and persistent messaging check.
+ * Includes Atomic Multi-PC duplicate lock and persistent messaging check.
  */
-export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail }) {
+export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail, sessionName = null, sessionId = null }) {
   // 1. Check persistent Master Messaging Switch
   const isMessagingPaused = !getOutboundMessagingStatus();
 
-  // 2. Multi-PC De-duplication Guard (In-Memory Lock)
+  // 2. In-Memory Fast De-duplication Guard
   const todayStr = new Date().toISOString().split('T')[0];
-  if (isDuplicateAlert(studentId, type, todayStr)) {
+  if (isDuplicateAlert(studentId, type, todayStr, sessionName)) {
     console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented for ${studentName} (${type}) - Already sent by connected PC instance!`);
     return { success: true, skipped: true, reason: 'Duplicate alert prevented' };
   }
 
-  // 3. Multi-PC De-duplication Guard (Database Cross-Check across all local & shared PCs)
+  // 3. 🛡️ ATOMIC MULTI-PC DISTRIBUTED LOCK (Database-Level Guarantee)
+  const lockKey = `${studentId}_${type}_${todayStr}_${sessionName || 'GEN'}`;
+  try {
+    await MessageLock.create({
+      lockKey,
+      instituteId,
+      studentId,
+      type,
+      sessionName: sessionName || 'General',
+      date: todayStr,
+      lockedBy: os.hostname()
+    });
+    recordSentAlert(studentId, type, todayStr, sessionName);
+  } catch (lockErr) {
+    if (lockErr.code === 11000 || lockErr.message?.includes('duplicate key')) {
+      recordSentAlert(studentId, type, todayStr, sessionName);
+      console.log(`[WhatsAppService] 🛡️ ATOMIC MULTI-PC LOCK: Duplicate prevented for ${studentName} (${type} - ${sessionName || 'General'}). Another PC instance already sent/locked this message!`);
+      return { success: true, skipped: true, reason: 'Duplicate alert prevented by Atomic Distributed Lock' };
+    }
+  }
+
+  // 4. Multi-PC De-duplication Guard (Historical SMSLog Database Cross-Check)
   try {
     const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000);
     const mappedType = type === 'WELCOME' ? 'welcome' : (type === 'ABSENT' ? 'absent' : (type === 'TEST_RESULT' ? 'test-result' : (type === 'OUT' ? 'attendance-exit' : 'attendance-entry')));
@@ -86,7 +108,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       status: { $in: ['delivered', 'sent'] }
     });
     if (existingLog) {
-      recordSentAlert(studentId, type, todayStr);
+      recordSentAlert(studentId, type, todayStr, sessionName);
       console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented in DB for ${studentName} (${type}) - Already logged by peer PC!`);
       return { success: true, skipped: true, reason: 'Duplicate alert already logged' };
     }
@@ -101,8 +123,17 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
 
   // Build message text based on type
   const pName = parentName || 'Parent';
+  const isStaffAlert = (typeof detail === 'string' && detail.includes('Staff Attendance')) || (sessionName && sessionName.includes('Duty'));
   let messageText;
-  if (type === 'IN') {
+  if (isStaffAlert) {
+    if (type === 'IN') {
+      messageText = `Dear ${studentName}, your staff attendance check-in has been safely recorded on ${formattedDate} at ${detail}. - Career Xone`;
+    } else if (type === 'OUT') {
+      messageText = `Dear ${studentName}, your staff attendance check-out has been safely recorded on ${formattedDate} at ${detail}. - Career Xone`;
+    } else {
+      messageText = `Dear ${studentName}, your staff attendance status has been updated on ${formattedDate} (${detail}). - Career Xone`;
+    }
+  } else if (type === 'IN') {
     messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} has safely arrived at the institute on ${formattedDate} at ${detail}. - Career Xone`;
   } else if (type === 'OUT') {
     messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} has left the institute on ${formattedDate} at ${detail}. - Career Xone`;
@@ -223,11 +254,16 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       parentPhone,
       message: messageText,
       timestamp: new Date().toISOString(),
-      status
+      status,
+      sessionName: sessionName || (typeof detail === 'string' && detail.includes(' for ') ? detail.split(' for ')[1]?.split(' (')[0]?.trim() : null),
+      sessionId: sessionId || null
     });
     await log.save();
-    console.log(`[WhatsAppService] SMSLog saved successfully (Type: ${log.type}, Status: ${status}).`);
+    console.log(`[WhatsAppService] SMSLog saved successfully (Type: ${log.type}, Status: ${status}, Session: ${log.sessionName || 'General'}).`);
+    return { success: status !== 'failed', status, logId: log.id, message: messageText };
   } catch (logErr) {
     console.error('[WhatsAppService] Failed to save SMSLog:', logErr.message);
+    return { success: false, error: logErr.message };
   }
 }
+

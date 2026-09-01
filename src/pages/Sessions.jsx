@@ -46,16 +46,17 @@ export default function Sessions() {
 
     try {
       if (isEditing) {
+        const sessionId = isEditing.id || isEditing._id;
         let updated = { ...isEditing, ...payload };
         if (backendOnline) {
           try {
-            const res = await api.updateSession(isEditing.id, payload);
+            const res = await api.updateSession(sessionId, payload);
             if (res) updated = res;
           } catch (apiErr) {
             console.warn('API update failed, updating locally:', apiErr.message);
           }
         }
-        setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
+        setSessions(prev => prev.map(s => (s.id === updated.id || s._id === updated._id || (s.id && isEditing.id && s.id === isEditing.id) || (s._id && isEditing._id && s._id === isEditing._id)) ? updated : s));
         toast.success('Session updated successfully!');
       } else {
         const newSession = { ...payload, id: generateId('SESS') };
@@ -90,7 +91,7 @@ export default function Sessions() {
           console.warn('API delete failed, removing locally:', apiErr.message);
         }
       }
-      setSessions(prev => prev.filter(s => s.id !== id));
+      setSessions(prev => prev.filter(s => s.id !== id && s._id !== id));
       toast.success('Session deleted successfully!');
     } catch (err) {
       toast.error('Failed to delete session');
@@ -100,14 +101,14 @@ export default function Sessions() {
   const handleEdit = (session) => {
     setIsEditing(session);
     let bIds = [];
-    if (Array.isArray(session.batchIds)) {
+    if (Array.isArray(session.batchIds) && session.batchIds.length > 0) {
       bIds = session.batchIds;
     } else if (session.batchId && session.batchId !== 'all') {
       bIds = session.batchId.split(',').map(s => s.trim()).filter(Boolean);
     }
 
     let tClasses = [];
-    if (Array.isArray(session.targetClasses)) {
+    if (Array.isArray(session.targetClasses) && session.targetClasses.length > 0) {
       tClasses = session.targetClasses;
     } else if (session.className && session.className !== 'all') {
       tClasses = session.className.split(',').map(s => s.trim()).filter(Boolean);

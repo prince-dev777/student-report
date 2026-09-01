@@ -1074,9 +1074,59 @@ export default function Attendance() {
     setLastScannedMap((prev) => ({ ...prev, [matchedStudent.id]: now }));
 
     // Determine active session name
-    const activeSession = selectedSessionId !== 'auto'
+    let activeSession = selectedSessionId !== 'auto'
       ? sessions.find(s => s.id === selectedSessionId || s._id === selectedSessionId)
       : null;
+
+    if (!activeSession && sessions && sessions.length > 0) {
+      const curHours = new Date().getHours();
+      const curMins = new Date().getMinutes();
+      const punchMin = curHours * 60 + curMins;
+
+      for (const sess of sessions) {
+        if (!sess.startTime || !sess.endTime) continue;
+        const [sH, sM] = sess.startTime.split(':').map(Number);
+        const [eH, eM] = sess.endTime.split(':').map(Number);
+        const startMin = sH * 60 + sM;
+        const endMin = eH * 60 + eM;
+
+        if (punchMin >= startMin - 45 && punchMin <= endMin + 30) {
+          let matchesBatch = true;
+          if (Array.isArray(sess.batchIds) && sess.batchIds.length > 0) {
+            matchesBatch = matchedStudent && sess.batchIds.some(b => String(b).trim().toLowerCase() === String(matchedStudent.batch).trim().toLowerCase());
+          } else if (sess.batchId && sess.batchId !== 'all') {
+            const bList = sess.batchId.split(',').map(b => b.trim().toLowerCase());
+            matchesBatch = matchedStudent && bList.includes(String(matchedStudent.batch).trim().toLowerCase());
+          }
+
+          let matchesClass = true;
+          if (Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) {
+            matchesClass = matchedStudent && sess.targetClasses.some(c => String(c).trim().toLowerCase() === String(matchedStudent.class).trim().toLowerCase());
+          } else if (sess.className && sess.className !== 'all') {
+            const cList = sess.className.split(',').map(c => c.trim().toLowerCase());
+            matchesClass = matchedStudent && cList.includes(String(matchedStudent.class).trim().toLowerCase());
+          }
+
+          if (matchesBatch && matchesClass) {
+            activeSession = sess;
+            break;
+          }
+        }
+      }
+
+      if (!activeSession) {
+        for (const sess of sessions) {
+          const [sH, sM] = (sess.startTime || '00:00').split(':').map(Number);
+          const [eH, eM] = (sess.endTime || '23:59').split(':').map(Number);
+          const startMin = sH * 60 + sM;
+          const endMin = eH * 60 + eM;
+          if (punchMin >= startMin - 45 && punchMin <= endMin + 30) {
+            activeSession = sess;
+            break;
+          }
+        }
+      }
+    }
 
     // Mark attendance
     markAttendance(matchedStudent.id, determinedType, activeSession?.name);

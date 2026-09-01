@@ -5,9 +5,12 @@ import mongoose from 'mongoose';
 import Student from '../models/Student.js';
 import Attendance from '../models/Attendance.js';
 import Session from '../models/Session.js';
+import Staff from '../models/Staff.js';
+import StaffAttendance from '../models/StaffAttendance.js';
 import Notification from '../models/Notification.js';
 import SMSLog from '../models/SMSLog.js';
 import { sendWhatsAppAlert } from './whatsappService.js';
+import { resolveSessionForStudent, timeStringToMinutes } from './sessionResolver.js';
 import { logInfo, logError, logWarn } from '../utils/logger.js';
 
 let autoSyncTimer = null;
@@ -213,6 +216,83 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       queryList.push({ rollNo: String(rollNumVal).padStart(4, '0') });
     }
 
+    // Step A: Check if rollNumber matches a Staff Member FIRST
+    const staffQuery = {
+      isDeleted: { $ne: true },
+      $or: [
+        { staffId: String(rollNumber).trim() },
+        { staffId: String(cleanRoll) },
+        { id: String(rollNumber).trim() },
+        { id: String(cleanRoll) }
+      ]
+    };
+    if (instituteId) staffQuery.instituteId = instituteId;
+    const staffMember = await Staff.findOne(staffQuery);
+
+    if (staffMember) {
+      const resolvedInstituteId = staffMember.instituteId;
+      const todayStr = punchDate && punchDate.length === 10 ? punchDate.replace(/\//g, '-') : new Date().toISOString().split('T')[0];
+      const formattedTime = punchTime || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+      let staffRecord = await StaffAttendance.findOne({
+        isDeleted: { $ne: true },
+        staffId: staffMember.staffId,
+        date: todayStr
+      });
+
+      let isNew = false;
+      if (!staffRecord) {
+        staffRecord = new StaffAttendance({
+          instituteId: resolvedInstituteId,
+          staffId: staffMember.staffId,
+          staffName: staffMember.name,
+          department: staffMember.department || 'General',
+          designation: staffMember.designation || 'Staff',
+          date: todayStr,
+          entryTime: type === 'IN' ? formattedTime : '--',
+          exitTime: type === 'OUT' ? formattedTime : '--',
+          status: 'present',
+          deviceSN: deviceSN || 'Biometric Device',
+          source: 'BIOMETRIC_PUSH'
+        });
+        isNew = true;
+      } else {
+        if (type === 'IN') {
+          if (!staffRecord.entryTime || staffRecord.entryTime === '--') {
+            staffRecord.entryTime = formattedTime;
+            isNew = true;
+          }
+        } else if (type === 'OUT') {
+          staffRecord.exitTime = formattedTime;
+          isNew = true;
+        }
+        staffRecord.status = 'present';
+      }
+
+      await staffRecord.save();
+
+      if (isNew && staffMember.phone) {
+        try {
+          await sendWhatsAppAlert({
+            instituteId: resolvedInstituteId,
+            studentId: staffMember.staffId || staffMember.id,
+            parentPhone: staffMember.phone,
+            studentName: staffMember.name,
+            parentName: staffMember.name,
+            type: type === 'IN' ? 'IN' : 'OUT',
+            detail: `${formattedTime} (Staff Attendance)`,
+            sessionName: `${staffMember.department || 'Staff'} Duty`
+          });
+        } catch (err) {
+          console.warn('[Biometric] Staff WhatsApp alert warning:', err.message);
+        }
+      }
+
+      logInfo('BIOMETRIC', `⭐ Staff Punch: ${staffMember.name} (#${staffMember.staffId}) -> ${type} at ${formattedTime}`);
+      return { success: true, isStaff: true, name: staffMember.name, staffId: staffMember.staffId, type, time: formattedTime };
+    }
+
+    // Step B: If Not Staff, Route to Student Attendance
     const studentQuery = {
       isDeleted: { $ne: true },
       $or: queryList
@@ -223,8 +303,8 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 
     const student = await Student.findOne(studentQuery);
     if (!student) {
-      logWarn('BIOMETRIC', `⚠️ Student not found for biometric roll/ID: ${rollNumber}`);
-      return { success: false, reason: `Student with roll ${rollNumber} not found in database` };
+      logWarn('BIOMETRIC', `⚠️ User not found for biometric roll/ID: ${rollNumber}`);
+      return { success: false, reason: `User with roll/ID ${rollNumber} not found in database` };
     }
 
     const resolvedInstituteId = student.instituteId;
@@ -270,57 +350,10 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     if (record.entryTime && record.entryTime !== '--' && !record.sessionName) {
       try {
         const sessions = await Session.find({ isDeleted: { $ne: true }, instituteId: resolvedInstituteId });
-        let entryMin = 0;
-        if (record.entryTime.includes('AM') || record.entryTime.includes('PM')) {
-          const [timePart, modifier] = record.entryTime.split(' ');
-          let [eH, eM] = timePart.split(':').map(Number);
-          if (eH === 12) eH = 0;
-          if (modifier === 'PM') eH += 12;
-          entryMin = eH * 60 + eM;
-        } else {
-          const [eH, eM] = record.entryTime.split(':').map(Number);
-          entryMin = eH * 60 + eM;
-        }
-
-        let bestMatch = null;
-        let bestScore = -1;
-        for (const sess of sessions) {
-          if (!sess.startTime || !sess.endTime) continue;
-          const [sH, sM] = sess.startTime.split(':').map(Number);
-          const [eH2, eM2] = sess.endTime.split(':').map(Number);
-          const startMin = sH * 60 + sM;
-          const endMin = eH2 * 60 + eM2;
-
-          if (entryMin >= startMin - 45 && entryMin <= endMin + 30) {
-            let matchesBatch = true;
-            if (Array.isArray(sess.batchIds) && sess.batchIds.length > 0) {
-              matchesBatch = student && sess.batchIds.includes(student.batch);
-            } else if (sess.batchId && sess.batchId !== 'all') {
-              const bList = sess.batchId.split(',').map(b => b.trim());
-              matchesBatch = student && bList.includes(student.batch);
-            }
-
-            let matchesClass = true;
-            if (Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) {
-              matchesClass = student && sess.targetClasses.includes(student.class);
-            } else if (sess.className && sess.className !== 'all') {
-              const cList = sess.className.split(',').map(c => c.trim());
-              matchesClass = student && cList.includes(student.class);
-            }
-
-            if (matchesBatch && matchesClass) {
-              let score = 0;
-              if ((Array.isArray(sess.batchIds) && sess.batchIds.length > 0) || (sess.batchId && sess.batchId !== 'all')) score += 1;
-              if ((Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) || (sess.className && sess.className !== 'all')) score += 1;
-              if (score > bestScore) {
-                bestScore = score;
-                bestMatch = sess;
-              }
-            }
-          }
-        }
-        if (bestMatch) {
-          record.sessionName = bestMatch.name;
+        const matchedSess = resolveSessionForStudent(record.entryTime, student, sessions);
+        if (matchedSess) {
+          record.sessionName = matchedSess.name;
+          record.sessionId = matchedSess.id || matchedSess._id;
         }
       } catch (sessErr) {}
     }
@@ -328,15 +361,11 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     // Calculate duration in minutes if both entry and exit are recorded
     if (record.entryTime && record.exitTime && record.entryTime !== '--' && record.exitTime !== '--') {
       try {
-        const getMins = (t) => {
-          const [timePart, modifier] = t.split(' ');
-          let [h, m] = timePart.split(':').map(Number);
-          if (h === 12) h = 0;
-          if (modifier === 'PM') h += 12;
-          return h * 60 + m;
-        };
-        const totalInMin = getMins(record.exitTime) - getMins(record.entryTime);
-        if (totalInMin > 0) record.durationMinutes = totalInMin;
+        const inMins = timeStringToMinutes(record.entryTime);
+        const outMins = timeStringToMinutes(record.exitTime);
+        if (inMins !== null && outMins !== null && outMins > inMins) {
+          record.durationMinutes = outMins - inMins;
+        }
       } catch (durErr) {}
     }
 
@@ -366,15 +395,21 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 
       // Trigger Parent WhatsApp Alert & Log to SMSLog DB collection
       if (student.parentPhone) {
-        sendWhatsAppAlert({
-          instituteId: resolvedInstituteId,
-          studentId: student.id,
-          parentPhone: student.parentPhone,
-          studentName: student.name,
-          parentName: student.parentName,
-          type: type,
-          detail: `${formattedTime}${sessionCtx}${type === 'OUT' ? durationStr : ''}`
-        }).catch((err) => console.warn('[Biometric] WhatsApp alert warning:', err.message));
+        try {
+          await sendWhatsAppAlert({
+            instituteId: resolvedInstituteId,
+            studentId: student.id,
+            parentPhone: student.parentPhone,
+            studentName: student.name,
+            parentName: student.parentName,
+            type: type,
+            sessionName: record.sessionName,
+            sessionId: record.sessionId,
+            detail: `${formattedTime}${sessionCtx}${type === 'OUT' ? durationStr : ''}`
+          });
+        } catch (err) {
+          console.warn('[Biometric] WhatsApp alert warning:', err.message);
+        }
       }
 
       // Add to live activity feed

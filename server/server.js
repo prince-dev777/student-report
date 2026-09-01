@@ -29,6 +29,7 @@ import { protect, authenticateToken } from './middleware/authMiddleware.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { sendWhatsAppAlert, getOutboundMessagingStatus, setOutboundMessagingStatus } from './services/whatsappService.js';
+import { resolveSessionForStudent, timeStringToMinutes } from './services/sessionResolver.js';
 import os from 'os';
 import {
   initializeWhatsAppClient,
@@ -2119,76 +2120,37 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
 
     // --- Calculate Duration and Resolve Session ---
     if (record.entryTime) {
-      // Find matching session based on entryTime and Student's course/batch
       if (!record.sessionName) {
-        const sessions = await Session.find({ isDeleted: { $ne: true }, instituteId: req.user.instituteId });
-        const student = await Student.findOne({ isDeleted: { $ne: true }, id: studentId, instituteId: req.user.instituteId });
-        const [eH, eM] = record.entryTime.split(':').map(Number);
-        const entryMin = eH * 60 + eM;
-        
-        let bestMatch = null;
-        let bestScore = -1;
-
-        for (const sess of sessions) {
-          const [sH, sM] = sess.startTime.split(':').map(Number);
-          const [eH2, eM2] = sess.endTime.split(':').map(Number);
-          const startMin = sH * 60 + sM;
-          const endMin = eH2 * 60 + eM2;
-          
-          // check if entryTime falls within session window (allow 30 min buffer before start)
-          if (entryMin >= startMin - 30 && entryMin <= endMin) {
-            // Check multi-course and multi-class student matching
-            let matchesBatch = true;
-            if (Array.isArray(sess.batchIds) && sess.batchIds.length > 0) {
-              matchesBatch = student && sess.batchIds.includes(student.batch);
-            } else if (sess.batchId && sess.batchId !== 'all') {
-              const bList = sess.batchId.split(',').map(b => b.trim());
-              matchesBatch = student && bList.includes(student.batch);
-            }
-
-            let matchesClass = true;
-            if (Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) {
-              matchesClass = student && sess.targetClasses.includes(student.class);
-            } else if (sess.className && sess.className !== 'all') {
-              const cList = sess.className.split(',').map(c => c.trim());
-              matchesClass = student && cList.includes(student.class);
-            }
-
-            if (matchesBatch && matchesClass) {
-              // Calculate score to prefer more specific sessions
-              let score = 0;
-              if ((Array.isArray(sess.batchIds) && sess.batchIds.length > 0) || (sess.batchId && sess.batchId !== 'all')) score += 1;
-              if ((Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) || (sess.className && sess.className !== 'all')) score += 1;
-              
-              if (score > bestScore) {
-                bestScore = score;
-                bestMatch = sess;
-              }
-            }
-          }
-        }
-        
-        if (bestMatch) {
-          record.sessionName = bestMatch.name;
+        const targetInstId = instId || req.user?.instituteId;
+        const queryInst = targetInstId ? { instituteId: targetInstId } : {};
+        const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
+        const student = await Student.findOne({ isDeleted: { $ne: true }, id: studentId });
+        const matchedSess = resolveSessionForStudent(record.entryTime, student, sessions);
+        if (matchedSess) {
+          record.sessionName = matchedSess.name;
+          record.sessionId = matchedSess.id || matchedSess._id;
         }
       }
     }
 
-    if (record.entryTime && record.exitTime) {
-      const [inH, inM] = record.entryTime.split(':').map(Number);
-      const [outH, outM] = record.exitTime.split(':').map(Number);
-      const totalInMin = (outH * 60 + outM) - (inH * 60 + inM);
-      if (totalInMin > 0) record.durationMinutes = totalInMin;
+    if (record.entryTime && record.exitTime && record.entryTime !== '--' && record.exitTime !== '--') {
+      const inMins = timeStringToMinutes(record.entryTime);
+      const outMins = timeStringToMinutes(record.exitTime);
+      if (inMins !== null && outMins !== null && outMins > inMins) {
+        record.durationMinutes = outMins - inMins;
+      }
     }
     await record.save();
 
     // Trigger WhatsApp Alerts and Notifications
-    const student = await Student.findOne({ isDeleted: { $ne: true },  id: studentId, instituteId: req.user.instituteId });
+    const student = await Student.findOne({ isDeleted: { $ne: true }, id: studentId });
     if (student) {
+      const resolvedInstId = instId || req.user?.instituteId || student.instituteId;
+
       // 1. Absent Alert
       if ((status === 'absent' || status === 'Absent') && !record.smsSent && student.parentPhone) {
         sendWhatsAppAlert({
-          instituteId: req.user.instituteId,
+          instituteId: resolvedInstId,
           studentId: student.id,
           parentPhone: student.parentPhone,
           studentName: student.name,
@@ -2208,21 +2170,23 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
         const message = `${student.name} has checked IN at ${entryTime}${sessionCtx}.`;
         
         await Notification.create({
-          instituteId: req.user.instituteId,
+          instituteId: resolvedInstId,
           studentId: student._id,
           title,
           message,
           type: 'ATTENDANCE'
-        });
+        }).catch(() => {});
 
         if (student.parentPhone) {
           sendWhatsAppAlert({
-            instituteId: req.user.instituteId,
+            instituteId: resolvedInstId,
             studentId: student.id,
             parentPhone: student.parentPhone,
             studentName: student.name,
             parentName: student.parentName,
             type: 'IN',
+            sessionName: record.sessionName,
+            sessionId: record.sessionId,
             detail: `${entryTime}${sessionCtx}`
           }).catch(err => console.error('Failed to send entry WhatsApp alert:', err.message));
         }
@@ -2236,21 +2200,23 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
         const message = `${student.name} has checked OUT at ${exitTime}${sessionCtx}${durationStr}.`;
         
         await Notification.create({
-          instituteId: req.user.instituteId,
+          instituteId: resolvedInstId,
           studentId: student._id,
           title,
           message,
           type: 'ATTENDANCE'
-        });
+        }).catch(() => {});
 
         if (student.parentPhone) {
           sendWhatsAppAlert({
-            instituteId: req.user.instituteId,
+            instituteId: resolvedInstId,
             studentId: student.id,
             parentPhone: student.parentPhone,
             studentName: student.name,
             parentName: student.parentName,
             type: 'OUT',
+            sessionName: record.sessionName,
+            sessionId: record.sessionId,
             detail: `${exitTime}${sessionCtx}${durationStr}`
           }).catch(err => console.error('Failed to send exit WhatsApp alert:', err.message));
         }
@@ -2267,7 +2233,16 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
 // ---- 🕒 Sessions API ----
 app.get('/api/sessions', authenticateToken, async (req, res) => {
   try {
-    const sessions = await Session.find({ isDeleted: { $ne: true }, instituteId: req.user.instituteId }).sort({ startTime: 1 });
+    const query = { isDeleted: { $ne: true } };
+    if (req.user && req.user.instituteId) {
+      query.$or = [
+        { instituteId: req.user.instituteId },
+        { instituteId: String(req.user.instituteId) },
+        { instituteId: { $exists: false } },
+        { instituteId: null }
+      ];
+    }
+    const sessions = await Session.find(query).sort({ startTime: 1 });
     res.json(sessions);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2276,7 +2251,7 @@ app.get('/api/sessions', authenticateToken, async (req, res) => {
 
 app.post('/api/sessions', authenticateToken, async (req, res) => {
   try {
-    const session = new Session({ ...req.body, instituteId: req.user.instituteId });
+    const session = new Session({ ...req.body, instituteId: req.user?.instituteId });
     await session.save();
     triggerBackgroundCloudSync();
     res.json(session);
@@ -2287,9 +2262,29 @@ app.post('/api/sessions', authenticateToken, async (req, res) => {
 
 app.put('/api/sessions/:id', authenticateToken, async (req, res) => {
   try {
+    const idParam = req.params.id;
+    const query = {
+      $or: [
+        { id: idParam },
+        ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: idParam }] : [])
+      ],
+      isDeleted: { $ne: true }
+    };
+    if (req.user && req.user.instituteId) {
+      query.$and = [
+        {
+          $or: [
+            { instituteId: req.user.instituteId },
+            { instituteId: String(req.user.instituteId) },
+            { instituteId: { $exists: false } },
+            { instituteId: null }
+          ]
+        }
+      ];
+    }
     const session = await Session.findOneAndUpdate(
-      { id: req.params.id, instituteId: req.user.instituteId, isDeleted: { $ne: true } },
-      req.body,
+      query,
+      { $set: req.body },
       { new: true }
     );
     if (!session) return res.status(404).json({ error: 'Session not found' });
@@ -2302,9 +2297,26 @@ app.put('/api/sessions/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
   try {
-    const session = await Session.findOneAndDelete(
-      { id: req.params.id, instituteId: req.user.instituteId }
-    );
+    const idParam = req.params.id;
+    const query = {
+      $or: [
+        { id: idParam },
+        ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: idParam }] : [])
+      ]
+    };
+    if (req.user && req.user.instituteId) {
+      query.$and = [
+        {
+          $or: [
+            { instituteId: req.user.instituteId },
+            { instituteId: String(req.user.instituteId) },
+            { instituteId: { $exists: false } },
+            { instituteId: null }
+          ]
+        }
+      ];
+    }
+    const session = await Session.findOneAndDelete(query);
     if (!session) return res.status(404).json({ error: 'Session not found' });
 
     await dualDelete('sessions', { $or: [{ _id: session._id }, { id: session.id }] });
@@ -3643,7 +3655,6 @@ let isPolling = false;
 async function pollPendingWhatsAppMessages() {
   if (isPolling) return;
   if (!getOutboundMessagingStatus()) return;
-  if (process.env.WHATSAPP_PROVIDER !== 'whatsapp-web') return;
 
   const state = getWhatsAppClientState();
   if (state.status !== 'ready') return;
@@ -3652,7 +3663,7 @@ async function pollPendingWhatsAppMessages() {
   try {
     const pendingLogs = await SMSLog.find({ isDeleted: { $ne: true },  status: 'pending' }).sort({ createdAt: 1 });
     if (pendingLogs && pendingLogs.length > 0) {
-      console.log(`[WhatsApp Poller] Found ${pendingLogs.length} pending messages.`);
+      console.log(`[WhatsApp Poller] Found ${pendingLogs.length} pending messages to deliver.`);
       for (const log of pendingLogs) {
         try {
           const phones = log.parentPhone.split(',').map(p => p.trim()).filter(Boolean);
@@ -3676,10 +3687,8 @@ async function pollPendingWhatsAppMessages() {
   }
 }
 
-// Auto-initialize local WhatsApp client if configured as provider & running locally
-const isElectronChildServerLocal = !!process.env.ELECTRON_RUN_AS_NODE;
-if (isElectronChildServerLocal && process.env.WHATSAPP_PROVIDER === 'whatsapp-web') {
-  initializeWhatsAppClient();
+// Start background poller loop (ticks every 5s)
+if (process.env.NODE_ENV !== 'test') {
   setInterval(pollPendingWhatsAppMessages, 5000);
 }
 

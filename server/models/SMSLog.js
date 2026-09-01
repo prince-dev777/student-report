@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const smsLogSchema = new mongoose.Schema({
-  instituteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institute', required: true },
+  instituteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institute', default: null },
   id: { type: String, required: true },
   type: { type: String, required: true },
   studentId: { type: String, required: true },
@@ -9,6 +9,8 @@ const smsLogSchema = new mongoose.Schema({
   message: { type: String, required: true },
   timestamp: { type: String, required: true },
   status: { type: String, default: 'sent', enum: ['pending', 'sent', 'delivered', 'failed'] },
+  sessionName: { type: String, default: null },
+  sessionId: { type: String, default: null },
   attachment: {
     data: String,
     mimetype: String,

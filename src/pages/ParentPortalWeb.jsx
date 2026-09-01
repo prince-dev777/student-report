@@ -1239,24 +1239,26 @@ export default function ParentPortalWeb() {
           {/* 1-Tap Quick Logout Button */}
           <button
             onClick={handleLogout}
-            title="Logout Account"
+            title="Logout from Parent App"
             aria-label="Logout"
             style={{
-              background: '#fff1f2',
+              background: 'linear-gradient(135deg, #fff1f2, #ffe4e6)',
               border: '1.5px solid #fecdd3',
               color: '#e11d48',
-              width: '32px',
+              padding: '0 8px',
               height: '32px',
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: '4px',
               cursor: 'pointer',
-              boxShadow: '0 1px 2px rgba(225, 29, 72, 0.08)',
+              boxShadow: '0 1px 3px rgba(225, 29, 72, 0.12)',
               transition: 'all 0.15s ease'
             }}
           >
-            <LogOut size={15} color="#e11d48" />
+            <LogOut size={14} color="#e11d48" />
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#e11d48' }}>Logout</span>
           </button>
         </div>
       </header>
@@ -2781,6 +2783,218 @@ export default function ParentPortalWeb() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ⚙️ Settings & Account Drawer */}
+      {showSettingsDrawer && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', padding: '16px'
+        }}>
+          <div style={{
+            background: '#ffffff', borderRadius: '22px', maxWidth: '420px', width: '100%',
+            padding: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', position: 'relative',
+            maxHeight: '90vh', overflowY: 'auto'
+          }}>
+            {/* Drawer Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Settings size={18} color="#0284c7" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 900, color: '#0f172a' }}>
+                    Settings & Account
+                  </h3>
+                  <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>
+                    Career Xone Parents Portal
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSettingsDrawer(false)}
+                style={{
+                  background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '30px', height: '30px',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >
+                <X size={16} color="#64748b" />
+              </button>
+            </div>
+
+            {/* Student Info Pill */}
+            {studentData && (
+              <div style={{
+                background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+                border: '1.5px solid #bae6fd',
+                borderRadius: '14px',
+                padding: '12px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '38px', height: '38px', borderRadius: '10px',
+                    background: '#0284c7', color: '#ffffff', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem'
+                  }}>
+                    {studentData.name ? studentData.name.charAt(0) : 'S'}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 900, color: '#0369a1' }}>
+                      {studentData.name}
+                    </h4>
+                    <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700 }}>
+                      Roll: {studentData.rollNo} • {formatBatchName(studentData.batch, studentData.class)}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowSettingsDrawer(false);
+                    setShowProfileModal(true);
+                  }}
+                  style={{
+                    background: '#ffffff', border: '1px solid #bae6fd', color: '#0284c7',
+                    padding: '5px 9px', borderRadius: '8px', fontSize: '0.70rem', fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Profile
+                </button>
+              </div>
+            )}
+
+            {/* Menu Options List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '18px' }}>
+              {/* Report Card */}
+              <button
+                onClick={() => {
+                  setShowSettingsDrawer(false);
+                  setShowReportCardModal(true);
+                }}
+                style={{
+                  width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                  padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <FileText size={17} color="#0284c7" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
+                    Download Official Report Card
+                  </span>
+                </div>
+                <ChevronRight size={16} color="#94a3b8" />
+              </button>
+
+              {/* Install App */}
+              <button
+                onClick={() => {
+                  setShowSettingsDrawer(false);
+                  handleInstallApp();
+                }}
+                style={{
+                  width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                  padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Smartphone size={17} color="#10b981" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
+                    Install Parents App to Home Screen
+                  </span>
+                </div>
+                <ChevronRight size={16} color="#94a3b8" />
+              </button>
+
+              {/* Notifications Setting */}
+              <button
+                onClick={handleRequestNotification}
+                style={{
+                  width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                  padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Bell size={17} color="#8b5cf6" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
+                    Lock-Screen Alerts ({notificationPermission === 'granted' ? 'Active 🔔' : 'Enable'})
+                  </span>
+                </div>
+                <ChevronRight size={16} color="#94a3b8" />
+              </button>
+
+              {/* Refresh Sync */}
+              <button
+                onClick={() => {
+                  setShowSettingsDrawer(false);
+                  handleManualRefresh();
+                }}
+                style={{
+                  width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                  padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <RefreshCw size={17} color="#f59e0b" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
+                    Sync Latest Data with Institute
+                  </span>
+                </div>
+                <ChevronRight size={16} color="#94a3b8" />
+              </button>
+
+              {/* Helpline */}
+              <a
+                href={`tel:${helplineNumber}`}
+                style={{
+                  width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                  padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  textDecoration: 'none', color: '#1e293b'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Phone size={17} color="#0284c7" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700 }}>
+                    Institute Helpline ({helplineNumber})
+                  </span>
+                </div>
+                <ChevronRight size={16} color="#94a3b8" />
+              </a>
+            </div>
+
+            {/* 🚪 PROMINENT LOGOUT BUTTON */}
+            <button
+              onClick={handleLogout}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '14px',
+                borderRadius: '14px',
+                fontWeight: 900,
+                fontSize: '0.92rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 6px 20px rgba(239, 68, 68, 0.35)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <LogOut size={18} /> Logout from Parents App (लॉगआउट)
+            </button>
           </div>
         </div>
       )}
