@@ -95,9 +95,10 @@ export function startSessionScheduler() {
           }
 
           // ------------------------------------------------------------------
-          // 2. Session End Missed-Exit Alert (e.g. 20:00 / Self Study end)
+          // 2. Session End Missed-Exit Alert (Only on final session of the day e.g. 22:00)
           // ------------------------------------------------------------------
-          if (currentSess.endTime === currentHHMM) {
+          const nextSess = i < instSessions.length - 1 ? instSessions[i + 1] : null;
+          if (currentSess.endTime === currentHHMM && !nextSess) {
             const exitKey = `${todayStr}_MISSED_EXIT_${currentSess.id}`;
             if (!automatedAlertsSent.has(exitKey)) {
               automatedAlertsSent.add(exitKey);
@@ -126,7 +127,7 @@ export function startSessionScheduler() {
                   }
                 }).catch(() => {});
               }
-              console.log(`⏰ [SessionScheduler] Missed-exit alerts checked for session: ${currentSess.name}`);
+              console.log(`⏰ [SessionScheduler] Missed-exit alerts checked for final session: ${currentSess.name}`);
             }
           }
         }

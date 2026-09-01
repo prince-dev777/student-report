@@ -4545,6 +4545,16 @@ app.listen(PORT, '0.0.0.0', () => {
     console.warn('[CloudflareTunnel] Notice:', err.message);
   });
 
+  // 🤖 Auto-initialize WhatsApp client on startup if session exists so it stays connected seamlessly
+  setTimeout(() => {
+    try {
+      console.log('🤖 [WhatsAppClient] Auto-starting WhatsApp Web client on boot...');
+      initializeWhatsAppClient();
+    } catch (err) {
+      console.warn('⚠️ [WhatsAppClient] Startup auto-init notice:', err.message);
+    }
+  }, 3000);
+
   // Self-ping service to prevent free-tier spin down (every 10 minutes)
   // Only activate when running as a cloud server (not inside Electron desktop)
   const isElectronChild = !!process.env.ELECTRON_RUN_AS_NODE;
