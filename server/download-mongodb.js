@@ -81,6 +81,11 @@ async function extractMongoDB() {
 }
 
 async function run() {
+  if (process.platform !== 'win32' || process.env.VERCEL || process.env.CI) {
+    console.log('ℹ️ Non-Windows or CI environment detected. Skipping local MongoDB binary setup.');
+    return;
+  }
+
   try {
     await downloadMongoDB();
     await extractMongoDB();
