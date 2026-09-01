@@ -60,6 +60,10 @@ function recordSentAlert(studentId, type, dateStr, sessionName = null) {
   }
 }
 
+export function resetSentAlertLockMap() {
+  sentAlertLockMap.clear();
+}
+
 /**
  * Sends a WhatsApp message to the specified parent phone number.
  * Logs the message details to the database (SMSLog).
@@ -69,30 +73,39 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   // 1. Check persistent Master Messaging Switch
   const isMessagingPaused = !getOutboundMessagingStatus();
 
+  // Extract / standardize sessionName from detail if not provided
+  const resolvedSessionName = sessionName || (
+    typeof detail === 'string' && detail.includes(' for ')
+      ? detail.split(' for ')[1]?.split(' (')[0]?.trim()
+      : (typeof detail === 'string' && detail.includes('(') && !detail.includes('(Duration:') && !detail.includes('(Staff Attendance)')
+          ? detail.split('(')[1]?.split(')')[0]?.trim()
+          : null)
+  );
+
   // 2. In-Memory Fast De-duplication Guard
   const todayStr = new Date().toISOString().split('T')[0];
-  if (isDuplicateAlert(studentId, type, todayStr, sessionName)) {
+  if (isDuplicateAlert(studentId, type, todayStr, resolvedSessionName)) {
     console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented for ${studentName} (${type}) - Already sent by connected PC instance!`);
     return { success: true, skipped: true, reason: 'Duplicate alert prevented' };
   }
 
   // 3. 🛡️ ATOMIC MULTI-PC DISTRIBUTED LOCK (Database-Level Guarantee)
-  const lockKey = `${studentId}_${type}_${todayStr}_${sessionName || 'GEN'}`;
+  const lockKey = `${studentId}_${type}_${todayStr}_${resolvedSessionName || 'GEN'}`;
   try {
     await MessageLock.create({
       lockKey,
       instituteId,
       studentId,
       type,
-      sessionName: sessionName || 'General',
+      sessionName: resolvedSessionName || 'General',
       date: todayStr,
       lockedBy: os.hostname()
     });
-    recordSentAlert(studentId, type, todayStr, sessionName);
+    recordSentAlert(studentId, type, todayStr, resolvedSessionName);
   } catch (lockErr) {
     if (lockErr.code === 11000 || lockErr.message?.includes('duplicate key')) {
-      recordSentAlert(studentId, type, todayStr, sessionName);
-      console.log(`[WhatsAppService] 🛡️ ATOMIC MULTI-PC LOCK: Duplicate prevented for ${studentName} (${type} - ${sessionName || 'General'}). Another PC instance already sent/locked this message!`);
+      recordSentAlert(studentId, type, todayStr, resolvedSessionName);
+      console.log(`[WhatsAppService] 🛡️ ATOMIC MULTI-PC LOCK: Duplicate prevented for ${studentName} (${type} - ${resolvedSessionName || 'General'}). Another PC instance already sent/locked this message!`);
       return { success: true, skipped: true, reason: 'Duplicate alert prevented by Atomic Distributed Lock' };
     }
   }

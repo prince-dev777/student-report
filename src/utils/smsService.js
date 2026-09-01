@@ -4,7 +4,16 @@
 // In production, replace sendSMS() with actual API call
 // to MSG91, Fast2SMS, Twilio, etc.
 
-import { generateId, getCurrentTime, getTodayStr } from './helpers';
+import { generateId, getCurrentTime, getTodayStr } from './helpers.js';
+
+export function formatDurationHuman(minutes) {
+  if (!minutes || isNaN(minutes) || minutes <= 0) return '';
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs > 0 && mins > 0) return `${hrs} hr${hrs > 1 ? 's' : ''} ${mins} min${mins > 1 ? 's' : ''}`;
+  if (hrs > 0) return `${hrs} hr${hrs > 1 ? 's' : ''}`;
+  return `${mins} min${mins > 1 ? 's' : ''}`;
+}
 
 // SMS Templates
 export const smsTemplates = {
@@ -13,9 +22,11 @@ export const smsTemplates = {
     return `Dear ${parentName}, this is to inform you that your ward ${studentName} has safely arrived at the institute at ${time}${sessionCtx}. - ${instituteName}`;
   },
 
-  attendanceExit: (parentName, studentName, time, instituteName = 'Institute', sessionName = null) => {
-    const sessionCtx = sessionName ? ` for ${sessionName}` : '';
-    return `Dear ${parentName}, this is to inform you that your ward ${studentName} has left the institute at ${time}${sessionCtx}. - ${instituteName}`;
+  attendanceExit: (parentName, studentName, time, instituteName = 'Institute', sessionName = null, durationMinutes = null) => {
+    const sessionCtx = sessionName ? ` after ${sessionName}` : '';
+    const formattedDuration = formatDurationHuman(durationMinutes);
+    const durationStr = formattedDuration ? ` (Duration: ${formattedDuration})` : '';
+    return `Dear ${parentName}, this is to inform you that your ward ${studentName} has left the institute at ${time}${sessionCtx}${durationStr}. - ${instituteName}`;
   },
 
   testResult: (parentName, studentName, testName, marks, totalMarks, percentage, rank, totalStudents, instituteName = 'Institute') =>

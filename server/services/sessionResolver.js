@@ -30,6 +30,15 @@ export function timeStringToMinutes(timeStr) {
   return null;
 }
 
+export function formatDurationHuman(minutes) {
+  if (!minutes || isNaN(minutes) || minutes <= 0) return '';
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs > 0 && mins > 0) return `${hrs} hr${hrs > 1 ? 's' : ''} ${mins} min${mins > 1 ? 's' : ''}`;
+  if (hrs > 0) return `${hrs} hr${hrs > 1 ? 's' : ''}`;
+  return `${mins} min${mins > 1 ? 's' : ''}`;
+}
+
 export function resolveSessionForStudent(punchTimeStr, student, sessions) {
   if (!sessions || !Array.isArray(sessions) || sessions.length === 0) return null;
   const punchMin = timeStringToMinutes(punchTimeStr);

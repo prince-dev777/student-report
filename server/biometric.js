@@ -24,6 +24,7 @@ import Session from './models/Session.js';
 import Notification from './models/Notification.js';
 import SMSLog from './models/SMSLog.js';
 import { sendWhatsAppAlert } from './services/whatsappService.js';
+import { formatDurationHuman } from './services/sessionResolver.js';
 import { logInfo, logError, logWarn } from './utils/logger.js';
 
 // ----------------------------------------------------------------------------
@@ -588,6 +589,12 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 
     // Trigger Parent WhatsApp Alert (Uses de-duplication lock)
     if (student.parentPhone) {
+      const formattedDuration = formatDurationHuman(record.durationMinutes);
+      const durationStr = formattedDuration ? ` (Duration: ${formattedDuration})` : '';
+      const sessionCtx = record.sessionName 
+        ? (effectiveType === 'OUT' ? ` after ${record.sessionName}` : ` for ${record.sessionName}`)
+        : '';
+
       try {
         await sendWhatsAppAlert({
           instituteId: resolvedInstituteId,
@@ -596,7 +603,9 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
           studentName: student.name,
           parentName: student.parentName,
           type: effectiveType,
-          detail: `${formattedTime}${record.sessionName ? ` for ${record.sessionName}` : ''}`
+          sessionName: record.sessionName,
+          sessionId: record.sessionId,
+          detail: `${formattedTime}${sessionCtx}${effectiveType === 'OUT' ? durationStr : ''}`
         });
       } catch (err) {
         console.warn('[Biometric] WhatsApp alert warning:', err.message);

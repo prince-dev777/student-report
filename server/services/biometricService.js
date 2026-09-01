@@ -10,7 +10,7 @@ import StaffAttendance from '../models/StaffAttendance.js';
 import Notification from '../models/Notification.js';
 import SMSLog from '../models/SMSLog.js';
 import { sendWhatsAppAlert } from './whatsappService.js';
-import { resolveSessionForStudent, timeStringToMinutes } from './sessionResolver.js';
+import { resolveSessionForStudent, timeStringToMinutes, formatDurationHuman } from './sessionResolver.js';
 import { logInfo, logError, logWarn } from '../utils/logger.js';
 
 let autoSyncTimer = null;
@@ -375,9 +375,12 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       }
       await record.save();
 
-      // Create in-app Notification
-      const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
-      const durationStr = record.durationMinutes ? ` (Duration: ${record.durationMinutes} mins)` : '';
+      // Format session and duration text
+      const formattedDuration = formatDurationHuman(record.durationMinutes);
+      const durationStr = formattedDuration ? ` (Duration: ${formattedDuration})` : '';
+      const sessionCtx = record.sessionName 
+        ? (type === 'OUT' ? ` after ${record.sessionName}` : ` for ${record.sessionName}`)
+        : '';
 
       // Create in-app Notification
       const title = type === 'IN' ? 'Check-In Alert' : 'Check-Out Alert';

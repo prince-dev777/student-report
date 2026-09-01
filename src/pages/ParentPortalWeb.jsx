@@ -3334,8 +3334,8 @@ export default function ParentPortalWeb() {
         borderTop: '1px solid #e2e8f0',
         padding: '6px 12px calc(6px + env(safe-area-inset-bottom, 0px))',
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '6px',
+        gridTemplateColumns: 'repeat(5, 1fr)',
+        gap: '4px',
         zIndex: 90,
         boxShadow: '0 -4px 20px rgba(15, 23, 42, 0.08)'
       }}>
@@ -3343,7 +3343,8 @@ export default function ParentPortalWeb() {
           { id: 'analytics', label: 'Analytics', icon: TrendingUp, activeColor: '#0284c7', count: null },
           { id: 'tests', label: 'Tests', icon: Award, activeColor: '#059669', count: testResults.length },
           { id: 'attendance', label: 'Attendance', icon: Calendar, activeColor: '#d97706', count: null },
-          { id: 'schedule', label: 'Notices', icon: Bell, activeColor: '#7c3aed', count: unreadNoticeCount }
+          { id: 'schedule', label: 'Notices', icon: Bell, activeColor: '#7c3aed', count: unreadNoticeCount },
+          { id: 'menu', label: 'Settings', icon: Settings, activeColor: '#e11d48', count: null, isAction: true }
         ].map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -3351,8 +3352,12 @@ export default function ParentPortalWeb() {
             <button
               key={item.id}
               onClick={() => {
-                setActiveTab(item.id);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (item.isAction) {
+                  setShowSettingsDrawer(true);
+                } else {
+                  setActiveTab(item.id);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
               }}
               style={{
                 background: isActive ? `${item.activeColor}15` : 'transparent',

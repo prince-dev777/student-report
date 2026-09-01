@@ -1,5 +1,5 @@
 // Progressive Web App (PWA) Service Worker for Career Xone Apps
-const CACHE_NAME = 'career-xone-v5';
+const CACHE_NAME = 'career-xone-v6';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',

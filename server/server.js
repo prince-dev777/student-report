@@ -29,7 +29,7 @@ import { protect, authenticateToken } from './middleware/authMiddleware.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { sendWhatsAppAlert, getOutboundMessagingStatus, setOutboundMessagingStatus } from './services/whatsappService.js';
-import { resolveSessionForStudent, timeStringToMinutes } from './services/sessionResolver.js';
+import { resolveSessionForStudent, timeStringToMinutes, formatDurationHuman } from './services/sessionResolver.js';
 import os from 'os';
 import {
   initializeWhatsAppClient,
@@ -2194,8 +2194,9 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
 
       // 3. Exit Alert
       if (isNewExit) {
-        const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
-        const durationStr = record.durationMinutes ? ` (Duration: ${record.durationMinutes} mins)` : '';
+        const formattedDuration = formatDurationHuman(record.durationMinutes);
+        const durationStr = formattedDuration ? ` (Duration: ${formattedDuration})` : '';
+        const sessionCtx = record.sessionName ? ` after ${record.sessionName}` : '';
         const title = 'Check-Out Alert';
         const message = `${student.name} has checked OUT at ${exitTime}${sessionCtx}${durationStr}.`;
         
@@ -3666,7 +3667,11 @@ async function pollPendingWhatsAppMessages() {
       console.log(`[WhatsApp Poller] Found ${pendingLogs.length} pending messages to deliver.`);
       for (const log of pendingLogs) {
         try {
-          const phones = log.parentPhone.split(',').map(p => p.trim()).filter(Boolean);
+          const phones = (log.parentPhone || '').split(',').map(p => p.trim()).filter(p => p && p.toLowerCase() !== 'not given');
+          if (phones.length === 0) {
+            await SMSLog.findOneAndUpdate({ _id: log._id }, { status: 'failed' });
+            continue;
+          }
           for (const phone of phones) {
             await sendWhatsAppMessageWeb(phone, log.message, log.attachment);
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -3677,7 +3682,7 @@ async function pollPendingWhatsAppMessages() {
           console.error(`[WhatsApp Poller] Failed to send message to ${log.parentPhone}:`, sendErr.message);
           await SMSLog.findOneAndUpdate({ _id: log._id }, { status: 'failed' });
         }
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 2500));
       }
     }
   } catch (err) {

@@ -170,17 +170,28 @@ export default function ShareApp() {
       return;
     }
 
+    const studentsWithPhone = students.filter(s => {
+      const p = String(s.parentPhone || '').replace(/\D/g, '');
+      return p.length >= 10;
+    });
+
+    if (studentsWithPhone.length === 0) {
+      toast.error("No students have valid parent phone numbers!");
+      return;
+    }
+
     const confirmSend = window.confirm(
-      `Are you sure you want to send the Parents App link via WhatsApp to ALL ${students.length} parents?`
+      `Are you sure you want to send the Parents App link via WhatsApp to ${studentsWithPhone.length} parents?\n\n(Messages will be queued safely and dispatched one by one with a 2.5s rate-limit delay to prevent spam blocks)`
     );
     
     if (confirmSend) {
       setIsSending(true);
       try {
-        const studentIds = students.map(s => s.id);
-        const message = `Dear Parent ({{studentName}}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: {{studentName}} (Roll: {{rollNo}})\n🔑 User ID: {{parentUserId}}\n🔒 Password: {{password}}`;
+        const studentIds = studentsWithPhone.map(s => s.id);
+        const instName = user?.instituteName || 'Career Xone Pro';
+        const message = `Dear Parent ({{studentName}}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: {{studentName}} (Roll: {{rollNo}})\n🔑 User ID: {{parentUserId}}\n🔒 Password: {{password}}\n\n- ${instName}`;
         await sendBulkManualSMS(studentIds, message);
-        toast.success(`WhatsApp blast queued for ${students.length} parents!`);
+        toast.success(`WhatsApp blast queued for ${studentsWithPhone.length} parents! 📱`);
       } catch (error) {
         toast.error("Failed to send links.");
         console.error(error);

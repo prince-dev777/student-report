@@ -321,6 +321,10 @@ export async function sendWhatsAppMessageWeb(to, message, attachment = null) {
   // Format phone number: remove non-digits
   let cleanNumber = to.replace(/\D/g, '');
   
+  if (!cleanNumber || cleanNumber.length < 10) {
+    throw new Error(`Invalid phone number: "${to}" (Must contain at least 10 digits)`);
+  }
+
   // Ensure it has country code (default to 91 if it's 10 digits)
   if (cleanNumber.length === 10) {
     cleanNumber = '91' + cleanNumber;
