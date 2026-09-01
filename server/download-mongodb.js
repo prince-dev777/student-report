@@ -13,6 +13,11 @@ const BIN_DIR = path.join(__dirname, 'bin');
 const ZIP_PATH = path.join(BIN_DIR, 'mongodb.zip');
 
 async function downloadMongoDB() {
+  if (process.platform !== 'win32' || process.env.VERCEL || process.env.CI) {
+    console.log('ℹ️ Non-Windows or CI environment detected. Skipping Windows mongod.exe binary download.');
+    return;
+  }
+
   if (fs.existsSync(path.join(BIN_DIR, 'mongod.exe'))) {
     console.log('✅ mongod.exe already exists. Skipping download.');
     return;
