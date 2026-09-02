@@ -1160,6 +1160,115 @@ app.post('/api/parent/login', async (req, res) => {
   }
 });
 
+// ---- 👨‍👩‍👧 Parent Portal Real-time Data Sync Endpoint ----
+app.get('/api/parent/data', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Token expired or invalid' });
+    }
+
+    const studentId = decoded.studentId || decoded.id;
+    if (!studentId) {
+      return res.status(400).json({ error: 'Invalid token payload' });
+    }
+
+    const student = await Student.findOne({ 
+      isDeleted: { $ne: true },
+      $or: [
+        { _id: mongoose.Types.ObjectId.isValid(studentId) ? studentId : null },
+        { id: String(studentId) },
+        { rollNo: String(studentId) }
+      ].filter(q => q._id !== null || q.id || q.rollNo)
+    });
+
+    if (!student) {
+      return res.status(404).json({ error: 'Student record not found' });
+    }
+
+    // Fetch Attendance records for this student
+    const attendanceRecords = await Attendance.find({ isDeleted: { $ne: true }, studentId: student.id })
+      .sort({ date: -1 })
+      .limit(60);
+
+    // Fetch Test Results for this student
+    const studentIdentifiers = [student.id, String(student.rollNo)];
+    if (student._id) studentIdentifiers.push(student._id.toString());
+
+    const rawTestResults = await TestResult.find({ 
+      isDeleted: { $ne: true },  
+      studentId: { $in: studentIdentifiers.filter(Boolean) }, 
+      status: { $in: ['Published', 'published'] }
+    })
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    const enrichedResults = await attachTestDetailsToResults(rawTestResults, student.instituteId);
+
+    const totalAtt = attendanceRecords.length;
+    const presentAtt = attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length;
+    const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
+
+    // Fetch upcoming scheduled tests for student's batch
+    const upcomingTests = await getUpcomingTestsForStudent(student, student.instituteId);
+
+    // Fetch notices / notifications for student & institute
+    const noticesRaw = await Notification.find({
+      instituteId: student.instituteId,
+      $or: [
+        { studentId: student._id },
+        { studentId: null }
+      ]
+    })
+      .sort({ createdAt: -1 })
+      .limit(15);
+
+    const notices = noticesRaw.map(n => ({
+      id: n._id,
+      title: n.title,
+      message: n.message,
+      type: n.type || 'GENERAL',
+      createdAt: n.createdAt
+    }));
+
+    res.json({
+      success: true,
+      student_data: student,
+      student: {
+        id: student.id,
+        name: student.name,
+        rollNo: student.rollNo,
+        parentUserId: student.parentUserId || student.rollNo,
+        batch: student.batch,
+        class: student.class,
+        parentName: student.parentName,
+        parentPhone: student.parentPhone,
+        photo: student.photo,
+        attendanceRate: attPercentage,
+        presentCount: presentAtt,
+        totalAttendanceCount: totalAtt
+      },
+      attendance: attendanceRecords,
+      tests: enrichedResults,
+      testResults: enrichedResults,
+      upcomingTests: upcomingTests || [],
+      notifications: notices || [],
+      notices: notices || []
+    });
+  } catch (err) {
+    console.error('Parent Data Fetch Error:', err);
+    res.status(500).json({ error: 'Server error fetching parent data' });
+  }
+});
+
 // ---- 📞 Cloud WhatsApp Queue Endpoints (Token Authenticated) ----
 app.get('/api/whatsapp/pending', async (req, res) => {
   const token = req.query.token || req.headers['x-whatsapp-token'];
@@ -1523,7 +1632,8 @@ app.get('/api/students', authenticateToken, async (req, res) => {
     const students = await Student.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     res.json({
       students,
@@ -3661,32 +3771,67 @@ async function pollPendingWhatsAppMessages() {
   if (state.status !== 'ready') return;
 
   isPolling = true;
+  let batchSentCounter = 0;
+
   try {
-    const pendingLogs = await SMSLog.find({ isDeleted: { $ne: true },  status: 'pending' }).sort({ createdAt: 1 });
+    const pendingLogs = await SMSLog.find({ isDeleted: { $ne: true }, status: 'pending' }).sort({ createdAt: 1 });
     if (pendingLogs && pendingLogs.length > 0) {
-      console.log(`[WhatsApp Poller] Found ${pendingLogs.length} pending messages to deliver.`);
+      console.log(`[WhatsApp Anti-Ban Queue] Found ${pendingLogs.length} pending messages. Dispatching safely with human-like pacing...`);
+      
       for (const log of pendingLogs) {
+        // Double check client state before every message
+        const currentState = getWhatsAppClientState();
+        if (currentState.status !== 'ready') {
+          console.log('[WhatsApp Anti-Ban Queue] Client is no longer ready. Pausing queue.');
+          break;
+        }
+
         try {
           const phones = (log.parentPhone || '').split(',').map(p => p.trim()).filter(p => p && p.toLowerCase() !== 'not given');
           if (phones.length === 0) {
             await SMSLog.findOneAndUpdate({ _id: log._id }, { status: 'failed' });
             continue;
           }
+          
           for (const phone of phones) {
             await sendWhatsAppMessageWeb(phone, log.message, log.attachment);
-            await new Promise(resolve => setTimeout(resolve, 500));
+            batchSentCounter++;
+            
+            // Random human delay between recipients of the same log (3 to 6s)
+            const recipientDelay = Math.floor(Math.random() * 3000) + 3000;
+            await new Promise(resolve => setTimeout(resolve, recipientDelay));
           }
+
           await SMSLog.findOneAndUpdate({ _id: log._id }, { status: 'delivered' });
-          console.log(`[WhatsApp Poller] Message sent to ${log.parentPhone} and status updated to delivered.`);
+          console.log(`[WhatsApp Anti-Ban Queue] ✅ Delivered to ${log.parentPhone} (Batch Count: ${batchSentCounter})`);
         } catch (sendErr) {
-          console.error(`[WhatsApp Poller] Failed to send message to ${log.parentPhone}:`, sendErr.message);
-          await SMSLog.findOneAndUpdate({ _id: log._id }, { status: 'failed' });
+          console.error(`[WhatsApp Anti-Ban Queue] ❌ Delivery error to ${log.parentPhone}:`, sendErr.message);
+          // If account is restricted or rate-limited, fail gracefully and pause queue
+          if (sendErr.message && (sendErr.message.includes('restricted') || sendErr.message.includes('rate-overlimit') || sendErr.message.includes('blocked'))) {
+            console.warn('[WhatsApp Anti-Ban Queue] ⚠️ WhatsApp rate restriction detected. Pausing queue for safety.');
+            await SMSLog.findOneAndUpdate({ _id: log._id }, { status: 'pending' });
+            break;
+          } else {
+            await SMSLog.findOneAndUpdate({ _id: log._id }, { status: 'failed' });
+          }
         }
-        await new Promise(resolve => setTimeout(resolve, 2500));
+
+        // Anti-Ban Cooldown Protection:
+        // 1. After every 10 messages, take a 60-90 second natural rest
+        if (batchSentCounter > 0 && batchSentCounter % 10 === 0) {
+          const restDuration = Math.floor(Math.random() * 30000) + 60000; // 60s to 90s
+          console.log(`[WhatsApp Anti-Ban Queue] ☕ Sent ${batchSentCounter} messages. Taking a natural ${(restDuration / 1000).toFixed(0)}s cooldown rest to protect account health...`);
+          await new Promise(resolve => setTimeout(resolve, restDuration));
+        } else {
+          // 2. Extra Safe human interval between different students/parents (20 to 45 seconds)
+          const humanInterval = Math.floor(Math.random() * 25000) + 20000;
+          console.log(`[WhatsApp Anti-Ban Queue] Waiting ${(humanInterval / 1000).toFixed(1)}s before next message...`);
+          await new Promise(resolve => setTimeout(resolve, humanInterval));
+        }
       }
     }
   } catch (err) {
-    console.error('[WhatsApp Poller] Polling error:', err.message);
+    console.error('[WhatsApp Anti-Ban Queue] Queue processing error:', err.message);
   } finally {
     isPolling = false;
   }

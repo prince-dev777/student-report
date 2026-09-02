@@ -68,17 +68,42 @@ async function restoreFromCloud() {
         }
 
         // Upsert to Local
-        const bulkOps = docs.map(doc => ({
-          replaceOne: {
-            filter: { _id: doc._id },
-            replacement: doc,
-            upsert: true
-          }
-        }));
+        let bulkOps;
+        if (collName === 'attendances') {
+          bulkOps = docs.map(doc => ({
+            replaceOne: {
+              filter: { studentId: doc.studentId, date: doc.date },
+              replacement: doc,
+              upsert: true
+            }
+          }));
+        } else {
+          bulkOps = docs.map(doc => ({
+            replaceOne: {
+              filter: { _id: doc._id },
+              replacement: doc,
+              upsert: true
+            }
+          }));
+        }
 
-        const result = await localColl.bulkWrite(bulkOps, { ordered: false });
+        let result = { upsertedCount: 0, modifiedCount: 0 };
+        try {
+          result = await localColl.bulkWrite(bulkOps, { ordered: false });
+        } catch (bulkErr) {
+          if (bulkErr.result) result = bulkErr.result;
+        }
         totalRestored += docs.length;
-        logInfo('RESTORE', `Collection [${collName}]: Restored ${docs.length} documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
+        logInfo('RESTORE', `Collection [${collName}]: Restored ${docs.length} documents (${result.upsertedCount || 0} new, ${result.modifiedCount || 0} updated).`);
+
+        // Purge orphaned local records for configuration collections (sessions, institutes, users)
+        if (['sessions', 'institutes', 'users', 'smslogs'].includes(collName)) {
+          const cloudIds = docs.map(d => d._id);
+          const purgeRes = await localColl.deleteMany({ _id: { $nin: cloudIds } });
+          if (purgeRes.deletedCount > 0) {
+            logInfo('RESTORE', `Collection [${collName}]: Cleaned up ${purgeRes.deletedCount} orphaned local records.`);
+          }
+        }
       } catch (collErr) {
         logWarn('RESTORE', `Warning on collection [${collName}]: ${collErr.message}`);
       }

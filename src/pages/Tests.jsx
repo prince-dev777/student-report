@@ -703,6 +703,22 @@ export default function Tests() {
           return;
         }
 
+        // Check if student belongs to the target batch / class for this test
+        const isEligibleInTest = (!test.batch || matchedStudent.batch === test.batch) && isStudentInTestClasses(matchedStudent.class, test);
+        if (!isEligibleInTest) {
+          currentErrors.push({
+            rollNumber: r.rollNo || matchedStudent.rollNo,
+            studentName: matchedStudent.name,
+            error: `⚠️ Batch/Class Mismatch: Student belongs to "${matchedStudent.class || matchedStudent.batch}" (${getCourseName(matchedStudent.batch)}), but this test is for "${getCourseName(test.batch)}" (${test.targetClass || 'All Classes'}).`,
+            details: `File: ${r.filename || 'Unknown file'}. OMR sheet evaluated (${r.marks} marks) but kept separate from this test leaderboard.`,
+            omrSheetImage: r.omrSheetImage,
+            filename: r.filename,
+            isBatchMismatch: true
+          });
+          console.warn(`OMR Scan: Student ${matchedStudent.name} (Roll ${matchedStudent.rollNo}) belongs to batch ${matchedStudent.batch}, test is for ${test.batch}. Excluded from leaderboard.`);
+          return;
+        }
+
         if (isDuplicate) {
           currentErrors.push({
             rollNumber: r.rollNo || matchedStudent.rollNo,

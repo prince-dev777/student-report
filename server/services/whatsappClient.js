@@ -55,6 +55,26 @@ async function safeDeleteDir(dirPath, maxRetries = 3) {
   return false;
 }
 
+// Helper: safely remove SingletonLock, lockfile, and Chromium socket locks without deleting session credentials
+function clearChromiumLocks(dirPath) {
+  if (!fs.existsSync(dirPath)) return;
+  const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'lockfile'];
+  try {
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        clearChromiumLocks(fullPath);
+      } else if (lockFiles.includes(entry.name)) {
+        try {
+          fs.unlinkSync(fullPath);
+          console.log(`[WhatsAppClient] 🔓 Cleared stale Chromium lock file: ${fullPath}`);
+        } catch (e) {}
+      }
+    }
+  } catch (err) {}
+}
+
 // Helper: kill any leftover Chromium/Chrome processes from whatsapp-web.js
 function killLeftoverChromium() {
   return new Promise((resolve) => {
@@ -74,6 +94,14 @@ function killLeftoverChromium() {
     } catch (e) {
       console.log('[WhatsAppClient] Failed to scan/kill zombie Chrome processes:', e.message);
     }
+
+    // Clear stale locks from saved session folders so Chromium can bind cleanly
+    try {
+      const dataPath = getAuthDataPath();
+      clearChromiumLocks(path.join(dataPath, 'data', '.wwebjs_auth'));
+      clearChromiumLocks(path.join(dataPath, '.wwebjs_auth'));
+    } catch (e) {}
+
     resolve();
   });
 }
@@ -147,6 +175,10 @@ export function initializeWhatsAppClient() {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
+        '--disable-blink-features=AutomationControlled',
+        '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        '--disable-infobars',
+        '--window-size=1280,800',
         '--no-first-run',
         '--no-zygote',
         '--disable-gpu'
@@ -283,13 +315,13 @@ export function initializeWhatsAppClient() {
         const delay = RETRY_DELAYS[initRetryCount - 1] || 15000;
         console.log(`[WhatsAppClient] Will retry in ${delay / 1000}s...`);
         
-        // If "browser already running", try to clean up first
-        if (err.message && err.message.includes('already running')) {
+        // If "browser already running" or locked, kill leftover process and clear lock files
+        if (err.message && (err.message.includes('already running') || err.message.includes('EBUSY') || err.message.includes('lock'))) {
           killLeftoverChromium().then(() => {
             const dataPath = getAuthDataPath();
-            safeDeleteDir(path.join(dataPath, '.wwebjs_auth')).then(() => {
-              setTimeout(() => initializeWhatsAppClient(), delay);
-            });
+            clearChromiumLocks(path.join(dataPath, 'data', '.wwebjs_auth'));
+            clearChromiumLocks(path.join(dataPath, '.wwebjs_auth'));
+            setTimeout(() => initializeWhatsAppClient(), delay);
           });
         } else {
           setTimeout(() => initializeWhatsAppClient(), delay);
@@ -335,21 +367,43 @@ export async function sendWhatsAppMessageWeb(to, message, attachment = null) {
     cleanNumber = `${cleanNumber}@c.us`;
   }
 
-  console.log(`[WhatsAppClient] Sending message to ${cleanNumber}: "${message.slice(0, 40)}..."`);
+  console.log(`[WhatsAppClient] 🛡️ [Anti-Ban Guard] Preparing human-like delivery to ${cleanNumber}`);
   
+  // 1. Simulate Human Typing Indicator before sending
+  try {
+    const chat = await client.getChatById(cleanNumber);
+    if (chat && typeof chat.sendStateTyping === 'function') {
+      await chat.sendStateTyping();
+      // Natural typing delay between 1.5s and 3.5s based on message length
+      const typingDelay = Math.min(3500, Math.max(1500, Math.floor(Math.random() * 2000) + 1500));
+      await new Promise(resolve => setTimeout(resolve, typingDelay));
+    }
+  } catch (typingErr) {
+    // Non-fatal, proceed with sending
+  }
+
+  // 2. Add subtle micro-entropy (multi-char invisible zero-width permutations) for 100% unique cryptographic hashes
+  const zwChars = ['\u200B', '\u200C', '\u200D', '\uFEFF'];
+  let zeroWidthVariation = '';
+  const seqLength = Math.floor(Math.random() * 6) + 8; // 8 to 13 chars (over 1,000,000 unique permutations)
+  for (let k = 0; k < seqLength; k++) {
+    zeroWidthVariation += zwChars[Math.floor(Math.random() * zwChars.length)];
+  }
+  const secureMessage = `${message}${zeroWidthVariation}`;
+
   if (attachment && attachment.data) {
     try {
       const { MessageMedia } = pkg;
       const media = new MessageMedia(attachment.mimetype, attachment.data, attachment.filename);
-      const response = await client.sendMessage(cleanNumber, message, { media });
+      const response = await client.sendMessage(cleanNumber, secureMessage, { media });
       return response;
     } catch (e) {
       console.error(`[WhatsAppClient] Failed to send media: ${e.message}. Falling back to text.`);
-      const response = await client.sendMessage(cleanNumber, message);
+      const response = await client.sendMessage(cleanNumber, secureMessage);
       return response;
     }
   } else {
-    const response = await client.sendMessage(cleanNumber, message);
+    const response = await client.sendMessage(cleanNumber, secureMessage);
     return response;
   }
 }

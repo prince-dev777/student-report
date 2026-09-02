@@ -400,15 +400,18 @@ async function pollPendingWhatsAppMessages() {
     const pendingLogs = await response.json();
 
     if (pendingLogs && pendingLogs.length > 0) {
-      console.log(`[WhatsApp Poller] Found ${pendingLogs.length} pending messages.`);
+      console.log(`[WhatsApp Anti-Ban Queue] Found ${pendingLogs.length} pending messages. Dispatching safely...`);
+      let batchSentCounter = 0;
       
       for (const log of pendingLogs) {
         try {
           const phones = log.parentPhone.split(',').map(p => p.trim()).filter(Boolean);
           for (const phone of phones) {
             await sendWhatsAppMessageWeb(phone, log.message, log.attachment);
-            // Small delay between sending to two numbers of the same student
-            await new Promise(resolve => setTimeout(resolve, 500));
+            batchSentCounter++;
+            // Human delay between numbers of same student (3 to 5s)
+            const recDelay = Math.floor(Math.random() * 2000) + 3000;
+            await new Promise(resolve => setTimeout(resolve, recDelay));
           }
           
           await fetch(`${cloudUrl}/api/whatsapp/status?token=${token}`, {
@@ -416,9 +419,9 @@ async function pollPendingWhatsAppMessages() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ logId: log.id, status: 'delivered' })
           });
-          console.log(`[WhatsApp Poller] Message sent to ${log.parentPhone} and status updated to delivered.`);
+          console.log(`[WhatsApp Anti-Ban Queue] ✅ Delivered to ${log.parentPhone}`);
         } catch (sendErr) {
-          console.error(`[WhatsApp Poller] Failed to send message to ${log.parentPhone}:`, sendErr.message);
+          console.error(`[WhatsApp Anti-Ban Queue] ❌ Delivery error to ${log.parentPhone}:`, sendErr.message);
           
           await fetch(`${cloudUrl}/api/whatsapp/status?token=${token}`, {
             method: 'POST',
@@ -427,8 +430,14 @@ async function pollPendingWhatsAppMessages() {
           });
         }
         
-        // Rate limit: 2 seconds delay between messages to prevent bans
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Anti-Ban Cooldown Protection:
+        if (batchSentCounter > 0 && batchSentCounter % 12 === 0) {
+          console.log(`[WhatsApp Anti-Ban Queue] ☕ Cooldown pause (60s)...`);
+          await new Promise(resolve => setTimeout(resolve, 60000));
+        } else {
+          const humanInterval = Math.floor(Math.random() * 7000) + 8000;
+          await new Promise(resolve => setTimeout(resolve, humanInterval));
+        }
       }
     }
   } catch (err) {

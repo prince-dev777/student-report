@@ -67,13 +67,20 @@ export async function mirrorWrite(collectionName, doc) {
 }
 
 /**
- * Direct Dual-Delete: Permanently deletes record and related items from BOTH Local and Cloud DBs
+ * Direct Dual-Delete: Permanently deletes record and related items from BOTH Local and Cloud DBs,
+ * and leaves a tombstone on Cloud Atlas so other PCs automatically delete their local copy on sync.
  */
 export async function dualDelete(collectionName, filter, cascadeRelations = []) {
   try {
     const localColl = getLocalCollection(collectionName);
     const cloudColl = await getCloudCollection(collectionName);
     const fixedFilter = fixObjectIds(filter);
+
+    // 0. Gather IDs of records being deleted for tombstones
+    let docsToDelete = [];
+    try {
+      docsToDelete = await localColl.find(fixedFilter, { projection: { _id: 1, id: 1 } }).toArray();
+    } catch (e) {}
 
     // 1. Delete from Local DB
     const localRes = await localColl.deleteMany(fixedFilter);
@@ -86,11 +93,22 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
     }
 
     // 3. Handle cascaded relations
+    const cascadedTombstones = [];
     for (const rel of cascadeRelations) {
       try {
         const localRelColl = getLocalCollection(rel.collection);
         const cloudRelColl = await getCloudCollection(rel.collection);
         const fixedRelFilter = fixObjectIds(rel.filter);
+
+        const relDocs = await localRelColl.find(fixedRelFilter, { projection: { _id: 1, id: 1 } }).toArray().catch(() => []);
+        relDocs.forEach(d => {
+          cascadedTombstones.push({
+            collectionName: rel.collection,
+            docId: String(d._id),
+            customId: d.id ? String(d.id) : null,
+            deletedAt: new Date()
+          });
+        });
 
         await localRelColl.deleteMany(fixedRelFilter);
         if (cloudRelColl) {
@@ -99,6 +117,33 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
       } catch (relErr) {
         logWarn('SYNC_DELETE', `Cascade delete notice on [${rel.collection}]: ${relErr.message}`);
       }
+    }
+
+    // 4. Save tombstones to Cloud Atlas (so PC-2 deletes them and never pushes them back)
+    try {
+      const cloudConn = await connectCloudDb();
+      if (cloudConn && cloudConn.readyState === 1) {
+        const cloudDb = cloudConn.useDb('test').db;
+        const tombstonesColl = cloudDb.collection('deletedrecords');
+        // Ensure TTL Index exists
+        tombstonesColl.createIndex({ deletedAt: 1 }, { expireAfterSeconds: 1209600 }).catch(() => {});
+
+        const allTombstones = [
+          ...docsToDelete.map(d => ({
+            collectionName,
+            docId: String(d._id),
+            customId: d.id ? String(d.id) : null,
+            deletedAt: new Date()
+          })),
+          ...cascadedTombstones
+        ];
+
+        if (allTombstones.length > 0) {
+          await tombstonesColl.insertMany(allTombstones, { ordered: false }).catch(() => {});
+        }
+      }
+    } catch (tombErr) {
+      logWarn('SYNC_DELETE', `Tombstone record notice: ${tombErr.message}`);
     }
 
     logInfo('SYNC_DELETE', `🗑️ Dual-deleted ${localRes.deletedCount} local & ${cloudDeleted} cloud docs from [${collectionName}]`);
@@ -116,6 +161,7 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
 /**
  * Full Two-Way Synchronization Engine
  * Safe Two-Way Sync: Never wipes Cloud when Local is empty. Pulls missing records from Cloud to Local.
+ * Enforces Cloud Tombstones so PC-2 immediately purges locally deleted records without resurrection.
  */
 export async function performFullSync() {
   if (!isLocalDbReady()) {
@@ -136,12 +182,39 @@ export async function performFullSync() {
   try {
     const cloudDb = cloudConn.useDb('test').db;
 
+    // Fetch active Cloud tombstones (deleted on other PCs)
+    let cloudTombstones = [];
+    try {
+      cloudTombstones = await cloudDb.collection('deletedrecords').find({}).toArray();
+    } catch (tErr) {}
+
     for (const collName of ALL_COLLECTIONS) {
       try {
         const localColl = mongoose.connection.collection(collName);
         const cloudColl = cloudDb.collection(collName);
 
-        // Fetch Local docs
+        // 0. Purge any Local docs that have tombstones on Cloud
+        const collTombstones = cloudTombstones.filter(t => t.collectionName === collName);
+        if (collTombstones.length > 0) {
+          const tDocIds = collTombstones.map(t => t.docId).filter(Boolean);
+          const tCustomIds = collTombstones.map(t => t.customId).filter(Boolean);
+          const tObjectIds = tDocIds.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
+
+          const tombFilter = {
+            $or: [
+              { _id: { $in: [...tDocIds, ...tObjectIds] } },
+              ...(tCustomIds.length > 0 ? [{ id: { $in: tCustomIds } }] : [])
+            ]
+          };
+
+          const purgeRes = await localColl.deleteMany(tombFilter).catch(() => ({ deletedCount: 0 }));
+          if (purgeRes.deletedCount > 0) {
+            totalPurged += purgeRes.deletedCount;
+            logInfo('SYNC', `🧹 Purged ${purgeRes.deletedCount} locally deleted records from [${collName}] via Cloud tombstones`);
+          }
+        }
+
+        // Fetch Local docs after tombstone purge
         const localDocs = await localColl.find({}).toArray();
         const activeLocalDocs = localDocs.filter(d => !d.isDeleted);
         const deletedLocalIds = localDocs.filter(d => d.isDeleted).map(d => d._id);
@@ -232,6 +305,15 @@ export async function performFullSync() {
               totalPulled += missingInLocal.length;
               logInfo('SYNC', `📥 Pulled ${missingInLocal.length} new records from Cloud into [${collName}]`);
             }
+
+            // For sessions and core config collections, ensure local matches cloud exactly (purge deleted sessions/institutes from other PCs)
+            if (['sessions', 'institutes', 'users'].includes(collName)) {
+              const cloudIds = cloudDocs.map(d => d._id);
+              const purgeRes = await localColl.deleteMany({ _id: { $nin: cloudIds } }).catch(() => ({ deletedCount: 0 }));
+              if (purgeRes.deletedCount > 0) {
+                logInfo('SYNC', `🧹 Cleaned up ${purgeRes.deletedCount} stale ${collName} from Local DB`);
+              }
+            }
           }
         }
 
@@ -307,6 +389,15 @@ export async function pullAndRestoreFromCloud() {
           await localColl.bulkWrite(batch, { ordered: false });
         }
         totalRestored += docs.length;
+
+        // Purge orphaned local records for configuration collections (sessions, institutes, users)
+        if (['sessions', 'institutes', 'users', 'smslogs'].includes(collName)) {
+          const cloudIds = fixedDocs.map(d => d._id);
+          const purgeRes = await localColl.deleteMany({ _id: { $nin: cloudIds } }).catch(() => ({ deletedCount: 0 }));
+          if (purgeRes.deletedCount > 0) {
+            logInfo('PULL', `Cleaned up ${purgeRes.deletedCount} orphaned local records from [${collName}]`);
+          }
+        }
       } catch (collErr) {
         logWarn('PULL', `Warning pulling [${collName}]: ${collErr.message}`);
       }

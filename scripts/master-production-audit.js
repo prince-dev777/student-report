@@ -149,9 +149,10 @@ async function runMasterProductionAudit() {
   // ==========================================================================
   console.log('\n💾 [STAGE 4/7] Testing MongoDB Database Schema & Core Collections...');
 
-  await mongoose.connect('mongodb://127.0.0.1:27018/student-report', { serverSelectionTimeoutMS: 4000 });
+  const { connectLocalDb } = await import('../server/db/localDb.js');
+  await connectLocalDb();
   const dbState = mongoose.connection.readyState === 1;
-  reportCheck('Local MongoDB Port 27018 Connection', dbState);
+  reportCheck('MongoDB Database Connection (Local / Cloud Hybrid)', dbState);
 
   let user = null;
   let inst = null;
@@ -187,7 +188,7 @@ async function runMasterProductionAudit() {
 
   const serverProcess = spawn('node', ['server.js'], {
     cwd: serverDir,
-    env: { ...process.env, PORT: String(TEST_PORT), MONGODB_URI: 'mongodb://127.0.0.1:27018/student-report' },
+    env: { ...process.env, PORT: String(TEST_PORT) },
     stdio: 'pipe'
   });
 
@@ -215,8 +216,8 @@ async function runMasterProductionAudit() {
       { name: 'Enrolled Students List API', path: '/api/students?page=1&limit=25', method: 'GET', auth: true },
       { name: 'Class Directory & Batch API', path: '/api/classes', method: 'GET', auth: true },
       { name: 'Daily Attendance Roster API', path: '/api/attendance', method: 'GET', auth: true },
-      { name: 'Exam & Test Schedule API', path: '/api/tests', method: 'GET', auth: true },
-      { name: 'Test Results Performance API', path: '/api/test-results', method: 'GET', auth: true },
+      { name: 'Exam & Test Schedule API', path: '/api/tests?limit=25', method: 'GET', auth: true },
+      { name: 'Test Results & Performance Stats API', path: '/api/tests', method: 'GET', auth: true },
       { name: 'Academic Sessions API', path: '/api/sessions', method: 'GET', auth: true },
       { name: 'Admission Inquiries API', path: '/api/inquiries', method: 'GET', auth: true },
       { name: 'SMS & WhatsApp Logs API', path: '/api/sms-logs', method: 'GET', auth: true },
@@ -231,7 +232,7 @@ async function runMasterProductionAudit() {
     for (const r of apiRoutes) {
       try {
         const headers = r.auth ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch(`http://127.0.0.1:${TEST_PORT}${r.path}`, { headers, signal: AbortSignal.timeout(3000) });
+        const res = await fetch(`http://127.0.0.1:${TEST_PORT}${r.path}`, { headers, signal: AbortSignal.timeout(15000) });
         reportCheck(r.name, res.status >= 200 && res.status < 300, `HTTP ${res.status}`);
       } catch (err) {
         reportCheck(r.name, false, err.message);

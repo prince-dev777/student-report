@@ -105,20 +105,34 @@ export default function OMRScanner() {
           }
           return false;
         });
+        const testObj = tests.find(t => t.id === selectedTest);
         if (student) {
-          mappedResults.push({
-            studentId: student.id,
-            mongoStudentId: student._id,
-            studentName: student.name,
-            rollNo: rollClean || r.rollNo,
-            marks: r.marks,
-            correctCount: r.correctCount,
-            wrongCount: r.wrongCount,
-            studentAnswers: r.studentAnswers,
-            omrSheetImage: r.omrSheetImage
-          });
+          const isEligible = !testObj || (
+            (!testObj.batch || student.batch === testObj.batch) &&
+            (!testObj.targetClass || String(testObj.targetClass).includes(student.class) || (Array.isArray(testObj.targetClasses) && testObj.targetClasses.includes(student.class)))
+          );
+
+          if (isEligible) {
+            mappedResults.push({
+              studentId: student.id,
+              mongoStudentId: student._id,
+              studentName: student.name,
+              rollNo: rollClean || r.rollNo,
+              marks: r.marks,
+              correctCount: r.correctCount,
+              wrongCount: r.wrongCount,
+              studentAnswers: r.studentAnswers,
+              omrSheetImage: r.omrSheetImage
+            });
+          } else {
+            localErrors.push({
+              error: `Batch Mismatch: Student belongs to "${student.class || student.batch}", but test is for "${testObj.batch || 'Other'}"`,
+              rollNumber: r.rollNo,
+              studentName: student.name
+            });
+          }
         } else {
-          localErrors.push({ error: 'Student not found in database', rollNumber: r.rollNo });
+          localErrors.push({ error: 'Roll No not found in database', rollNumber: r.rollNo });
         }
       }
       

@@ -318,7 +318,10 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       instituteId: resolvedInstituteId
     });
 
+    let effectiveType = type;
     let isNewPunch = false;
+    const currentMins = timeStringToMinutes(formattedTime) || 0;
+
     if (!record) {
       record = new Attendance({
         instituteId: resolvedInstituteId,
@@ -326,23 +329,59 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
         studentId: student.id,
         date: todayStr,
         status: 'present',
-        entryTime: type === 'IN' ? formattedTime : '--',
-        exitTime: type === 'OUT' ? formattedTime : '--',
+        entryTime: formattedTime,
+        exitTime: '--',
         smsSent: false
       });
+      effectiveType = 'IN';
       isNewPunch = true;
     } else {
-      if (type === 'IN') {
-        if (!record.entryTime || record.entryTime === '--') {
-          record.entryTime = formattedTime;
-          isNewPunch = true;
-        }
-      } else if (type === 'OUT') {
-        if (!record.exitTime || record.exitTime === '--') {
-          record.exitTime = formattedTime;
-          isNewPunch = true;
-        }
+      const entryMins = timeStringToMinutes(record.entryTime);
+      const exitMins = timeStringToMinutes(record.exitTime);
+
+      // 1. Anti-Bounce: If punched within 2 minutes of entry time, ignore as accidental rapid double-punch
+      if (record.entryTime && record.entryTime !== '--' && entryMins !== null && Math.abs(currentMins - entryMins) < 2) {
+        logInfo('BIOMETRIC', `⚡ Anti-Bounce: ${student.name} (Roll ${student.rollNo}) punched within 2 mins of Entry (${record.entryTime}). Ignored.`);
+        return {
+          success: true,
+          isDuplicate: true,
+          isStaff: false,
+          name: student.name,
+          rollNo: student.rollNo,
+          type: 'IN',
+          time: formattedTime,
+          message: 'Rapid duplicate punch ignored (Anti-Bounce)'
+        };
       }
+
+      // 2. Anti-Bounce: If already checked OUT and punched within 2 minutes of exit time, ignore
+      if (record.exitTime && record.exitTime !== '--' && exitMins !== null && Math.abs(currentMins - exitMins) < 2) {
+        logInfo('BIOMETRIC', `⚡ Anti-Bounce: ${student.name} (Roll ${student.rollNo}) punched within 2 mins of Exit (${record.exitTime}). Ignored.`);
+        return {
+          success: true,
+          isDuplicate: true,
+          isStaff: false,
+          name: student.name,
+          rollNo: student.rollNo,
+          type: 'OUT',
+          time: formattedTime,
+          message: 'Rapid duplicate punch ignored (Anti-Bounce)'
+        };
+      }
+
+      // 3. Normal Check-In (if entry was not recorded yet)
+      if (!record.entryTime || record.entryTime === '--') {
+        record.entryTime = formattedTime;
+        effectiveType = 'IN';
+        isNewPunch = true;
+      } 
+      // 4. Valid Check-Out (if student punches after 15+ minutes from entry)
+      else if (entryMins !== null && currentMins - entryMins >= 15) {
+        record.exitTime = formattedTime;
+        effectiveType = 'OUT';
+        isNewPunch = true;
+      }
+
       record.status = 'present';
     }
 
@@ -379,12 +418,12 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       const formattedDuration = formatDurationHuman(record.durationMinutes);
       const durationStr = formattedDuration ? ` (Duration: ${formattedDuration})` : '';
       const sessionCtx = record.sessionName 
-        ? (type === 'OUT' ? ` after ${record.sessionName}` : ` for ${record.sessionName}`)
+        ? (effectiveType === 'OUT' ? ` after ${record.sessionName}` : ` for ${record.sessionName}`)
         : '';
 
       // Create in-app Notification
-      const title = type === 'IN' ? 'Check-In Alert' : 'Check-Out Alert';
-      const message = `${student.name} (Roll ${student.rollNo}) has checked ${type} at ${formattedTime}${sessionCtx}${type === 'OUT' ? durationStr : ''}.`;
+      const title = effectiveType === 'IN' ? 'Check-In Alert' : 'Check-Out Alert';
+      const message = `${student.name} (Roll ${student.rollNo}) has checked ${effectiveType} at ${formattedTime}${sessionCtx}${effectiveType === 'OUT' ? durationStr : ''}.`;
       try {
         const notification = new Notification({
           instituteId: resolvedInstituteId,
@@ -405,10 +444,10 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
             parentPhone: student.parentPhone,
             studentName: student.name,
             parentName: student.parentName,
-            type: type,
+            type: effectiveType,
             sessionName: record.sessionName,
             sessionId: record.sessionId,
-            detail: `${formattedTime}${sessionCtx}${type === 'OUT' ? durationStr : ''}`
+            detail: `${formattedTime}${sessionCtx}${effectiveType === 'OUT' ? durationStr : ''}`
           });
         } catch (err) {
           console.warn('[Biometric] WhatsApp alert warning:', err.message);
@@ -421,7 +460,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
         studentName: student.name,
         rollNo: student.rollNo,
         studentId: student.id,
-        type: type,
+        type: effectiveType,
         time: formattedTime,
         date: todayStr,
         session: record.sessionName || 'General Session',
@@ -430,8 +469,8 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       });
       if (recentPunches.length > 25) recentPunches.pop();
 
-      logInfo('BIOMETRIC', `✅ New ${type} punch recorded for ${student.name} (Roll ${student.rollNo}) at ${formattedTime}`);
-      return { success: true, isNew: true, studentName: student.name, rollNumber: student.rollNo, type, time: formattedTime };
+      logInfo('BIOMETRIC', `✅ New ${effectiveType} punch recorded for ${student.name} (Roll ${student.rollNo}) at ${formattedTime}`);
+      return { success: true, isNew: true, studentName: student.name, rollNumber: student.rollNo, type: effectiveType, time: formattedTime };
     }
 
     return { success: true, isNew: false, studentName: student.name, rollNumber: student.rollNo, type, time: formattedTime };

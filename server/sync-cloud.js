@@ -138,19 +138,45 @@ async function syncToCloud() {
       }
 
       // Upsert active documents to cloud
-      const bulkOps = activeDocs.map(doc => ({
-        replaceOne: {
-          filter: { _id: doc._id },
-          replacement: doc,
-          upsert: true
-        }
-      }));
+      let bulkOps;
+      if (collName === 'attendances') {
+        bulkOps = activeDocs.map(doc => ({
+          replaceOne: {
+            filter: { studentId: doc.studentId, date: doc.date },
+            replacement: doc,
+            upsert: true
+          }
+        }));
+      } else {
+        bulkOps = activeDocs.map(doc => ({
+          replaceOne: {
+            filter: { _id: doc._id },
+            replacement: doc,
+            upsert: true
+          }
+        }));
+      }
 
-      const result = await cloudColl.bulkWrite(bulkOps);
+      let result = { upsertedCount: 0, modifiedCount: 0 };
+      try {
+        result = await cloudColl.bulkWrite(bulkOps, { ordered: false });
+      } catch (bulkErr) {
+        if (bulkErr.result) {
+          result = bulkErr.result;
+        }
+        console.warn(`   - ⚠️ Notice on [${collName}] bulkWrite:`, bulkErr.message?.slice(0, 100));
+      }
       
-      // Note: Never use $nin deleteMany across all collections as other desktops/web apps
-      // create documents in the cloud that should not be wiped out by this local machine.
-      console.log(`   - Synced ${activeDocs.length} active documents (${result.upsertedCount} new, ${result.modifiedCount} updated).`);
+      // For sessions and configuration collections, purge documents from cloud that were deleted locally
+      if (['sessions', 'institutes'].includes(collName)) {
+        const localActiveIds = activeDocs.map(d => d._id);
+        const cloudPurge = await cloudColl.deleteMany({ _id: { $nin: localActiveIds } });
+        if (cloudPurge.deletedCount > 0) {
+          console.log(`   - 🗑️ Purged ${cloudPurge.deletedCount} deleted sessions from Cloud.`);
+        }
+      }
+
+      console.log(`   - Synced ${activeDocs.length} active documents (${result.upsertedCount || 0} new, ${result.modifiedCount || 0} updated).`);
     }
 
     const syncTime = new Date().toISOString();

@@ -512,6 +512,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
   let record = await Attendance.findOne(attQuery);
   let effectiveType = type;
   let isNewPunch = false;
+  const currentMins = parseTimeToMins(formattedTime);
 
   if (!record) {
     record = new Attendance({
@@ -520,32 +521,71 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       studentId: student.id,
       date: todayStr,
       status: 'present',
-      entryTime: type === 'IN' ? formattedTime : '--',
-      exitTime: type === 'OUT' ? formattedTime : '--',
+      entryTime: formattedTime,
+      exitTime: '--',
       smsSent: false
     });
+    effectiveType = 'IN';
     isNewPunch = true;
   } else {
-    if (type === 'IN') {
-      if (!record.entryTime || record.entryTime === '--') {
-        record.entryTime = formattedTime;
-        isNewPunch = true;
-      } else {
-        // If already punched IN, check if student is punching again when leaving (> 15 mins later)
-        const entryMins = parseTimeToMins(record.entryTime);
-        const currentMins = parseTimeToMins(formattedTime);
-        if (currentMins - entryMins >= 15) {
-          record.exitTime = formattedTime;
-          effectiveType = 'OUT';
-          isNewPunch = true;
-        }
-      }
-    } else if (type === 'OUT') {
+    const entryMins = parseTimeToMins(record.entryTime);
+    const exitMins = parseTimeToMins(record.exitTime);
+
+    // 1. Anti-Bounce: If punched within 2 minutes of entry time, ignore as accidental rapid double-punch
+    if (record.entryTime && record.entryTime !== '--' && Math.abs(currentMins - entryMins) < 2) {
+      logInfo('BIOMETRIC', `⚡ Anti-Bounce: ${student.name} (Roll ${student.rollNo}) punched within 2 mins of Entry (${record.entryTime}). Ignored.`);
+      return {
+        success: true,
+        isDuplicate: true,
+        isStaff: false,
+        name: student.name,
+        rollNo: student.rollNo,
+        type: 'IN',
+        time: formattedTime,
+        message: 'Rapid duplicate punch ignored (Anti-Bounce)'
+      };
+    }
+
+    // 2. Anti-Bounce: If already checked OUT and punched within 2 minutes of exit time, ignore
+    if (record.exitTime && record.exitTime !== '--' && Math.abs(currentMins - exitMins) < 2) {
+      logInfo('BIOMETRIC', `⚡ Anti-Bounce: ${student.name} (Roll ${student.rollNo}) punched within 2 mins of Exit (${record.exitTime}). Ignored.`);
+      return {
+        success: true,
+        isDuplicate: true,
+        isStaff: false,
+        name: student.name,
+        rollNo: student.rollNo,
+        type: 'OUT',
+        time: formattedTime,
+        message: 'Rapid duplicate punch ignored (Anti-Bounce)'
+      };
+    }
+
+    // 3. Normal Check-In (if entry was not recorded yet)
+    if (!record.entryTime || record.entryTime === '--') {
+      record.entryTime = formattedTime;
+      effectiveType = 'IN';
+      isNewPunch = true;
+    } 
+    // 4. Valid Check-Out (if student punches after 15+ minutes from entry)
+    else if (currentMins - entryMins >= 15) {
       record.exitTime = formattedTime;
       effectiveType = 'OUT';
       isNewPunch = true;
     }
+
     record.status = 'present';
+  }
+
+  // Calculate duration in minutes if both entry and exit are recorded
+  if (record.entryTime && record.exitTime && record.entryTime !== '--' && record.exitTime !== '--') {
+    try {
+      const inM = parseTimeToMins(record.entryTime);
+      const outM = parseTimeToMins(record.exitTime);
+      if (outM > inM) {
+        record.durationMinutes = outM - inM;
+      }
+    } catch (durErr) {}
   }
 
   // Auto-match session based on punch time

@@ -15,31 +15,39 @@ export async function connectLocalDb() {
   const cloudFallbackUri = process.env.CLOUD_MONGODB_URI || 
     'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 
+  // 1. Try Local Embedded MongoDB (Port 27018)
   try {
     logInfo('LOCAL_DB', `Connecting to Local MongoDB at ${primaryUri}...`);
     localConnection = await mongoose.connect(primaryUri, {
-      serverSelectionTimeoutMS: 2000,
-      connectTimeoutMS: 2000
+      serverSelectionTimeoutMS: 1200,
+      connectTimeoutMS: 1200
     });
-    logInfo('LOCAL_DB', '✅ Connected to Local MongoDB (Port 27018).');
+    logInfo('LOCAL_DB', '✅ Connected to Local MongoDB (Port 27018). Offline mode ready.');
     return localConnection;
   } catch (err1) {
+    // 2. Try Standard Local MongoDB (Port 27017)
     try {
       logInfo('LOCAL_DB', `Port 27018 unavailable, trying standard port 27017...`);
       localConnection = await mongoose.connect(fallbackLocalUri, {
-        serverSelectionTimeoutMS: 2000,
-        connectTimeoutMS: 2000
+        serverSelectionTimeoutMS: 1200,
+        connectTimeoutMS: 1200
       });
-      logInfo('LOCAL_DB', '✅ Connected to Local MongoDB (Port 27017).');
+      logInfo('LOCAL_DB', '✅ Connected to Local MongoDB (Port 27017). Offline mode ready.');
       return localConnection;
     } catch (err2) {
-      logWarn('LOCAL_DB', 'Local mongod is not active. Connecting to Cloud Atlas fallback...');
-      localConnection = await mongoose.connect(cloudFallbackUri, {
-        serverSelectionTimeoutMS: 10000,
-        connectTimeoutMS: 10000
-      });
-      logInfo('LOCAL_DB', '✅ Connected to Cloud Atlas.');
-      return localConnection;
+      // 3. Fallback to Cloud Atlas (if internet is available)
+      logWarn('LOCAL_DB', 'Local mongod is not active. Attempting Cloud Atlas fallback...');
+      try {
+        localConnection = await mongoose.connect(cloudFallbackUri, {
+          serverSelectionTimeoutMS: 3000,
+          connectTimeoutMS: 3000
+        });
+        logInfo('LOCAL_DB', '✅ Connected to Cloud Atlas.');
+        return localConnection;
+      } catch (cloudErr) {
+        logWarn('LOCAL_DB', `⚠️ Running in Offline Standalone Mode (No Cloud Connection: ${cloudErr.message})`);
+        throw cloudErr;
+      }
     }
   }
 }
