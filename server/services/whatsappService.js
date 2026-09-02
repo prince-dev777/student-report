@@ -70,11 +70,11 @@ export function resetSentAlertLockMap() {
  * Includes Atomic Multi-PC duplicate lock and persistent messaging check.
  */
 export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail, sessionName = null, sessionId = null }) {
-  // 0. App-First Mode: Route Daily Attendance Punches to Parents Mobile App (Zero WhatsApp Load & Zero Ban Risk)
-  const isAttendancePunch = (type === 'IN' || type === 'OUT');
+  // 0. App-First Mode: Route Daily Attendance Punches & Session Alerts to Parents Mobile App (Zero WhatsApp Load & Zero Ban Risk)
+  const isAttendanceRelated = (type === 'IN' || type === 'OUT' || type === 'SESSION_CONTINUE' || type === 'MISSED_EXIT');
   const allowWhatsAppAttendance = process.env.ENABLE_WHATSAPP_ATTENDANCE === 'true';
-  if (isAttendancePunch && !allowWhatsAppAttendance) {
-    return { success: true, skipped: true, reason: 'Attendance routed to Parents Mobile App Notifications' };
+  if (isAttendanceRelated && !allowWhatsAppAttendance) {
+    return { success: true, skipped: true, reason: 'Attendance & session alerts routed to Parents Mobile App Notifications' };
   }
 
   // 1. Check persistent Master Messaging Switch

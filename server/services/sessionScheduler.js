@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import Session from '../models/Session.js';
 import Student from '../models/Student.js';
 import Attendance from '../models/Attendance.js';
+import Notification from '../models/Notification.js';
+import { mirrorWrite } from '../db/syncEngine.js';
 import { sendWhatsAppAlert } from './whatsappService.js';
 
 // Cache to prevent duplicate automated alerts within the same day
@@ -70,27 +72,42 @@ export function startSessionScheduler() {
 
               for (const att of openAttendances) {
                 const student = await Student.findOne({ id: att.studentId, isDeleted: { $ne: true } });
-                if (!student || !student.parentPhone) continue;
+                if (!student) continue;
 
-                // Send WhatsApp/SMS alert
-                await sendWhatsAppAlert({
-                  instituteId: student.instituteId || currentSess.instituteId,
-                  studentId: student.id,
-                  parentPhone: student.parentPhone,
-                  studentName: student.name,
-                  parentName: student.parentName,
-                  type: 'SESSION_CONTINUE',
-                  detail: {
-                    prevSession: prevSess.name,
-                    nextSession: currentSess.name
-                  }
-                }).catch(() => {});
+                // Create In-App Notification directly for Parents Mobile App
+                try {
+                  const notif = new Notification({
+                    instituteId: student.instituteId || currentSess.instituteId,
+                    studentId: student._id || student.id,
+                    title: 'Self Study Continued',
+                    message: `${student.name} did not check out after ${prevSess.name} and is continuing at the institute for ${currentSess.name}.`,
+                    type: 'ATTENDANCE'
+                  });
+                  await notif.save();
+                  mirrorWrite('notifications', notif.toObject ? notif.toObject() : notif);
+                } catch (notifErr) {}
+
+                // Send WhatsApp alert ONLY if explicitly enabled by admin config
+                if (process.env.ENABLE_WHATSAPP_ATTENDANCE === 'true' && student.parentPhone) {
+                  await sendWhatsAppAlert({
+                    instituteId: student.instituteId || currentSess.instituteId,
+                    studentId: student.id,
+                    parentPhone: student.parentPhone,
+                    studentName: student.name,
+                    parentName: student.parentName,
+                    type: 'SESSION_CONTINUE',
+                    detail: {
+                      prevSession: prevSess.name,
+                      nextSession: currentSess.name
+                    }
+                  }).catch(() => {});
+                }
 
                 // Update sessionName to the current new session
                 att.sessionName = currentSess.name;
                 await att.save().catch(() => {});
               }
-              console.log(`⏰ [SessionScheduler] Rollover alert sent for session: ${currentSess.name}`);
+              console.log(`⏰ [SessionScheduler] Rollover In-App notification sent for session: ${currentSess.name}`);
             }
           }
 
@@ -112,22 +129,38 @@ export function startSessionScheduler() {
 
               for (const att of openAttendances) {
                 const student = await Student.findOne({ id: att.studentId, isDeleted: { $ne: true } });
-                if (!student || !student.parentPhone) continue;
+                if (!student) continue;
 
-                await sendWhatsAppAlert({
-                  instituteId: student.instituteId || currentSess.instituteId,
-                  studentId: student.id,
-                  parentPhone: student.parentPhone,
-                  studentName: student.name,
-                  parentName: student.parentName,
-                  type: 'MISSED_EXIT',
-                  detail: {
-                    sessionName: currentSess.name,
-                    time: currentSess.endTime
-                  }
-                }).catch(() => {});
+                // Create In-App Notification directly for Parents Mobile App
+                try {
+                  const notif = new Notification({
+                    instituteId: student.instituteId || currentSess.instituteId,
+                    studentId: student._id || student.id,
+                    title: 'Check-Out Reminder',
+                    message: `${student.name} did not record a check-out punch before the end of ${currentSess.name} (${currentSess.endTime}).`,
+                    type: 'ATTENDANCE'
+                  });
+                  await notif.save();
+                  mirrorWrite('notifications', notif.toObject ? notif.toObject() : notif);
+                } catch (notifErr) {}
+
+                // Send WhatsApp alert ONLY if explicitly enabled by admin config
+                if (process.env.ENABLE_WHATSAPP_ATTENDANCE === 'true' && student.parentPhone) {
+                  await sendWhatsAppAlert({
+                    instituteId: student.instituteId || currentSess.instituteId,
+                    studentId: student.id,
+                    parentPhone: student.parentPhone,
+                    studentName: student.name,
+                    parentName: student.parentName,
+                    type: 'MISSED_EXIT',
+                    detail: {
+                      sessionName: currentSess.name,
+                      time: currentSess.endTime
+                    }
+                  }).catch(() => {});
+                }
               }
-              console.log(`⏰ [SessionScheduler] Missed-exit alerts checked for final session: ${currentSess.name}`);
+              console.log(`⏰ [SessionScheduler] Missed-exit In-App alerts checked for final session: ${currentSess.name}`);
             }
           }
         }
