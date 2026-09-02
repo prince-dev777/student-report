@@ -767,36 +767,71 @@ export default function ParentPortalWeb() {
 
   const todayAttendance = getTodayAttendanceInfo();
 
-  // Unified Notifications list (Attendance + Results + Notices strictly from real data)
-  const allNotifications = [
-    ...(attendanceRecords.slice(0, 3).map(a => ({
-      id: `att-${a.date}`,
-      title: `Attendance: ${a.date}`,
-      message: `${studentData?.name || 'Student'} was marked ${String(a.status).toUpperCase()} on ${a.date}.`,
-      type: 'ATTENDANCE',
-      time: a.date
-    }))),
-    ...(testResults.slice(0, 3).map(t => ({
-      id: `test-${t.id || getTestName(t)}`,
-      title: `Test Result: ${getTestName(t)}`,
-      message: `Score: ${t.marks}/${t.totalMarks || 360} (${t.percentage}%). Rank: ${t.rank || '-'}/${t.totalStudents || 74}.`,
-      type: 'TEST_RESULT',
-      time: getTestDate(t)
-    }))),
-    ...(notices.map(n => ({
-      id: n.id || `${n.title}_${n.createdAt || n.time}`,
-      title: n.title,
-      message: n.message,
-      type: 'NOTICE',
-      time: 'Recent'
-    })))
-  ];
+  // Unified Notifications list with Strict De-duplication (Prevents 2-2 duplicate alerts)
+  const allNotifications = React.useMemo(() => {
+    const list = [];
+    const seenKeys = new Set();
+
+    // 1. Real database notifications from server (Check-In, Check-Out, Test Results, Circulars)
+    (notices || []).forEach(n => {
+      const id = String(n.id || n._id || `${n.title}_${n.createdAt || n.time}`);
+      const cleanTitle = String(n.title || '').trim();
+      const cleanMsg = String(n.message || '').trim();
+      const dedupeKey = `${cleanTitle}_${cleanMsg}`;
+
+      if (!seenKeys.has(dedupeKey)) {
+        seenKeys.add(dedupeKey);
+        list.push({
+          id,
+          title: cleanTitle || 'Notification',
+          message: cleanMsg,
+          type: n.type || (cleanTitle.toLowerCase().includes('attendance') || cleanTitle.toLowerCase().includes('check-') ? 'ATTENDANCE' : (cleanTitle.toLowerCase().includes('test') || cleanTitle.toLowerCase().includes('result') ? 'TEST_RESULT' : 'NOTICE')),
+          time: n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Recent'
+        });
+      }
+    });
+
+    // 2. Fallback: Add recent attendance only if no attendance notice exists for that date
+    (attendanceRecords || []).slice(0, 3).forEach(a => {
+      if (!a?.date) return;
+      const dateKey = String(a.date).trim();
+      const alreadyHasNotice = list.some(n => n.type === 'ATTENDANCE' && (n.message.includes(dateKey) || n.title.includes(dateKey) || n.time.includes(dateKey)));
+      if (!alreadyHasNotice && !seenKeys.has(`ATT_${dateKey}`)) {
+        seenKeys.add(`ATT_${dateKey}`);
+        list.push({
+          id: `att-${dateKey}`,
+          title: `Attendance Alert`,
+          message: `${studentData?.name || 'Student'} was marked ${String(a.status || 'PRESENT').toUpperCase()} on ${dateKey}.`,
+          type: 'ATTENDANCE',
+          time: dateKey
+        });
+      }
+    });
+
+    // 3. Fallback: Add recent test results only if no test notice exists for that test
+    (testResults || []).slice(0, 3).forEach(t => {
+      const tName = getTestName(t);
+      const alreadyHasTestNotice = list.some(n => n.type === 'TEST_RESULT' && (n.title.includes(tName) || n.message.includes(tName)));
+      const testKey = `TEST_${t.id || tName}`;
+      if (!alreadyHasTestNotice && !seenKeys.has(testKey)) {
+        seenKeys.add(testKey);
+        list.push({
+          id: `test-${t.id || tName}`,
+          title: `Test Result: ${tName}`,
+          message: `Score: ${t.marks}/${t.totalMarks || 360} (${t.percentage}%). Rank: ${t.rank ? `#${t.rank}` : '-'}/${t.totalStudents || 74}.`,
+          type: 'TEST_RESULT',
+          time: getTestDate(t)
+        });
+      }
+    });
+
+    return list;
+  }, [notices, attendanceRecords, testResults, studentData]);
 
   const visibleNotifications = allNotifications.filter(n => !clearedNotifIds.includes(n.id));
 
-  const unreadNoticeCount = notices.filter(n => {
-    const id = n.id || n._id || `${n.title}_${n.createdAt || n.time}`;
-    return !readNoticeIds.has(id) && !clearedNotifIds.includes(id);
+  const unreadNoticeCount = allNotifications.filter(n => {
+    return !readNoticeIds.has(n.id) && !clearedNotifIds.includes(n.id);
   }).length;
 
   // PRE-LOGIN APP INSTALL GATEWAY (Enforce Mobile App Installation)

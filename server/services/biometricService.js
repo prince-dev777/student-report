@@ -11,6 +11,7 @@ import Notification from '../models/Notification.js';
 import SMSLog from '../models/SMSLog.js';
 import { sendWhatsAppAlert } from './whatsappService.js';
 import { resolveSessionForStudent, timeStringToMinutes, formatDurationHuman } from './sessionResolver.js';
+import { triggerBackgroundSync } from '../db/syncEngine.js';
 import { logInfo, logError, logWarn } from '../utils/logger.js';
 
 let autoSyncTimer = null;
@@ -289,6 +290,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       }
 
       logInfo('BIOMETRIC', `⭐ Staff Punch: ${staffMember.name} (#${staffMember.staffId}) -> ${type} at ${formattedTime}`);
+      try { triggerBackgroundSync(); } catch (syncErr) {}
       return { success: true, isStaff: true, name: staffMember.name, staffId: staffMember.staffId, type, time: formattedTime };
     }
 
@@ -470,6 +472,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       if (recentPunches.length > 25) recentPunches.pop();
 
       logInfo('BIOMETRIC', `✅ New ${effectiveType} punch recorded for ${student.name} (Roll ${student.rollNo}) at ${formattedTime}`);
+      try { triggerBackgroundSync(); } catch (syncErr) {}
       return { success: true, isNew: true, studentName: student.name, rollNumber: student.rollNo, type: effectiveType, time: formattedTime };
     }
 
