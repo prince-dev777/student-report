@@ -11,7 +11,7 @@ import Notification from '../models/Notification.js';
 import SMSLog from '../models/SMSLog.js';
 import { sendWhatsAppAlert } from './whatsappService.js';
 import { resolveSessionForStudent, timeStringToMinutes, formatDurationHuman } from './sessionResolver.js';
-import { triggerBackgroundSync } from '../db/syncEngine.js';
+import { triggerBackgroundSync, mirrorWrite } from '../db/syncEngine.js';
 import { logInfo, logError, logWarn } from '../utils/logger.js';
 
 let autoSyncTimer = null;
@@ -271,6 +271,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       }
 
       await staffRecord.save();
+      mirrorWrite('staffattendances', staffRecord.toObject ? staffRecord.toObject() : staffRecord);
 
       if (isNew && staffMember.phone) {
         try {
@@ -415,6 +416,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
         record.smsSent = true;
       }
       await record.save();
+      mirrorWrite('attendances', record.toObject ? record.toObject() : record);
 
       // Format session and duration text
       const formattedDuration = formatDurationHuman(record.durationMinutes);
@@ -435,6 +437,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
           type: 'ATTENDANCE'
         });
         await notification.save();
+        mirrorWrite('notifications', notification.toObject ? notification.toObject() : notification);
       } catch (notifErr) {}
 
       // Trigger Parent WhatsApp Alert & Log to SMSLog DB collection

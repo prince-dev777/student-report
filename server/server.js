@@ -475,8 +475,8 @@ function broadcastSSE(event, data = {}) {
 // Register SSE broadcaster with SyncEngine
 registerSSEBroadcaster(broadcastSSE);
 
-// Start Periodic Sync and Snapshot loop
-startPeriodicSync(180000); // Sync every 3 mins
+// Start Periodic Safe Cloud Sync loop (Auto-retries every 45s if offline/internet drops)
+startPeriodicSync(45000); // Auto-sync every 45 seconds
 
 // Auto JSON database snapshot every 15 mins and on startup
 setTimeout(() => { generateDatabaseSnapshot(dataPath).catch(() => {}); }, 15000);

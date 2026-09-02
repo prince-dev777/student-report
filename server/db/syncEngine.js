@@ -268,13 +268,18 @@ export async function performFullSync() {
           }
 
           for (let i = 0; i < activeLocalDocs.length; i += 500) {
-            const batch = activeLocalDocs.slice(i, i + 500).map(doc => ({
-              replaceOne: {
-                filter: { _id: doc._id },
-                replacement: doc,
-                upsert: true
-              }
-            }));
+            const batch = activeLocalDocs.slice(i, i + 500).map(doc => {
+              const filter = collName === 'attendances' && doc.studentId && doc.date
+                ? { studentId: doc.studentId, date: doc.date }
+                : { _id: doc._id };
+              return {
+                replaceOne: {
+                  filter,
+                  replacement: doc,
+                  upsert: true
+                }
+              };
+            });
             await cloudColl.bulkWrite(batch, { ordered: false });
           }
           totalPushed += activeLocalDocs.length;
@@ -293,13 +298,24 @@ export async function performFullSync() {
             }
           } else {
             const localIdsSet = new Set(localDocs.map(d => String(d._id)));
-            const missingInLocal = cloudDocs.filter(cd => !localIdsSet.has(String(cd._id)) && !cd.isDeleted);
+            const missingInLocal = cloudDocs.filter(cd => {
+              if (cd.isDeleted) return false;
+              if (collName === 'attendances' && cd.studentId && cd.date) {
+                return !localDocs.some(ld => ld.studentId === cd.studentId && ld.date === cd.date);
+              }
+              return !localIdsSet.has(String(cd._id));
+            });
             if (missingInLocal.length > 0) {
               const fixedMissing = missingInLocal.map(fixObjectIds);
               for (let i = 0; i < fixedMissing.length; i += 500) {
-                const batch = fixedMissing.slice(i, i + 500).map(doc => ({
-                  replaceOne: { filter: { _id: doc._id }, replacement: doc, upsert: true }
-                }));
+                const batch = fixedMissing.slice(i, i + 500).map(doc => {
+                  const filter = collName === 'attendances' && doc.studentId && doc.date
+                    ? { studentId: doc.studentId, date: doc.date }
+                    : { _id: doc._id };
+                  return {
+                    replaceOne: { filter, replacement: doc, upsert: true }
+                  };
+                });
                 await localColl.bulkWrite(batch, { ordered: false });
               }
               totalPulled += missingInLocal.length;
