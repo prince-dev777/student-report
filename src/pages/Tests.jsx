@@ -4423,7 +4423,7 @@ export default function Tests() {
                                 type="button"
                                 onClick={() => setSelectedOmrImage({
                                   url: getMediaUrl(err.omrSheetImage),
-                                  filename: err.filename || (err.rollNumber ? `Roll_${err.rollNumber}_OMR.jpg` : 'OMR_Sheet.jpg'),
+                                  filename: err.omrOriginalFilename || err.filename || (err.omrSheetImage ? err.omrSheetImage.split('/').pop().split('?')[0] : 'Scanned_OMR.jpg'),
                                   rollNo: err.rollNumber,
                                   studentName: err.studentName || ''
                                 })}
@@ -4725,7 +4725,7 @@ export default function Tests() {
                                   <button 
                                     onClick={() => setSelectedOmrImage({
                                       url: getMediaUrl(res.omrSheetImage),
-                                      filename: res.omrOriginalFilename || (res.rollNo ? `${res.rollNo}_${res.studentName}.jpg` : 'OMR_Sheet.jpg'),
+                                      filename: res.omrOriginalFilename || res.filename || (res.omrSheetImage ? res.omrSheetImage.split('/').pop().split('?')[0] : 'Scanned_OMR.jpg'),
                                       rollNo: res.rollNo,
                                       studentName: res.studentName
                                     })}
@@ -4882,7 +4882,7 @@ export default function Tests() {
                     className="btn btn-outline-primary btn-sm flex items-center gap-2"
                     onClick={() => setSelectedOmrImage({
                       url: getMediaUrl(selectedStudentResult.omrSheetImage),
-                      filename: selectedStudentResult.omrOriginalFilename || (selectedStudentResult.rollNo ? `${selectedStudentResult.rollNo}_${selectedStudentResult.studentName}.jpg` : 'OMR_Sheet.jpg'),
+                      filename: selectedStudentResult.omrOriginalFilename || selectedStudentResult.filename || (selectedStudentResult.omrSheetImage ? selectedStudentResult.omrSheetImage.split('/').pop().split('?')[0] : 'Scanned_OMR.jpg'),
                       rollNo: selectedStudentResult.rollNo,
                       studentName: selectedStudentResult.studentName
                     })}
