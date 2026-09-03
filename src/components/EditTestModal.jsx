@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, BookOpen, Plus, Trash2, Loader2, Save } from 'lucide-react';
+import { X, BookOpen, Plus, Trash2, Loader2, Save, RotateCcw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import MultiClassSelect from './MultiClassSelect';
@@ -344,23 +344,47 @@ export default function EditTestModal({ test, onClose, onSave }) {
                 <label className="form-label" style={{ fontWeight: '600', margin: 0 }}>
                   Subject-Question Mapping *
                 </label>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => {
-                    setSubjectMapping((prev) => [
-                      ...prev,
-                      {
-                        subject: 'Physics',
-                        fromQ: prev.length ? Number(prev[prev.length - 1].toQ) + 1 : 1,
-                        toQ: '',
-                      },
-                    ]);
-                  }}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 8px' }}
-                >
-                  <Plus size={14} /> Add Subject
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {subjectMapping.length > 0 && Number(subjectMapping[0].fromQ) > 1 && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-secondary"
+                      onClick={() => {
+                        let curQ = 1;
+                        const renumbered = subjectMapping.map((m) => {
+                          const count = Number(m.toQ) >= Number(m.fromQ) ? (Number(m.toQ) - Number(m.fromQ) + 1) : 45;
+                          const newFrom = curQ;
+                          const newTo = curQ + count - 1;
+                          curQ = newTo + 1;
+                          return { ...m, fromQ: newFrom, toQ: newTo };
+                        });
+                        setSubjectMapping(renumbered);
+                        setForm(prev => ({ ...prev, questionsToDetect: curQ - 1 }));
+                        toast.success('Renumbered questions starting from Q1');
+                      }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderColor: 'var(--primary-color)' }}
+                    >
+                      <RotateCcw size={14} /> Renumber from Q1
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => {
+                      setSubjectMapping((prev) => [
+                        ...prev,
+                        {
+                          subject: 'Physics',
+                          fromQ: prev.length ? Number(prev[prev.length - 1].toQ) + 1 : 1,
+                          toQ: '',
+                        },
+                      ]);
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 8px' }}
+                  >
+                    <Plus size={14} /> Add Subject
+                  </button>
+                </div>
               </div>
 
               <div

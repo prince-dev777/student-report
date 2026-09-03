@@ -2529,20 +2529,26 @@ async function regradeTestResultsHelper(test, instituteId) {
   if (Array.isArray(test.answerKey)) {
     flatAnswerKey = test.answerKey;
   } else if (test.answerKey && typeof test.answerKey === 'object') {
-    const subjectKeys = Object.keys(test.answerKey);
-    if (test.subject) {
-      const orderedSubjects = test.subject.split(',').map(s => s.trim());
-      subjectKeys.sort((a, b) => {
-        const idxA = orderedSubjects.indexOf(a);
-        const idxB = orderedSubjects.indexOf(b);
-        if (idxA === -1 && idxB === -1) return a.localeCompare(b);
-        if (idxA === -1) return 1;
-        if (idxB === -1) return -1;
-        return idxA - idxB;
-      });
-    }
-    for (const subj of subjectKeys) {
-      flatAnswerKey = flatAnswerKey.concat(test.answerKey[subj]);
+    const isIndexedObject = Object.keys(test.answerKey).length > 0 && Object.keys(test.answerKey).every(k => !isNaN(Number(k)));
+    if (isIndexedObject) {
+      const sortedKeys = Object.keys(test.answerKey).sort((a,b) => Number(a) - Number(b));
+      flatAnswerKey = sortedKeys.map(k => test.answerKey[k]);
+    } else {
+      const subjectKeys = Object.keys(test.answerKey);
+      if (test.subject) {
+        const orderedSubjects = test.subject.split(',').map(s => s.trim());
+        subjectKeys.sort((a, b) => {
+          const idxA = orderedSubjects.indexOf(a);
+          const idxB = orderedSubjects.indexOf(b);
+          if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+          if (idxA === -1) return 1;
+          if (idxB === -1) return -1;
+          return idxA - idxB;
+        });
+      }
+      for (const subj of subjectKeys) {
+        flatAnswerKey = flatAnswerKey.concat(test.answerKey[subj]);
+      }
     }
   }
 
@@ -2550,6 +2556,13 @@ async function regradeTestResultsHelper(test, instituteId) {
 
   const marksPerQ = test.marksPerQuestion || 1;
   const negMarks = test.negativeMarking || 0;
+
+  const firstMappedQ = test.subjectMapping && test.subjectMapping.length > 0
+    ? Math.min(...test.subjectMapping.map(m => Number(m.fromQ)))
+    : 1;
+  const maxMappedQ = test.subjectMapping && test.subjectMapping.length > 0
+    ? Math.max(...test.subjectMapping.map(m => Number(m.toQ)))
+    : flatAnswerKey.length;
 
   // Fetch all results for this test that have studentAnswers
   const results = await TestResult.find({ isDeleted: { $ne: true }, testId: test.id, instituteId });
@@ -2570,8 +2583,13 @@ async function regradeTestResultsHelper(test, instituteId) {
       dynamicTotalMarks = selectedQuestionsCount * marksPerQ;
     }
 
+    // Smart Offset Auto-Alignment:
+    // If student answers array length is less than maxMappedQ (e.g. 135 on a 180 sheet) and firstMappedQ > 1 (e.g. 46):
+    const offset = (firstMappedQ > 1 && result.studentAnswers.length < maxMappedQ) ? (firstMappedQ - 1) : 0;
+
     result.studentAnswers.forEach((ans, idx) => {
-      const qNum = idx + 1;
+      const qNum = idx + 1 + offset;
+      const ansKeyIdx = idx + offset;
 
       // Subject Mapping Filter
       if (test.subjectMapping && test.subjectMapping.length > 0) {
@@ -2579,14 +2597,14 @@ async function regradeTestResultsHelper(test, instituteId) {
         if (!isSelected) return;
       }
 
-      const ansStr = String(ans).trim().toUpperCase();
-      if (idx < flatAnswerKey.length && flatAnswerKey[idx]) {
-        const corStr = String(flatAnswerKey[idx]).trim().toUpperCase();
+      const ansStr = String(ans || '').trim().toUpperCase();
+      if (ansKeyIdx < flatAnswerKey.length && flatAnswerKey[ansKeyIdx]) {
+        const corStr = String(flatAnswerKey[ansKeyIdx]).trim().toUpperCase();
         const isBonus = corStr === '*' || corStr.startsWith('*') || corStr.endsWith('*') || corStr.includes('BONUS') || corStr.includes('STAR');
         
         if (isBonus) {
           correct++;
-        } else if (ansStr && ansStr !== 'NULL') {
+        } else if (ansStr && ansStr !== 'NULL' && ansStr !== '') {
           let matched = false;
           if (ansStr === corStr) {
             matched = true;
@@ -2612,6 +2630,9 @@ async function regradeTestResultsHelper(test, instituteId) {
 
     result.marks = newMarks;
     result.percentage = newPercentage;
+    result.correctCount = correct;
+    result.wrongCount = wrong;
+    result.blank = Math.max(0, (test.questionsToDetect || result.studentAnswers.length) - correct - wrong);
     await result.save();
     mirrorWrite('testresults', result.toObject()).catch(() => {});
     regradedCount++;
@@ -3259,8 +3280,11 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
           return res.status(400).json({ error: results.error });
         }
 
-        // Apply Subject Mapping Filter to Ignore Unselected Sections
+        // Apply Subject Mapping Filter to Ignore Unselected Sections (with Smart Offset Auto-Alignment)
         if (test.subjectMapping && test.subjectMapping.length > 0) {
+          const firstMappedQ = Math.min(...test.subjectMapping.map(m => Number(m.fromQ)));
+          const maxMappedQ = Math.max(...test.subjectMapping.map(m => Number(m.toQ)));
+
           results.forEach(result => {
             if (result.error || !result.subjects) return;
             let newTotalMarks = 0;
@@ -3269,8 +3293,10 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
             let newBlank = 0;
 
             const generalSubjects = result.subjects["General"] || [];
+            const offset = (firstMappedQ > 1 && generalSubjects.length < maxMappedQ) ? (firstMappedQ - 1) : 0;
+
             generalSubjects.forEach(q => {
-              const qNum = parseInt(q.questionNo);
+              const qNum = parseInt(q.questionNo) + offset;
               const isSelected = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
 
               if (isSelected) {

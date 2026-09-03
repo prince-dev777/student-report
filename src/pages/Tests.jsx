@@ -480,16 +480,21 @@ export default function Tests() {
           const val = isObj ? ans.selectedOption : ans;
 
           let isMapped = true;
+          let ansKeyIdx = idx;
           if (test.subjectMapping && test.subjectMapping.length > 0) {
-            const qNum = idx + 1;
+            const firstMappedQ = Math.min(...test.subjectMapping.map(sub => Number(sub.fromQ)));
+            const maxMappedQ = Math.max(...test.subjectMapping.map(sub => Number(sub.toQ)));
+            const offset = (firstMappedQ > 1 && match.studentAnswers.length < maxMappedQ) ? (firstMappedQ - 1) : 0;
+            const qNum = idx + 1 + offset;
+            ansKeyIdx = idx + offset;
             isMapped = test.subjectMapping.some(sub => qNum >= sub.fromQ && qNum <= sub.toQ);
           }
 
           if (isMapped) {
             if (status === 'invalid') {
               wrong++;
-            } else if (status === 'valid' && val && val !== 'NULL' && idx < answerKey.length) {
-              const k = String(answerKey[idx]).trim().toUpperCase();
+            } else if (status === 'valid' && val && val !== 'NULL' && ansKeyIdx < answerKey.length) {
+              const k = String(answerKey[ansKeyIdx]).trim().toUpperCase();
               const a = String(val).trim().toUpperCase();
               const isBonus = isBonusAnswer(k);
               const isMatch = (a === k) || (!isNaN(parseFloat(a)) && !isNaN(parseFloat(k)) && parseFloat(a) === parseFloat(k));
@@ -762,19 +767,24 @@ export default function Tests() {
            const selected = isObj ? ans.selectedOption : ans;
            
            let isMapped = true;
+           let ansKeyIdx = idx;
            if (test.subjectMapping && test.subjectMapping.length > 0) {
-              const qNum = idx + 1;
+              const firstMappedQ = Math.min(...test.subjectMapping.map(m => Number(m.fromQ)));
+              const maxMappedQ = Math.max(...test.subjectMapping.map(m => Number(m.toQ)));
+              const offset = (firstMappedQ > 1 && rawAnswers.length < maxMappedQ) ? (firstMappedQ - 1) : 0;
+              const qNum = idx + 1 + offset;
+              ansKeyIdx = idx + offset;
               isMapped = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
            }
            
            if (isMapped) {
-              if (idx < answerKey.length && isBonusAnswer(answerKey[idx])) {
+              if (ansKeyIdx < answerKey.length && isBonusAnswer(answerKey[ansKeyIdx])) {
                  correct++;
               } else if (status === 'invalid') {
                  wrong++;
               } else if (status === 'valid' && selected && selected !== 'NULL') {
-                 if (idx < answerKey.length) {
-                    const corStr = String(answerKey[idx]).trim().toUpperCase();
+                 if (ansKeyIdx < answerKey.length) {
+                    const corStr = String(answerKey[ansKeyIdx]).trim().toUpperCase();
                     const selStr = String(selected).trim().toUpperCase();
                     
                     let matched = false;
@@ -916,20 +926,25 @@ export default function Tests() {
          const selected = isObj ? ans.selectedOption : ans;
          
          let isMapped = true;
+         let ansKeyIdx = idx;
          if (test.subjectMapping && test.subjectMapping.length > 0) {
-            const qNum = idx + 1;
+            const firstMappedQ = Math.min(...test.subjectMapping.map(m => Number(m.fromQ)));
+            const maxMappedQ = Math.max(...test.subjectMapping.map(m => Number(m.toQ)));
+            const offset = (firstMappedQ > 1 && rawAnswers.length < maxMappedQ) ? (firstMappedQ - 1) : 0;
+            const qNum = idx + 1 + offset;
+            ansKeyIdx = idx + offset;
             isMapped = test.subjectMapping.some(m => qNum >= m.fromQ && qNum <= m.toQ);
          }
          
          if (isMapped) {
-            if (idx < answerKey.length && isBonusAnswer(answerKey[idx])) {
+            if (ansKeyIdx < answerKey.length && isBonusAnswer(answerKey[ansKeyIdx])) {
                // ⭐ Bonus Question: full marks awarded unconditionally, zero negative deduction
                correct++;
             } else if (status === 'invalid') {
                wrong++;
             } else if (status === 'valid' && selected && selected !== 'NULL') {
-               if (idx < answerKey.length && answerKey[idx]) {
-                  const corStr = String(answerKey[idx]).trim().toUpperCase();
+               if (ansKeyIdx < answerKey.length && answerKey[ansKeyIdx]) {
+                  const corStr = String(answerKey[ansKeyIdx]).trim().toUpperCase();
                   const selStr = String(selected).trim().toUpperCase();
                   
                   let matched = false;
