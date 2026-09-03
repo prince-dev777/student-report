@@ -215,7 +215,7 @@ async function runMasterProductionAudit() {
       { name: 'System Healthcheck API', path: '/api/health', method: 'GET', auth: false },
       { name: 'Enrolled Students List API', path: '/api/students?page=1&limit=25', method: 'GET', auth: true },
       { name: 'Class Directory & Batch API', path: '/api/classes', method: 'GET', auth: true },
-      { name: 'Daily Attendance Roster API', path: '/api/attendance', method: 'GET', auth: true },
+      { name: 'Daily Attendance Roster API', path: '/api/attendance?page=1&limit=25', method: 'GET', auth: true },
       { name: 'Exam & Test Schedule API', path: '/api/tests?limit=25', method: 'GET', auth: true },
       { name: 'Test Results & Performance Stats API', path: '/api/tests', method: 'GET', auth: true },
       { name: 'Academic Sessions API', path: '/api/sessions', method: 'GET', auth: true },
