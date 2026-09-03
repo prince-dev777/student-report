@@ -2187,7 +2187,11 @@ app.get('/api/attendance', authenticateToken, async (req, res) => {
     const query = { isDeleted: { $ne: true } };
     if (instId) query.instituteId = instId;
 
-    const records = await Attendance.find(query).sort({ date: -1 });
+    let queryBuilder = Attendance.find(query).sort({ date: -1 });
+    if (req.query.limit) {
+      queryBuilder = queryBuilder.limit(parseInt(req.query.limit));
+    }
+    const records = await queryBuilder;
     res.json(records);
   } catch (err) {
     console.error('Error fetching attendance:', err);

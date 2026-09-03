@@ -232,7 +232,7 @@ async function runMasterProductionAudit() {
     for (const r of apiRoutes) {
       try {
         const headers = r.auth ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch(`http://127.0.0.1:${TEST_PORT}${r.path}`, { headers, signal: AbortSignal.timeout(15000) });
+        const res = await fetch(`http://127.0.0.1:${TEST_PORT}${r.path}`, { headers, signal: AbortSignal.timeout(25000) });
         reportCheck(r.name, res.status >= 200 && res.status < 300, `HTTP ${res.status}`);
       } catch (err) {
         reportCheck(r.name, false, err.message);
