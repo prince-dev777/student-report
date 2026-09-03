@@ -372,14 +372,14 @@ export async function sendWhatsAppMessageWeb(to, message, attachment = null) {
   // 1. Simulate Human "Seen" + Typing Indicator before sending
   try {
     const chat = await client.getChatById(cleanNumber);
-    // Pre-typing "seen" delay (0.5-1.5s) — mimics reading notification
-    const seenDelay = Math.floor(Math.random() * 1000) + 500;
+    // Pre-typing "seen" delay (1.0-2.5s) — mimics reading contact & chat
+    const seenDelay = Math.floor(Math.random() * 1500) + 1000;
     await new Promise(resolve => setTimeout(resolve, seenDelay));
     
     if (chat && typeof chat.sendStateTyping === 'function') {
       await chat.sendStateTyping();
-      // Natural typing delay between 2s and 5s based on message length
-      const typingDelay = Math.min(5000, Math.max(2000, Math.floor(Math.random() * 3000) + 2000));
+      // Natural typing delay between 3s and 6s based on message length (human pace)
+      const typingDelay = Math.min(6000, Math.max(3000, Math.floor(Math.random() * 3000) + 3000));
       await new Promise(resolve => setTimeout(resolve, typingDelay));
     }
   } catch (typingErr) {
