@@ -4,7 +4,8 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 import SMSLog from '../models/SMSLog.js';
 import MessageLock from '../models/MessageLock.js';
-import { sendWhatsAppMessageWeb, getWhatsAppClientState } from './whatsappClient.js';
+import { getWhatsAppClientState } from './whatsappClient.js';
+import { queueWhatsAppMessage } from './messageQueue.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,12 +71,10 @@ export function resetSentAlertLockMap() {
  * Includes Atomic Multi-PC duplicate lock and persistent messaging check.
  */
 export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail, sessionName = null, sessionId = null }) {
-  // 0. App-First Mode: Route Daily Attendance Punches & Session Alerts to Parents Mobile App (Zero WhatsApp Load & Zero Ban Risk)
-  const isAttendanceRelated = (type === 'IN' || type === 'OUT' || type === 'SESSION_CONTINUE' || type === 'MISSED_EXIT' || type === 'PUNCH_MISSED');
-  const allowWhatsAppAttendance = process.env.ENABLE_WHATSAPP_ATTENDANCE === 'true';
-  if (isAttendanceRelated && !allowWhatsAppAttendance) {
-    return { success: true, skipped: true, reason: 'Attendance & session alerts routed to Parents Mobile App Notifications' };
-  }
+  // 0. WhatsApp Whitelist: ONLY Check-in (IN), Check-out (OUT), and Test Results (TEST_RESULT) go to WhatsApp.
+  //    All other types (SESSION_CONTINUE, MISSED_EXIT, PUNCH_MISSED, ABSENT, WELCOME, etc.) are logged but NOT sent via WhatsApp.
+  const WHATSAPP_ALLOWED_TYPES = ['IN', 'OUT', 'TEST_RESULT'];
+  const isWhatsAppAllowed = WHATSAPP_ALLOWED_TYPES.includes(type);
 
   // 1. Check persistent Master Messaging Switch
   const isMessagingPaused = !getOutboundMessagingStatus();
@@ -135,7 +134,12 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   } catch (dbErr) {}
 
   const provider = (process.env.WHATSAPP_PROVIDER || 'mock').toLowerCase();
-  let status = isMessagingPaused ? 'pending' : 'sent';
+  let status = isMessagingPaused ? 'pending' : (isWhatsAppAllowed ? 'sent' : 'app-only');
+
+  // If this message type is not in the WhatsApp whitelist, skip WhatsApp entirely (still logs to SMSLog)
+  if (!isWhatsAppAllowed) {
+    console.log(`[WhatsAppService] 📱 Type "${type}" not in WhatsApp whitelist. Routed to Parents App only for ${studentName}.`);
+  }
 
   // Format current date in Indian style (DD-MM-YYYY)
   const now = new Date();
@@ -176,7 +180,8 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
 
   if (isMessagingPaused) {
     console.log(`[WhatsAppService] ⏸️ Outbound messaging is PAUSED. Logging SMS in SMS Center as pending for ${studentName} (${type}).`);
-  } else {
+  } else if (isWhatsAppAllowed) {
+    // Route through Anti-Ban Message Queue for safe, rate-limited delivery
     for (const phone of phoneNumbers) {
       let formattedPhone = phone.replace(/\D/g, '');
       if (formattedPhone.length === 10) {
@@ -186,15 +191,23 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
         formattedPhone = '+' + formattedPhone;
       }
 
-      console.log(`[WhatsAppService] Sending WhatsApp alert to ${formattedPhone} (Type: ${type})`);
+      console.log(`[WhatsAppService] 📤 Queueing WhatsApp alert for ${formattedPhone} (Type: ${type})`);
 
       try {
         const waState = getWhatsAppClientState();
         if (waState && waState.status === 'ready') {
-          await sendWhatsAppMessageWeb(formattedPhone, messageText);
-          status = 'delivered';
-          recordSentAlert(studentId, type, todayStr);
-          console.log(`[WhatsAppService] Successfully sent WhatsApp message via local client to ${formattedPhone}`);
+          // Queue message for rate-limited delivery (anti-ban)
+          const queueResult = queueWhatsAppMessage(formattedPhone, messageText, {
+            studentName, studentId, type, sessionName: resolvedSessionName
+          });
+          if (queueResult.queued) {
+            status = 'sent'; // Will be updated to 'delivered' by the queue processor
+            recordSentAlert(studentId, type, todayStr);
+            console.log(`[WhatsAppService] ✅ Queued WhatsApp message (position: ${queueResult.position}) for ${formattedPhone}`);
+          } else {
+            status = 'pending';
+            console.warn(`[WhatsAppService] ⚠️ Queue rejected message: ${queueResult.reason}`);
+          }
         } else if (provider === 'ultramsg') {
         const instanceId = process.env.WHATSAPP_INSTANCE_ID;
         const token = process.env.WHATSAPP_TOKEN;

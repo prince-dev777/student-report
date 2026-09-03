@@ -44,8 +44,8 @@ export default function ParentPortalWeb() {
   const [upcomingTests, setUpcomingTests] = useState(() => initialSession?.upcomingTests || []);
   const [notices, setNotices] = useState(() => initialSession?.notices || []);
 
-  // Active Tab: 'analytics' | 'tests' | 'attendance' | 'schedule'
-  const [activeTab, setActiveTab] = useState('analytics');
+  // Active Tab: 'attendance' | 'tests'
+  const [activeTab, setActiveTab] = useState('attendance');
   const [isOmrNoticeExpanded, setIsOmrNoticeExpanded] = useState(true);
   const [selectedOmrImage, setSelectedOmrImage] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -1539,76 +1539,6 @@ export default function ParentPortalWeb() {
           </span>
         </div>
 
-        {/* 4 Navigation Tabs Switcher (Prominent, High-Touch Button Row) */}
-        <div className="tab-btn-bar no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '10px' }}>
-          <button
-            className="tab-btn"
-            onClick={() => setActiveTab('analytics')}
-            style={{
-              padding: '8px 4px', borderRadius: '10px', border: '1.5px solid',
-              borderColor: activeTab === 'analytics' ? '#0284c7' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.80rem', cursor: 'pointer', minHeight: '42px',
-              background: activeTab === 'analytics' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : '#ffffff',
-              color: activeTab === 'analytics' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'analytics' ? '0 2px 6px rgba(2, 132, 199, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <TrendingUp size={16} /> <span>Analytics</span>
-          </button>
-
-          <button
-            className="tab-btn"
-            onClick={() => setActiveTab('tests')}
-            style={{
-              padding: '8px 4px', borderRadius: '10px', border: '1.5px solid',
-              borderColor: activeTab === 'tests' ? '#059669' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.80rem', cursor: 'pointer', minHeight: '42px',
-              background: activeTab === 'tests' ? 'linear-gradient(135deg, #059669, #047857)' : '#ffffff',
-              color: activeTab === 'tests' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'tests' ? '0 2px 6px rgba(5, 150, 105, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Award size={16} /> <span>Tests ({testResults.length})</span>
-          </button>
-
-          <button
-            className="tab-btn"
-            onClick={() => setActiveTab('attendance')}
-            style={{
-              padding: '8px 4px', borderRadius: '10px', border: '1.5px solid',
-              borderColor: activeTab === 'attendance' ? '#d97706' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.80rem', cursor: 'pointer', minHeight: '42px',
-              background: activeTab === 'attendance' ? 'linear-gradient(135deg, #d97706, #b45309)' : '#ffffff',
-              color: activeTab === 'attendance' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'attendance' ? '0 2px 6px rgba(217, 119, 6, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Calendar size={16} /> <span>Attendance</span>
-          </button>
-
-          <button
-            className="tab-btn"
-            onClick={() => setActiveTab('schedule')}
-            style={{
-              padding: '8px 4px', borderRadius: '10px', border: '1.5px solid',
-              borderColor: activeTab === 'schedule' ? '#7c3aed' : '#cbd5e1',
-              fontWeight: 800, fontSize: '0.80rem', cursor: 'pointer', minHeight: '42px',
-              background: activeTab === 'schedule' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : '#ffffff',
-              color: activeTab === 'schedule' ? '#ffffff' : '#475569',
-              boxShadow: activeTab === 'schedule' ? '0 2px 6px rgba(124, 58, 237, 0.25)' : '0 1px 2px rgba(0,0,0,0.03)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Bell size={16} /> <span>Notices</span>
-          </button>
-        </div>
 
         {/* ========================================================= */}
         {/* TAB 1: 📈 AI ANALYTICS & SUBJECT WEAKNESS HEATMAP          */}
@@ -3179,29 +3109,53 @@ export default function ParentPortalWeb() {
               </a>
             </div>
 
-            {/* 🚪 PROMINENT LOGOUT BUTTON */}
-            <button
-              onClick={handleLogout}
-              style={{
-                width: '100%',
-                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                color: '#ffffff',
-                border: 'none',
-                padding: '14px',
-                borderRadius: '14px',
-                fontWeight: 900,
-                fontSize: '0.92rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: '0 6px 20px rgba(239, 68, 68, 0.35)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <LogOut size={18} /> Logout from Parents App (लॉगआउट)
-            </button>
+            {/* 🚪 COMPACT LOGOUT & CLOSE BUTTONS */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <button
+                onClick={handleLogout}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '9px 12px',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 3px 10px rgba(239, 68, 68, 0.25)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <LogOut size={15} /> Logout
+              </button>
+              <button
+                onClick={() => setShowSettingsDrawer(false)}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #64748b, #475569)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '9px 12px',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 3px 10px rgba(100, 116, 139, 0.25)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <X size={15} /> Close
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -3323,8 +3277,8 @@ export default function ParentPortalWeb() {
               </div>
             </div>
 
-            {/* Actions */}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            {/* Actions (Compact Sleek Row) */}
+            <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
               <button
                 onClick={() => {
                   setShowProfileModal(false);
@@ -3332,29 +3286,32 @@ export default function ParentPortalWeb() {
                 }}
                 style={{
                   flex: 1, background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff',
-                  border: 'none', padding: '11px', borderRadius: '12px', fontWeight: 800, fontSize: '0.82rem',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                  border: 'none', padding: '7px 10px', borderRadius: '8px', fontWeight: 800, fontSize: '0.76rem',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                  whiteSpace: 'nowrap'
                 }}
               >
-                <FileText size={15} /> Official Report Card
+                <FileText size={13} /> Report Card
               </button>
               <button
                 onClick={handleLogout}
                 style={{
-                  padding: '11px 14px', background: '#fff1f2', color: '#e11d48',
-                  border: '1px solid #fecdd3', borderRadius: '12px', fontWeight: 800, fontSize: '0.82rem',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                  padding: '7px 10px', background: '#fff1f2', color: '#e11d48',
+                  border: '1px solid #fecdd3', borderRadius: '8px', fontWeight: 800, fontSize: '0.76rem',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                  whiteSpace: 'nowrap'
                 }}
                 title="Logout Parent Portal"
               >
-                <LogOut size={14} /> Logout
+                <LogOut size={13} /> Logout
               </button>
               <button
                 onClick={() => setShowProfileModal(false)}
                 style={{
-                  padding: '11px 14px', background: '#f1f5f9', color: '#334155',
-                  border: '1px solid #cbd5e1', borderRadius: '12px', fontWeight: 800, fontSize: '0.82rem',
-                  cursor: 'pointer'
+                  padding: '7px 12px', background: '#f1f5f9', color: '#334155',
+                  border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 800, fontSize: '0.76rem',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 Close
@@ -3541,16 +3498,14 @@ export default function ParentPortalWeb() {
         borderTop: '1px solid #e2e8f0',
         padding: '6px 12px calc(6px + env(safe-area-inset-bottom, 0px))',
         display: 'grid',
-        gridTemplateColumns: 'repeat(5, 1fr)',
+        gridTemplateColumns: 'repeat(3, 1fr)',
         gap: '4px',
         zIndex: 90,
         boxShadow: '0 -4px 20px rgba(15, 23, 42, 0.08)'
       }}>
         {[
-          { id: 'analytics', label: 'Analytics', icon: TrendingUp, activeColor: '#0284c7', count: null },
-          { id: 'tests', label: 'Tests', icon: Award, activeColor: '#059669', count: testResults.length },
           { id: 'attendance', label: 'Attendance', icon: Calendar, activeColor: '#d97706', count: null },
-          { id: 'schedule', label: 'Notices', icon: Bell, activeColor: '#7c3aed', count: unreadOfficialNoticesCount },
+          { id: 'tests', label: 'Tests', icon: Award, activeColor: '#059669', count: testResults.length },
           { id: 'menu', label: 'Settings', icon: Settings, activeColor: '#e11d48', count: null, isAction: true }
         ].map((item) => {
           const Icon = item.icon;

@@ -369,13 +369,17 @@ export async function sendWhatsAppMessageWeb(to, message, attachment = null) {
 
   console.log(`[WhatsAppClient] 🛡️ [Anti-Ban Guard] Preparing human-like delivery to ${cleanNumber}`);
   
-  // 1. Simulate Human Typing Indicator before sending
+  // 1. Simulate Human "Seen" + Typing Indicator before sending
   try {
     const chat = await client.getChatById(cleanNumber);
+    // Pre-typing "seen" delay (0.5-1.5s) — mimics reading notification
+    const seenDelay = Math.floor(Math.random() * 1000) + 500;
+    await new Promise(resolve => setTimeout(resolve, seenDelay));
+    
     if (chat && typeof chat.sendStateTyping === 'function') {
       await chat.sendStateTyping();
-      // Natural typing delay between 1.5s and 3.5s based on message length
-      const typingDelay = Math.min(3500, Math.max(1500, Math.floor(Math.random() * 2000) + 1500));
+      // Natural typing delay between 2s and 5s based on message length
+      const typingDelay = Math.min(5000, Math.max(2000, Math.floor(Math.random() * 3000) + 2000));
       await new Promise(resolve => setTimeout(resolve, typingDelay));
     }
   } catch (typingErr) {

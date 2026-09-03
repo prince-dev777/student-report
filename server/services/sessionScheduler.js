@@ -91,8 +91,8 @@ export function startSessionScheduler() {
                   mirrorWrite('notifications', notif.toObject ? notif.toObject() : notif);
                 } catch (notifErr) {}
 
-                // Send WhatsApp alert ONLY if explicitly enabled by admin config
-                if (process.env.ENABLE_WHATSAPP_ATTENDANCE === 'true' && student.parentPhone) {
+                // WhatsApp alert (whatsappService will auto-filter by whitelist — PUNCH_MISSED goes to app-only)
+                if (student.parentPhone) {
                   await sendWhatsAppAlert({
                     instituteId: student.instituteId || currentSess.instituteId,
                     studentId: student.id,
@@ -153,8 +153,8 @@ export function startSessionScheduler() {
                   mirrorWrite('notifications', notif.toObject ? notif.toObject() : notif);
                 } catch (notifErr) {}
 
-                // Send WhatsApp alert ONLY if explicitly enabled by admin config
-                if (process.env.ENABLE_WHATSAPP_ATTENDANCE === 'true' && student.parentPhone) {
+                // WhatsApp alert (whatsappService will auto-filter by whitelist — PUNCH_MISSED goes to app-only)
+                if (student.parentPhone) {
                   await sendWhatsAppAlert({
                     instituteId: student.instituteId || currentSess.instituteId,
                     studentId: student.id,
