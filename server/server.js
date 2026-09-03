@@ -798,7 +798,9 @@ app.post('/api/settings/sync-to-cloud', protect, (req, res) => {
 // Pull newly added records (Inquiries, Students, Attendance) from Cloud to Local
 app.post('/api/sync/pull-cloud', async (req, res) => {
   try {
-    performRestoreFromCloud().catch(err => {
+    performRestoreFromCloud().then(result => {
+      broadcastSSE('data-updated', { source: 'cloud-pull', totalRestored: result?.totalRestored, timestamp: new Date().toISOString() });
+    }).catch(err => {
       logError('RESTORE', 'Background pull-cloud error:', err);
     });
     res.json({ message: 'Cloud pull started in background' });

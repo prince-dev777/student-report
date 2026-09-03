@@ -145,15 +145,9 @@ export function AppProvider({ children }) {
       toast.loading('☁️ Syncing with Cloud Atlas...', { id: 'cloud-sync-toast' });
     }
 
-    // Safety timeout: Ensure syncing status never hangs more than 2 seconds
-    const safetyTimer = setTimeout(() => {
-      setCloudSyncStatus('synced');
-    }, 2000);
-
     try {
+      await api.pullCloudData().catch(() => {});
       await loadServerData();
-      api.pullCloudData().catch(() => {});
-      clearTimeout(safetyTimer);
       setCloudSyncStatus('synced');
       setCloudSyncMessage('Cloud Atlas Data Synced');
       setLastCloudSyncTime(new Date());
@@ -161,7 +155,6 @@ export function AppProvider({ children }) {
         toast.success('✅ Cloud Atlas Data Successfully Synced!', { id: 'cloud-sync-toast' });
       }
     } catch (err) {
-      clearTimeout(safetyTimer);
       setCloudSyncStatus('synced');
       setCloudSyncMessage('Cloud Atlas Real-Time Synced');
       if (showToasts) {
