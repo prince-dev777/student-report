@@ -76,9 +76,22 @@
 
       if ('serviceWorker' in navigator) {
         if (!isElectron) {
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+              refreshing = true;
+              console.log('[PWA] New version activated, auto-refreshing page for instant live updates...');
+              window.location.reload();
+            }
+          });
+
           navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((reg) => {
             console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
             try { reg.update(); } catch (e) {}
+            // Periodically check for code updates every 60 seconds
+            setInterval(() => {
+              try { reg.update(); } catch (e) {}
+            }, 60000);
           }).catch((err) => {
             console.warn('[PWA] ServiceWorker registration error:', err);
           });

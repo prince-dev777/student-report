@@ -87,6 +87,24 @@ export default function ParentPortalWeb() {
     });
   };
 
+  const markAllNotificationsAsRead = () => {
+    const allIds = allNotifications.map(n => n.id);
+    setReadNoticeIds(prev => {
+      const updated = new Set([...prev, ...allIds]);
+      try {
+        localStorage.setItem('parent_read_notices', JSON.stringify(Array.from(updated)));
+      } catch {}
+      return updated;
+    });
+  };
+
+  // Auto mark official circulars as read when visiting Notices tab
+  useEffect(() => {
+    if (activeTab === 'schedule' && notices.length > 0) {
+      markNoticesAsRead();
+    }
+  }, [activeTab, notices]);
+
   // Cleared / Dismissed Notifications State
   const [clearedNotifIds, setClearedNotifIds] = useState(() => {
     try {
@@ -798,12 +816,28 @@ export default function ParentPortalWeb() {
       const alreadyHasNotice = list.some(n => n.type === 'ATTENDANCE' && (n.message.includes(dateKey) || n.title.includes(dateKey) || n.time.includes(dateKey)));
       if (!alreadyHasNotice && !seenKeys.has(`ATT_${dateKey}`)) {
         seenKeys.add(`ATT_${dateKey}`);
+        const pName = studentData?.parentName || 'Parent';
+        const sName = studentData?.name || 'Student';
+        const cleanDate = dateKey.includes('-') ? (dateKey.split('-')[0].length === 4 ? dateKey.split('-').reverse().join('-') : dateKey) : dateKey;
+        const timeStr = a.entryTime && a.entryTime !== '--' ? ` at ${a.entryTime}` : '';
+        const sessStr = a.sessionName ? ` for ${a.sessionName}` : '';
+        const outStr = a.exitTime && a.exitTime !== '--' ? ` and departed at ${a.exitTime}` : '';
+        const st = String(a.status || '').toLowerCase();
+        let notifMsg;
+        if (st === 'present') {
+          notifMsg = `Dear ${pName}, this is to inform you that your ward ${sName} has safely arrived at the institute on ${cleanDate}${timeStr}${sessStr}.${outStr ? ` ${outStr}.` : ''} - Career Xone`;
+        } else if (st === 'absent') {
+          notifMsg = `Dear ${pName}, this is to inform you that your ward ${sName} is absent from the institute today on ${cleanDate}. - Career Xone`;
+        } else {
+          notifMsg = `Dear ${pName}, this is to inform you that your ward ${sName} attendance has been marked as ${String(a.status).toUpperCase()} on ${cleanDate}${timeStr}${sessStr}. - Career Xone`;
+        }
+
         list.push({
           id: `att-${dateKey}`,
-          title: `Attendance Alert`,
-          message: `${studentData?.name || 'Student'} was marked ${String(a.status || 'PRESENT').toUpperCase()} on ${dateKey}.`,
+          title: a.exitTime && a.exitTime !== '--' ? 'Check-Out Alert' : 'Check-In Alert',
+          message: notifMsg,
           type: 'ATTENDANCE',
-          time: dateKey
+          time: cleanDate
         });
       }
     });
@@ -830,8 +864,15 @@ export default function ParentPortalWeb() {
 
   const visibleNotifications = allNotifications.filter(n => !clearedNotifIds.includes(n.id));
 
-  const unreadNoticeCount = allNotifications.filter(n => {
+  // Bell icon badge: unread notifications in drawer
+  const unreadBellCount = allNotifications.filter(n => {
     return !readNoticeIds.has(n.id) && !clearedNotifIds.includes(n.id);
+  }).length;
+
+  // Bottom "Notices" tab badge: strictly unread official circulars
+  const unreadOfficialNoticesCount = (notices || []).filter(n => {
+    const id = String(n.id || n._id || `${n.title}_${n.createdAt || n.time}`);
+    return !readNoticeIds.has(id) && !clearedNotifIds.includes(id);
   }).length;
 
   // PRE-LOGIN APP INSTALL GATEWAY (Enforce Mobile App Installation)
@@ -1267,7 +1308,7 @@ export default function ParentPortalWeb() {
           <button
             onClick={() => {
               setShowNotificationDrawer(true);
-              markNoticesAsRead();
+              markAllNotificationsAsRead();
             }}
             title="Notification Center"
             aria-label="Notifications"
@@ -1287,13 +1328,13 @@ export default function ParentPortalWeb() {
             }}
           >
             <Bell size={16} color="#0284c7" />
-            {visibleNotifications.length > 0 && (
+            {unreadBellCount > 0 && (
               <span style={{
                 position: 'absolute', top: '-3px', right: '-3px', background: '#ef4444',
                 color: '#ffffff', fontSize: '0.55rem', fontWeight: 900, width: '14px',
                 height: '14px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
-                {visibleNotifications.length}
+                {unreadBellCount}
               </span>
             )}
           </button>
@@ -3427,7 +3468,7 @@ export default function ParentPortalWeb() {
           { id: 'analytics', label: 'Analytics', icon: TrendingUp, activeColor: '#0284c7', count: null },
           { id: 'tests', label: 'Tests', icon: Award, activeColor: '#059669', count: testResults.length },
           { id: 'attendance', label: 'Attendance', icon: Calendar, activeColor: '#d97706', count: null },
-          { id: 'schedule', label: 'Notices', icon: Bell, activeColor: '#7c3aed', count: unreadNoticeCount },
+          { id: 'schedule', label: 'Notices', icon: Bell, activeColor: '#7c3aed', count: unreadOfficialNoticesCount },
           { id: 'menu', label: 'Settings', icon: Settings, activeColor: '#e11d48', count: null, isAction: true }
         ].map((item) => {
           const Icon = item.icon;
@@ -3440,6 +3481,9 @@ export default function ParentPortalWeb() {
                   setShowSettingsDrawer(true);
                 } else {
                   setActiveTab(item.id);
+                  if (item.id === 'schedule') {
+                    markNoticesAsRead();
+                  }
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}

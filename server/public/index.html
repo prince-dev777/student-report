@@ -76,9 +76,22 @@
 
       if ('serviceWorker' in navigator) {
         if (!isElectron) {
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+              refreshing = true;
+              console.log('[PWA] New version activated, auto-refreshing page for instant live updates...');
+              window.location.reload();
+            }
+          });
+
           navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((reg) => {
             console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
             try { reg.update(); } catch (e) {}
+            // Periodically check for code updates every 60 seconds
+            setInterval(() => {
+              try { reg.update(); } catch (e) {}
+            }, 60000);
           }).catch((err) => {
             console.warn('[PWA] ServiceWorker registration error:', err);
           });
@@ -102,7 +115,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="./assets/index-Uj-SaSUG.js"></script>
+    <script type="module" crossorigin src="./assets/index-D9JjwHD4.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-BF-9559Z.css">
   </head>
   <body>

@@ -425,20 +425,32 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
         ? (effectiveType === 'OUT' ? ` after ${record.sessionName}` : ` for ${record.sessionName}`)
         : '';
 
-      // Create in-app Notification
+      // Create respectful, session-aware in-app Notification for Parents App
+      const pName = student.parentName || 'Parent';
+      const formattedDate = todayStr.includes('-') ? (todayStr.split('-')[0].length === 4 ? todayStr.split('-').reverse().join('-') : todayStr) : todayStr;
       const title = effectiveType === 'IN' ? 'Check-In Alert' : 'Check-Out Alert';
-      const message = `${student.name} (Roll ${student.rollNo}) has checked ${effectiveType} at ${formattedTime}${sessionCtx}${effectiveType === 'OUT' ? durationStr : ''}.`;
+      let notifMessage;
+      if (effectiveType === 'IN') {
+        notifMessage = `Dear ${pName}, this is to inform you that your ward ${student.name} has safely arrived at the institute on ${formattedDate} at ${formattedTime}${sessionCtx}. - Career Xone`;
+      } else if (effectiveType === 'OUT') {
+        notifMessage = `Dear ${pName}, this is to inform you that your ward ${student.name} has left the institute on ${formattedDate} at ${formattedTime}${sessionCtx}${durationStr}. - Career Xone`;
+      } else {
+        notifMessage = `Dear ${pName}, this is to inform you that your ward ${student.name} attendance has been recorded as ${effectiveType} on ${formattedDate} at ${formattedTime}${sessionCtx}. - Career Xone`;
+      }
+
       try {
         const notification = new Notification({
           instituteId: resolvedInstituteId,
           studentId: student._id,
           title,
-          message,
+          message: notifMessage,
           type: 'ATTENDANCE'
         });
         await notification.save();
         mirrorWrite('notifications', notification.toObject ? notification.toObject() : notification);
-      } catch (notifErr) {}
+      } catch (notifErr) {
+        logWarn('BIOMETRIC', `⚠️ Could not save in-app Notification: ${notifErr.message}`);
+      }
 
       // Trigger Parent WhatsApp Alert & Log to SMSLog DB collection
       if (student.parentPhone) {
