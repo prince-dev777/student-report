@@ -14,8 +14,8 @@ import { sendWhatsAppMessageWeb, getWhatsAppClientState } from './whatsappClient
 
 // --- Configuration ---
 const CONFIG = {
-  MIN_DELAY_MS: 8000,        // 8 seconds minimum between messages
-  MAX_DELAY_MS: 15000,       // 15 seconds maximum between messages
+  MIN_DELAY_MS: 30000,       // 30 seconds minimum between messages (Ultra-Secure)
+  MAX_DELAY_MS: 50000,       // 50 seconds maximum between messages (Ultra-Secure)
   BURST_LIMIT: 20,           // Max messages per burst window
   BURST_WINDOW_MS: 5 * 60 * 1000,  // 5-minute burst window
   HOURLY_CAP: 100,           // Max messages per hour
