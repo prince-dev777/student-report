@@ -267,8 +267,40 @@ export async function performFullSync() {
             }
           }
 
-          for (let i = 0; i < activeLocalDocs.length; i += 500) {
-            const batch = activeLocalDocs.slice(i, i + 500).map(doc => {
+          const cloudMap = new Map();
+          cloudDocs.forEach(cd => {
+            if (collName === 'testresults') cloudMap.set(`${cd.testId}_${cd.studentId}`, cd);
+            else if (collName === 'attendances') cloudMap.set(`${cd.studentId}_${cd.date}`, cd);
+            else if (collName === 'students' || collName === 'tests') cloudMap.set(cd.id, cd);
+            else cloudMap.set(String(cd._id), cd);
+          });
+
+          const toPushToCloud = activeLocalDocs.filter(ld => {
+            let key = String(ld._id);
+            if (collName === 'testresults') key = `${ld.testId}_${ld.studentId}`;
+            else if (collName === 'attendances') key = `${ld.studentId}_${ld.date}`;
+            else if (collName === 'students' || collName === 'tests') key = ld.id;
+
+            const cloudDoc = cloudMap.get(key);
+            if (!cloudDoc) return true;
+            const localTime = new Date(ld.updatedAt || 0).getTime();
+            const cloudTime = new Date(cloudDoc.updatedAt || 0).getTime();
+            return localTime >= cloudTime;
+          });
+
+          for (let i = 0; i < toPushToCloud.length; i += 500) {
+            const batch = toPushToCloud.slice(i, i + 500).map(doc => {
+              if (collName === 'testresults') {
+                const repl = { ...doc };
+                delete repl._id;
+                return {
+                  updateOne: {
+                    filter: { $or: [{ testId: doc.testId, studentId: doc.studentId }, { id: doc.id }, { _id: doc._id }] },
+                    update: { $set: repl },
+                    upsert: true
+                  }
+                };
+              }
               const filter = collName === 'attendances' && doc.studentId && doc.date
                 ? { studentId: doc.studentId, date: doc.date }
                 : { _id: doc._id };
@@ -282,7 +314,7 @@ export async function performFullSync() {
             });
             await cloudColl.bulkWrite(batch, { ordered: false });
           }
-          totalPushed += activeLocalDocs.length;
+          totalPushed += toPushToCloud.length;
         }
 
         // 4. Pull any Cloud docs that are not yet in Local (Safe Two-Way Merge for core entities)
@@ -297,29 +329,73 @@ export async function performFullSync() {
               logInfo('SYNC', `🧹 Purged ${cloudIdsToPurge.length} deleted logs from Cloud [${collName}]`);
             }
           } else {
-            const localIdsSet = new Set(localDocs.map(d => String(d._id)));
-            const missingInLocal = cloudDocs.filter(cd => {
-              if (cd.isDeleted) return false;
-              if (collName === 'attendances' && cd.studentId && cd.date) {
-                return !localDocs.some(ld => ld.studentId === cd.studentId && ld.date === cd.date);
-              }
-              return !localIdsSet.has(String(cd._id));
+            const localMap = new Map();
+            localDocs.forEach(ld => {
+              if (collName === 'testresults') localMap.set(`${ld.testId}_${ld.studentId}`, ld);
+              else if (collName === 'attendances') localMap.set(`${ld.studentId}_${ld.date}`, ld);
+              else if (collName === 'students' || collName === 'tests') localMap.set(ld.id, ld);
+              else localMap.set(String(ld._id), ld);
             });
-            if (missingInLocal.length > 0) {
-              const fixedMissing = missingInLocal.map(fixObjectIds);
+
+            const toPullToLocal = cloudDocs.filter(cd => {
+              if (cd.isDeleted) return false;
+              let key = String(cd._id);
+              if (collName === 'testresults') key = `${cd.testId}_${cd.studentId}`;
+              else if (collName === 'attendances') key = `${cd.studentId}_${cd.date}`;
+              else if (collName === 'students' || collName === 'tests') key = cd.id;
+
+              const localDoc = localMap.get(key);
+              if (!localDoc) return true;
+              const cloudTime = new Date(cd.updatedAt || 0).getTime();
+              const localTime = new Date(localDoc.updatedAt || 0).getTime();
+              return cloudTime > localTime;
+            });
+
+            if (toPullToLocal.length > 0) {
+              const fixedMissing = toPullToLocal.map(fixObjectIds);
               for (let i = 0; i < fixedMissing.length; i += 500) {
                 const batch = fixedMissing.slice(i, i + 500).map(doc => {
-                  const filter = collName === 'attendances' && doc.studentId && doc.date
-                    ? { studentId: doc.studentId, date: doc.date }
-                    : { _id: doc._id };
+                  if (collName === 'testresults') {
+                    const repl = { ...doc };
+                    delete repl._id;
+                    return {
+                      updateOne: {
+                        filter: { $or: [{ testId: doc.testId, studentId: doc.studentId }, { id: doc.id }, { _id: doc._id }] },
+                        update: { $set: repl },
+                        upsert: true
+                      }
+                    };
+                  }
+                  if (collName === 'attendances') {
+                    const repl = { ...doc };
+                    delete repl._id;
+                    return {
+                      updateOne: {
+                        filter: { studentId: doc.studentId, date: doc.date },
+                        update: { $set: repl },
+                        upsert: true
+                      }
+                    };
+                  }
+                  if (collName === 'students' || collName === 'tests') {
+                    const repl = { ...doc };
+                    delete repl._id;
+                    return {
+                      updateOne: {
+                        filter: { $or: [{ id: doc.id }, { _id: doc._id }] },
+                        update: { $set: repl },
+                        upsert: true
+                      }
+                    };
+                  }
                   return {
-                    replaceOne: { filter, replacement: doc, upsert: true }
+                    replaceOne: { filter: { _id: doc._id }, replacement: doc, upsert: true }
                   };
                 });
                 await localColl.bulkWrite(batch, { ordered: false });
               }
-              totalPulled += missingInLocal.length;
-              logInfo('SYNC', `📥 Pulled ${missingInLocal.length} new records from Cloud into [${collName}]`);
+              totalPulled += toPullToLocal.length;
+              logInfo('SYNC', `📥 Pulled/Updated ${toPullToLocal.length} records from Cloud into [${collName}]`);
             }
 
             // For sessions and core config collections, ensure local matches cloud exactly (purge deleted sessions/institutes from other PCs)
@@ -395,13 +471,48 @@ export async function pullAndRestoreFromCloud() {
 
         const fixedDocs = docs.map(fixObjectIds);
         for (let i = 0; i < fixedDocs.length; i += 500) {
-          const batch = fixedDocs.slice(i, i + 500).map(doc => ({
-            replaceOne: {
-              filter: { _id: doc._id },
-              replacement: doc,
-              upsert: true
+          const batch = fixedDocs.slice(i, i + 500).map(doc => {
+            if (collName === 'testresults') {
+              const repl = { ...doc };
+              delete repl._id;
+              return {
+                updateOne: {
+                  filter: { $or: [{ testId: doc.testId, studentId: doc.studentId }, { id: doc.id }, { _id: doc._id }] },
+                  update: { $set: repl },
+                  upsert: true
+                }
+              };
             }
-          }));
+            if (collName === 'attendances') {
+              const repl = { ...doc };
+              delete repl._id;
+              return {
+                updateOne: {
+                  filter: { studentId: doc.studentId, date: doc.date },
+                  update: { $set: repl },
+                  upsert: true
+                }
+              };
+            }
+            if (collName === 'students' || collName === 'tests') {
+              const repl = { ...doc };
+              delete repl._id;
+              return {
+                updateOne: {
+                  filter: { $or: [{ id: doc.id }, { _id: doc._id }] },
+                  update: { $set: repl },
+                  upsert: true
+                }
+              };
+            }
+            return {
+              replaceOne: {
+                filter: { _id: doc._id },
+                replacement: doc,
+                upsert: true
+              }
+            };
+          });
           await localColl.bulkWrite(batch, { ordered: false });
         }
         totalRestored += docs.length;

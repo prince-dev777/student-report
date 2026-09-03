@@ -77,6 +77,30 @@ async function restoreFromCloud() {
               upsert: true
             }
           }));
+        } else if (collName === 'testresults') {
+          bulkOps = docs.map(doc => {
+            const repl = { ...doc };
+            delete repl._id;
+            return {
+              updateOne: {
+                filter: { $or: [{ testId: doc.testId, studentId: doc.studentId }, { id: doc.id }, { _id: doc._id }] },
+                update: { $set: repl },
+                upsert: true
+              }
+            };
+          });
+        } else if (collName === 'students' || collName === 'tests') {
+          bulkOps = docs.map(doc => {
+            const repl = { ...doc };
+            delete repl._id;
+            return {
+              updateOne: {
+                filter: { $or: [{ id: doc.id }, { _id: doc._id }] },
+                update: { $set: repl },
+                upsert: true
+              }
+            };
+          });
         } else {
           bulkOps = docs.map(doc => ({
             replaceOne: {
