@@ -75,12 +75,16 @@ export function startSessionScheduler() {
                 if (!student) continue;
 
                 // Create In-App Notification directly for Parents Mobile App
+                const pName = student.parentName || 'Parent';
+                const todayFormatted = todayStr.includes('-') ? (todayStr.split('-')[0].length === 4 ? todayStr.split('-').reverse().join('-') : todayStr) : todayStr;
+                const punchMissedMsg = `PUNCH MISSED AT ${todayFormatted} PLEASE VERIFY MANUALLY AT CAREER XONE !`;
+
                 try {
                   const notif = new Notification({
                     instituteId: student.instituteId || currentSess.instituteId,
                     studentId: student._id || student.id,
-                    title: 'Self Study Continued',
-                    message: `${student.name} did not check out after ${prevSess.name} and is continuing at the institute for ${currentSess.name}.`,
+                    title: 'PUNCH MISSED',
+                    message: punchMissedMsg,
                     type: 'ATTENDANCE'
                   });
                   await notif.save();
@@ -95,10 +99,11 @@ export function startSessionScheduler() {
                     parentPhone: student.parentPhone,
                     studentName: student.name,
                     parentName: student.parentName,
-                    type: 'SESSION_CONTINUE',
+                    type: 'PUNCH_MISSED',
+                    sessionName: prevSess.name,
                     detail: {
-                      prevSession: prevSess.name,
-                      nextSession: currentSess.name
+                      sessionName: prevSess.name,
+                      time: prevSess.endTime
                     }
                   }).catch(() => {});
                 }
@@ -132,12 +137,16 @@ export function startSessionScheduler() {
                 if (!student) continue;
 
                 // Create In-App Notification directly for Parents Mobile App
+                const pName = student.parentName || 'Parent';
+                const todayFormatted = todayStr.includes('-') ? (todayStr.split('-')[0].length === 4 ? todayStr.split('-').reverse().join('-') : todayStr) : todayStr;
+                const punchMissedMsg = `PUNCH MISSED AT ${todayFormatted} PLEASE VERIFY MANUALLY AT CAREER XONE !`;
+
                 try {
                   const notif = new Notification({
                     instituteId: student.instituteId || currentSess.instituteId,
                     studentId: student._id || student.id,
-                    title: 'Check-Out Reminder',
-                    message: `${student.name} did not record a check-out punch before the end of ${currentSess.name} (${currentSess.endTime}).`,
+                    title: 'PUNCH MISSED',
+                    message: punchMissedMsg,
                     type: 'ATTENDANCE'
                   });
                   await notif.save();
@@ -152,7 +161,8 @@ export function startSessionScheduler() {
                     parentPhone: student.parentPhone,
                     studentName: student.name,
                     parentName: student.parentName,
-                    type: 'MISSED_EXIT',
+                    type: 'PUNCH_MISSED',
+                    sessionName: currentSess.name,
                     detail: {
                       sessionName: currentSess.name,
                       time: currentSess.endTime

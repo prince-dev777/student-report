@@ -71,7 +71,7 @@ export function resetSentAlertLockMap() {
  */
 export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail, sessionName = null, sessionId = null }) {
   // 0. App-First Mode: Route Daily Attendance Punches & Session Alerts to Parents Mobile App (Zero WhatsApp Load & Zero Ban Risk)
-  const isAttendanceRelated = (type === 'IN' || type === 'OUT' || type === 'SESSION_CONTINUE' || type === 'MISSED_EXIT');
+  const isAttendanceRelated = (type === 'IN' || type === 'OUT' || type === 'SESSION_CONTINUE' || type === 'MISSED_EXIT' || type === 'PUNCH_MISSED');
   const allowWhatsAppAttendance = process.env.ENABLE_WHATSAPP_ATTENDANCE === 'true';
   if (isAttendanceRelated && !allowWhatsAppAttendance) {
     return { success: true, skipped: true, reason: 'Attendance & session alerts routed to Parents Mobile App Notifications' };
@@ -163,14 +163,8 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
     const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
     const percent = detail.percentage ?? (detail.totalMarks ? Math.round((Number(detail.marks) / detail.totalMarks) * 1000) / 10 : 0);
     messageText = `📊 *Test Result Announcement - Career Xone*\n\nDear Parent, your ward *${studentName}* has appeared for *${detail.testName || detail.subject || 'Exam'}* on ${formattedDate}.\n\n🎯 *Marks Scored:* ${detail.marks}/${detail.totalMarks} (${percent}%)\n🏆 *Rank:* ${detail.rank || '-'}/${detail.totalStudents || '-'}\n\n📱 *View Complete Report & Scanned OMR Sheet:*\n🔗 ${portalUrl}\n\n- Career Xone (CX Career Academy)`;
-  } else if (type === 'SESSION_CONTINUE') {
-    const prev = typeof detail === 'object' ? (detail.prevSession || 'Morning Class') : 'Morning Class';
-    const next = typeof detail === 'object' ? (detail.nextSession || 'Self Study') : (detail || 'Self Study');
-    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} did not check out after ${prev} and is continuing at the institute on ${formattedDate} for ${next}. - Career Xone`;
-  } else if (type === 'MISSED_EXIT') {
-    const sess = typeof detail === 'object' ? (detail.sessionName || 'Self Study') : (detail || 'the session');
-    const timeStr = typeof detail === 'object' && detail.time ? ` (${detail.time})` : '';
-    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} did not record a check-out punch on ${formattedDate} before the end of ${sess}${timeStr}. - Career Xone`;
+  } else if (type === 'SESSION_CONTINUE' || type === 'MISSED_EXIT' || type === 'PUNCH_MISSED') {
+    messageText = `PUNCH MISSED AT ${formattedDate} PLEASE VERIFY MANUALLY AT CAREER XONE !`;
   } else if (type === 'WELCOME') {
     const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
     messageText = `🎉 Welcome to Career Xone!\n\n${studentName} has been registered successfully on ${formattedDate}.\n\n📱 *Download/Access Parents App:*\n🔗 Link: ${portalUrl}\n\n*Login Credentials:*\nUser ID: ${detail.parentUserId}\nPassword: ${detail.parentPassword}\n\nPlease login to track attendance and test results regularly.`;

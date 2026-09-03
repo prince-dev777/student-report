@@ -2573,38 +2573,120 @@ export default function ParentPortalWeb() {
                   <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>All alerts are up to date.</span>
                 </div>
               ) : (
-                visibleNotifications.map((notif, idx) => (
+              visibleNotifications.map((notif, idx) => {
+                const titleLower = String(notif.title || '').toLowerCase();
+                const msgLower = String(notif.message || '').toLowerCase();
+
+                const isPunchMissed = titleLower.includes('missed') || msgLower.includes('did not record') || msgLower.includes('did not check out') || msgLower.includes('punch missed');
+                const isCheckIn = titleLower.includes('check-in') || titleLower.includes('arrival') || msgLower.includes('safely arrived');
+                const isCheckOut = titleLower.includes('check-out') || titleLower.includes('departure') || msgLower.includes('has left');
+                const isTestResult = notif.type === 'TEST_RESULT' || titleLower.includes('test') || titleLower.includes('result');
+
+                const cardTheme = isPunchMissed ? {
+                  bg: '#fff7ed',
+                  border: '1.5px solid #fed7aa',
+                  borderLeft: '5px solid #ea580c',
+                  titleColor: '#c2410c',
+                  badgeBg: '#ffedd5',
+                  badgeColor: '#c2410c',
+                  badgeText: '⚠️ PUNCH MISSED',
+                  actionColor: '#ea580c'
+                } : isCheckIn ? {
+                  bg: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderLeft: '5px solid #16a34a',
+                  titleColor: '#15803d',
+                  badgeBg: '#dcfce7',
+                  badgeColor: '#15803d',
+                  badgeText: '🟢 CHECK-IN',
+                  actionColor: '#16a34a'
+                } : isCheckOut ? {
+                  bg: '#f0f9ff',
+                  border: '1px solid #bae6fd',
+                  borderLeft: '5px solid #0284c7',
+                  titleColor: '#0369a1',
+                  badgeBg: '#e0f2fe',
+                  badgeColor: '#0284c7',
+                  badgeText: '🔵 CHECK-OUT',
+                  actionColor: '#0284c7'
+                } : isTestResult ? {
+                  bg: '#faf5ff',
+                  border: '1px solid #e9d5ff',
+                  borderLeft: '5px solid #7c3aed',
+                  titleColor: '#6d28d9',
+                  badgeBg: '#f3e8ff',
+                  badgeColor: '#7c3aed',
+                  badgeText: '🏆 EXAM RESULT',
+                  actionColor: '#7c3aed'
+                } : {
+                  bg: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderLeft: '5px solid #64748b',
+                  titleColor: '#0f172a',
+                  badgeBg: '#f1f5f9',
+                  badgeColor: '#475569',
+                  badgeText: '📢 NOTICE',
+                  actionColor: '#0284c7'
+                };
+
+                return (
                   <div
                     key={idx}
                     onClick={() => {
                       setShowNotificationDrawer(false);
-                      if (notif.type === 'ATTENDANCE') setActiveTab('attendance');
+                      if (notif.type === 'ATTENDANCE' || isPunchMissed || isCheckIn || isCheckOut) setActiveTab('attendance');
                       else if (notif.type === 'TEST_RESULT') setActiveTab('tests');
-                      else if (notif.type === 'NOTICE') setActiveTab('schedule');
+                      else setActiveTab('schedule');
                     }}
                     title="Click to view details"
                     style={{
-                      background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
-                      padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '4px',
-                      cursor: 'pointer', transition: 'all 0.15s ease'
+                      background: cardTheme.bg,
+                      border: cardTheme.border,
+                      borderLeft: cardTheme.borderLeft,
+                      borderRadius: '12px',
+                      padding: '12px 14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                      transition: 'all 0.15s ease'
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f0f9ff'; e.currentTarget.style.borderColor = '#bae6fd'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{ fontSize: '0.88rem', color: '#0f172a' }}>{notif.title}</strong>
-                      <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{notif.time}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{
+                          background: cardTheme.badgeBg,
+                          color: cardTheme.badgeColor,
+                          fontSize: '0.62rem',
+                          fontWeight: 900,
+                          padding: '2px 7px',
+                          borderRadius: '6px',
+                          letterSpacing: '0.3px'
+                        }}>
+                          {cardTheme.badgeText}
+                        </span>
+                        <strong style={{ fontSize: '0.84rem', color: cardTheme.titleColor }}>
+                          {isPunchMissed ? 'PUNCH MISSED' : notif.title}
+                        </strong>
+                      </div>
+                      <span style={{ fontSize: '0.70rem', color: '#64748b', fontWeight: 600 }}>{notif.time}</span>
                     </div>
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+
+                    <p style={{ margin: 0, fontSize: '0.80rem', color: '#334155', lineHeight: 1.45, fontWeight: isPunchMissed ? 600 : 400 }}>
                       {notif.message}
                     </p>
+
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2px' }}>
-                      <span style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
-                        Tap to view details <ChevronRight size={12} />
+                      <span style={{ fontSize: '0.68rem', color: cardTheme.actionColor, fontWeight: 800, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        View in Attendance <ChevronRight size={12} />
                       </span>
                     </div>
                   </div>
-                ))
+                );
+              })
               )}
             </div>
 
