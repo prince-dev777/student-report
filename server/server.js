@@ -3349,12 +3349,33 @@ app.post('/api/test-results/omr-process', upload.array('images', 500), async (re
           let studentAnswers = [];
           if (r.subjects) {
             const subjectNames = Object.keys(r.subjects).sort();
+            const allQ = [];
             for (const subj of subjectNames) {
-              studentAnswers = studentAnswers.concat(r.subjects[subj].map(q => {
-                if (q.selectedOptions) return q.selectedOptions.join('');
-                if (q.selectedOption) return q.selectedOption;
-                return q.studentAns || '';
-              }));
+              allQ.push(...(r.subjects[subj] || []));
+            }
+
+            const maxMappedQ = (test.subjectMapping && test.subjectMapping.length > 0)
+              ? Math.max(...test.subjectMapping.map(m => Number(m.toQ) || 0))
+              : 0;
+
+            const hasExplicitQNums = allQ.some(q => q && q.questionNo && Number(q.questionNo) > 1);
+            if (hasExplicitQNums && maxMappedQ > 0) {
+              studentAnswers = new Array(maxMappedQ).fill('');
+              allQ.forEach(q => {
+                const qNum = Number(q.questionNo);
+                const ans = q.selectedOptions ? q.selectedOptions.join('') : (q.selectedOption || q.studentAns || '');
+                if (qNum > 0 && qNum <= maxMappedQ) {
+                  studentAnswers[qNum - 1] = ans;
+                }
+              });
+            } else {
+              for (const subj of subjectNames) {
+                studentAnswers = studentAnswers.concat(r.subjects[subj].map(q => {
+                  if (q.selectedOptions) return q.selectedOptions.join('');
+                  if (q.selectedOption) return q.selectedOption;
+                  return q.studentAns || '';
+                }));
+              }
             }
           } else {
             studentAnswers = (r.studentAnswers || []).map(q => {

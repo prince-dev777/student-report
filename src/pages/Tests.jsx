@@ -1787,6 +1787,15 @@ export default function Tests() {
       }));
     }
     
+    const firstMappedQ = test.subjectMapping && test.subjectMapping.length > 0
+      ? Math.min(...test.subjectMapping.map(m => Number(m.fromQ)))
+      : 1;
+    const maxMappedQ = test.subjectMapping && test.subjectMapping.length > 0
+      ? Math.max(...test.subjectMapping.map(m => Number(m.toQ)))
+      : totalQuestions;
+    const isDenseArray = (firstMappedQ > 1 && studentAnswers && studentAnswers.length < maxMappedQ);
+    const offset = isDenseArray ? (firstMappedQ - 1) : 0;
+
     const stats = subjectConfig.map((mapping) => {
       const startIdx = Math.max(0, mapping.fromQ - 1);
       const endIdx = Math.min(totalQuestions, mapping.toQ);
@@ -1797,7 +1806,7 @@ export default function Tests() {
       let skipped = 0;
       
       for (let i = startIdx; i < endIdx; i++) {
-        const studentAns = studentAnswers ? studentAnswers[i] : null;
+        const studentAns = studentAnswers ? (isDenseArray ? studentAnswers[i - offset] : studentAnswers[i]) : null;
         const correctAns = answerKey[i];
         
         let extractedAns = '';
@@ -4983,71 +4992,97 @@ export default function Tests() {
                     borderRadius: '12px', 
                     border: '1px solid var(--border-color)' 
                   }}>
-                    {selectedStudentResult.studentAnswers.map((ans, idx) => {
-                      const correctAns = selectedTestResults.test.answerKey[idx];
-                      if (correctAns === undefined || correctAns === null) return null;
-                      
-                      const selStr = String(ans || '').trim().toUpperCase();
-                      const corStr = String(correctAns).trim().toUpperCase();
-                      const isBonus = isBonusAnswer(corStr);
-                      
-                      let isCorrect = false;
-                      let isSkipped = false;
-                      
-                      if (isBonus) {
-                        isCorrect = true;
-                      } else if (!selStr || selStr === 'NULL') {
-                        isSkipped = true;
-                      } else if (selStr === corStr) {
-                        isCorrect = true;
-                      } else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) {
-                        isCorrect = true;
+                    {(() => {
+                      const test = selectedTestResults.test;
+                      const answerKey = test.answerKey || [];
+                      const rawStudentAnswers = selectedStudentResult.studentAnswers || [];
+
+                      let mappedQNums = [];
+                      if (test.subjectMapping && test.subjectMapping.length > 0) {
+                        test.subjectMapping.forEach(m => {
+                          if (m.fromQ && m.toQ) {
+                            for (let q = Number(m.fromQ); q <= Number(m.toQ); q++) {
+                              mappedQNums.push(q);
+                            }
+                          }
+                        });
+                      }
+                      if (mappedQNums.length === 0) {
+                        const totalQ = test.questionsToDetect || rawStudentAnswers.length || answerKey.length || 100;
+                        for (let q = 1; q <= totalQ; q++) mappedQNums.push(q);
                       }
 
-                      let bgColor = 'var(--bg-primary)';
-                      let color = 'var(--text-primary)';
-                      let borderColor = 'var(--border-color)';
+                      const firstMappedQ = mappedQNums[0] || 1;
+                      const maxMappedQ = mappedQNums[mappedQNums.length - 1] || mappedQNums.length;
+                      const isDenseArray = (firstMappedQ > 1 && rawStudentAnswers.length < maxMappedQ);
 
-                      if (isBonus) {
-                        bgColor = 'rgba(245, 158, 11, 0.14)';
-                        color = '#b45309';
-                        borderColor = 'rgba(245, 158, 11, 0.45)';
-                      } else if (isSkipped) {
-                        color = 'var(--text-tertiary)';
-                      } else if (isCorrect) {
-                        bgColor = 'rgba(34, 197, 94, 0.1)';
-                        color = 'var(--accent-green)';
-                        borderColor = 'rgba(34, 197, 94, 0.3)';
-                      } else {
-                        bgColor = 'rgba(239, 68, 68, 0.1)';
-                        color = '#ef4444';
-                        borderColor = 'rgba(239, 68, 68, 0.3)';
-                      }
+                      return mappedQNums.map((qNum, idx) => {
+                        const ans = isDenseArray ? rawStudentAnswers[idx] : rawStudentAnswers[qNum - 1];
+                        const correctAns = answerKey[qNum - 1];
+                        if (correctAns === undefined || correctAns === null || String(correctAns).trim() === '') return null;
 
-                      return (
-                        <div key={idx} style={{ 
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                          padding: '8px 4px', borderRadius: '8px', background: bgColor, 
-                          border: `1.5px solid ${borderColor}`, textAlign: 'center'
-                        }}>
-                          <span style={{ fontWeight: 700, color: isBonus ? '#b45309' : 'var(--text-secondary)', marginBottom: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            Q{idx + 1} {isBonus && '⭐'}
-                          </span>
-                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color }}>
-                            {selStr !== 'NULL' && selStr ? selStr : '-'}
+                        const selStr = String(ans || '').trim().toUpperCase();
+                        const corStr = String(correctAns).trim().toUpperCase();
+                        const isBonus = isBonusAnswer(corStr);
+
+                        let isCorrect = false;
+                        let isSkipped = false;
+
+                        if (isBonus) {
+                          isCorrect = true;
+                        } else if (!selStr || selStr === 'NULL' || selStr === '') {
+                          isSkipped = true;
+                        } else if (selStr === corStr) {
+                          isCorrect = true;
+                        } else if (!isNaN(parseFloat(selStr)) && !isNaN(parseFloat(corStr)) && parseFloat(selStr) === parseFloat(corStr)) {
+                          isCorrect = true;
+                        }
+
+                        let bgColor = 'var(--bg-primary)';
+                        let color = 'var(--text-primary)';
+                        let borderColor = 'var(--border-color)';
+
+                        if (isBonus) {
+                          bgColor = 'rgba(245, 158, 11, 0.14)';
+                          color = '#b45309';
+                          borderColor = 'rgba(245, 158, 11, 0.45)';
+                        } else if (isSkipped) {
+                          color = 'var(--text-tertiary)';
+                        } else if (isCorrect) {
+                          bgColor = 'rgba(34, 197, 94, 0.1)';
+                          color = 'var(--accent-green)';
+                          borderColor = 'rgba(34, 197, 94, 0.3)';
+                        } else {
+                          bgColor = 'rgba(239, 68, 68, 0.1)';
+                          color = '#ef4444';
+                          borderColor = 'rgba(239, 68, 68, 0.3)';
+                        }
+
+                        return (
+                          <div key={qNum} style={{ 
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            padding: '8px 4px', borderRadius: '8px', background: bgColor, 
+                            border: `1.5px solid ${borderColor}`, textAlign: 'center'
+                          }}>
+                            <span style={{ fontWeight: 700, color: isBonus ? '#b45309' : 'var(--text-secondary)', marginBottom: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              Q{qNum} {isBonus && '⭐'}
+                            </span>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color }}>
+                              {selStr !== 'NULL' && selStr ? selStr : '-'}
+                            </div>
+                            {isBonus ? (
+                              <div style={{ fontSize: '0.64rem', color: '#b45309', marginTop: '2px', fontWeight: 800 }}>
+                                BONUS (+{selectedTestResults?.test?.marksPerQuestion || 4})
+                              </div>
+                            ) : (!isCorrect && !isSkipped && (
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '2px', fontWeight: 600 }}>
+                                Ans: {corStr}
+                              </div>
+                            ))}
                           </div>
-                          {isBonus ? (
-                            <div style={{ fontSize: '0.64rem', color: '#b45309', marginTop: '2px', fontWeight: 800 }}>
-                              BONUS (+{selectedTestResults?.test?.marksPerQuestion || 4})
-                            </div>
-                          ) : (!isCorrect && !isSkipped && (
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '2px', fontWeight: 600 }}>
-                              Ans: {corStr}
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 </>
               )}
