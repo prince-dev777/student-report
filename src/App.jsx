@@ -253,7 +253,7 @@ export default function App() {
           <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/*" element={<SaaSShowcaseLandingPage />} />
         </Routes>
-        <Toaster position="top-right" />
+        <Toaster position="top-center" containerStyle={{ zIndex: 99999999 }} toastOptions={{ duration: 2500 }} />
       </HashRouter>
     );
   }

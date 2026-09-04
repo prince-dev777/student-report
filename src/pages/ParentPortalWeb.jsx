@@ -8,7 +8,7 @@ import {
   Flame, Compass, HelpCircle, ChevronRight, ChevronUp, ChevronDown, Share2, 
   RefreshCw, SlidersHorizontal, Grid, List, Settings 
 } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { getMediaUrl } from '../utils/api';
@@ -403,7 +403,7 @@ export default function ParentPortalWeb() {
         }
         sessionStorage.setItem('parentSession', JSON.stringify(sessionPayload));
 
-        toast.success(`Welcome Parent of ${studentObj?.name || 'Student'}!`);
+        toast.success(`Welcome Parent of ${studentObj?.name || 'Student'}!`, { id: 'parent-login' });
         loginSuccess = true;
       } else {
         lastErrorMessage = data.message || data.error || 'Invalid credentials';
@@ -539,7 +539,7 @@ export default function ParentPortalWeb() {
     await refreshParentDataSilently();
     setTimeout(() => {
       setIsRefreshing(false);
-      toast.success('Data synced with institute server ✅', { duration: 1500 });
+      toast.success('Data synced with institute server ✅', { id: 'parent-sync', duration: 1500 });
     }, 600);
   };
 
@@ -913,8 +913,6 @@ export default function ParentPortalWeb() {
         padding: '16px',
         fontFamily: "'Outfit', 'Inter', sans-serif"
       }}>
-        <Toaster />
-        
         {/* PWA Install Banner */}
         <div style={{ width: '100%', maxWidth: '420px', marginBottom: '14px' }}>
           <PWAInstallPrompt appName="CX Parents" />
@@ -1210,7 +1208,6 @@ export default function ParentPortalWeb() {
       fontFamily: "'Outfit', 'Inter', sans-serif",
       paddingBottom: '88px'
     }}>
-      <Toaster />
       <PWAInstallPrompt appName="CX Parents" />
 
       {/* Global CSS for Mobile & Print & Smooth Animations */}

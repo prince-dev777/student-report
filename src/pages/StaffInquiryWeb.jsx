@@ -6,7 +6,7 @@ import {
   ChevronRight, ArrowRight, ShieldCheck, Edit3, Trash2
 } from 'lucide-react';
 import { api } from '../utils/api';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
 
 export default function StaffInquiryWeb() {
@@ -207,7 +207,6 @@ export default function StaffInquiryWeb() {
       fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif",
       paddingBottom: '60px'
     }}>
-      <Toaster position="top-center" />
       <PWAInstallPrompt appName="CX Inquiry" />
 
       {/* Top Header (Compact & Mobile-Optimized) */}

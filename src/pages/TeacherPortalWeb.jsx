@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { formatBatchName } from '../utils/helpers';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
 import { AppContext } from '../context/AppContext';
 
@@ -401,8 +401,6 @@ export default function TeacherPortalWeb() {
       color: '#0f172a',
       paddingBottom: '60px'
     }}>
-      <Toaster position="top-center" />
-      
       {/* 📲 Modern PWA Install Banner */}
       <PWAInstallPrompt appName="CX Teacher" />
 
