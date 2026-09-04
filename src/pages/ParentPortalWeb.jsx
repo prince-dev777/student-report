@@ -1220,22 +1220,22 @@ export default function ParentPortalWeb() {
         .live-pulse-dot { animation: pulseGlow 1.8s infinite ease-in-out; }
         
         @media (max-width: 600px) {
-          .parent-header { padding: 8px 12px !important; }
-          .parent-logo-img { width: 30px !important; height: 30px !important; border-radius: 7px !important; }
-          .parent-inst-name { font-size: 0.88rem !important; }
-          .parent-inst-sub { font-size: 0.66rem !important; }
-          .student-card { padding: 10px 12px !important; border-radius: 12px !important; margin-bottom: 6px !important; }
-          .student-avatar { width: 34px !important; height: 34px !important; font-size: 0.95rem !important; border-radius: 8px !important; }
-          .student-name { font-size: 0.90rem !important; }
-          .tab-btn-bar { gap: 6px !important; margin-bottom: 10px !important; }
-          .tab-btn { padding: 8px 4px !important; font-size: 0.78rem !important; border-radius: 10px !important; min-height: 42px !important; }
-          .metrics-grid { gap: 6px !important; margin-top: 10px !important; }
-          .metric-box { padding: 9px 4px !important; border-radius: 12px !important; min-height: 56px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; }
-          .metric-label { font-size: 0.72rem !important; margin-bottom: 2px !important; font-weight: 800 !important; }
-          .metric-value { font-size: 1.05rem !important; font-weight: 900 !important; }
-          .mobile-bottom-nav { padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)) !important; }
-          .mobile-bottom-nav button { padding: 8px 4px !important; border-radius: 14px !important; gap: 4px !important; }
-          .mobile-bottom-nav-label { font-size: 0.82rem !important; font-weight: 700 !important; }
+          .parent-header { padding: 10px 14px !important; }
+          .parent-logo-img { width: 36px !important; height: 36px !important; border-radius: 8px !important; }
+          .parent-inst-name { font-size: 1.05rem !important; font-weight: 900 !important; }
+          .parent-inst-sub { font-size: 0.78rem !important; }
+          .student-card { padding: 12px 14px !important; border-radius: 14px !important; margin-bottom: 8px !important; }
+          .student-avatar { width: 40px !important; height: 40px !important; font-size: 1.1rem !important; border-radius: 10px !important; }
+          .student-name { font-size: 1.12rem !important; font-weight: 900 !important; }
+          .tab-btn-bar { gap: 6px !important; margin-bottom: 12px !important; }
+          .tab-btn { padding: 10px 6px !important; font-size: 0.90rem !important; font-weight: 800 !important; border-radius: 12px !important; min-height: 44px !important; }
+          .metrics-grid { gap: 7px !important; margin-top: 10px !important; }
+          .metric-box { padding: 10px 5px !important; border-radius: 12px !important; min-height: 62px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; }
+          .metric-label { font-size: 0.78rem !important; margin-bottom: 3px !important; font-weight: 800 !important; }
+          .metric-value { font-size: 1.15rem !important; font-weight: 900 !important; }
+          .mobile-bottom-nav { padding: 9px 14px calc(10px + env(safe-area-inset-bottom, 0px)) !important; }
+          .mobile-bottom-nav button { padding: 9px 4px !important; border-radius: 14px !important; gap: 5px !important; }
+          .mobile-bottom-nav-label { font-size: 0.88rem !important; font-weight: 800 !important; }
         }
         @media print {
           body * { visibility: hidden !important; }
@@ -1430,16 +1430,16 @@ export default function ParentPortalWeb() {
               onClick={() => setActiveTab('attendance')}
               title={`Click to view ${activeMonthDisplay.fullMonthName} Attendance`}
               style={{
-                background: '#f0f9ff', border: '1px solid #bae6fd', padding: '9px 5px',
+                background: '#f0f9ff', border: '1px solid #bae6fd', padding: '10px 5px',
                 borderRadius: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#0284c7'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bae6fd'; e.currentTarget.style.transform = 'none'; }}
             >
-              <span className="metric-label" style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 800, display: 'block', marginBottom: '2px' }}>
+              <span className="metric-label" style={{ fontSize: '0.78rem', color: '#0369a1', fontWeight: 800, display: 'block', marginBottom: '3px' }}>
                 {activeMonthDisplay.monthName} Rate
               </span>
-              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#0284c7', fontWeight: 900 }}>
+              <strong className="metric-value" style={{ fontSize: '1.15rem', color: '#0284c7', fontWeight: 900 }}>
                 {activeMonthDisplay.rate !== '-' ? activeMonthDisplay.rate : (attendanceRecords.length > 0 ? '100%' : '-')}
               </strong>
             </div>
@@ -1449,16 +1449,16 @@ export default function ParentPortalWeb() {
               onClick={() => setActiveTab('attendance')}
               title="Click to view Attendance records"
               style={{
-                background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '9px 5px',
+                background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '10px 5px',
                 borderRadius: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#16a34a'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bbf7d0'; e.currentTarget.style.transform = 'none'; }}
             >
-              <span className="metric-label" style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 800, display: 'block', marginBottom: '2px' }}>
+              <span className="metric-label" style={{ fontSize: '0.78rem', color: '#15803d', fontWeight: 800, display: 'block', marginBottom: '3px' }}>
                 Total Present
               </span>
-              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#16a34a', fontWeight: 900 }}>
+              <strong className="metric-value" style={{ fontSize: '1.15rem', color: '#16a34a', fontWeight: 900 }}>
                 {studentData?.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length} Days
               </strong>
             </div>
@@ -1468,14 +1468,14 @@ export default function ParentPortalWeb() {
               onClick={() => setActiveTab('tests')}
               title="Click to view Tests & OMR"
               style={{
-                background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '9px 5px',
+                background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '10px 5px',
                 borderRadius: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#c026d3'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#f5d0fe'; e.currentTarget.style.transform = 'none'; }}
             >
-              <span className="metric-label" style={{ fontSize: '0.72rem', color: '#a21caf', fontWeight: 800, display: 'block', marginBottom: '2px' }}>Avg Score</span>
-              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#c026d3', fontWeight: 900 }}>
+              <span className="metric-label" style={{ fontSize: '0.78rem', color: '#a21caf', fontWeight: 800, display: 'block', marginBottom: '3px' }}>Avg Score</span>
+              <strong className="metric-value" style={{ fontSize: '1.15rem', color: '#c026d3', fontWeight: 900 }}>
                 {testResults.length > 0 ? `${Math.max(0, analyticsData.avgPercentage)}%` : '-'}
               </strong>
             </div>
@@ -1485,14 +1485,14 @@ export default function ParentPortalWeb() {
               onClick={() => setActiveTab('tests')}
               title="Click to view Tests & OMR"
               style={{
-                background: '#fff7ed', border: '1px solid #ffedd5', padding: '9px 5px',
+                background: '#fff7ed', border: '1px solid #ffedd5', padding: '10px 5px',
                 borderRadius: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ea580c'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#ffedd5'; e.currentTarget.style.transform = 'none'; }}
             >
-              <span className="metric-label" style={{ fontSize: '0.72rem', color: '#c2410c', fontWeight: 800, display: 'block', marginBottom: '2px' }}>Best Rank</span>
-              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#ea580c', fontWeight: 900 }}>
+              <span className="metric-label" style={{ fontSize: '0.78rem', color: '#c2410c', fontWeight: 800, display: 'block', marginBottom: '3px' }}>Best Rank</span>
+              <strong className="metric-value" style={{ fontSize: '1.15rem', color: '#ea580c', fontWeight: 900 }}>
                 {testResults.length > 0 && analyticsData.bestRank !== '-' ? `#${analyticsData.bestRank}` : '-'}
               </strong>
             </div>
@@ -1528,14 +1528,14 @@ export default function ParentPortalWeb() {
                 boxShadow: todayAttendance.status === 'PRESENT' ? '0 0 6px rgba(22, 163, 74, 0.6)' : 'none'
               }}
             />
-            <span style={{ fontSize: '0.74rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ fontSize: '0.84rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               Today: <strong style={{ color: todayAttendance.status === 'PRESENT' ? '#15803d' : todayAttendance.status === 'ABSENT' ? '#b91c1c' : '#64748b' }}>
                 {todayAttendance.status === 'PRESENT' ? `MARKED PRESENT (${todayAttendance.time})` : todayAttendance.status === 'ABSENT' ? 'MARKED ABSENT' : 'Attendance in Session (Not Marked Yet)'}
               </strong>
             </span>
           </div>
-          <span style={{ fontSize: '0.66rem', color: '#0284c7', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
-            Logs <ChevronRight size={12} />
+          <span style={{ fontSize: '0.78rem', color: '#0284c7', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+            Logs <ChevronRight size={14} />
           </span>
         </div>
 
@@ -2048,7 +2048,7 @@ export default function ParentPortalWeb() {
                           }} />
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.66rem', color: '#475569', fontWeight: 700 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#475569', fontWeight: 800 }}>
                           <span>🟢 Present: <strong style={{ color: '#15803d' }}>{monthStats.present}d</strong></span>
                           <span>🔴 Absent: <strong style={{ color: '#b91c1c' }}>{monthStats.absent}d</strong></span>
                           <span>📅 Total Marked: <strong style={{ color: '#0f172a' }}>{monthStats.total}d</strong></span>
@@ -2058,9 +2058,9 @@ export default function ParentPortalWeb() {
                   })()}
 
                   {/* Day of Week Headers */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center', marginBottom: '6px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center', marginBottom: '8px' }}>
                     {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-                      <span key={i} style={{ fontSize: '0.66rem', fontWeight: 800, color: '#64748b' }}>
+                      <span key={i} style={{ fontSize: '0.84rem', fontWeight: 900, color: '#334155' }}>
                         {d}
                       </span>
                     ))}
@@ -2114,8 +2114,8 @@ export default function ParentPortalWeb() {
                             });
                           }}
                           style={{
-                            height: '38px',
-                            borderRadius: '8px',
+                            height: '42px',
+                            borderRadius: '9px',
                             background: isSelected ? '#0284c7' : bg,
                             border: `1.5px solid ${isSelected ? '#0284c7' : (isToday ? '#38bdf8' : border)}`,
                             color: isSelected ? '#ffffff' : textCol,
@@ -2127,9 +2127,9 @@ export default function ParentPortalWeb() {
                             transition: 'all 0.15s ease'
                           }}
                         >
-                          <span style={{ fontSize: '0.74rem', fontWeight: 800 }}>{day}</span>
+                          <span style={{ fontSize: '0.86rem', fontWeight: 900 }}>{day}</span>
                           {dotCol && !isSelected && (
-                            <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: dotCol, marginTop: '1px' }} />
+                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: dotCol, marginTop: '2px' }} />
                           )}
                         </div>
                       );
@@ -2207,15 +2207,15 @@ export default function ParentPortalWeb() {
                             {isPresent ? <CheckCircle2 size={15} color="#16a34a" /> : isAbsent ? <XCircle size={15} color="#dc2626" /> : <Clock size={15} color="#d97706" />}
                           </div>
                           <div>
-                            <strong style={{ display: 'block', fontSize: '0.78rem', color: '#0f172a' }}>{item.date}</strong>
-                            <span style={{ fontSize: '0.66rem', color: '#64748b' }}>
+                            <strong style={{ display: 'block', fontSize: '0.88rem', color: '#0f172a' }}>{item.date}</strong>
+                            <span style={{ fontSize: '0.76rem', color: '#64748b' }}>
                               In: {item.entryTime || (isPresent ? '09:00 AM' : '-')} | Out: {item.exitTime || '-'}
                             </span>
                           </div>
                         </div>
 
                         <span style={{
-                          padding: '3px 8px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 800,
+                          padding: '3px 9px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 800,
                           background: isPresent ? '#dcfce7' : isAbsent ? '#fee2e2' : '#fef3c7',
                           color: isPresent ? '#15803d' : isAbsent ? '#b91c1c' : '#b45309',
                           border: `1px solid ${isPresent ? '#bbf7d0' : isAbsent ? '#fecaca' : '#fde68a'}`
@@ -3540,18 +3540,18 @@ export default function ParentPortalWeb() {
               }}
             >
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon size={24} color={isActive ? item.activeColor : '#64748b'} strokeWidth={isActive ? 2.6 : 2.1} />
+                <Icon size={26} color={isActive ? item.activeColor : '#64748b'} strokeWidth={isActive ? 2.6 : 2.1} />
                 {item.count !== null && item.count > 0 && (
                   <span style={{
                     position: 'absolute',
-                    top: '-5px',
-                    right: '-11px',
+                    top: '-6px',
+                    right: '-12px',
                     background: isActive ? item.activeColor : '#ef4444',
                     color: '#ffffff',
-                    fontSize: '0.62rem',
+                    fontSize: '0.66rem',
                     fontWeight: 900,
-                    padding: '1.5px 5px',
-                    borderRadius: '8px',
+                    padding: '2px 6px',
+                    borderRadius: '9px',
                     lineHeight: 1
                   }}>
                     {item.count}
@@ -3559,8 +3559,8 @@ export default function ParentPortalWeb() {
                 )}
               </div>
               <span className="mobile-bottom-nav-label" style={{
-                fontSize: '0.82rem',
-                fontWeight: isActive ? 900 : 700,
+                fontSize: '0.88rem',
+                fontWeight: isActive ? 900 : 800,
                 color: isActive ? item.activeColor : '#64748b',
                 lineHeight: 1
               }}>
