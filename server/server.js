@@ -1048,37 +1048,92 @@ app.post('/api/parent/login', async (req, res) => {
     const digitsOnlyUserId = cleanUserId.replace(/\D/g, '');
 
     // Search student by parentUserId, rollNo, id, or parentPhone
-    const student = await Student.findOne({ isDeleted: { $ne: true }, 
-      $or: [
-        { parentUserId: cleanUserId },
-        { parentUserId: { $regex: new RegExp(`^${cleanUserId}$`, 'i') } },
-        { rollNo: { $regex: new RegExp(`^${cleanUserId}$`, 'i') } },
-        { id: cleanUserId },
-        { parentPhone: cleanUserId },
-        ...(digitsOnlyUserId.length >= 7 ? [{ parentPhone: { $regex: new RegExp(digitsOnlyUserId) } }] : [])
-      ]
+    const searchQueries = [
+      { parentUserId: cleanUserId },
+      { parentUserId: { $regex: new RegExp(`^${cleanUserId}$`, 'i') } },
+      { rollNo: cleanUserId },
+      { rollNo: { $regex: new RegExp(`^${cleanUserId}$`, 'i') } },
+      { id: cleanUserId },
+      { parentPhone: cleanUserId },
+      { phone: cleanUserId }
+    ];
+
+    if (cleanUserId.toUpperCase().startsWith('CAREER')) {
+      const stripped = cleanUserId.substring(6);
+      searchQueries.push({ rollNo: stripped });
+      searchQueries.push({ rollNo: { $regex: new RegExp(`^${stripped}$`, 'i') } });
+    } else {
+      searchQueries.push({ parentUserId: `CAREER${cleanUserId}` });
+      searchQueries.push({ parentUserId: { $regex: new RegExp(`^CAREER${cleanUserId}$`, 'i') } });
+    }
+
+    if (digitsOnlyUserId) {
+      searchQueries.push({ rollNo: digitsOnlyUserId });
+      if (digitsOnlyUserId.length === 4) {
+        searchQueries.push({ rollNo: `1${digitsOnlyUserId}` });
+      }
+      searchQueries.push({ rollNo: digitsOnlyUserId.padStart(5, '0') });
+    }
+
+    const last10Digits = digitsOnlyUserId.length >= 10 ? digitsOnlyUserId.slice(-10) : digitsOnlyUserId;
+    if (last10Digits && last10Digits.length >= 7) {
+      searchQueries.push({ parentPhone: { $regex: new RegExp(last10Digits) } });
+      searchQueries.push({ phone: { $regex: new RegExp(last10Digits) } });
+    }
+
+    const student = await Student.findOne({ 
+      isDeleted: { $ne: true }, 
+      $or: searchQueries
     });
 
     if (!student) {
       return res.status(401).json({ error: 'No student found with this User ID / Roll Number' });
     }
 
-    // Password validation (bcrypt hash, plain password, rollNo, parentPhone, or default fallbacks)
+    // Password validation (Default 123456 / 1234, bcrypt hash, plain password, rollNo, parentPhone)
     let isMatch = false;
-    if (student.parentPasswordHash && cleanPassword) {
+
+    // 1. Universal default passcodes ('123456' or '1234') as advertised in Parent App UI
+    if (cleanPassword === '123456' || cleanPassword === '1234') {
+      isMatch = true;
+    }
+
+    // 2. Custom student plain password
+    if (!isMatch && student.parentPasswordPlain && cleanPassword === String(student.parentPasswordPlain).trim()) {
+      isMatch = true;
+    }
+
+    // 3. Custom student bcrypt hash
+    if (!isMatch && student.parentPasswordHash && cleanPassword) {
       try {
         isMatch = await bcrypt.compare(cleanPassword, student.parentPasswordHash);
       } catch (e) { }
     }
-    if (!isMatch && student.parentPasswordPlain && cleanPassword === student.parentPasswordPlain) {
-      isMatch = true;
+
+    // 4. Student Roll Number match (case-insensitive & numeric match)
+    if (!isMatch && cleanPassword) {
+      const cleanRoll = String(student.rollNo || '').trim().toLowerCase();
+      const pLower = cleanPassword.toLowerCase();
+      if (cleanRoll === pLower || (cleanRoll.replace(/\D/g, '') && cleanRoll.replace(/\D/g, '') === cleanPassword.replace(/\D/g, ''))) {
+        isMatch = true;
+      }
     }
-    if (!isMatch && cleanPassword && String(student.rollNo).toLowerCase() === cleanPassword.toLowerCase()) {
-      isMatch = true;
+
+    // 5. Parent Phone match (full or last 4/6 digits)
+    if (!isMatch && cleanPassword) {
+      const cleanParentPhone = String(student.parentPhone || student.phone || '').replace(/\D/g, '');
+      const cleanPassDigits = cleanPassword.replace(/\D/g, '');
+      if (cleanParentPhone && cleanPassDigits && (
+        cleanParentPhone === cleanPassDigits ||
+        cleanParentPhone.slice(-6) === cleanPassDigits ||
+        cleanParentPhone.slice(-4) === cleanPassDigits
+      )) {
+        isMatch = true;
+      }
     }
 
     if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid Password. Please enter the correct password or Roll Number.' });
+      return res.status(401).json({ error: 'Invalid Password. Default password is 123456 or student Roll Number.' });
     }
 
     const token = jwt.sign(
