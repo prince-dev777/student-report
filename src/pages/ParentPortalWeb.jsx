@@ -1206,7 +1206,7 @@ export default function ParentPortalWeb() {
       background: 'linear-gradient(180deg, #f0f7ff 0%, #e0f2fe 25%, #f8fafc 100%)',
       color: '#0f172a',
       fontFamily: "'Outfit', 'Inter', sans-serif",
-      paddingBottom: '88px'
+      paddingBottom: '96px'
     }}>
       <PWAInstallPrompt appName="CX Parents" />
 
@@ -1229,10 +1229,13 @@ export default function ParentPortalWeb() {
           .student-name { font-size: 0.90rem !important; }
           .tab-btn-bar { gap: 6px !important; margin-bottom: 10px !important; }
           .tab-btn { padding: 8px 4px !important; font-size: 0.78rem !important; border-radius: 10px !important; min-height: 42px !important; }
-          .metrics-grid { gap: 5px !important; margin-top: 8px !important; }
-          .metric-box { padding: 6px 3px !important; border-radius: 8px !important; }
-          .metric-label { font-size: 0.62rem !important; }
-          .metric-value { font-size: 0.86rem !important; }
+          .metrics-grid { gap: 6px !important; margin-top: 10px !important; }
+          .metric-box { padding: 9px 4px !important; border-radius: 12px !important; min-height: 56px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; }
+          .metric-label { font-size: 0.72rem !important; margin-bottom: 2px !important; font-weight: 800 !important; }
+          .metric-value { font-size: 1.05rem !important; font-weight: 900 !important; }
+          .mobile-bottom-nav { padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)) !important; }
+          .mobile-bottom-nav button { padding: 8px 4px !important; border-radius: 14px !important; gap: 4px !important; }
+          .mobile-bottom-nav-label { font-size: 0.82rem !important; font-weight: 700 !important; }
         }
         @media print {
           body * { visibility: hidden !important; }
@@ -1421,22 +1424,22 @@ export default function ParentPortalWeb() {
           </div>
 
           {/* Quick Metrics 4-Grid (Clickable for instant navigation) */}
-          <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginTop: '8px' }}>
+          <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '7px', marginTop: '10px' }}>
             <div
               className="metric-box"
               onClick={() => setActiveTab('attendance')}
               title={`Click to view ${activeMonthDisplay.fullMonthName} Attendance`}
               style={{
-                background: '#f0f9ff', border: '1px solid #bae6fd', padding: '7px 4px',
-                borderRadius: '9px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
+                background: '#f0f9ff', border: '1px solid #bae6fd', padding: '9px 5px',
+                borderRadius: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#0284c7'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bae6fd'; e.currentTarget.style.transform = 'none'; }}
             >
-              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#0369a1', fontWeight: 700, display: 'block', marginBottom: '1px' }}>
+              <span className="metric-label" style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 800, display: 'block', marginBottom: '2px' }}>
                 {activeMonthDisplay.monthName} Rate
               </span>
-              <strong className="metric-value" style={{ fontSize: '0.88rem', color: '#0284c7', fontWeight: 900 }}>
+              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#0284c7', fontWeight: 900 }}>
                 {activeMonthDisplay.rate !== '-' ? activeMonthDisplay.rate : (attendanceRecords.length > 0 ? '100%' : '-')}
               </strong>
             </div>
@@ -1446,16 +1449,16 @@ export default function ParentPortalWeb() {
               onClick={() => setActiveTab('attendance')}
               title="Click to view Attendance records"
               style={{
-                background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '7px 4px',
-                borderRadius: '9px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
+                background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '9px 5px',
+                borderRadius: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#16a34a'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bbf7d0'; e.currentTarget.style.transform = 'none'; }}
             >
-              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#15803d', fontWeight: 700, display: 'block', marginBottom: '1px' }}>
+              <span className="metric-label" style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 800, display: 'block', marginBottom: '2px' }}>
                 Total Present
               </span>
-              <strong className="metric-value" style={{ fontSize: '0.88rem', color: '#16a34a', fontWeight: 900 }}>
+              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#16a34a', fontWeight: 900 }}>
                 {studentData?.presentCount || attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length} Days
               </strong>
             </div>
@@ -1465,14 +1468,14 @@ export default function ParentPortalWeb() {
               onClick={() => setActiveTab('tests')}
               title="Click to view Tests & OMR"
               style={{
-                background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '7px 4px',
-                borderRadius: '9px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
+                background: '#fdf4ff', border: '1px solid #f5d0fe', padding: '9px 5px',
+                borderRadius: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#c026d3'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#f5d0fe'; e.currentTarget.style.transform = 'none'; }}
             >
-              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#a21caf', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Avg Score</span>
-              <strong className="metric-value" style={{ fontSize: '0.88rem', color: '#c026d3', fontWeight: 900 }}>
+              <span className="metric-label" style={{ fontSize: '0.72rem', color: '#a21caf', fontWeight: 800, display: 'block', marginBottom: '2px' }}>Avg Score</span>
+              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#c026d3', fontWeight: 900 }}>
                 {testResults.length > 0 ? `${Math.max(0, analyticsData.avgPercentage)}%` : '-'}
               </strong>
             </div>
@@ -1482,14 +1485,14 @@ export default function ParentPortalWeb() {
               onClick={() => setActiveTab('tests')}
               title="Click to view Tests & OMR"
               style={{
-                background: '#fff7ed', border: '1px solid #ffedd5', padding: '7px 4px',
-                borderRadius: '9px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
+                background: '#fff7ed', border: '1px solid #ffedd5', padding: '9px 5px',
+                borderRadius: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s ease'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ea580c'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#ffedd5'; e.currentTarget.style.transform = 'none'; }}
             >
-              <span className="metric-label" style={{ fontSize: '0.64rem', color: '#c2410c', fontWeight: 700, display: 'block', marginBottom: '1px' }}>Best Rank</span>
-              <strong className="metric-value" style={{ fontSize: '0.88rem', color: '#ea580c', fontWeight: 900 }}>
+              <span className="metric-label" style={{ fontSize: '0.72rem', color: '#c2410c', fontWeight: 800, display: 'block', marginBottom: '2px' }}>Best Rank</span>
+              <strong className="metric-value" style={{ fontSize: '1.05rem', color: '#ea580c', fontWeight: 900 }}>
                 {testResults.length > 0 && analyticsData.bestRank !== '-' ? `#${analyticsData.bestRank}` : '-'}
               </strong>
             </div>
@@ -3489,16 +3492,16 @@ export default function ParentPortalWeb() {
         bottom: 0,
         left: 0,
         right: 0,
-        background: 'rgba(255, 255, 255, 0.94)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        background: 'rgba(255, 255, 255, 0.96)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
         borderTop: '1px solid #e2e8f0',
-        padding: '6px 12px calc(6px + env(safe-area-inset-bottom, 0px))',
+        padding: '8px 14px calc(8px + env(safe-area-inset-bottom, 0px))',
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '4px',
+        gap: '6px',
         zIndex: 90,
-        boxShadow: '0 -4px 20px rgba(15, 23, 42, 0.08)'
+        boxShadow: '0 -4px 25px rgba(15, 23, 42, 0.1)'
       }}>
         {[
           { id: 'attendance', label: 'Attendance', icon: Calendar, activeColor: '#d97706', count: null },
@@ -3522,32 +3525,32 @@ export default function ParentPortalWeb() {
                 }
               }}
               style={{
-                background: isActive ? `${item.activeColor}15` : 'transparent',
+                background: isActive ? `${item.activeColor}18` : 'transparent',
                 border: 'none',
-                borderRadius: '12px',
-                padding: '6px 2px',
+                borderRadius: '14px',
+                padding: '8px 4px',
                 cursor: 'pointer',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '3px',
+                gap: '4px',
                 position: 'relative',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
               }}
             >
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon size={19} color={isActive ? item.activeColor : '#64748b'} strokeWidth={isActive ? 2.5 : 2} />
+                <Icon size={24} color={isActive ? item.activeColor : '#64748b'} strokeWidth={isActive ? 2.6 : 2.1} />
                 {item.count !== null && item.count > 0 && (
                   <span style={{
                     position: 'absolute',
-                    top: '-4px',
-                    right: '-10px',
+                    top: '-5px',
+                    right: '-11px',
                     background: isActive ? item.activeColor : '#ef4444',
                     color: '#ffffff',
-                    fontSize: '0.55rem',
+                    fontSize: '0.62rem',
                     fontWeight: 900,
-                    padding: '1px 4px',
+                    padding: '1.5px 5px',
                     borderRadius: '8px',
                     lineHeight: 1
                   }}>
@@ -3555,9 +3558,9 @@ export default function ParentPortalWeb() {
                   </span>
                 )}
               </div>
-              <span style={{
-                fontSize: '0.68rem',
-                fontWeight: isActive ? 900 : 600,
+              <span className="mobile-bottom-nav-label" style={{
+                fontSize: '0.82rem',
+                fontWeight: isActive ? 900 : 700,
                 color: isActive ? item.activeColor : '#64748b',
                 lineHeight: 1
               }}>
