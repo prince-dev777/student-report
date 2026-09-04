@@ -1912,13 +1912,13 @@ app.post('/api/students', async (req, res) => {
     let parentUserId = req.body.parentUserId ? String(req.body.parentUserId).trim() : '';
     if (!parentUserId) {
       parentUserId = rollNo;
-      const exists = await Student.findOne({ parentUserId: String(parentUserId) });
+      const exists = await Student.findOne({ isDeleted: { $ne: true }, parentUserId: String(parentUserId) });
       if (exists) {
         const random4 = Math.floor(1000 + Math.random() * 9000); // 4 digits
         parentUserId = `${rollNo}-${random4}`;
       }
     } else {
-      const exists = await Student.findOne({ parentUserId: String(parentUserId) });
+      const exists = await Student.findOne({ isDeleted: { $ne: true }, parentUserId: String(parentUserId) });
       if (exists) {
         return res.status(400).json({ error: 'This Parent User ID is already in use by another student!' });
       }
@@ -2079,7 +2079,11 @@ app.put('/api/students/:id', async (req, res) => {
     if (req.body.parentUserId && String(req.body.parentUserId).trim()) {
       const parentUserIdClean = String(req.body.parentUserId).trim();
       if (parentUserIdClean !== studentToUpdate.parentUserId) {
-        const exists = await Student.findOne({ parentUserId: parentUserIdClean });
+        const exists = await Student.findOne({ 
+          isDeleted: { $ne: true },
+          _id: { $ne: studentToUpdate._id },
+          parentUserId: parentUserIdClean 
+        });
         if (exists) {
           return res.status(400).json({ error: 'This Parent User ID is already in use by another student!' });
         }
