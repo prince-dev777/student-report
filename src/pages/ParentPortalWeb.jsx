@@ -1962,7 +1962,18 @@ export default function ParentPortalWeb() {
                         <h4 style={{ margin: '0 0 2px 0', fontSize: '0.84rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {getTestName(t)}
                         </h4>
-                        <span style={{ fontSize: '0.66rem', color: '#64748b' }}>Date: {getTestDate(t)}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.66rem', color: '#64748b' }}>Date: {getTestDate(t)}</span>
+                          {t.omrSheetImage ? (
+                            <span style={{ fontSize: '0.60rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                              📄 OMR Available
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.60rem', background: '#f1f5f9', color: '#64748b', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
+                              📝 Manual Entry
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span style={{
                         background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0',
@@ -2008,11 +2019,12 @@ export default function ParentPortalWeb() {
                       </div>
                     </div>
 
-                    {/* 3 Action Buttons (View OMR + Download OMR + Share Result) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: t.omrSheetImage ? '1fr 1fr 1fr' : '1fr', gap: '6px', marginTop: '9px' }}>
-                      {t.omrSheetImage && (
+                    {/* 3 Action Buttons (View OMR + Download OMR + Share Result) - Always Visible */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginTop: '9px' }}>
+                      {t.omrSheetImage ? (
                         <>
                           <button
+                            type="button"
                             onClick={() => setSelectedOmrImage({
                               url: getMediaUrl(t.omrSheetImage),
                               testName: getTestName(t),
@@ -2031,6 +2043,7 @@ export default function ParentPortalWeb() {
                             <Eye size={13} /> View OMR
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleDownloadOmr(getMediaUrl(t.omrSheetImage), getTestName(t))}
                             style={{
                               width: '100%', background: '#f0fdf4',
@@ -2043,8 +2056,38 @@ export default function ParentPortalWeb() {
                             <Download size={13} /> Download
                           </button>
                         </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => toast.error('Is exam ke liye OMR sheet upload nahi hai (Manual / Offline Test).', { icon: '📄' })}
+                            style={{
+                              width: '100%', background: '#f8fafc',
+                              border: '1.5px dashed #cbd5e1', color: '#64748b', padding: '7px 4px',
+                              borderRadius: '8px', fontSize: '0.70rem', fontWeight: 700,
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                            }}
+                            title="OMR sheet not uploaded for this test"
+                          >
+                            <Eye size={13} /> View OMR
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toast.error('Is exam ke liye download karne ke liye OMR sheet uplabdh nahi hai.', { icon: 'ℹ️' })}
+                            style={{
+                              width: '100%', background: '#f8fafc',
+                              border: '1.5px dashed #cbd5e1', color: '#64748b', padding: '7px 4px',
+                              borderRadius: '8px', fontSize: '0.70rem', fontWeight: 700,
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                            }}
+                            title="OMR sheet not uploaded for this test"
+                          >
+                            <Download size={13} /> Download
+                          </button>
+                        </>
                       )}
                       <button
+                        type="button"
                         onClick={() => handleShareTestResult(t)}
                         style={{
                           width: '100%', background: '#faf5ff',
