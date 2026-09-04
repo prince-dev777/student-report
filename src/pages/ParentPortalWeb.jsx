@@ -59,6 +59,7 @@ export default function ParentPortalWeb() {
   const [showReportCardModal, setShowReportCardModal] = useState(false);
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
+  const [showHelplineModal, setShowHelplineModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showFullPhotoModal, setShowFullPhotoModal] = useState(false);
   const [noticeFilter, setNoticeFilter] = useState('ALL');
@@ -900,6 +901,188 @@ export default function ParentPortalWeb() {
     );
   }
 
+  // 📞 Reusable Helpline Selector Modal (Allows parent to pick which number to call)
+  const renderHelplineModal = () => {
+    if (!showHelplineModal) return null;
+    return (
+      <div
+        onClick={() => setShowHelplineModal(false)}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 999999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          animation: 'tabFadeIn 0.2s ease-out'
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: '#ffffff',
+            borderRadius: '24px',
+            maxWidth: '380px',
+            width: '100%',
+            padding: '24px 20px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+            textAlign: 'center',
+            position: 'relative'
+          }}
+        >
+          {/* Close Button */}
+          <button
+            onClick={() => setShowHelplineModal(false)}
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              background: '#f1f5f9',
+              border: 'none',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <X size={17} color="#64748b" />
+          </button>
+
+          {/* Icon */}
+          <div style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 12px auto'
+          }}>
+            <Phone size={28} color="#0284c7" />
+          </div>
+
+          <h3 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
+            Institute Helpline
+          </h3>
+          <p style={{ margin: '0 0 18px 0', fontSize: '0.84rem', color: '#64748b' }}>
+            Call karne ke liye number chunein:
+          </p>
+
+          {/* Helpline Options */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Option 1 */}
+            <a
+              href="tel:9673383561"
+              onClick={() => setShowHelplineModal(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '13px 16px',
+                borderRadius: '14px',
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                color: '#ffffff',
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Phone size={20} color="#ffffff" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.72rem', opacity: 0.9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Helpline Line 1 (Main Office)
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 900, letterSpacing: '0.5px' }}>
+                    96733 83561
+                  </div>
+                </div>
+              </div>
+              <ChevronRight size={20} color="#ffffff" />
+            </a>
+
+            {/* Option 2 */}
+            <a
+              href="tel:9145481323"
+              onClick={() => setShowHelplineModal(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '13px 16px',
+                borderRadius: '14px',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Phone size={20} color="#ffffff" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.72rem', opacity: 0.9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Helpline Line 2 (Support Desk)
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 900, letterSpacing: '0.5px' }}>
+                    91454 81323
+                  </div>
+                </div>
+              </div>
+              <ChevronRight size={20} color="#ffffff" />
+            </a>
+          </div>
+
+          {/* Cancel Button */}
+          <button
+            onClick={() => setShowHelplineModal(false)}
+            style={{
+              marginTop: '14px',
+              width: '100%',
+              background: '#f1f5f9',
+              border: 'none',
+              color: '#64748b',
+              padding: '10px',
+              borderRadius: '12px',
+              fontSize: '0.86rem',
+              fontWeight: 800,
+              cursor: 'pointer'
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // LOGIN SCREEN
   if (!isLoggedIn) {
     return (
@@ -1099,11 +1282,16 @@ export default function ParentPortalWeb() {
           )}
 
           {/* Quick Helpline Info */}
-          <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.72rem', color: '#64748b' }}>
+          <div 
+            onClick={() => setShowHelplineModal(true)}
+            style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.74rem', color: '#64748b', cursor: 'pointer' }}
+          >
             <span>Need Help? Helpline: </span>
-            <strong style={{ color: '#0284c7' }}>{helplineNumber}</strong>
+            <strong style={{ color: '#0284c7', textDecoration: 'underline' }}>{helplineNumber}</strong>
           </div>
         </div>
+
+        {renderHelplineModal()}
 
         {/* Smart Install App Modal on Login Screen */}
         {showForceInstallModal && !isAppInstalled && (
@@ -2807,6 +2995,29 @@ export default function ParentPortalWeb() {
                   <ChevronRight size={14} color="#2563eb" />
                 </button>
               )}
+
+              {/* Helpline */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettingsDrawer(false);
+                  setShowHelplineModal(true);
+                }}
+                style={{
+                  width: '100%', padding: '11px 12px', borderRadius: '10px',
+                  background: '#f8fafc', border: '1px solid #e2e8f0',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', textAlign: 'left', marginTop: '8px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Phone size={16} color="#0284c7" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
+                    Institute Helpline ({helplineNumber})
+                  </span>
+                </div>
+                <ChevronRight size={14} color="#94a3b8" />
+              </button>
             </div>
 
             {/* Logout Button at bottom */}
@@ -3091,22 +3302,23 @@ export default function ParentPortalWeb() {
               </button>
 
               {/* Helpline */}
-              <a
-                href={`tel:${helplineNumber}`}
+              <button
+                type="button"
+                onClick={() => setShowHelplineModal(true)}
                 style={{
                   width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
                   padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  textDecoration: 'none', color: '#1e293b'
+                  cursor: 'pointer', textAlign: 'left', color: '#1e293b'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Phone size={17} color="#0284c7" />
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700 }}>
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700 }}>
                     Institute Helpline ({helplineNumber})
                   </span>
                 </div>
                 <ChevronRight size={16} color="#94a3b8" />
-              </a>
+              </button>
             </div>
 
             {/* 🚪 COMPACT LOGOUT & CLOSE BUTTONS */}
@@ -3570,6 +3782,9 @@ export default function ParentPortalWeb() {
           );
         })}
       </nav>
+
+      {/* 📞 Helpline Number Selector Modal */}
+      {renderHelplineModal()}
     </div>
   );
 }
