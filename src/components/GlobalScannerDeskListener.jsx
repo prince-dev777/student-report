@@ -138,12 +138,13 @@ export default function GlobalScannerDeskListener() {
         return;
       }
 
-      // 3. Anti-bounce protection (10 seconds)
+      // 3. Anti-bounce protection (60 seconds / 1 min cooldown)
       const now = Date.now();
       const lastPunchTime = recentPunchesRef.current[matched.id] || 0;
-      if (now - lastPunchTime < 10000) {
+      if (now - lastPunchTime < 60000) {
         const elapsed = Math.round((now - lastPunchTime) / 1000);
-        toast(`⏳ ${matched.name} already scanned ${elapsed}s ago!`, { icon: '⚠️', id: 'scanner-toast' });
+        const remaining = 60 - elapsed;
+        toast(`⏳ ${matched.name} already scanned ${elapsed}s ago! Please wait ${remaining}s.`, { icon: '⚠️', id: 'scanner-toast' });
         return;
       }
 

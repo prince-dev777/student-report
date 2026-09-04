@@ -408,10 +408,12 @@ export default function StaffAttendanceWeb() {
       return;
     }
 
-    // 4. Anti-spam debounce (5s)
+    // 4. Anti-spam debounce (60s / 1 min cooldown)
     const now = Date.now();
-    if (lastScannedItem?.student?.id === matched.id && (now - (lastScannedItem?.timestampMs || 0)) < 5000) {
-      toast(`⏳ ${matched.name} was already punched a moment ago!`, { icon: '⚠️' });
+    if (lastScannedItem?.student?.id === matched.id && (now - (lastScannedItem?.timestampMs || 0)) < 60000) {
+      const elapsed = Math.round((now - (lastScannedItem?.timestampMs || 0)) / 1000);
+      const remaining = 60 - elapsed;
+      toast(`⏳ ${matched.name} was already punched ${elapsed}s ago! Please wait ${remaining}s.`, { icon: '⚠️' });
       return;
     }
 

@@ -1016,12 +1016,13 @@ export default function Attendance() {
     setKioskCode('');
     setShowKioskSuggestions(false);
 
-    // 4. Anti-spam 15-second debounce check
+    // 4. Anti-spam 60-second (1 min) debounce check
     const now = Date.now();
     const lastScanTime = lastScannedMap[matchedStudent.id];
-    if (lastScanTime && (now - lastScanTime) < 15000) {
+    if (lastScanTime && (now - lastScanTime) < 60000) {
       const elapsedSecs = Math.round((now - lastScanTime) / 1000);
-      toast(`⏳ ${matchedStudent.name} already scanned ${elapsedSecs}s ago!`, { icon: '⚠️' });
+      const remainingSecs = 60 - elapsedSecs;
+      toast(`⏳ ${matchedStudent.name} already scanned ${elapsedSecs}s ago! Please wait ${remainingSecs}s.`, { icon: '⚠️' });
       return;
     }
 
