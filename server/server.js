@@ -1081,10 +1081,22 @@ app.post('/api/parent/login', async (req, res) => {
       searchQueries.push({ phone: { $regex: new RegExp(last10Digits) } });
     }
 
-    const student = await Student.findOne({ 
-      isDeleted: { $ne: true }, 
-      $or: searchQueries
-    });
+    // Prioritize active institute and latest active student record
+    const defaultInstitute = await Institute.findOne({}).sort({ createdAt: -1 });
+    let student = null;
+    if (defaultInstitute) {
+      student = await Student.findOne({ 
+        isDeleted: { $ne: true }, 
+        instituteId: defaultInstitute._id,
+        $or: searchQueries
+      }).sort({ createdAt: -1 });
+    }
+    if (!student) {
+      student = await Student.findOne({ 
+        isDeleted: { $ne: true }, 
+        $or: searchQueries
+      }).sort({ createdAt: -1 });
+    }
 
     if (!student) {
       return res.status(401).json({ error: 'No student found with this User ID / Roll Number' });
@@ -1142,15 +1154,21 @@ app.post('/api/parent/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // Fetch Attendance records for this student
-    const attendanceRecords = await Attendance.find({ isDeleted: { $ne: true },  studentId: student.id })
-      .sort({ date: -1 })
-      .limit(30);
-
-    // Fetch Test Results for this student (matching id, rollNo, or _id)
+    // Fetch Attendance & Test Results across all matching student identifiers (id, rollNo, _id, and alias IDs)
     const studentIdentifiers = [student.id, String(student.rollNo)];
     if (student._id) studentIdentifiers.push(student._id.toString());
+    const aliasIds = await Student.find({ rollNo: student.rollNo, isDeleted: { $ne: true } }).distinct('id');
+    aliasIds.forEach(aId => { if (aId && !studentIdentifiers.includes(aId)) studentIdentifiers.push(aId); });
 
+    // Fetch Attendance records for this student
+    const attendanceRecords = await Attendance.find({ 
+      isDeleted: { $ne: true },  
+      studentId: { $in: studentIdentifiers.filter(Boolean) } 
+    })
+      .sort({ date: -1, createdAt: -1 })
+      .limit(60);
+
+    // Fetch Test Results for this student (matching id, rollNo, or _id)
     const rawTestResults = await TestResult.find({ 
       isDeleted: { $ne: true },  
       studentId: { $in: studentIdentifiers.filter(Boolean) }, 
@@ -1251,15 +1269,21 @@ app.get('/api/parent/data', async (req, res) => {
       return res.status(404).json({ error: 'Student record not found' });
     }
 
-    // Fetch Attendance records for this student
-    const attendanceRecords = await Attendance.find({ isDeleted: { $ne: true }, studentId: student.id })
-      .sort({ date: -1 })
+    // Collect all valid student identifiers (id, rollNo, _id, and alias IDs)
+    const studentIdentifiers = [student.id, String(student.rollNo)];
+    if (student._id) studentIdentifiers.push(student._id.toString());
+    const aliasIds = await Student.find({ rollNo: student.rollNo, isDeleted: { $ne: true } }).distinct('id');
+    aliasIds.forEach(aId => { if (aId && !studentIdentifiers.includes(aId)) studentIdentifiers.push(aId); });
+
+    // Fetch Attendance records for this student across all matching identifiers
+    const attendanceRecords = await Attendance.find({ 
+      isDeleted: { $ne: true }, 
+      studentId: { $in: studentIdentifiers.filter(Boolean) } 
+    })
+      .sort({ date: -1, createdAt: -1 })
       .limit(60);
 
     // Fetch Test Results for this student
-    const studentIdentifiers = [student.id, String(student.rollNo)];
-    if (student._id) studentIdentifiers.push(student._id.toString());
-
     const rawTestResults = await TestResult.find({ 
       isDeleted: { $ne: true },  
       studentId: { $in: studentIdentifiers.filter(Boolean) }, 
