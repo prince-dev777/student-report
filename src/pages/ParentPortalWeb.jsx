@@ -1604,6 +1604,11 @@ export default function ParentPortalWeb() {
                 <span style={{ background: '#f1f5f9', padding: '1.5px 6px', borderRadius: '4px', fontWeight: 700, color: '#334155' }}>
                   Roll: <strong style={{ color: '#0f172a' }}>{studentData?.rollNo}</strong>
                 </span>
+                {studentData?.id && (
+                  <span style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '1.5px 6px', borderRadius: '4px', fontWeight: 700, color: '#475569', fontFamily: 'monospace' }} title="System Student ID">
+                    ID: <strong style={{ color: '#0284c7' }}>{studentData.id}</strong>
+                  </span>
+                )}
                 <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '1.5px 6px', borderRadius: '4px', fontWeight: 800 }}>
                   {formatBatchName(studentData?.batch, studentData?.class)}
                 </span>
@@ -3236,7 +3241,7 @@ export default function ParentPortalWeb() {
                       {studentData.name}
                     </h4>
                     <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700 }}>
-                      Roll: {studentData.rollNo} • {formatBatchName(studentData.batch, studentData.class)}
+                      Roll: {studentData.rollNo} {studentData.id ? `• ID: ${studentData.id}` : ''} • {formatBatchName(studentData.batch, studentData.class)}
                     </span>
                   </div>
                 </div>
@@ -3488,6 +3493,13 @@ export default function ParentPortalWeb() {
               padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px',
               marginBottom: '16px'
             }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Student ID:</span>
+                <strong style={{ fontSize: '0.84rem', color: '#0284c7', fontWeight: 900, fontFamily: 'monospace' }}>
+                  {studentData?.id || studentData?._id || '-'}
+                </strong>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
                 <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Roll Number:</span>
                 <strong style={{ fontSize: '0.84rem', color: '#0f172a', fontWeight: 800 }}>{studentData?.rollNo || '-'}</strong>

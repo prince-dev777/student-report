@@ -204,13 +204,17 @@ for (const sDir of staticDirs) {
     app.use(express.static(sDir, {
       maxAge: '1d',
       setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.json')) {
+        if (filePath.includes('/assets/') || filePath.includes('\\assets\\')) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else if (filePath.endsWith('.json')) {
           res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
           res.setHeader('Cache-Control', 'no-cache');
         } else if (filePath.endsWith('sw.js')) {
           res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
           res.setHeader('Service-Worker-Allowed', '/');
           res.setHeader('Cache-Control', 'no-cache');
+        } else if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache, must-revalidate');
         }
       }
     }));
@@ -1256,7 +1260,7 @@ app.get('/api/parent/data', async (req, res) => {
       return res.status(400).json({ error: 'Invalid token payload' });
     }
 
-    const student = await Student.findOne({ 
+    let student = await Student.findOne({ 
       isDeleted: { $ne: true },
       $or: [
         { _id: mongoose.Types.ObjectId.isValid(studentId) ? studentId : null },
@@ -1264,6 +1268,17 @@ app.get('/api/parent/data', async (req, res) => {
         { rollNo: String(studentId) }
       ].filter(q => q._id !== null || q.id || q.rollNo)
     });
+
+    // Fallback: If token had previous _id from before merge, resolve active student with same rollNo
+    if (!student && mongoose.Types.ObjectId.isValid(studentId)) {
+      const deletedStudent = await Student.findOne({ _id: studentId });
+      if (deletedStudent && deletedStudent.rollNo) {
+        student = await Student.findOne({ 
+          isDeleted: { $ne: true }, 
+          rollNo: deletedStudent.rollNo 
+        }).sort({ createdAt: -1 });
+      }
+    }
 
     if (!student) {
       return res.status(404).json({ error: 'Student record not found' });

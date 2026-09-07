@@ -10,7 +10,7 @@ const isLocalhost = typeof window !== 'undefined' && (window.location.hostname =
 // In Electron / Local desktop app, always prioritize local fast backend on port 5000
 export const API_BASE = (isLocalhost || isElectron)
   ? 'http://localhost:5000/api'
-  : (import.meta.env.VITE_API_BASE_URL || 'https://student-report-4j6t.onrender.com/api');
+  : (import.meta.env.VITE_API_BASE_URL || 'https://student-report-rsad.onrender.com/api');
 
 // Helper to check if backend is online with automatic retry for smooth startup
 export async function checkBackendStatus(retries = (isElectron ? 5 : 2), delay = 800) {

@@ -288,7 +288,7 @@ app.post('/api/local-omr-process', upload.array('images', 500), async (req, res)
 // Forward local network requests from biometric machine to Cloud Server
 
 function getCloudApiUrl() {
-  return process.env.CLOUD_APP_URL || process.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://student-report-4j6t.onrender.com';
+  return process.env.CLOUD_APP_URL || process.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://student-report-rsad.onrender.com';
 }
 
 app.get('/iclock/cdata', async (req, res) => {

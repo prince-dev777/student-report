@@ -11,6 +11,12 @@ const destDir = path.join(__dirname, 'server', 'public');
 if (fs.existsSync(srcDir)) {
   fs.mkdirSync(destDir, { recursive: true });
   
+  // Clean old hashed assets to prevent accumulation of multi-megabyte bundles
+  const destAssets = path.join(destDir, 'assets');
+  if (fs.existsSync(destAssets)) {
+    fs.rmSync(destAssets, { recursive: true, force: true });
+  }
+  
   function copyRecursive(src, dest) {
     const entries = fs.readdirSync(src, { withFileTypes: true });
     fs.mkdirSync(dest, { recursive: true });
