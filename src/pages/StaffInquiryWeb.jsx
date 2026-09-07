@@ -52,13 +52,26 @@ export default function StaffInquiryWeb() {
     }
   };
 
-  // Direct load on mount + 15-second real-time polling
+  // Direct load on mount + visibility-aware real-time polling
   useEffect(() => {
     fetchInquiries(true);
     const interval = setInterval(() => {
-      fetchInquiries(false);
-    }, 15000);
-    return () => clearInterval(interval);
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchInquiries(false);
+      }
+    }, 60000);
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchInquiries(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   // Submit Inquiry (Create or Update)

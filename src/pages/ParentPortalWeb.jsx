@@ -494,8 +494,24 @@ export default function ParentPortalWeb() {
   useEffect(() => {
     if (isLoggedIn) {
       refreshParentDataSilently();
-      const interval = setInterval(refreshParentDataSilently, 20000);
-      return () => clearInterval(interval);
+      // Smart refresher: Only poll when tab is actively visible every 2 minutes (saves massive Render bandwidth & mobile battery)
+      const interval = setInterval(() => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+          refreshParentDataSilently();
+        }
+      }, 120000);
+
+      const handleVisibilityChange = () => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+          refreshParentDataSilently();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
   }, [isLoggedIn]);
 
