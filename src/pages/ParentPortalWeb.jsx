@@ -1113,8 +1113,84 @@ export default function ParentPortalWeb() {
         fontFamily: "'Outfit', 'Inter', sans-serif"
       }}>
         {/* PWA Install Banner */}
-        <div style={{ width: '100%', maxWidth: '420px', marginBottom: '14px' }}>
+        <div style={{ width: '100%', maxWidth: '420px', marginBottom: '10px' }}>
           <PWAInstallPrompt appName="CX Parents" />
+        </div>
+
+        {/* 📢 Official Notice Banner: JEE Repeater Batch Only */}
+        <div style={{
+          width: '100%',
+          maxWidth: '420px',
+          marginBottom: '14px',
+          background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+          border: '1.5px solid #f59e0b',
+          borderRadius: '20px',
+          padding: '14px 16px',
+          boxShadow: '0 8px 24px rgba(245, 158, 11, 0.22)',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '11px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              background: '#f59e0b',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)'
+            }}>
+              <AlertCircle size={20} />
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                <span style={{
+                  background: '#d97706',
+                  color: '#ffffff',
+                  fontSize: '0.66rem',
+                  fontWeight: 900,
+                  padding: '2px 7px',
+                  borderRadius: '6px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.4px'
+                }}>
+                  महत्वपूर्ण सूचना (Important Notice)
+                </span>
+                <span style={{
+                  background: '#fef3c7',
+                  border: '1px solid #d97706',
+                  color: '#92400e',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  padding: '2px 6px',
+                  borderRadius: '6px'
+                }}>
+                  🎯 Only for JEE Repeater Batch
+                </span>
+              </div>
+
+              <p style={{ margin: '0 0 6px 0', fontSize: '0.78rem', color: '#78350f', lineHeight: 1.45, fontWeight: 700 }}>
+                Yeh New Parents App abhi Phase-1 mein <strong>sirf aur sirf JEE Repeater Batch</strong> ke students aur parents ke liye shuru kiya gaya hai. Kuchh samay baad yeh sabhi batches ke liye uplabdh hoga.
+              </p>
+
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.85)',
+                border: '1px solid #fde68a',
+                borderRadius: '10px',
+                padding: '7px 10px',
+                fontSize: '0.74rem',
+                color: '#92400e',
+                fontWeight: 700,
+                lineHeight: 1.4
+              }}>
+                📲 <strong>Anya Batches ke Parents kripya dhyan dein:</strong><br />
+                Agar aapka ward JEE Repeater batch se nahi hai, toh kripya apne credentials aur performance report <u>purane app (Old App)</u> me hi dekhein.
+              </div>
+            </div>
+          </div>
         </div>
 
         <div style={{
@@ -1559,6 +1635,30 @@ export default function ParentPortalWeb() {
 
       {/* Main App Container */}
       <div style={{ maxWidth: '490px', margin: '8px auto 0', padding: '0 10px' }}>
+
+        {/* 📢 JEE Repeater Early Access & Other Batches Notice */}
+        <div style={{
+          background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+          border: '1.2px solid #f59e0b',
+          borderRadius: '12px',
+          padding: '9px 12px',
+          marginBottom: '8px',
+          boxShadow: '0 2px 6px rgba(245, 158, 11, 0.12)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '8px'
+        }}>
+          <AlertCircle size={16} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#92400e', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span>Phase-1 Live: JEE Repeater Batch</span>
+              <span style={{ fontSize: '0.62rem', background: '#d97706', color: '#ffffff', padding: '1px 5px', borderRadius: '4px' }}>Notice</span>
+            </div>
+            <div style={{ fontSize: '0.70rem', color: '#78350f', lineHeight: 1.35, fontWeight: 600 }}>
+              Yeh New App abhi Phase-1 mein <strong>JEE Repeater Batch</strong> ke liye shuru kiya gaya hai (baaki batches ke liye jald hi aayega). Agar aapka ward kisi aur batch mein hai, toh kripya purane app mein bhi records check kar sakte hain.
+            </div>
+          </div>
+        </div>
 
         {/* Student Profile Card (Compact & Sleek) */}
         <div className="student-card no-print" style={{

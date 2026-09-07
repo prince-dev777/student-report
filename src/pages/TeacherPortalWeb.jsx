@@ -20,9 +20,48 @@ export default function TeacherPortalWeb() {
 
   const [proceedToWeb, setProceedToWeb] = useState(() => !!sessionStorage.getItem('skip_teacher_install_gate'));
   const [loading, setLoading] = useState(false);
+  const [isBackgroundSyncing, setIsBackgroundSyncing] = useState(false);
+  const [lastSyncedTime, setLastSyncedTime] = useState(() => {
+    try {
+      const t = localStorage.getItem('cx_teacher_data_cache_time');
+      return t ? Number(t) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [teacherData, setTeacherData] = useState(() => {
     try {
-      return JSON.parse(sessionStorage.getItem('teacherSession')) || null;
+      if (typeof window === 'undefined') return null;
+      // 1. Instant 0ms persistent localStorage cache (survives tab/browser close)
+      const cached = localStorage.getItem('cx_teacher_data_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.students) && parsed.students.length > 0) {
+          return parsed;
+        }
+      }
+      // 2. Session storage fallback
+      const session = sessionStorage.getItem('teacherSession');
+      if (session) {
+        const parsedSession = JSON.parse(session);
+        if (parsedSession && Array.isArray(parsedSession.students) && parsedSession.students.length > 0) {
+          return parsedSession;
+        }
+      }
+      // 3. Fallback to edutrack_students if present
+      const localStudents = JSON.parse(localStorage.getItem('edutrack_students') || '[]');
+      if (localStudents.length > 0) {
+        return {
+          instituteName: 'Career Xone',
+          students: localStudents,
+          tests: JSON.parse(localStorage.getItem('edutrack_tests') || '[]'),
+          testResults: JSON.parse(localStorage.getItem('edutrack_testResults') || '[]'),
+          attendances: JSON.parse(localStorage.getItem('edutrack_attendance') || '[]'),
+          sessions: []
+        };
+      }
+      return null;
     } catch {
       return null;
     }
@@ -45,9 +84,16 @@ export default function TeacherPortalWeb() {
   // Institute Branding
   const instituteName = teacherData?.instituteName || 'Career Xone';
 
-  // Load Data
+  // Load Data with Instant Cache + Silent Background Sync
   const fetchTeacherData = async (isManual = false) => {
-    setLoading(true);
+    const hasExistingData = (teacherData?.students?.length || 0) > 0;
+
+    if (isManual || !hasExistingData) {
+      setLoading(true);
+    } else {
+      setIsBackgroundSyncing(true);
+    }
+
     let toastId = null;
     if (isManual) {
       toastId = toast.loading('Syncing latest student records...');
@@ -79,8 +125,14 @@ export default function TeacherPortalWeb() {
       }
     }
 
-    // Tier 1.5: Direct localhost:5000 / 127.0.0.1:5000 endpoints
-    if (!successData) {
+    // Tier 1.5: Only probe local 5000 if running locally or in Electron (skip on web to prevent mixed content & 3s timeout)
+    const isLocalOrElectron = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1' ||
+      (typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf(' electron/') > -1)
+    );
+
+    if (!successData && isLocalOrElectron) {
       const localEndpoints = [
         'http://localhost:5000/api/teacher/data',
         'http://127.0.0.1:5000/api/teacher/data'
@@ -140,24 +192,18 @@ export default function TeacherPortalWeb() {
       }
     }
 
-    // Tier 4: Try API_BASE
-    if (!successData) {
-      try {
-        const res = await fetch(`${API_BASE}/teacher/data`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && Array.isArray(data.students) && data.students.length > 0) {
-            successData = data;
-          }
-        }
-      } catch (e) {
-        console.warn('Tier 4 Cloud fetch failed:', e);
-      }
-    }
-
     if (successData) {
       setTeacherData(successData);
       sessionStorage.setItem('teacherSession', JSON.stringify(successData));
+      try {
+        localStorage.setItem('cx_teacher_data_cache', JSON.stringify(successData));
+        const now = Date.now();
+        localStorage.setItem('cx_teacher_data_cache_time', now.toString());
+        setLastSyncedTime(now);
+      } catch (err) {
+        console.warn('Could not persist teacher cache:', err);
+      }
+
       if (isManual) {
         toast.success(`Synced! Refreshed ${successData.students.length} students & ${successData.tests?.length || 0} tests 🚀`, { id: toastId });
       }
@@ -191,6 +237,7 @@ export default function TeacherPortalWeb() {
     }
 
     setLoading(false);
+    setIsBackgroundSyncing(false);
   };
 
   // Raw data collections with instant reactivity from AppContext or fetched state
@@ -478,16 +525,16 @@ export default function TeacherPortalWeb() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             <button
               onClick={() => fetchTeacherData(true)}
-              disabled={loading}
+              disabled={loading || isBackgroundSyncing}
               style={{
                 padding: '5px 10px',
-                background: loading ? '#e2e8f0' : 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                background: (loading || isBackgroundSyncing) ? '#e2e8f0' : 'linear-gradient(135deg, #eff6ff, #dbeafe)',
                 border: '1px solid #bfdbfe',
                 borderRadius: '8px',
                 color: '#1d4ed8',
                 fontSize: '0.74rem',
                 fontWeight: 800,
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: (loading || isBackgroundSyncing) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -496,11 +543,33 @@ export default function TeacherPortalWeb() {
               }}
               title="Click to sync and refresh latest student data"
             >
-              <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-              <span>{loading ? 'Syncing...' : 'Sync'}</span>
+              <RefreshCw size={12} className={(loading || isBackgroundSyncing) ? 'animate-spin' : ''} />
+              <span>{loading ? 'Syncing...' : isBackgroundSyncing ? 'Updating...' : 'Sync'}</span>
             </button>
           </div>
         </div>
+
+        {/* Subtle Background Sync Bar (Non-blocking) */}
+        {isBackgroundSyncing && (
+          <div style={{
+            maxWidth: '900px',
+            margin: '4px auto 0',
+            background: 'linear-gradient(90deg, #eff6ff, #dbeafe, #eff6ff)',
+            border: '1px solid #bfdbfe',
+            borderRadius: '6px',
+            padding: '3px 8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            fontSize: '0.68rem',
+            fontWeight: 700,
+            color: '#1d4ed8'
+          }}>
+            <RefreshCw size={10} className="animate-spin" />
+            <span>Updating latest marks & attendance in background... Instant cached data is active.</span>
+          </div>
+        )}
       </header>
 
       {/* Main Container */}
