@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw, Home, ShieldAlert } from 'lucide-react';
+import { reportClientError } from '../utils/telemetry';
 
 export default class GlobalErrorBoundary extends React.Component {
   constructor(props) {
@@ -14,6 +15,14 @@ export default class GlobalErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ error, errorInfo });
     console.error('🚨 [GlobalErrorBoundary Caught Crash]:', error, errorInfo);
+    
+    // Automatically report crash telemetry in real-time
+    reportClientError({
+      errorType: 'REACT_CRASH',
+      message: error?.message || String(error),
+      stack: error?.stack,
+      componentStack: errorInfo?.componentStack
+    });
   }
 
   handleReset = () => {

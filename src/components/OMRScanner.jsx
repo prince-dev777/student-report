@@ -122,7 +122,8 @@ export default function OMRScanner() {
               correctCount: r.correctCount,
               wrongCount: r.wrongCount,
               studentAnswers: r.studentAnswers,
-              omrSheetImage: r.omrSheetImage
+              omrSheetImage: r.omrSheetImage,
+              omrOriginalFilename: r.filename || r.omrOriginalFilename || null
             });
           } else {
             localErrors.push({
@@ -172,7 +173,9 @@ export default function OMRScanner() {
         totalStudents,
         smsSent: true,
         status: 'Published',
-        studentAnswers: result.studentAnswers
+        studentAnswers: result.studentAnswers,
+        omrSheetImage: result.omrSheetImage,
+        omrOriginalFilename: result.omrOriginalFilename || null
       }));
 
       await api.saveTestResultsBulk(payload);

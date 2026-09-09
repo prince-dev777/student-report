@@ -4,13 +4,17 @@
 // Interacts with Node.js + Express backend (http://localhost:5000)
 // and handles fallback to localStorage if backend is down.
 
+import { reportClientError } from './telemetry';
+
 const isElectron = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
 const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 // In Electron / Local desktop app, always prioritize local fast backend on port 5000
+// On Web / Vercel Serverless, use relative '/api' automatically on same domain
+const envBase = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_API_BASE_URL : '';
 export const API_BASE = (isLocalhost || isElectron)
   ? 'http://localhost:5000/api'
-  : (import.meta.env.VITE_API_BASE_URL || 'https://student-report-rsad.onrender.com/api');
+  : (envBase && !envBase.includes('onrender.com') ? envBase : '/api');
 
 // Helper to check if backend is online with automatic retry for smooth startup
 export async function checkBackendStatus(retries = (isElectron ? 5 : 2), delay = 800) {
@@ -73,10 +77,22 @@ async function apiRequest(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+    });
+  } catch (networkErr) {
+    if (!endpoint.includes('/logs/client-error')) {
+      reportClientError({
+        errorType: 'API_FAILURE',
+        message: `Network failure on ${options.method || 'GET'} ${endpoint}: ${networkErr.message}`,
+        url: endpoint
+      });
+    }
+    throw networkErr;
+  }
 
   const text = await response.text();
 
@@ -90,6 +106,15 @@ async function apiRequest(endpoint, options = {}) {
         errMsg = `Server endpoint ${endpoint} not found (HTTP ${response.status})`;
       }
     }
+
+    if (!endpoint.includes('/logs/client-error')) {
+      reportClientError({
+        errorType: 'API_FAILURE',
+        message: `API ${options.method || 'GET'} ${endpoint} failed (${response.status}): ${errMsg}`,
+        url: endpoint
+      });
+    }
+
     throw new Error(errMsg);
   }
 
@@ -308,6 +333,10 @@ export const api = {
     apiRequest('/whatsapp/bot-logs'),
   simulateWhatsAppBotMessage: (data) =>
     apiRequest('/whatsapp/bot/simulate', { method: 'POST', body: JSON.stringify(data) }),
+  requestWhatsAppPairingCode: (phoneNumber) =>
+    apiRequest('/whatsapp/pairing-code', { method: 'POST', body: JSON.stringify({ phoneNumber }) }),
+  cancelWhatsAppPairingCode: () =>
+    apiRequest('/whatsapp/cancel-pairing', { method: 'POST' }),
 
   // 🎙️ AI Voice Calling & Telephony
   synthesizeVoice: (text, voice) => 
@@ -349,4 +378,14 @@ export const api = {
     apiRequest('/classes/rename', { method: 'POST', body: JSON.stringify({ oldName, newName }) }),
   mergeClasses: (sourceClasses, targetClass) => 
     apiRequest('/classes/merge', { method: 'POST', body: JSON.stringify({ sourceClasses, targetClass }) }),
+
+  // 🖼️ Paginated Media Explorer (Page-by-page loading for high performance)
+  getPaginatedMedia: (folder = 'all', page = 1, limit = 24, search = '') =>
+    apiRequest(`/database/media?folder=${folder}&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
+
+  // 🖥️ Real-time Boss PC Error Logs & Telemetry
+  getClientErrorLogs: (page = 1, limit = 25, search = '', errorType = 'all') =>
+    apiRequest(`/logs/client-errors?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&errorType=${errorType}`),
+  clearClientErrorLogs: () =>
+    apiRequest('/logs/client-errors', { method: 'DELETE' }),
 };

@@ -25,6 +25,7 @@ import Institute from './models/Institute.js';
 import Notification from './models/Notification.js';
 import Session from './models/Session.js';
 import Inquiry from './models/Inquiry.js';
+import ClientErrorLog from './models/ClientErrorLog.js';
 import { protect, authenticateToken } from './middleware/authMiddleware.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
@@ -35,6 +36,9 @@ import {
   initializeWhatsAppClient,
   getWhatsAppClientState,
   disconnectWhatsAppClient,
+  gracefulShutdownWhatsAppClient,
+  requestWhatsAppPairingCode,
+  cancelWhatsAppPairingCode,
   sendWhatsAppMessageWeb,
   resetRetryCount
 } from './services/whatsappClient.js';
@@ -91,6 +95,14 @@ if (!process.env.WHATSAPP_PROVIDER) dotenv.config({ path: path.join(__dirname, '
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27018/student-report';
 const CLOUD_MONGODB_URI = process.env.CLOUD_MONGODB_URI || 'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 const JWT_SECRET = process.env.JWT_SECRET || '8f5b8a6d4e2c9a1f3c7e6b5d4a9f8e2d1c3b5a4f7e6d8c9b0a1f2e3d4c5b6a7f';
+
+// Global Process Error Handlers (Prevents server crash from unhandled async errors/file locks)
+process.on('uncaughtException', (err) => {
+  console.error('🚨 [SERVER CRITICAL UNCAUGHT EXCEPTION]:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 [SERVER UNHANDLED REJECTION]:', reason);
+});
 
 // Global Sync State Tracking
 let lastCloudSyncTime = null;
@@ -464,7 +476,18 @@ mongoose.connect(MONGODB_URI)
     }
 
   })
-  .catch(err => console.error('❌ MongoDB Connection Error:', err));
+  .catch(async (err) => {
+    console.error('❌ MongoDB Connection Error on primary URI:', err.message);
+    if (MONGODB_URI !== CLOUD_MONGODB_URI && CLOUD_MONGODB_URI) {
+      console.log('🔄 Attempting fallback connection to Cloud MongoDB...');
+      try {
+        await mongoose.connect(CLOUD_MONGODB_URI);
+        console.log('🔌 Connected to Cloud MongoDB fallback database.');
+      } catch (cloudErr) {
+        console.error('❌ Cloud MongoDB connection fallback also failed:', cloudErr.message);
+      }
+    }
+  });
 
 // ---- 🔄 SSE Live-Sync: Real-time data update notifications to all connected frontends ----
 const sseClients = new Set();
@@ -1711,17 +1734,27 @@ app.get('/api/students', authenticateToken, async (req, res) => {
     }
 
     const query = { isDeleted: { $ne: true } };
-    if (instId) {
-      query.instituteId = instId;
-    }
+    const instConditions = (instId && mongoose.Types.ObjectId.isValid(instId)) ? [
+      { instituteId: instId },
+      { instituteId: String(instId) },
+      { instituteId: null },
+      { instituteId: { $exists: false } }
+    ] : [
+      { instituteId: null },
+      { instituteId: { $exists: false } }
+    ];
+
+    query.$and = [{ $or: instConditions }];
 
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { rollNo: { $regex: search, $options: 'i' } },
-        { parentPhone: { $regex: search, $options: 'i' } },
-        { id: { $regex: search, $options: 'i' } }
-      ];
+      query.$and.push({
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { rollNo: { $regex: search, $options: 'i' } },
+          { parentPhone: { $regex: search, $options: 'i' } },
+          { id: { $regex: search, $options: 'i' } }
+        ]
+      });
     }
 
     const total = await Student.countDocuments(query);
@@ -2062,7 +2095,16 @@ app.put('/api/students/:id', async (req, res) => {
       ]
     };
     if (req.user && req.user.instituteId) {
-      query.instituteId = req.user.instituteId;
+      const instId = req.user.instituteId;
+      query.$or = query.$or.map(clause => ({
+        ...clause,
+        $or: [
+          { instituteId: instId },
+          { instituteId: String(instId) },
+          { instituteId: null },
+          { instituteId: { $exists: false } }
+        ]
+      }));
     }
 
     const studentToUpdate = await Student.findOne(query);
@@ -2138,7 +2180,16 @@ app.delete('/api/students/:id', async (req, res) => {
       ]
     };
     if (req.user && req.user.instituteId) {
-      query.instituteId = req.user.instituteId;
+      const instId = req.user.instituteId;
+      query.$or = query.$or.map(clause => ({
+        ...clause,
+        $or: [
+          { instituteId: instId },
+          { instituteId: String(instId) },
+          { instituteId: null },
+          { instituteId: { $exists: false } }
+        ]
+      }));
     }
     const student = await Student.findOne(query);
     if (!student) return res.status(404).json({ error: 'Student not found' });
@@ -3003,7 +3054,8 @@ app.post('/api/test-results/bulk', authenticateToken, async (req, res) => {
         percentage: r.percentage ?? (dynamicTotalMarks > 0 ? Math.round((Number(r.marks) / dynamicTotalMarks) * 1000) / 10 : 0),
         instituteId: req.user.instituteId,
         omrSheetImage: r.omrSheetImage,
-        omrSheetPublicId: r.omrSheetPublicId
+        omrSheetPublicId: r.omrSheetPublicId,
+        omrOriginalFilename: r.omrOriginalFilename || r.filename || null
       };
 
       const record = await TestResult.findOneAndUpdate(filter, updateData, { upsert: true, new: true });
@@ -3079,6 +3131,9 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
     if (test) {
       test.isPublished = true;
       test.status = 'Published';
+      if (sendSMS) {
+        test.smsSent = true;
+      }
       await test.save().catch(() => {});
     }
 
@@ -3099,6 +3154,9 @@ app.put('/api/test-results/:testId/publish', authenticateToken, async (req, res)
       }
 
       r.status = 'Published';
+      if (sendSMS) {
+        r.smsSent = true;
+      }
       await r.save();
       publishCount++;
 
@@ -3892,6 +3950,29 @@ app.post('/api/whatsapp/outbound-toggle', (req, res) => {
   res.json({ success: true, enabled: nextVal });
 });
 
+app.post('/api/whatsapp/pairing-code', async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+    if (!phoneNumber) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+    const result = await requestWhatsAppPairingCode(phoneNumber);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('[WhatsAppAPI] Pairing code generation failed:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/whatsapp/cancel-pairing', async (req, res) => {
+  try {
+    await cancelWhatsAppPairingCode();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---- 🖥️ System Info API ----
 app.get('/api/system/local-ip', (req, res) => {
   const nets = os.networkInterfaces();
@@ -4004,9 +4085,12 @@ let updateState = {
   progress: 0
 };
 
-process.on('message', (msg) => {
-  if (msg === 'shutdown') {
-    console.log('[Server] Received shutdown signal from Electron.');
+process.on('message', async (msg) => {
+  if (msg === 'shutdown' || (msg && msg.type === 'shutdown')) {
+    console.log('[Server] Received shutdown signal from Electron. Gracefully flushing WhatsApp session & DB...');
+    try {
+      await gracefulShutdownWhatsAppClient();
+    } catch (e) {}
     process.exit(0);
   }
   else if (msg && msg.type === 'APP_INFO') {
@@ -4192,6 +4276,136 @@ app.get('/api/sync/live', (req, res) => {
   });
 });
 
+// ---- 🚨 Real-time Client Error & Telemetry Logs API ----
+const clientErrorsLogPath = path.join(getLogsDir(), 'client_errors.log');
+
+app.post('/api/logs/client-error', async (req, res) => {
+  try {
+    const {
+      errorType = 'UNHANDLED_ERROR',
+      message,
+      stack,
+      componentStack,
+      url,
+      lastActions,
+      userInfo,
+      systemInfo
+    } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Error message is required' });
+    }
+
+    let finalUser = userInfo || { username: 'Anonymous', role: 'User' };
+    if (!userInfo?.userId && req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.decode(token);
+        if (decoded) {
+          finalUser = {
+            userId: decoded.id || decoded._id,
+            username: decoded.username || decoded.name || 'User',
+            role: decoded.role || 'User',
+            instituteId: decoded.instituteId
+          };
+        }
+      } catch (e) {}
+    }
+
+    // 1. Save to MongoDB
+    const errorRecord = new ClientErrorLog({
+      timestamp: new Date(),
+      errorType,
+      message,
+      stack: stack || '',
+      componentStack: componentStack || '',
+      url: url || '',
+      lastActions: Array.isArray(lastActions) ? lastActions : [],
+      userInfo: finalUser,
+      systemInfo: systemInfo || {}
+    });
+    await errorRecord.save().catch(err => console.warn('Could not save ClientErrorLog to DB:', err.message));
+
+    // 2. Write to client_errors.log file
+    const ts = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    let logLine = `[${ts}] [${errorType}] ${finalUser.username} (${finalUser.role}) at ${url}\n  Message: ${message}\n`;
+    if (Array.isArray(lastActions) && lastActions.length > 0) {
+      logLine += `  Last Actions:\n${lastActions.map((a, i) => `    ${i + 1}. ${a}`).join('\n')}\n`;
+    }
+    if (stack) {
+      logLine += `  Stack: ${stack}\n`;
+    }
+    logLine += '--------------------------------------------------------------------------------\n';
+
+    try {
+      fs.appendFileSync(clientErrorsLogPath, logLine, 'utf8');
+    } catch (e) {}
+
+    console.log(`🚨 [CLIENT ERROR REPORTED] [${errorType}]: ${message} (User: ${finalUser.username}, URL: ${url})`);
+
+    res.json({ success: true, id: errorRecord._id });
+  } catch (err) {
+    console.error('Failed to log client error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/logs/client-errors', protect, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 25));
+    const search = req.query.search ? String(req.query.search).trim() : '';
+    const errorType = req.query.errorType;
+
+    const query = {};
+    if (errorType && errorType !== 'all') {
+      query.errorType = errorType;
+    }
+    if (search) {
+      query.$or = [
+        { message: { $regex: search, $options: 'i' } },
+        { url: { $regex: search, $options: 'i' } },
+        { 'userInfo.username': { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const [logs, total] = await Promise.all([
+      ClientErrorLog.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      ClientErrorLog.countDocuments(query)
+    ]);
+
+    res.json({
+      logs: logs || [],
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/logs/client-errors', protect, async (req, res) => {
+  try {
+    await ClientErrorLog.deleteMany({});
+    try {
+      if (fs.existsSync(clientErrorsLogPath)) {
+        fs.writeFileSync(clientErrorsLogPath, '', 'utf8');
+      }
+    } catch (e) {}
+    res.json({ success: true, message: 'All client error logs cleared.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---- 📋 System & Sync Debug Logs API ----
 app.get('/api/system/logs', protect, (req, res) => {
   try {
@@ -4214,6 +4428,9 @@ app.get('/api/system/download-logs', protect, (req, res) => {
     }
     if (fs.existsSync(errorLogPath)) {
       combinedLogs += `--- SYSTEM ERROR LOG ---\n` + fs.readFileSync(errorLogPath, 'utf8') + '\n\n';
+    }
+    if (fs.existsSync(clientErrorsLogPath)) {
+      combinedLogs += `--- CLIENT & UI ERROR LOGS ---\n` + fs.readFileSync(clientErrorsLogPath, 'utf8') + '\n\n';
     }
 
     res.setHeader('Content-Type', 'text/plain');
@@ -4238,7 +4455,7 @@ app.get('/api/system/backup-info', protect, (req, res) => {
 
 // ---- 🗄️ Local Database & Storage Manager APIs ----
 
-// Helper to calculate folder size and list files
+// Helper to calculate folder size and count (keeps overview payload tiny and instant)
 function getFolderMediaDetails(folderPath) {
   if (!fs.existsSync(folderPath)) {
     return { count: 0, sizeBytes: 0, sizeFormatted: '0 KB', files: [] };
@@ -4246,21 +4463,14 @@ function getFolderMediaDetails(folderPath) {
   try {
     const fileNames = fs.readdirSync(folderPath);
     let totalSize = 0;
-    const files = [];
 
     for (const name of fileNames) {
+      if (name.startsWith('.') || name === 'Thumbs.db') continue;
       const fullPath = path.join(folderPath, name);
       try {
         const stats = fs.statSync(fullPath);
         if (stats.isFile()) {
           totalSize += stats.size;
-          files.push({
-            name,
-            sizeBytes: stats.size,
-            sizeFormatted: (stats.size / 1024).toFixed(1) + ' KB',
-            createdAt: stats.birthtime || stats.mtime,
-            url: `/uploads/${path.basename(folderPath)}/${name}`
-          });
         }
       } catch (e) {}
     }
@@ -4272,10 +4482,10 @@ function getFolderMediaDetails(folderPath) {
     };
 
     return {
-      count: files.length,
+      count: fileNames.length,
       sizeBytes: totalSize,
       sizeFormatted: formatBytes(totalSize),
-      files: files.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      files: [] // Intentionally empty: media is fetched page-by-page via /api/database/media
     };
   } catch (err) {
     return { count: 0, sizeBytes: 0, sizeFormatted: '0 KB', files: [] };
@@ -4285,7 +4495,10 @@ function getFolderMediaDetails(folderPath) {
 // 1. Overview stats
 app.get('/api/database/overview', protect, async (req, res) => {
   try {
-    const instId = req.user.instituteId;
+    const instId = req.user?.instituteId;
+    const instFilter = instId
+      ? { $or: [{ instituteId: instId }, { instituteId: String(instId) }, { instituteId: null }, { instituteId: { $exists: false } }] }
+      : {};
 
     // Collection stats (active vs deleted)
     const [
@@ -4298,33 +4511,33 @@ app.get('/api/database/overview', protect, async (req, res) => {
       smslogsActive, smslogsDeleted,
       notificationsActive
     ] = await Promise.all([
-      Student.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
-      Student.countDocuments({ instituteId: instId, isDeleted: true }),
-      Student.countDocuments({ instituteId: instId, isDeleted: { $ne: true }, photo: { $exists: true, $ne: '' } }),
+      Student.countDocuments({ ...instFilter, isDeleted: { $ne: true } }),
+      Student.countDocuments({ ...instFilter, isDeleted: true }),
+      Student.countDocuments({ ...instFilter, isDeleted: { $ne: true }, photo: { $exists: true, $ne: '' } }),
 
-      Test.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
-      Test.countDocuments({ instituteId: instId, isDeleted: true }),
+      Test.countDocuments({ ...instFilter, isDeleted: { $ne: true } }),
+      Test.countDocuments({ ...instFilter, isDeleted: true }),
 
-      TestResult.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
-      TestResult.countDocuments({ instituteId: instId, isDeleted: true }),
-      TestResult.countDocuments({ instituteId: instId, isDeleted: { $ne: true }, omrSheetImage: { $exists: true, $ne: '' } }),
+      TestResult.countDocuments({ ...instFilter, isDeleted: { $ne: true } }),
+      TestResult.countDocuments({ ...instFilter, isDeleted: true }),
+      TestResult.countDocuments({ ...instFilter, isDeleted: { $ne: true }, omrSheetImage: { $exists: true, $ne: '' } }),
 
-      Attendance.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
-      Attendance.countDocuments({ instituteId: instId, isDeleted: true }),
+      Attendance.countDocuments({ ...instFilter, isDeleted: { $ne: true } }),
+      Attendance.countDocuments({ ...instFilter, isDeleted: true }),
 
-      Session.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
-      Session.countDocuments({ instituteId: instId, isDeleted: true }),
+      Session.countDocuments({ ...instFilter, isDeleted: { $ne: true } }),
+      Session.countDocuments({ ...instFilter, isDeleted: true }),
 
-      Inquiry.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
-      Inquiry.countDocuments({ instituteId: instId, isDeleted: true }),
+      Inquiry.countDocuments({ ...instFilter, isDeleted: { $ne: true } }),
+      Inquiry.countDocuments({ ...instFilter, isDeleted: true }),
 
-      SMSLog.countDocuments({ instituteId: instId, isDeleted: { $ne: true } }),
-      SMSLog.countDocuments({ instituteId: instId, isDeleted: true }),
+      SMSLog.countDocuments({ ...instFilter, isDeleted: { $ne: true } }),
+      SMSLog.countDocuments({ ...instFilter, isDeleted: true }),
 
-      Notification.countDocuments({ instituteId: instId })
+      Notification.countDocuments(instId ? { instituteId: instId } : {})
     ]);
 
-    // Local Disk Media stats
+    // Local Disk Media stats (fast summary)
     const omrFolder = path.join(dataPath, 'uploads', 'omr');
     const photosFolder = path.join(dataPath, 'uploads', 'photos');
     const avatarsFolder = path.join(dataPath, 'uploads', 'avatars');
@@ -4362,6 +4575,88 @@ app.get('/api/database/overview', protect, async (req, res) => {
     });
   } catch (err) {
     console.error('Database overview error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 1.5 Paginated Media Explorer API (Prevents browser freeze by loading only requested page)
+app.get('/api/database/media', protect, async (req, res) => {
+  try {
+    const folder = req.query.folder || 'all'; // 'all' | 'omr' | 'photos' | 'avatars'
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 24));
+    const search = req.query.search ? String(req.query.search).trim().toLowerCase() : '';
+
+    const foldersToScan = [];
+    if (folder === 'all' || folder === 'omr') foldersToScan.push({ name: 'omr', tag: 'OMR Scan', path: path.join(dataPath, 'uploads', 'omr') });
+    if (folder === 'all' || folder === 'photos') foldersToScan.push({ name: 'photos', tag: 'Student Photo', path: path.join(dataPath, 'uploads', 'photos') });
+    if (folder === 'all' || folder === 'avatars') foldersToScan.push({ name: 'avatars', tag: 'Avatar', path: path.join(dataPath, 'uploads', 'avatars') });
+
+    let allFilenames = [];
+    for (const f of foldersToScan) {
+      if (fs.existsSync(f.path)) {
+        try {
+          const names = fs.readdirSync(f.path);
+          for (const name of names) {
+            if (name.startsWith('.') || name === 'Thumbs.db') continue;
+            if (search && !name.toLowerCase().includes(search)) continue;
+            allFilenames.push({
+              name,
+              folder: f.name,
+              tag: f.tag,
+              folderPath: f.path,
+              fullPath: path.join(f.path, name),
+              url: `/uploads/${f.name}/${name}`
+            });
+          }
+        } catch (e) {}
+      }
+    }
+
+    // Sort newest first
+    allFilenames.sort((a, b) => b.name.localeCompare(a.name));
+
+    const total = allFilenames.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const startIndex = (page - 1) * limit;
+    const pageSlice = allFilenames.slice(startIndex, startIndex + limit);
+
+    const formatBytes = (bytes) => {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    };
+
+    // Only stat the 24 files on this specific page!
+    const files = pageSlice.map(item => {
+      let sizeBytes = 0;
+      let createdAt = new Date();
+      try {
+        const stats = fs.statSync(item.fullPath);
+        sizeBytes = stats.size;
+        createdAt = stats.birthtime || stats.mtime;
+      } catch (e) {}
+
+      return {
+        name: item.name,
+        folder: item.folder,
+        tag: item.tag,
+        sizeBytes,
+        sizeFormatted: formatBytes(sizeBytes),
+        createdAt,
+        url: item.url
+      };
+    });
+
+    res.json({
+      files,
+      page,
+      limit,
+      total,
+      totalPages
+    });
+  } catch (err) {
+    console.error('Media pagination error:', err);
     res.status(500).json({ error: err.message });
   }
 });

@@ -12,6 +12,7 @@ if (!gotTheLock) {
   app.quit();
 } else {
   let mainWindow;
+  let splashWindow = null;
   let serverProcess;
   let mongoProcess;
 
@@ -24,6 +25,10 @@ if (!gotTheLock) {
     if (!mainWindow.isVisible()) mainWindow.show();
     mainWindow.show();
     mainWindow.focus();
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      try { splashWindow.destroy(); } catch(e) {}
+      splashWindow = null;
+    }
   }
 
   // Restore and focus existing window when second instance is launched
@@ -79,45 +84,71 @@ const splashHtml = `
   <meta charset="utf-8">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: radial-gradient(circle at 50% 35%, #1e293b, #0f172a 85%);
-      color: #f8fafc;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      user-select: none;
+    }
+    .splash-card {
+      width: 420px;
+      height: 330px;
+      background: radial-gradient(circle at 50% 25%, #1e293b, #090d16 95%);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 35px rgba(59, 130, 246, 0.25);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      width: 100vw;
-      user-select: none;
-      overflow: hidden;
+      padding: 28px;
+      position: relative;
+    }
+    .badge {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 3px 8px;
+      border-radius: 999px;
     }
     .logo-box {
       width: 76px;
       height: 76px;
-      border-radius: 18px;
-      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      border-radius: 20px;
+      background: linear-gradient(135deg, #0284c7, #6366f1);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 10px 28px -4px rgba(59, 130, 246, 0.55);
-      margin-bottom: 20px;
+      box-shadow: 0 12px 30px -4px rgba(2, 132, 199, 0.6);
+      margin-bottom: 18px;
       animation: pulse 2s ease-in-out infinite;
     }
     .logo-text {
-      font-size: 28px;
-      font-weight: 800;
+      font-size: 32px;
+      font-weight: 900;
       color: #ffffff;
       letter-spacing: -0.5px;
     }
     h1 {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
       margin-bottom: 6px;
-      background: linear-gradient(to right, #ffffff, #cbd5e1);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #f8fafc;
     }
     p {
       font-size: 13px;
@@ -125,7 +156,7 @@ const splashHtml = `
       margin-bottom: 22px;
     }
     .spinner-bar {
-      width: 170px;
+      width: 200px;
       height: 4px;
       background: rgba(255, 255, 255, 0.08);
       border-radius: 999px;
@@ -133,40 +164,71 @@ const splashHtml = `
       position: relative;
     }
     .spinner-inner {
-      width: 50px;
+      width: 65px;
       height: 100%;
-      background: linear-gradient(90deg, #38bdf8, #6366f1);
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
       border-radius: 999px;
       position: absolute;
-      animation: slide 1.2s ease-in-out infinite;
+      animation: slide 1.3s ease-in-out infinite;
     }
     @keyframes slide {
-      0% { left: -50px; }
-      100% { left: 170px; }
+      0% { left: -65px; }
+      100% { left: 200px; }
     }
     @keyframes pulse {
-      0%, 100% { transform: scale(1); box-shadow: 0 10px 28px -4px rgba(59, 130, 246, 0.55); }
-      50% { transform: scale(1.05); box-shadow: 0 14px 32px -2px rgba(99, 102, 241, 0.65); }
+      0%, 100% { transform: scale(1); box-shadow: 0 12px 30px -4px rgba(2, 132, 199, 0.6); }
+      50% { transform: scale(1.05); box-shadow: 0 16px 36px -2px rgba(99, 102, 241, 0.75); }
     }
   </style>
 </head>
 <body>
-  <div class="logo-box">
-    <div class="logo-text">CX</div>
-  </div>
-  <h1>Career Xone Pro</h1>
-  <p>Starting background server & database...</p>
-  <div class="spinner-bar">
-    <div class="spinner-inner"></div>
+  <div class="splash-card">
+    <div class="badge">PRO EDITION</div>
+    <div class="logo-box">
+      <div class="logo-text">CX</div>
+    </div>
+    <h1>Career Xone Pro</h1>
+    <p>Starting workspace & local servers...</p>
+    <div class="spinner-bar">
+      <div class="spinner-inner"></div>
+    </div>
   </div>
 </body>
 </html>
 `;
 
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width: 440,
+    height: 360,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    center: true,
+    show: false,
+    skipTaskbar: false,
+    backgroundColor: '#00000000',
+    icon: path.join(__dirname, app.isPackaged ? 'dist' : 'public', 'logo.jpg'),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  splashWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(splashHtml));
+  splashWindow.once('ready-to-show', () => {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.show();
+    }
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    show: false,
     backgroundColor: '#0f172a',
     webPreferences: {
       nodeIntegration: false,
@@ -179,12 +241,37 @@ function createWindow() {
     icon: path.join(__dirname, app.isPackaged ? 'dist' : 'public', 'logo.jpg'),
   });
 
-  // Send app version to renderer
+  const revealMainWindow = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (mainWindow.isVisible()) return;
+
+    mainWindow.show();
+    mainWindow.focus();
+
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      setTimeout(() => {
+        try {
+          if (splashWindow && !splashWindow.isDestroyed()) {
+            splashWindow.destroy();
+            splashWindow = null;
+          }
+        } catch(e) {}
+      }, 300);
+    }
+  };
+
+  // Send app version to renderer and reveal window when page is fully rendered
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.executeJavaScript(
       `window.__APP_VERSION__ = '${app.getVersion()}'`
-    );
+    ).catch(() => {});
+
+    // Allow a brief 200ms frame buffer for initial paint before smooth reveal
+    setTimeout(revealMainWindow, 200);
   });
+
+  // Failsafe timeout: reveal window after 12s no matter what
+  setTimeout(revealMainWindow, 12000);
 
   // Check if we are in development mode
   const isDev = !app.isPackaged;
@@ -207,9 +294,6 @@ function createWindow() {
     } catch(e) {}
     mainWindow.loadURL('http://localhost:5173');
   } else {
-    // Show instant splash screen while backend server boots up
-    mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(splashHtml));
-
     // Retry loading from local Express server until port 5000 is ready
     const loadProductionApp = async () => {
       const http = require('http');
@@ -221,10 +305,10 @@ function createWindow() {
         req.setTimeout(800, () => { req.destroy(); resolve(false); });
       });
 
-      for (let attempt = 0; attempt < 30; attempt++) {
+      for (let attempt = 0; attempt < 35; attempt++) {
         const ready = await isServerUp();
         if (ready) break;
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise(r => setTimeout(r, 350));
       }
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.loadURL('http://localhost:5000');
@@ -243,6 +327,7 @@ function createWindow() {
       }, 1000);
     });
   }
+
   // Prevent window from closing, hide it instead
   mainWindow.on('close', (event) => {
     if (!app.isQuiting) {
@@ -352,18 +437,19 @@ async function startServer() {
     : path.join(__dirname, 'server', 'bin', 'mongod.exe');
 
   if (fs.existsSync(mongodExePath)) {
-    fs.appendFileSync(logFile, `Starting MongoDB from: ${mongodExePath}\n`);
-    const mongoPort = 27018; // Use custom port to avoid conflict with existing installations
-    mongoProcess = spawn(mongodExePath, [
-      '--dbpath', dbPath,
-      '--port', mongoPort.toString(),
-      '--bind_ip', '127.0.0.1'
-    ], { detached: true });
+    if (!mongoProcess || mongoProcess.killed) {
+      fs.appendFileSync(logFile, `Starting MongoDB from: ${mongodExePath}\n`);
+      const mongoPort = 27018; // Use custom port to avoid conflict with existing installations
+      mongoProcess = spawn(mongodExePath, [
+        '--dbpath', dbPath,
+        '--port', mongoPort.toString(),
+        '--bind_ip', '127.0.0.1'
+      ], { detached: true });
 
-    mongoProcess.unref(); // Allow node to exit independently if needed
-
+      mongoProcess.unref(); // Allow node to exit independently if needed
+    }
     // Pass this local URI to the express server
-    process.env.MONGODB_URI = `mongodb://127.0.0.1:${mongoPort}/student-report`;
+    process.env.MONGODB_URI = `mongodb://127.0.0.1:27018/student-report`;
     fs.appendFileSync(logFile, `Set local MONGODB_URI: ${process.env.MONGODB_URI}\n`);
   } else if (!app.isPackaged) {
     fs.appendFileSync(logFile, `Development mode: Skipping local MongoDB, connecting to Cloud DB.\n`);
@@ -397,8 +483,24 @@ async function startServer() {
     }
   }, 2000);
 
-  // Prevent uncaught IPC errors when server process exits
-  serverProcess.on('error', () => {});
+  // Prevent uncaught IPC errors and auto-recover if server unexpectedly exits
+  serverProcess.on('error', (err) => {
+    try { fs.appendFileSync(logFile, `Local Server process error: ${err.message}\n`); } catch(e) {}
+  });
+
+  serverProcess.on('exit', (code, signal) => {
+    try { fs.appendFileSync(logFile, `Local Server process exited (code: ${code}, signal: ${signal})\n`); } catch(e) {}
+    if (!app.isQuiting) {
+      try { fs.appendFileSync(logFile, `Auto-recovering: Respawning local Express server in 1.5s...\n`); } catch(e) {}
+      setTimeout(() => {
+        if (!app.isQuiting) {
+          startServer().catch(e => {
+            try { fs.appendFileSync(logFile, `Failed to respawn server: ${e.message}\n`); } catch(_) {}
+          });
+        }
+      }, 1500);
+    }
+  });
 
   serverProcess.on('message', (msg) => {
     if (msg && msg.type === 'QUIT_AND_INSTALL') {
@@ -493,6 +595,7 @@ app.whenReady().then(async () => {
     }
   });
 
+  createSplashWindow();
   createWindow();
   createTray();
   await startServer();
@@ -582,6 +685,11 @@ app.whenReady().then(async () => {
   });
 
   app.on('before-quit', () => {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      try { splashWindow.destroy(); } catch (e) {}
+      splashWindow = null;
+    }
+
     if (serverProcess) {
       // Send clean shutdown signal first, then force kill after timeout
       try {
@@ -595,7 +703,7 @@ app.whenReady().then(async () => {
         try {
           serverProcess.kill();
         } catch (e) {}
-      }, 1000);
+      }, 3500);
     }
 
     if (mongoProcess) {

@@ -23,6 +23,9 @@ const testSchema = new mongoose.Schema({
   templateConfig: { type: mongoose.Schema.Types.Mixed },
   templateId: { type: String },
   questionsToDetect: { type: Number },
+  isPublished: { type: Boolean, default: false },
+  status: { type: String, enum: ['Draft', 'Published'], default: 'Draft' },
+  smsSent: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null }
 }, { timestamps: true });

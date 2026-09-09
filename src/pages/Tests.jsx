@@ -1864,7 +1864,10 @@ export default function Tests() {
       toast.success(res.message || 'Results published successfully', { id: toastId });
       setShowResultsModal(false);
       if (updateTest) {
-        updateTest(selectedTestResults.test.id, { isPublished: true });
+        updateTest(selectedTestResults.test.id, { isPublished: true, status: 'Published', smsSent: sendSMS });
+      }
+      if (typeof refreshAllData === 'function') {
+        refreshAllData();
       }
     } catch (err) {
       toast.error(err.message || 'Failed to publish results', { id: toastId });
@@ -2185,6 +2188,99 @@ export default function Tests() {
     return Math.max(...results.map(r => r.marks));
   };
 
+  // Helper to get test publication & evaluation status
+  const getTestPublishStatus = (test) => {
+    const appeared = getAppearedCount(test.id);
+    if (appeared === 0) {
+      return {
+        type: 'pending',
+        label: 'Results Pending',
+        shortLabel: 'Pending',
+        icon: '⏳',
+        appeared: 0,
+        badgeStyle: {
+          background: 'rgba(245, 158, 11, 0.12)',
+          color: '#d97706',
+          border: '1px solid rgba(245, 158, 11, 0.25)',
+          padding: '3px 8px',
+          borderRadius: 12,
+          fontSize: '0.72rem',
+          fontWeight: 800,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4
+        }
+      };
+    }
+
+    const results = testResults.filter(r => r.testId === test.id || r.testId === test._id);
+    const isPublished = test.isPublished || test.status === 'Published' || (results.length > 0 && results.some(r => r.status === 'Published' || r.status === 'published'));
+    const hasSMS = test.smsSent || test.lastPublishedWithSms || (results.length > 0 && results.some(r => r.smsSent === true));
+
+    if (isPublished) {
+      if (hasSMS) {
+        return {
+          type: 'published_sms',
+          label: 'Published & Sent (SMS)',
+          shortLabel: 'Published (SMS)',
+          icon: '📱',
+          appeared,
+          badgeStyle: {
+            background: 'rgba(147, 51, 234, 0.12)',
+            color: '#9333ea',
+            border: '1px solid rgba(147, 51, 234, 0.28)',
+            padding: '3px 8px',
+            borderRadius: 12,
+            fontSize: '0.72rem',
+            fontWeight: 800,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4
+          }
+        };
+      }
+      return {
+        type: 'published',
+        label: 'Published',
+        shortLabel: 'Published',
+        icon: '📢',
+        appeared,
+        badgeStyle: {
+          background: 'rgba(16, 185, 129, 0.12)',
+          color: '#059669',
+          border: '1px solid rgba(16, 185, 129, 0.28)',
+          padding: '3px 8px',
+          borderRadius: 12,
+          fontSize: '0.72rem',
+          fontWeight: 800,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4
+        }
+      };
+    }
+
+    return {
+      type: 'draft',
+      label: 'Draft (Evaluated)',
+      shortLabel: 'Draft',
+      icon: '📝',
+      appeared,
+      badgeStyle: {
+        background: 'rgba(59, 130, 246, 0.12)',
+        color: '#2563eb',
+        border: '1px solid rgba(59, 130, 246, 0.25)',
+        padding: '3px 8px',
+        borderRadius: 12,
+        fontSize: '0.72rem',
+        fontWeight: 800,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4
+      }
+    };
+  };
+
   // Unique Courses list for filter dropdown
   const uniqueCourses = React.useMemo(() => {
     const set = new Set();
@@ -2220,11 +2316,14 @@ export default function Tests() {
         }
       }
 
-      // 3. Status Filter (Evaluated vs Pending)
+      // 3. Status Filter (Evaluated vs Pending vs Published vs Draft)
       if (testStatusFilter !== 'ALL') {
-        const appeared = testResults.filter(r => r.testId === test.id).length;
-        if (testStatusFilter === 'evaluated' && appeared === 0) return false;
-        if (testStatusFilter === 'pending' && appeared > 0) return false;
+        const statusObj = getTestPublishStatus(test);
+        if (testStatusFilter === 'evaluated' && statusObj.appeared === 0) return false;
+        if (testStatusFilter === 'pending' && statusObj.appeared > 0) return false;
+        if (testStatusFilter === 'published' && !statusObj.type.startsWith('published')) return false;
+        if (testStatusFilter === 'published_sms' && statusObj.type !== 'published_sms') return false;
+        if (testStatusFilter === 'draft' && statusObj.type !== 'draft') return false;
       }
 
       return true;
@@ -2396,7 +2495,9 @@ export default function Tests() {
                     style={{ fontSize: '0.80rem', padding: '6px 10px', height: 38, minWidth: 130 }}
                   >
                     <option value="ALL">All Status</option>
-                    <option value="evaluated">✅ Results Declared</option>
+                    <option value="published">📢 Published</option>
+                    <option value="published_sms">📱 Published &amp; Sent (SMS)</option>
+                    <option value="draft">📝 Draft (Evaluated)</option>
                     <option value="pending">⏳ Results Pending</option>
                   </select>
 
@@ -2541,6 +2642,7 @@ export default function Tests() {
                   >
                     {paginatedTests.map((test) => {
                       const appeared = getAppearedCount(test.id);
+                      const statusInfo = getTestPublishStatus(test);
                       const avg = calcTestAverage(testResults.filter(r => r.testId === test.id));
                       const highest = getHighestScore(test.id);
                       const targetClassDisplay = test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass;
@@ -2634,15 +2736,17 @@ export default function Tests() {
                                   <strong style={{ color: 'var(--text-primary)' }}>{targetClassDisplay}</strong>
                                 </div>
                               )}
-                              <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>Status: </span>
-                                {appeared > 0 ? (
-                                  <span style={{ color: '#10b981', fontWeight: 800, fontSize: '0.74rem' }}>
-                                    ✅ {appeared} Evaluated
+                              <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, paddingTop: 2 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.74rem' }}>Status: </span>
+                                  <span style={statusInfo.badgeStyle}>
+                                    <span>{statusInfo.icon}</span>
+                                    <span>{statusInfo.label}</span>
                                   </span>
-                                ) : (
-                                  <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: '0.74rem' }}>
-                                    ⏳ Results Pending
+                                </div>
+                                {appeared > 0 && (
+                                  <span style={{ color: '#10b981', fontWeight: 800, fontSize: '0.72rem' }}>
+                                    ({appeared} Evaluated)
                                   </span>
                                 )}
                               </div>
@@ -2737,7 +2841,7 @@ export default function Tests() {
                             <th style={{ padding: '12px 14px', fontWeight: 800 }}>Course &amp; Class</th>
                             <th style={{ padding: '12px 14px', fontWeight: 800 }}>Subjects</th>
                             <th style={{ padding: '12px 14px', fontWeight: 800 }}>Total Marks</th>
-                            <th style={{ padding: '12px 14px', fontWeight: 800 }}>Evaluation Status</th>
+                            <th style={{ padding: '12px 14px', fontWeight: 800 }}>Status</th>
                             <th style={{ padding: '12px 14px', fontWeight: 800 }}>Performance</th>
                             <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800 }}>Actions</th>
                           </tr>
@@ -2745,6 +2849,7 @@ export default function Tests() {
                         <tbody>
                           {paginatedTests.map((test) => {
                             const appeared = getAppearedCount(test.id);
+                            const statusInfo = getTestPublishStatus(test);
                             const avg = calcTestAverage(testResults.filter(r => r.testId === test.id));
                             const highest = getHighestScore(test.id);
                             const targetClassDisplay = test.targetClasses?.length > 0 ? test.targetClasses.join(', ') : test.targetClass;
@@ -2808,38 +2913,19 @@ export default function Tests() {
                                   ) : null}
                                 </td>
 
-                                {/* Evaluation Status */}
+                                {/* Status */}
                                 <td style={{ padding: '10px 14px' }}>
-                                  {appeared > 0 ? (
-                                    <span
-                                      style={{
-                                        background: 'rgba(16, 185, 129, 0.12)',
-                                        color: '#10b981',
-                                        fontSize: '0.72rem',
-                                        fontWeight: 800,
-                                        padding: '3px 8px',
-                                        borderRadius: 12,
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: 4
-                                      }}
-                                    >
-                                      <CheckCircle2 size={12} /> {appeared} Evaluated
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                                    <span style={statusInfo.badgeStyle}>
+                                      <span>{statusInfo.icon}</span>
+                                      <span>{statusInfo.label}</span>
                                     </span>
-                                  ) : (
-                                    <span
-                                      style={{
-                                        background: 'rgba(245, 158, 11, 0.12)',
-                                        color: '#f59e0b',
-                                        fontSize: '0.72rem',
-                                        fontWeight: 700,
-                                        padding: '3px 8px',
-                                        borderRadius: 12
-                                      }}
-                                    >
-                                      ⏳ Results Pending
-                                    </span>
-                                  )}
+                                    {appeared > 0 && (
+                                      <span style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', marginLeft: 2 }}>
+                                        ✅ {appeared} Evaluated
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
 
                                 {/* Performance */}
@@ -4749,7 +4835,7 @@ export default function Tests() {
                                   <button 
                                     onClick={() => setSelectedOmrImage({
                                       url: getMediaUrl(res.omrSheetImage),
-                                      filename: res.omrOriginalFilename || res.filename || (res.omrSheetImage ? res.omrSheetImage.split('/').pop().split('?')[0] : 'Scanned_OMR.jpg'),
+                                      filename: res.omrOriginalFilename || res.filename || (omrFilenames && omrFilenames[res.studentId]) || (res.omrSheetImage ? res.omrSheetImage.split('/').pop().split('?')[0] : 'Scanned_OMR.jpg'),
                                       rollNo: res.rollNo,
                                       studentName: res.studentName
                                     })}
@@ -4906,7 +4992,7 @@ export default function Tests() {
                     className="btn btn-outline-primary btn-sm flex items-center gap-2"
                     onClick={() => setSelectedOmrImage({
                       url: getMediaUrl(selectedStudentResult.omrSheetImage),
-                      filename: selectedStudentResult.omrOriginalFilename || selectedStudentResult.filename || (selectedStudentResult.omrSheetImage ? selectedStudentResult.omrSheetImage.split('/').pop().split('?')[0] : 'Scanned_OMR.jpg'),
+                      filename: selectedStudentResult.omrOriginalFilename || selectedStudentResult.filename || (omrFilenames && omrFilenames[selectedStudentResult.studentId]) || (selectedStudentResult.omrSheetImage ? selectedStudentResult.omrSheetImage.split('/').pop().split('?')[0] : 'Scanned_OMR.jpg'),
                       rollNo: selectedStudentResult.rollNo,
                       studentName: selectedStudentResult.studentName
                     })}

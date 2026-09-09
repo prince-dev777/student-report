@@ -583,7 +583,8 @@ export function AppProvider({ children }) {
         smsSent: status === 'Published',
         status: status,
         studentAnswers: payloadItem ? payloadItem.studentAnswers : [],
-        omrSheetImage: payloadItem ? payloadItem.omrSheetImage : null
+        omrSheetImage: payloadItem ? payloadItem.omrSheetImage : null,
+        omrOriginalFilename: payloadItem ? (payloadItem.omrOriginalFilename || payloadItem.filename || null) : null
       };
     });
 

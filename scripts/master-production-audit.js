@@ -226,7 +226,10 @@ async function runMasterProductionAudit() {
       { name: 'Recent Biometric Punches API', path: '/api/biometric/recent-punches', method: 'GET', auth: true },
       { name: 'Staff & Faculty Roster API', path: '/api/staff-members', method: 'GET', auth: true },
       { name: 'Staff Daily Attendance API', path: '/api/staff-attendance', method: 'GET', auth: true },
-      { name: 'Cloud Sync Engine Status API', path: '/api/sync/status', method: 'GET', auth: true }
+      { name: 'Cloud Sync Engine Status API', path: '/api/sync/status', method: 'GET', auth: true },
+      { name: 'Storage & Database Overview API', path: '/api/database/overview', method: 'GET', auth: true },
+      { name: 'Paginated Media Explorer API', path: '/api/database/media?folder=all&page=1&limit=10', method: 'GET', auth: true },
+      { name: 'Boss PC Telemetry Error Logs API', path: '/api/logs/client-errors?limit=5', method: 'GET', auth: true }
     ];
 
     for (const r of apiRoutes) {

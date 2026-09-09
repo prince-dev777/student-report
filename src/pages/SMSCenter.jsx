@@ -79,6 +79,13 @@ export default function SMSCenter() {
   const [loadingAction, setLoadingAction] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
 
+  // WhatsApp Pairing Code State
+  const [pairingTab, setPairingTab] = useState('qr'); // 'qr' | 'code'
+  const [pairingPhone, setPairingPhone] = useState('');
+  const [pairingCode, setPairingCode] = useState('');
+  const [pairingLoading, setPairingLoading] = useState(false);
+  const [pairingCopied, setPairingCopied] = useState(false);
+
   // Multi-select & Bulk Delete State
   const [selectedSmsIds, setSelectedSmsIds] = useState(new Set());
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(null); // { type: 'single'|'bulk'|'all', id?: string, count: number }
@@ -121,20 +128,26 @@ export default function SMSCenter() {
 
   const handleToggleOutboundMessaging = async () => {
     const nextVal = !outboundMessagingActive;
-    setOutboundMessagingActive(nextVal);
     try {
-      await fetch(`${API_BASE}/whatsapp/outbound-toggle`, {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/whatsapp/outbound-toggle`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ enabled: nextVal })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setOutboundMessagingActive(typeof data.enabled === 'boolean' ? data.enabled : nextVal);
       if (nextVal) {
         toast.success('🟢 Automated WhatsApp Messaging ACTIVATED!');
       } else {
         toast('⏸️ Automated WhatsApp Messaging PAUSED (No alerts will be sent)', { icon: '⏸️' });
       }
     } catch (e) {
-      toast.error('Failed to update messaging toggle');
+      toast.error('Failed to update messaging toggle: Local backend offline');
     }
   };
 
@@ -238,6 +251,9 @@ export default function SMSCenter() {
         const data = await res.json();
         setWhatsappStatus(data.status);
         setQrCode(data.qrCode);
+        if (data.pairingCode && data.pairingCode.code) {
+          setPairingCode(data.pairingCode.code);
+        }
         setWhatsappInfo(data.info || null);
       } catch (err) {
         setWhatsappStatus('offline');
@@ -337,11 +353,42 @@ export default function SMSCenter() {
   useEffect(() => {
     if (whatsappStatus === 'ready') {
       setShowQrModal(false);
+      setPairingCode('');
       toast.success('WhatsApp Connected Successfully!', { id: 'wa-connected' });
     } else if (whatsappStatus === 'qr' && qrCode) {
       setShowQrModal(true);
     }
   }, [whatsappStatus, qrCode]);
+
+  const handleRequestPairingCode = async (e) => {
+    if (e) e.preventDefault();
+    if (!pairingPhone.trim() || pairingPhone.trim().length < 10) {
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+    setPairingLoading(true);
+    try {
+      const res = await api.requestWhatsAppPairingCode(pairingPhone.trim());
+      if (res && res.code) {
+        setPairingCode(res.code);
+        toast.success('Pairing code generated! Check your phone.');
+      } else {
+        toast.error(res?.error || 'Failed to generate pairing code');
+      }
+    } catch (err) {
+      toast.error(err.message || 'Error requesting pairing code');
+    } finally {
+      setPairingLoading(false);
+    }
+  };
+
+  const handleCopyCode = () => {
+    if (!pairingCode) return;
+    navigator.clipboard.writeText(pairingCode.replace(/\s+/g, ''));
+    setPairingCopied(true);
+    toast.success('Code copied to clipboard!');
+    setTimeout(() => setPairingCopied(false), 2000);
+  };
 
   const initializeWhatsApp = async () => {
     if (loadingAction || whatsappStatus === 'connecting') return;
@@ -818,21 +865,21 @@ export default function SMSCenter() {
           )}
           
           {(whatsappStatus === 'disconnected' || whatsappStatus === 'offline' || whatsappStatus === 'auth_failure') && (
-            <button className="btn btn-primary" onClick={initializeWhatsApp} disabled={loadingAction}>
+            <button className="btn btn-primary" onClick={() => { setShowQrModal(true); initializeWhatsApp(); }} disabled={loadingAction}>
               {loadingAction ? <RefreshCw size={16} className="spin" /> : <QrCode size={16} />}
               Link WhatsApp
             </button>
           )}
 
           {whatsappStatus === 'connecting' && (
-            <button className="btn btn-primary" disabled={true}>
-              <RefreshCw size={16} className="spin" /> Initializing...
+            <button className="btn btn-primary" onClick={() => setShowQrModal(true)}>
+              <RefreshCw size={16} className="spin" /> Linking...
             </button>
           )}
 
-          {whatsappStatus === 'qr' && qrCode && (
+          {whatsappStatus === 'qr' && (
             <button className="btn btn-primary" onClick={() => setShowQrModal(true)} disabled={loadingAction}>
-              <QrCode size={16} /> Show QR Code
+              <QrCode size={16} /> Link WhatsApp (QR / Code)
             </button>
           )}
         </div>
@@ -2430,9 +2477,9 @@ export default function SMSCenter() {
         )}
       </AnimatePresence>
 
-      {/* QR Code Modal */}
+      {/* WhatsApp Connection Modal (QR Code & Phone Number Pairing Code) */}
       <AnimatePresence>
-        {showQrModal && qrCode && (
+        {showQrModal && (
           <motion.div
             className="modal-overlay"
             initial={{ opacity: 0 }}
@@ -2442,28 +2489,167 @@ export default function SMSCenter() {
           >
             <motion.div
               className="modal-content"
-              style={{ maxWidth: '400px', textAlign: 'center' }}
+              style={{ maxWidth: '460px', textAlign: 'center', overflow: 'hidden' }}
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="modal-header">
-                <h3>Scan QR to Link WhatsApp</h3>
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MessageCircle size={20} style={{ color: '#22c55e' }} />
+                  <h3 style={{ margin: 0, fontSize: '1.15rem' }}>Link WhatsApp to Boss PC</h3>
+                </div>
                 <button className="modal-close" onClick={() => setShowQrModal(false)}>
                   <X size={18} />
                 </button>
               </div>
-              <div className="modal-body" style={{ padding: '24px' }}>
-                <p style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>
-                  Open WhatsApp on your phone and scan this QR code to connect your account.
-                </p>
-                <div style={{ background: 'white', padding: '16px', borderRadius: '12px', display: 'inline-block' }}>
-                  <img src={qrCode} alt="WhatsApp QR Code" style={{ width: '256px', height: '256px' }} />
-                </div>
+
+              {/* Mode Switcher Tabs */}
+              <div style={{ display: 'flex', background: 'var(--bg-secondary, #1e293b)', padding: '4px', borderRadius: '10px', margin: '16px 20px 8px 20px', gap: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => setPairingTab('qr')}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: pairingTab === 'qr' ? 'var(--primary-color, #3b82f6)' : 'transparent',
+                    color: pairingTab === 'qr' ? '#ffffff' : 'var(--text-secondary, #94a3b8)',
+                    fontWeight: pairingTab === 'qr' ? '600' : '500',
+                    fontSize: '0.86rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <QrCode size={15} /> Scan QR Code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPairingTab('code')}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: pairingTab === 'code' ? 'var(--primary-color, #3b82f6)' : 'transparent',
+                    color: pairingTab === 'code' ? '#ffffff' : 'var(--text-secondary, #94a3b8)',
+                    fontWeight: pairingTab === 'code' ? '600' : '500',
+                    fontSize: '0.86rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <Smartphone size={15} /> Phone Number (Code)
+                </button>
               </div>
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'center' }}>
-                <button className="btn btn-primary" onClick={() => setShowQrModal(false)}>
+
+              <div className="modal-body" style={{ padding: '16px 24px 24px 24px' }}>
+                {pairingTab === 'qr' ? (
+                  <div>
+                    <p style={{ marginBottom: '14px', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+                      Open WhatsApp on phone &gt; Settings &gt; Linked Devices &gt; <strong>Link a Device</strong> &gt; Scan this QR:
+                    </p>
+                    {qrCode ? (
+                      <div style={{ background: 'white', padding: '14px', borderRadius: '12px', display: 'inline-block', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                        <img src={qrCode} alt="WhatsApp QR Code" style={{ width: '230px', height: '230px', display: 'block' }} />
+                      </div>
+                    ) : (
+                      <div style={{ padding: '40px 20px', color: 'var(--text-secondary)' }}>
+                        <RefreshCw size={24} className="spin" style={{ margin: '0 auto 12px' }} />
+                        <p style={{ fontSize: '0.9rem' }}>Generating fresh QR code...</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <p style={{ marginBottom: '16px', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+                      No camera needed! Enter phone number to get an 8-character pairing code:
+                    </p>
+
+                    <form onSubmit={handleRequestPairingCode} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', flex: 1, border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-input, #0f172a)' }}>
+                        <span style={{ padding: '10px 12px', background: 'var(--bg-secondary, #1e293b)', color: 'var(--text-secondary)', fontSize: '0.9rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>+91</span>
+                        <input
+                          type="tel"
+                          placeholder="9876543210"
+                          value={pairingPhone}
+                          onChange={(e) => setPairingPhone(e.target.value.replace(/\D/g, ''))}
+                          maxLength={10}
+                          style={{ flex: 1, border: 'none', background: 'transparent', padding: '10px 12px', color: 'var(--text-primary)', outline: 'none', fontSize: '0.95rem', letterSpacing: '0.5px' }}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={pairingLoading || !pairingPhone || pairingPhone.length < 10}
+                        style={{ whiteSpace: 'nowrap', padding: '0 16px' }}
+                      >
+                        {pairingLoading ? <RefreshCw size={15} className="spin" /> : <Zap size={15} />}
+                        {pairingLoading ? 'Generating...' : 'Get Code'}
+                      </button>
+                    </form>
+
+                    {pairingCode && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        style={{
+                          background: 'rgba(34, 197, 94, 0.1)',
+                          border: '1px solid rgba(34, 197, 94, 0.3)',
+                          borderRadius: '12px',
+                          padding: '16px',
+                          marginBottom: '16px'
+                        }}
+                      >
+                        <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#22c55e', fontWeight: '700' }}>
+                          Enter this Code on Phone
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', margin: '10px 0' }}>
+                          <span style={{ fontSize: '1.8rem', fontWeight: '800', letterSpacing: '6px', color: 'var(--text-primary)', fontFamily: 'monospace' }}>
+                            {pairingCode.length === 8 ? `${pairingCode.slice(0, 4)}-${pairingCode.slice(4)}` : pairingCode}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleCopyCode}
+                            title="Copy code"
+                            style={{
+                              background: 'var(--bg-secondary, #334155)',
+                              border: 'none',
+                              borderRadius: '8px',
+                              padding: '8px',
+                              color: 'var(--text-primary)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            {pairingCopied ? <Check size={16} style={{ color: '#22c55e' }} /> : <Copy size={16} />}
+                          </button>
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', textAlign: 'left', lineHeight: '1.6', background: 'var(--bg-primary, #0f172a)', padding: '10px 12px', borderRadius: '8px', marginTop: '10px' }}>
+                          <div>1. Open WhatsApp &gt; <strong>Linked Devices</strong> &gt; <strong>Link a Device</strong></div>
+                          <div>2. Tap <strong>"Link with phone number instead"</strong></div>
+                          <div>3. Type the 8-character code above to link instantly!</div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'center', borderTop: '1px solid var(--border-color)', padding: '12px' }}>
+                <button className="btn btn-outline" onClick={() => setShowQrModal(false)} style={{ minWidth: '100px' }}>
                   Close
                 </button>
               </div>

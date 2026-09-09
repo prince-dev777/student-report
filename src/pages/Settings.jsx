@@ -5,7 +5,7 @@ import {
   Image, FileText, Users, Calendar, MessageSquare, 
   CheckCircle2, AlertTriangle, Search, Eye, EyeOff, X, ShieldAlert,
   Download, Sparkles, Filter, ChevronRight, Layers, UserCheck, Cloud, Terminal,
-  Lock, KeyRound, ArrowLeft
+  Lock, KeyRound, ArrowLeft, Monitor, Bug, Activity, ChevronLeft
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api, API_BASE } from '../utils/api';
@@ -70,35 +70,115 @@ export default function Settings() {
   const [wipeConfirmText, setWipeConfirmText] = useState('');
   const [isWiping, setIsWiping] = useState(false);
 
-  // Media Inspection Modal State
+  // Paginated Media State (High Performance Page-by-Page Loading)
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState(null);
   const [mediaFilter, setMediaFilter] = useState('all'); // 'all' | 'omr' | 'photos' | 'avatars'
   const [mediaSearch, setMediaSearch] = useState('');
+  const [mediaFiles, setMediaFiles] = useState([]);
+  const [mediaPage, setMediaPage] = useState(1);
+  const [mediaLimit] = useState(24);
+  const [mediaTotal, setMediaTotal] = useState(0);
+  const [mediaTotalPages, setMediaTotalPages] = useState(1);
+  const [mediaLoading, setMediaLoading] = useState(false);
   const [isPurgingFiles, setIsPurgingFiles] = useState(false);
   const [cloudinaryStats, setCloudinaryStats] = useState(null);
   const [isPurgingCloudinary, setIsPurgingCloudinary] = useState(false);
+
+  // Boss PC Error Telemetry State
+  const [clientLogs, setClientLogs] = useState([]);
+  const [clientLogsPage, setClientLogsPage] = useState(1);
+  const [clientLogsTotalPages, setClientLogsTotalPages] = useState(1);
+  const [clientLogsTotal, setClientLogsTotal] = useState(0);
+  const [clientLogsFilter, setClientLogsFilter] = useState('all'); // 'all' | 'REACT_CRASH' | 'UNHANDLED_PROMISE' | 'UNCAUGHT_ERROR' | 'API_FAILURE'
+  const [clientLogsSearch, setClientLogsSearch] = useState('');
+  const [clientLogsLoading, setClientLogsLoading] = useState(false);
+  const [expandedLogId, setExpandedLogId] = useState(null);
 
   // Debug Logs State
   const [systemLogs, setSystemLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
   // Fetch Database Overview & Cloudinary Stats & Logs
-  const fetchOverview = async () => {
+  const fetchOverview = async (showToast = false) => {
     try {
       setLoading(true);
-      const [data, cStats, logData] = await Promise.all([
+      const [overviewRes, cStatsRes, logRes, clientLogsRes] = await Promise.allSettled([
         api.getDatabaseOverview(),
-        api.getCloudinaryStats().catch(() => null),
-        api.getSystemLogs().catch(() => ({ logs: [] }))
+        api.getCloudinaryStats(),
+        api.getSystemLogs(),
+        api.getClientErrorLogs(1, 1)
       ]);
-      setOverview(data);
-      if (cStats) setCloudinaryStats(cStats);
-      if (logData?.logs) setSystemLogs(logData.logs);
+
+      if (overviewRes.status === 'fulfilled' && overviewRes.value) {
+        setOverview(overviewRes.value);
+        if (showToast) toast.success('Database overview refreshed!');
+      } else if (overviewRes.status === 'rejected') {
+        console.error('Failed to fetch database overview:', overviewRes.reason);
+        if (showToast) toast.error('Failed to load database overview');
+      }
+
+      if (cStatsRes.status === 'fulfilled' && cStatsRes.value) {
+        setCloudinaryStats(cStatsRes.value);
+      }
+      if (logRes.status === 'fulfilled' && logRes.value?.logs) {
+        setSystemLogs(logRes.value.logs);
+      }
+      if (clientLogsRes.status === 'fulfilled' && clientLogsRes.value) {
+        const total = clientLogsRes.value.pagination?.total ?? clientLogsRes.value.total ?? 0;
+        setClientLogsTotal(total);
+      }
     } catch (err) {
       console.error('Failed to fetch database overview:', err);
-      toast.error('Failed to load database overview');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch Paginated Media Page
+  const fetchMediaFiles = async (folder = mediaFilter, page = mediaPage, search = mediaSearch) => {
+    try {
+      setMediaLoading(true);
+      const res = await api.getPaginatedMedia(folder, page, mediaLimit, search);
+      if (res?.files) {
+        setMediaFiles(res.files);
+        setMediaTotal(res.pagination?.total ?? res.total ?? 0);
+        setMediaTotalPages(res.pagination?.totalPages ?? res.totalPages ?? 1);
+      }
+    } catch (err) {
+      console.error('Failed to load media files:', err);
+      toast.error('Failed to load media page');
+    } finally {
+      setMediaLoading(false);
+    }
+  };
+
+  // Fetch Boss PC Client Error Logs
+  const fetchClientLogs = async (page = clientLogsPage, filter = clientLogsFilter, search = clientLogsSearch, showToast = false) => {
+    try {
+      setClientLogsLoading(true);
+      const res = await api.getClientErrorLogs(page, 20, search, filter);
+      if (res?.logs) {
+        setClientLogs(res.logs);
+        setClientLogsTotal(res.pagination?.total ?? res.total ?? 0);
+        setClientLogsTotalPages(res.pagination?.totalPages ?? res.totalPages ?? 1);
+        if (showToast) toast.success('Telemetry logs refreshed!');
+      }
+    } catch (err) {
+      console.error('Failed to load client error logs:', err);
+      if (showToast) toast.error('Failed to load error logs');
+    } finally {
+      setClientLogsLoading(false);
+    }
+  };
+
+  const handleClearClientLogs = async () => {
+    if (!window.confirm('⚠️ Are you sure you want to permanently clear all recorded error logs?')) return;
+    try {
+      await api.clearClientErrorLogs();
+      toast.success('Client error logs cleared successfully!');
+      fetchClientLogs(1, clientLogsFilter, clientLogsSearch);
+    } catch (err) {
+      toast.error(err.message || 'Failed to clear error logs');
     }
   };
 
@@ -107,6 +187,18 @@ export default function Settings() {
       fetchOverview();
     }
   }, [isUnlocked]);
+
+  useEffect(() => {
+    if (isUnlocked && activeTab === 'media') {
+      fetchMediaFiles(mediaFilter, mediaPage, mediaSearch);
+    }
+  }, [isUnlocked, activeTab, mediaFilter, mediaPage, mediaSearch]);
+
+  useEffect(() => {
+    if (isUnlocked && activeTab === 'client-logs') {
+      fetchClientLogs(clientLogsPage, clientLogsFilter, clientLogsSearch);
+    }
+  }, [isUnlocked, activeTab, clientLogsPage, clientLogsFilter, clientLogsSearch]);
 
   // Open Collection Inspection Drawer/Modal
   const handleInspectCollection = async (collKey, collName) => {
@@ -193,6 +285,7 @@ export default function Settings() {
       const res = await api.purgeOrphanedFiles();
       toast.success(`🎉 ${res.message}`);
       fetchOverview();
+      fetchMediaFiles(mediaFilter, 1, mediaSearch);
     } catch (err) {
       toast.error(err.message || 'Failed to purge orphaned files');
     } finally {
@@ -260,30 +353,11 @@ export default function Settings() {
       await api.deleteMediaFile(folder, filename);
       toast.success('File deleted from local disk!');
       fetchOverview();
+      fetchMediaFiles(mediaFilter, mediaPage, mediaSearch);
     } catch (err) {
       toast.error(err.message || 'Failed to delete media file');
     }
   };
-
-  // Compute combined media list for gallery
-  const allMediaList = [];
-  if (overview?.media) {
-    if (overview.media.omr?.files) {
-      overview.media.omr.files.forEach(f => allMediaList.push({ ...f, folder: 'omr', tag: 'OMR Scan' }));
-    }
-    if (overview.media.photos?.files) {
-      overview.media.photos.files.forEach(f => allMediaList.push({ ...f, folder: 'photos', tag: 'Student Photo' }));
-    }
-    if (overview.media.avatars?.files) {
-      overview.media.avatars.files.forEach(f => allMediaList.push({ ...f, folder: 'avatars', tag: 'Avatar' }));
-    }
-  }
-
-  const filteredMedia = allMediaList.filter(m => {
-    if (mediaFilter !== 'all' && m.folder !== mediaFilter) return false;
-    if (mediaSearch && !m.name.toLowerCase().includes(mediaSearch.toLowerCase())) return false;
-    return true;
-  });
 
   const totalDbRecords = overview?.collections?.reduce((acc, c) => acc + c.total, 0) || 0;
   const totalTrashRecords = overview?.collections?.reduce((acc, c) => acc + c.deleted, 0) || 0;
@@ -502,7 +576,7 @@ export default function Settings() {
         {/* Global Quick Action Buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
-            onClick={fetchOverview}
+            onClick={() => fetchOverview(true)}
             disabled={loading}
             className="btn btn-secondary"
             style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
@@ -693,6 +767,39 @@ export default function Settings() {
           <ShieldAlert size={17} />
           <span>Advanced Maintenance & Factory Reset</span>
         </button>
+
+        <button
+          onClick={() => { setActiveTab('client-logs'); setClientLogsPage(1); }}
+          style={{
+            padding: '12px 20px',
+            fontSize: '0.92rem',
+            fontWeight: 700,
+            border: 'none',
+            background: 'transparent',
+            color: activeTab === 'client-logs' ? '#ef4444' : 'var(--text-muted, #64748b)',
+            borderBottom: activeTab === 'client-logs' ? '3px solid #ef4444' : '3px solid transparent',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <Monitor size={17} />
+          <span>🖥️ Boss PC Error Logs & Telemetry</span>
+          {clientLogsTotal > 0 && (
+            <span style={{
+              background: '#ef4444',
+              color: '#ffffff',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              padding: '2px 7px',
+              borderRadius: '999px'
+            }}>
+              {clientLogsTotal}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* TAB 1: Database Collections Explorer */}
@@ -819,7 +926,7 @@ export default function Settings() {
         </div>
       )}
 
-      {/* TAB 2: Media & OMR Scans Explorer */}
+      {/* TAB 2: Media & OMR Scans Explorer (Paginated & High Performance) */}
       {activeTab === 'media' && (
         <div>
           {/* Action Bar */}
@@ -832,9 +939,9 @@ export default function Settings() {
             marginBottom: '20px'
           }}>
             {/* Folder Filters */}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               <button
-                onClick={() => setMediaFilter('all')}
+                onClick={() => { setMediaFilter('all'); setMediaPage(1); }}
                 style={{
                   padding: '7px 14px',
                   borderRadius: '8px',
@@ -846,11 +953,11 @@ export default function Settings() {
                   cursor: 'pointer'
                 }}
               >
-                All Files ({allMediaList.length})
+                All Files ({overview?.media?.totalFiles || 0})
               </button>
 
               <button
-                onClick={() => setMediaFilter('omr')}
+                onClick={() => { setMediaFilter('omr'); setMediaPage(1); }}
                 style={{
                   padding: '7px 14px',
                   borderRadius: '8px',
@@ -866,7 +973,7 @@ export default function Settings() {
               </button>
 
               <button
-                onClick={() => setMediaFilter('photos')}
+                onClick={() => { setMediaFilter('photos'); setMediaPage(1); }}
                 style={{
                   padding: '7px 14px',
                   borderRadius: '8px',
@@ -880,17 +987,33 @@ export default function Settings() {
               >
                 Student Photos ({overview?.media?.photos?.count || 0})
               </button>
+
+              <button
+                onClick={() => { setMediaFilter('avatars'); setMediaPage(1); }}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  background: mediaFilter === 'avatars' ? '#6366f1' : '#f1f5f9',
+                  color: mediaFilter === 'avatars' ? '#ffffff' : '#475569',
+                  cursor: 'pointer'
+                }}
+              >
+                Avatars ({overview?.media?.avatars?.count || 0})
+              </button>
             </div>
 
-            {/* Search & Clean Orphaned Files */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Search, Refresh & Clean Orphaned Files */}
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
               <div style={{ position: 'relative', width: '220px' }}>
                 <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input
                   type="text"
                   placeholder="Search file name..."
                   value={mediaSearch}
-                  onChange={(e) => setMediaSearch(e.target.value)}
+                  onChange={(e) => { setMediaSearch(e.target.value); setMediaPage(1); }}
                   style={{
                     width: '100%',
                     padding: '7px 10px 7px 32px',
@@ -900,6 +1023,17 @@ export default function Settings() {
                   }}
                 />
               </div>
+
+              <button
+                onClick={() => fetchMediaFiles(mediaFilter, mediaPage, mediaSearch)}
+                disabled={mediaLoading}
+                className="btn btn-secondary"
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem', padding: '7px 12px' }}
+                title="Refresh current page"
+              >
+                <RefreshCw size={14} className={mediaLoading ? 'spin' : ''} />
+                <span>Refresh</span>
+              </button>
 
               <button
                 onClick={handlePurgeOrphanedFiles}
@@ -924,12 +1058,32 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* Page Info Sub-header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', fontSize: '0.82rem', color: '#64748b' }}>
+            <div>
+              Showing <strong>{mediaFiles.length > 0 ? (mediaPage - 1) * mediaLimit + 1 : 0}</strong> - <strong>{Math.min(mediaPage * mediaLimit, mediaTotal)}</strong> of <strong>{mediaTotal}</strong> media files
+            </div>
+            {mediaTotalPages > 1 && (
+              <div>
+                Page <strong>{mediaPage}</strong> of <strong>{mediaTotalPages}</strong>
+              </div>
+            )}
+          </div>
+
           {/* Media Grid Gallery */}
-          {filteredMedia.length === 0 ? (
+          {mediaLoading ? (
+            <div className="card" style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
+              <RefreshCw size={36} className="spin" style={{ margin: '0 auto 12px', color: '#3b82f6' }} />
+              <h3 style={{ margin: '0 0 6px', fontSize: '1.1rem' }}>Loading Page {mediaPage}...</h3>
+              <p style={{ margin: 0, fontSize: '0.84rem' }}>Fetching optimized media chunk from local disk.</p>
+            </div>
+          ) : mediaFiles.length === 0 ? (
             <div className="card" style={{ padding: '60px 20px', textAlign: 'center', color: '#94a3b8' }}>
               <Image size={48} style={{ opacity: 0.3, marginBottom: '12px' }} />
               <h3>No Media Files Found</h3>
-              <p style={{ fontSize: '0.86rem' }}>Local uploads directory is currently clean.</p>
+              <p style={{ fontSize: '0.86rem' }}>
+                {mediaSearch ? `No files match "${mediaSearch}".` : 'This media directory is currently empty.'}
+              </p>
             </div>
           ) : (
             <div style={{
@@ -937,7 +1091,7 @@ export default function Settings() {
               gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
               gap: '16px'
             }}>
-              {filteredMedia.map((m, idx) => (
+              {mediaFiles.map((m, idx) => (
                 <div key={idx} className="card" style={{
                   padding: '12px',
                   borderRadius: '12px',
@@ -946,7 +1100,7 @@ export default function Settings() {
                   gap: '8px',
                   position: 'relative'
                 }}>
-                  {/* Thumbnail */}
+                  {/* Thumbnail with lazy loading */}
                   <div
                     onClick={() => setMediaPreviewUrl(m.url)}
                     style={{
@@ -964,6 +1118,7 @@ export default function Settings() {
                     <img
                       src={m.url}
                       alt={m.name}
+                      loading="lazy"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => { e.target.src = '/logo.png'; }}
                     />
@@ -987,10 +1142,10 @@ export default function Settings() {
                         fontWeight: 700,
                         padding: '2px 6px',
                         borderRadius: '4px',
-                        background: m.folder === 'omr' ? '#8b5cf615' : '#10b98115',
-                        color: m.folder === 'omr' ? '#8b5cf6' : '#10b981'
+                        background: m.folder === 'omr' ? '#8b5cf615' : (m.folder === 'avatars' ? '#6366f115' : '#10b98115'),
+                        color: m.folder === 'omr' ? '#8b5cf6' : (m.folder === 'avatars' ? '#6366f1' : '#10b981')
                       }}>
-                        {m.tag}
+                        {m.tag || m.folder}
                       </span>
                       <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{m.sizeFormatted}</span>
                     </div>
@@ -1007,6 +1162,7 @@ export default function Settings() {
                     </button>
                     <button
                       onClick={() => handleDeleteMediaFile(m.folder, m.name)}
+                      title="Permanently delete from disk"
                       style={{
                         background: '#fee2e2',
                         color: '#ef4444',
@@ -1021,6 +1177,61 @@ export default function Settings() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Bottom Pagination Controls */}
+          {mediaTotalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              gap: '8px',
+              marginTop: '28px',
+              padding: '14px',
+              background: 'var(--card-bg, #ffffff)',
+              borderRadius: '14px',
+              border: '1px solid var(--border-color, #e2e8f0)',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+            }}>
+              <button
+                disabled={mediaPage <= 1 || mediaLoading}
+                onClick={() => setMediaPage(1)}
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.8rem', opacity: mediaPage <= 1 ? 0.5 : 1 }}
+              >
+                ⏮️ First
+              </button>
+              <button
+                disabled={mediaPage <= 1 || mediaLoading}
+                onClick={() => setMediaPage(p => Math.max(1, p - 1))}
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', opacity: mediaPage <= 1 ? 0.5 : 1 }}
+              >
+                <ChevronLeft size={14} /> Prev
+              </button>
+
+              <span style={{ fontSize: '0.84rem', fontWeight: 700, padding: '0 12px', color: 'var(--text-main, #0f172a)' }}>
+                Page {mediaPage} of {mediaTotalPages}
+              </span>
+
+              <button
+                disabled={mediaPage >= mediaTotalPages || mediaLoading}
+                onClick={() => setMediaPage(p => Math.min(mediaTotalPages, p + 1))}
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', opacity: mediaPage >= mediaTotalPages ? 0.5 : 1 }}
+              >
+                Next <ChevronRight size={14} />
+              </button>
+              <button
+                disabled={mediaPage >= mediaTotalPages || mediaLoading}
+                onClick={() => setMediaPage(mediaTotalPages)}
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.8rem', opacity: mediaPage >= mediaTotalPages ? 0.5 : 1 }}
+              >
+                Last ⏭️
+              </button>
             </div>
           )}
         </div>
@@ -1218,6 +1429,460 @@ export default function Settings() {
               )}
             </div>
           </div>
+
+        </div>
+      )}
+
+      {/* TAB 4: Boss PC Error Logs & Telemetry */}
+      {activeTab === 'client-logs' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* Header Card with description and actions */}
+          <div className="card" style={{
+            padding: '24px',
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%)',
+            border: '1px solid rgba(239, 68, 68, 0.2)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '16px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 8px 16px rgba(239, 68, 68, 0.3)'
+                }}>
+                  <Monitor size={26} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--text-main, #0f172a)' }}>
+                    🖥️ Boss PC Error Logs & Real-Time Telemetry
+                  </h2>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'var(--text-muted, #64748b)', lineHeight: 1.4 }}>
+                    Client machine par kab kaun sa button click hua aur kyu fail hua, iska step-by-step breadcrumb trail real-time me record hota hai.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={() => fetchClientLogs(clientLogsPage, clientLogsFilter, clientLogsSearch, true)}
+                  disabled={clientLogsLoading}
+                  className="btn btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', padding: '9px 14px' }}
+                >
+                  <RefreshCw size={15} className={clientLogsLoading ? 'spin' : ''} />
+                  <span>Refresh Telemetry</span>
+                </button>
+                <button
+                  onClick={handleClearClientLogs}
+                  disabled={clientLogs.length === 0}
+                  className="btn btn-danger"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.84rem',
+                    padding: '9px 14px',
+                    background: '#ef4444',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: clientLogs.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: clientLogs.length === 0 ? 0.6 : 1
+                  }}
+                >
+                  <Trash2 size={15} />
+                  <span>Clear Error Logs</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters Bar */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}>
+            {/* Type filters */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {[
+                { key: 'all', label: 'All Logs' },
+                { key: 'REACT_CRASH', label: '💥 React Crashes' },
+                { key: 'UNHANDLED_PROMISE', label: '🔘 Button / Async Failures' },
+                { key: 'UNCAUGHT_ERROR', label: '⚠️ Uncaught Errors' },
+                { key: 'API_FAILURE', label: '🌐 API Failures' }
+              ].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => { setClientLogsFilter(f.key); setClientLogsPage(1); }}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    border: 'none',
+                    background: clientLogsFilter === f.key ? '#ef4444' : '#f1f5f9',
+                    color: clientLogsFilter === f.key ? '#ffffff' : '#475569',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Search Input */}
+            <div style={{ position: 'relative', width: '280px' }}>
+              <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input
+                type="text"
+                placeholder="Search error message, button, URL..."
+                value={clientLogsSearch}
+                onChange={(e) => { setClientLogsSearch(e.target.value); setClientLogsPage(1); }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px 8px 32px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.84rem'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Logs Count Overview */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.82rem', color: '#64748b' }}>
+            <span>
+              Total Recorded Incidents: <strong>{clientLogsTotal}</strong>
+            </span>
+            {clientLogsTotalPages > 1 && (
+              <span>
+                Page <strong>{clientLogsPage}</strong> of <strong>{clientLogsTotalPages}</strong>
+              </span>
+            )}
+          </div>
+
+          {/* Error Cards List */}
+          {clientLogsLoading ? (
+            <div className="card" style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
+              <RefreshCw size={36} className="spin" style={{ margin: '0 auto 12px', color: '#ef4444' }} />
+              <h3 style={{ margin: '0 0 6px', fontSize: '1.1rem' }}>Fetching Telemetry Logs...</h3>
+            </div>
+          ) : clientLogs.length === 0 ? (
+            <div className="card" style={{
+              padding: '60px 20px',
+              textAlign: 'center',
+              borderRadius: '16px',
+              border: '1px dashed #cbd5e1'
+            }}>
+              <div style={{
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
+                background: '#10b98115',
+                color: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px'
+              }}>
+                <CheckCircle2 size={32} />
+              </div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 6px', color: '#0f172a' }}>
+                All Systems Operational
+              </h3>
+              <p style={{ fontSize: '0.86rem', color: '#64748b', margin: 0 }}>
+                {clientLogsSearch ? `No logs match "${clientLogsSearch}".` : 'Boss ke PC par abhi tak koi error ya crash record nahi hui hai.'}
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {clientLogs.map((log) => {
+                const isCrash = log.errorType === 'REACT_CRASH';
+                const isPromise = log.errorType === 'UNHANDLED_PROMISE';
+                const isApi = log.errorType === 'API_FAILURE';
+                const badgeBg = isCrash ? '#fee2e2' : (isPromise ? '#ffedd5' : (isApi ? '#dbeafe' : '#fef3c7'));
+                const badgeColor = isCrash ? '#dc2626' : (isPromise ? '#ea580c' : (isApi ? '#2563eb' : '#d97706'));
+                const isExpanded = expandedLogId === log._id;
+
+                return (
+                  <div
+                    key={log._id}
+                    className="card"
+                    style={{
+                      padding: '18px 20px',
+                      borderRadius: '14px',
+                      borderLeft: `5px solid ${badgeColor}`,
+                      background: 'var(--card-bg, #ffffff)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                    }}
+                  >
+                    {/* Top Meta Header */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '10px',
+                      marginBottom: '10px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <span style={{
+                          padding: '3px 9px',
+                          borderRadius: '6px',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          background: badgeBg,
+                          color: badgeColor
+                        }}>
+                          {log.errorType}
+                        </span>
+
+                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                          🕒 {new Date(log.timestamp).toLocaleString()}
+                        </span>
+
+                        {log.url && (
+                          <span style={{
+                            fontSize: '0.74rem',
+                            color: '#475569',
+                            background: '#f1f5f9',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontFamily: 'monospace'
+                          }}>
+                            📍 {log.url}
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.78rem', color: '#64748b' }}>
+                        <span>
+                          👤 <strong>{log.userInfo?.name || log.userInfo?.email || 'Admin / User'}</strong>
+                        </span>
+                        <span>•</span>
+                        <span>
+                          {log.systemInfo?.online ? '🟢 Online' : '🔴 Offline'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Error Message Box */}
+                    <div style={{
+                      background: isCrash ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                      border: isCrash ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)',
+                      borderRadius: '8px',
+                      padding: '10px 14px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      fontFamily: 'Consolas, Monaco, monospace',
+                      color: isCrash ? '#b91c1c' : '#92400e',
+                      wordBreak: 'break-word',
+                      lineHeight: 1.4
+                    }}>
+                      {log.message}
+                    </div>
+
+                    {/* Breadcrumbs Action Trail (What the user clicked leading to the crash) */}
+                    {log.lastActions && log.lastActions.length > 0 && (
+                      <div style={{
+                        background: '#090d16',
+                        border: '1px solid #1e293b',
+                        borderRadius: '10px',
+                        padding: '12px 14px',
+                        marginTop: '12px'
+                      }}>
+                        <div style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          color: '#38bdf8',
+                          marginBottom: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <span>👣 Button Clicks & Action Trail (Before Error Occurred):</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {log.lastActions.map((act, aIdx) => (
+                            <div
+                              key={aIdx}
+                              style={{
+                                fontSize: '0.75rem',
+                                color: '#e2e8f0',
+                                display: 'flex',
+                                alignItems: 'baseline',
+                                gap: '8px',
+                                fontFamily: 'Consolas, Monaco, monospace'
+                              }}
+                            >
+                              <span style={{ color: '#64748b', minWidth: '20px' }}>{aIdx + 1}.</span>
+                              <span style={{ color: '#94a3b8' }}>[{new Date(act.timestamp).toLocaleTimeString()}]</span>
+                              <span style={{ color: '#38bdf8', fontWeight: 700 }}>{act.type}:</span>
+                              <span style={{ color: '#fde047', fontWeight: 600 }}>"{act.description}"</span>
+                              {act.route && <span style={{ color: '#64748b' }}>({act.route})</span>}
+                            </div>
+                          ))}
+                          <div style={{
+                            marginTop: '6px',
+                            paddingTop: '6px',
+                            borderTop: '1px dashed #ef4444',
+                            color: '#f87171',
+                            fontWeight: 800,
+                            fontSize: '0.76rem',
+                            fontFamily: 'Consolas, Monaco, monospace'
+                          }}>
+                            💥 [ERROR / CRASH HAPPENED RIGHT AFTER THIS]
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* System & Hardware Info Bar */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                      marginTop: '12px',
+                      paddingTop: '10px',
+                      borderTop: '1px solid #f1f5f9',
+                      fontSize: '0.74rem',
+                      color: '#64748b'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <span>🖥️ Platform: <strong>{log.systemInfo?.platform || 'Desktop'}</strong></span>
+                        <span>📐 Screen: <strong>{log.systemInfo?.screenResolution || '1920x1080'}</strong></span>
+                        <span>📱 App: <strong>{log.systemInfo?.isElectron ? 'Electron Native' : 'Web Browser'}</strong></span>
+                      </div>
+
+                      {(log.stack || log.componentStack) && (
+                        <button
+                          onClick={() => setExpandedLogId(isExpanded ? null : log._id)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#3b82f6',
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                            padding: '2px 6px',
+                            textDecoration: 'underline'
+                          }}
+                        >
+                          {isExpanded ? 'Hide Technical Stack Trace ▲' : 'View Technical Stack Trace ▼'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Collapsible Technical Stack Trace */}
+                    {isExpanded && (log.stack || log.componentStack) && (
+                      <div style={{
+                        marginTop: '10px',
+                        padding: '12px',
+                        background: '#020617',
+                        borderRadius: '8px',
+                        border: '1px solid #1e293b',
+                        color: '#f87171',
+                        fontFamily: 'Consolas, Monaco, monospace',
+                        fontSize: '0.72rem',
+                        lineHeight: 1.5,
+                        maxHeight: '250px',
+                        overflowY: 'auto',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
+                      }}>
+                        {log.stack && (
+                          <div style={{ marginBottom: log.componentStack ? '10px' : '0' }}>
+                            <strong style={{ color: '#94a3b8' }}>Error Stack:</strong>
+                            <div>{log.stack}</div>
+                          </div>
+                        )}
+                        {log.componentStack && (
+                          <div>
+                            <strong style={{ color: '#94a3b8' }}>React Component Hierarchy:</strong>
+                            <div>{log.componentStack}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Bottom Pagination Controls for Error Logs */}
+          {clientLogsTotalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              gap: '8px',
+              marginTop: '20px',
+              padding: '14px',
+              background: 'var(--card-bg, #ffffff)',
+              borderRadius: '14px',
+              border: '1px solid var(--border-color, #e2e8f0)',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+            }}>
+              <button
+                disabled={clientLogsPage <= 1 || clientLogsLoading}
+                onClick={() => setClientLogsPage(1)}
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.8rem', opacity: clientLogsPage <= 1 ? 0.5 : 1 }}
+              >
+                ⏮️ First
+              </button>
+              <button
+                disabled={clientLogsPage <= 1 || clientLogsLoading}
+                onClick={() => setClientLogsPage(p => Math.max(1, p - 1))}
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', opacity: clientLogsPage <= 1 ? 0.5 : 1 }}
+              >
+                <ChevronLeft size={14} /> Prev
+              </button>
+
+              <span style={{ fontSize: '0.84rem', fontWeight: 700, padding: '0 12px', color: 'var(--text-main, #0f172a)' }}>
+                Page {clientLogsPage} of {clientLogsTotalPages}
+              </span>
+
+              <button
+                disabled={clientLogsPage >= clientLogsTotalPages || clientLogsLoading}
+                onClick={() => setClientLogsPage(p => Math.min(clientLogsTotalPages, p + 1))}
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', opacity: clientLogsPage >= clientLogsTotalPages ? 0.5 : 1 }}
+              >
+                Next <ChevronRight size={14} />
+              </button>
+              <button
+                disabled={clientLogsPage >= clientLogsTotalPages || clientLogsLoading}
+                onClick={() => setClientLogsPage(clientLogsTotalPages)}
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.8rem', opacity: clientLogsPage >= clientLogsTotalPages ? 0.5 : 1 }}
+              >
+                Last ⏭️
+              </button>
+            </div>
+          )}
 
         </div>
       )}

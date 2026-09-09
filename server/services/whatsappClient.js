@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 
 let client = null;
 let qrCodeData = null; // Stores the latest base64 QR code image
+let pairingCodeData = null; // Stores { code, phoneNumber, requestedAt }
 let clientStatus = 'disconnected'; // 'disconnected' | 'qr' | 'connecting' | 'ready' | 'auth_failure'
 let initRetryCount = 0;
 const MAX_INIT_RETRIES = 3;
@@ -24,6 +25,7 @@ export function getWhatsAppClientState() {
   return { 
     status: clientStatus, 
     qrCode: qrCodeData,
+    pairingCode: pairingCodeData,
     info: client && client.info ? {
       pushname: client.info.pushname,
       wid: client.info.wid
@@ -43,7 +45,6 @@ async function safeDeleteDir(dirPath, maxRetries = 3) {
     } catch (err) {
       if (err.code === 'EBUSY' || err.code === 'EPERM') {
         console.warn(`[WhatsAppClient] Session folder busy (attempt ${i + 1}/${maxRetries}), waiting...`);
-        // Wait progressively longer for Puppeteer processes to release file locks
         await new Promise(resolve => setTimeout(resolve, (i + 1) * 2000));
       } else {
         console.error(`[WhatsAppClient] Failed to delete session folder:`, err.message);
@@ -58,7 +59,7 @@ async function safeDeleteDir(dirPath, maxRetries = 3) {
 // Helper: safely remove SingletonLock, lockfile, and Chromium socket locks without deleting session credentials
 function clearChromiumLocks(dirPath) {
   if (!fs.existsSync(dirPath)) return;
-  const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'lockfile'];
+  const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'lockfile', 'LOCK'];
   try {
     const entries = fs.readdirSync(dirPath, { withFileTypes: true });
     for (const entry of entries) {
@@ -73,6 +74,132 @@ function clearChromiumLocks(dirPath) {
       }
     }
   } catch (err) {}
+}
+
+// ============================================================================
+// 🛡️ SESSION VAULT (Self-Healing Backup & Automatic Integrity Restoration)
+// ============================================================================
+
+function backupSessionVault(dataPath) {
+  try {
+    const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
+    const vaultDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session_vault');
+    if (!fs.existsSync(sessionDir)) return;
+
+    const idbDir = path.join(sessionDir, 'Default', 'IndexedDB', 'https_web.whatsapp.com_0.indexeddb.leveldb');
+    if (!fs.existsSync(idbDir)) return;
+
+    // Verify it actually has data files before snapshotting
+    const idbFiles = fs.readdirSync(idbDir);
+    const hasData = idbFiles.some(f => f.endsWith('.ldb') || f.endsWith('.log'));
+    if (!hasData) return;
+
+    // Remove volatile lockfiles before copying snapshot
+    clearChromiumLocks(sessionDir);
+
+    fs.mkdirSync(vaultDir, { recursive: true });
+
+    // Copy IndexedDB
+    const vaultIdb = path.join(vaultDir, 'IndexedDB');
+    fs.mkdirSync(vaultIdb, { recursive: true });
+    fs.cpSync(path.join(sessionDir, 'Default', 'IndexedDB'), vaultIdb, { recursive: true, force: true });
+
+    // Copy Local Storage
+    const lsDir = path.join(sessionDir, 'Default', 'Local Storage');
+    if (fs.existsSync(lsDir)) {
+      const vaultLs = path.join(vaultDir, 'Local Storage');
+      fs.mkdirSync(vaultLs, { recursive: true });
+      fs.cpSync(lsDir, vaultLs, { recursive: true, force: true });
+    }
+
+    // Copy Local State
+    const localState = path.join(sessionDir, 'Local State');
+    if (fs.existsSync(localState)) {
+      fs.copyFileSync(localState, path.join(vaultDir, 'Local State'));
+    }
+
+    // Write vault metadata
+    fs.writeFileSync(path.join(vaultDir, 'vault_meta.json'), JSON.stringify({
+      timestamp: new Date().toISOString(),
+      user: client?.info?.pushname || 'Authenticated WhatsApp User',
+      wid: client?.info?.wid?._serialized || ''
+    }, null, 2));
+
+    console.log('[WhatsAppVault] 🛡️ Permanent session snapshot successfully sealed in vault!');
+  } catch (err) {
+    console.warn('[WhatsAppVault] Failed to snapshot session:', err.message);
+  }
+}
+
+function restoreSessionFromVault(dataPath) {
+  try {
+    const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
+    const vaultDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session_vault');
+    if (!fs.existsSync(vaultDir)) return false;
+
+    const metaFile = path.join(vaultDir, 'vault_meta.json');
+    if (!fs.existsSync(metaFile)) return false;
+
+    const vaultIdb = path.join(vaultDir, 'IndexedDB');
+    if (!fs.existsSync(vaultIdb)) return false;
+
+    console.log('[WhatsAppVault] 🔄 Self-healing: Restoring authenticated session keys from vault...');
+
+    const destDefault = path.join(sessionDir, 'Default');
+    fs.mkdirSync(destDefault, { recursive: true });
+
+    // Restore IndexedDB
+    const destIdb = path.join(destDefault, 'IndexedDB');
+    fs.mkdirSync(destIdb, { recursive: true });
+    fs.cpSync(vaultIdb, destIdb, { recursive: true, force: true });
+
+    // Restore Local Storage
+    const vaultLs = path.join(vaultDir, 'Local Storage');
+    if (fs.existsSync(vaultLs)) {
+      const destLs = path.join(destDefault, 'Local Storage');
+      fs.mkdirSync(destLs, { recursive: true });
+      fs.cpSync(vaultLs, destLs, { recursive: true, force: true });
+    }
+
+    // Restore Local State
+    const vaultLocalState = path.join(vaultDir, 'Local State');
+    if (fs.existsSync(vaultLocalState)) {
+      fs.copyFileSync(vaultLocalState, path.join(sessionDir, 'Local State'));
+    }
+
+    clearChromiumLocks(sessionDir);
+    console.log('[WhatsAppVault] ✅ Session restored successfully from vault!');
+    return true;
+  } catch (err) {
+    console.warn('[WhatsAppVault] Restore notice:', err.message);
+    return false;
+  }
+}
+
+function verifyAndHealSession(dataPath) {
+  const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
+  clearChromiumLocks(sessionDir);
+
+  const idbLevelDb = path.join(sessionDir, 'Default', 'IndexedDB', 'https_web.whatsapp.com_0.indexeddb.leveldb');
+  let needsHealing = false;
+
+  if (fs.existsSync(idbLevelDb)) {
+    const files = fs.readdirSync(idbLevelDb);
+    const hasManifest = files.some(f => f.startsWith('MANIFEST'));
+    const hasCurrent = files.includes('CURRENT');
+    const hasData = files.some(f => f.endsWith('.ldb') || f.endsWith('.log'));
+    if (!hasManifest || !hasCurrent || !hasData) {
+      console.warn('[WhatsAppVault] ⚠️ Detected corrupted or incomplete LevelDB in session! Triggering self-healing...');
+      needsHealing = true;
+    }
+  } else {
+    // If session directory doesn't have LevelDB yet, check if vault has a backup
+    needsHealing = true;
+  }
+
+  if (needsHealing) {
+    restoreSessionFromVault(dataPath);
+  }
 }
 
 // Helper: kill any leftover Chromium/Chrome processes from whatsapp-web.js
@@ -95,9 +222,10 @@ function killLeftoverChromium() {
       console.log('[WhatsAppClient] Failed to scan/kill zombie Chrome processes:', e.message);
     }
 
-    // Clear stale locks from saved session folders so Chromium can bind cleanly
+    // Clear stale locks and heal session if needed
     try {
       const dataPath = getAuthDataPath();
+      verifyAndHealSession(dataPath);
       clearChromiumLocks(path.join(dataPath, 'data', '.wwebjs_auth'));
       clearChromiumLocks(path.join(dataPath, '.wwebjs_auth'));
     } catch (e) {}
@@ -112,38 +240,103 @@ export async function disconnectWhatsAppClient() {
   isManualDisconnecting = true;
   if (client) {
     try {
-      // First destroy the client (closes Puppeteer browser)
       await client.destroy();
       console.log('[WhatsAppClient] Client destroyed successfully.');
     } catch (err) {
       console.error('[WhatsAppClient] Error during client.destroy():', err.message);
     }
-
-    // Reset state immediately
     client = null;
-    clientStatus = 'disconnected';
-    qrCodeData = null;
-    initRetryCount = 0;
-
-    // Wait for Puppeteer/Chromium processes to fully exit
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Now safely delete session folder on manual disconnect
-    const dataPath = getAuthDataPath();
-    await safeDeleteDir(path.join(dataPath, 'data', '.wwebjs_auth'));
-    await safeDeleteDir(path.join(dataPath, '.wwebjs_auth'));
-
-    isManualDisconnecting = false;
-    return true;
   }
-  
-  // Even if no client, reset state
+
   clientStatus = 'disconnected';
   qrCodeData = null;
+  pairingCodeData = null;
   initRetryCount = 0;
+
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
+  // On manual disconnect, wipe both session and vault
+  const dataPath = getAuthDataPath();
+  await safeDeleteDir(path.join(dataPath, 'data', '.wwebjs_auth'));
+  await safeDeleteDir(path.join(dataPath, '.wwebjs_auth'));
+
   isManualDisconnecting = false;
-  return false;
+  return true;
 }
+
+// Graceful shutdown before app exit (saves session state cleanly without corruption)
+export async function gracefulShutdownWhatsAppClient() {
+  if (client) {
+    try {
+      console.log('[WhatsAppClient] 🛑 Gracefully closing WhatsApp browser and saving session...');
+      const dataPath = getAuthDataPath();
+      if (clientStatus === 'ready') {
+        backupSessionVault(dataPath);
+      }
+      await client.destroy();
+      console.log('[WhatsAppClient] ✅ WhatsApp client destroyed gracefully.');
+    } catch (e) {
+      console.warn('[WhatsAppClient] Notice during graceful shutdown:', e.message);
+    }
+    client = null;
+  }
+}
+
+// Hook Node process signals for clean shutdown
+process.on('SIGINT', async () => {
+  await gracefulShutdownWhatsAppClient();
+  process.exit(0);
+});
+process.on('SIGTERM', async () => {
+  await gracefulShutdownWhatsAppClient();
+  process.exit(0);
+});
+
+// ============================================================================
+// 📱 PHONE NUMBER LOGIN (Pairing Code)
+// ============================================================================
+
+export async function requestWhatsAppPairingCode(phoneNumber) {
+  if (!phoneNumber) throw new Error('Phone number is required');
+  let cleanNumber = phoneNumber.replace(/\D/g, '');
+  if (cleanNumber.length === 10) cleanNumber = '91' + cleanNumber;
+  if (cleanNumber.length < 10) throw new Error('Invalid phone number (must be at least 10 digits)');
+
+  // Ensure WhatsApp client is active and page is loaded
+  if (!client || clientStatus === 'disconnected' || clientStatus === 'auth_failure') {
+    initializeWhatsAppClient();
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 500));
+      if (client && client.pupPage) break;
+    }
+  }
+
+  if (!client || !client.pupPage) {
+    throw new Error('WhatsApp service is starting up. Please try again in 5 seconds.');
+  }
+
+  console.log(`[WhatsAppClient] 📱 Requesting Pairing Code for: ${cleanNumber}`);
+  const code = await client.requestPairingCode(cleanNumber, true);
+  pairingCodeData = {
+    code,
+    phoneNumber: cleanNumber,
+    requestedAt: new Date().toISOString()
+  };
+  console.log(`[WhatsAppClient] 📱 Pairing code generated: ${code}`);
+  return pairingCodeData;
+}
+
+export async function cancelWhatsAppPairingCode() {
+  pairingCodeData = null;
+  if (client && typeof client.cancelPairingCode === 'function') {
+    try { await client.cancelPairingCode(); } catch(e) {}
+  }
+  return true;
+}
+
+// ============================================================================
+// 🚀 INITIALIZATION
+// ============================================================================
 
 export function initializeWhatsAppClient() {
   // If already connecting or ready, do not duplicate
@@ -163,10 +356,11 @@ export function initializeWhatsAppClient() {
   clientStatus = 'connecting';
   qrCodeData = null;
 
-  // Proactively kill any zombie Chromium processes before attempting to start
+  // Proactively kill any zombie Chromium processes and heal session before starting
   killLeftoverChromium().then(() => {
     try {
       const dataPath = getAuthDataPath();
+      verifyAndHealSession(dataPath);
     
     const puppeteerOptions = {
       headless: true,
@@ -181,7 +375,12 @@ export function initializeWhatsAppClient() {
         '--window-size=1280,800',
         '--no-first-run',
         '--no-zygote',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-ipc-flooding-protection',
+        '--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider'
       ]
     };
 
@@ -205,13 +404,28 @@ export function initializeWhatsAppClient() {
       console.warn('[WhatsAppClient] WARNING: Could not find system Chrome or Edge! Falling back to bundled Puppeteer.');
     }
 
+    const localAuthStrategy = new LocalAuth({
+      dataPath: path.join(dataPath, 'data', '.wwebjs_auth')
+    });
+    // Windows file-lock protection: Prevent unhandled EBUSY throw when Chrome still holds lockfile during logout
+    if (typeof localAuthStrategy.logout === 'function') {
+      const originalLogout = localAuthStrategy.logout.bind(localAuthStrategy);
+      localAuthStrategy.logout = async function () {
+        try {
+          return await originalLogout();
+        } catch (logoutErr) {
+          console.warn('[WhatsAppClient] Handled lockfile/EBUSY notice during logout:', logoutErr.message);
+          return null;
+        }
+      };
+    }
+
     client = new Client({
-      authStrategy: new LocalAuth({
-        dataPath: path.join(dataPath, 'data', '.wwebjs_auth')
-      }),
+      authStrategy: localAuthStrategy,
       webVersionCache: {
         type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1045814658-alpha.html'
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1045814658-alpha.html',
+        strict: false
       },
       puppeteer: puppeteerOptions
     });
@@ -219,15 +433,21 @@ export function initializeWhatsAppClient() {
     client.on('qr', async (qr) => {
       console.log('[WhatsAppClient] QR Code received. Scan it to authenticate.');
       clientStatus = 'qr';
-      // Reset retry count on QR — means init was successful
       initRetryCount = 0;
       try {
-        // Generate base64 Data URL for the QR code image
         qrCodeData = await qrcode.toDataURL(qr);
       } catch (err) {
         console.error('[WhatsAppClient] Failed to generate QR code image:', err.message);
-        qrCodeData = qr; // fallback to raw string
+        qrCodeData = qr;
       }
+    });
+
+    client.on('code', (code) => {
+      console.log('[WhatsAppClient] 📱 Pairing code received event:', code);
+      pairingCodeData = {
+        code,
+        updatedAt: new Date().toISOString()
+      };
     });
 
     client.on('ready', () => {
@@ -235,7 +455,18 @@ export function initializeWhatsAppClient() {
       console.log('[WhatsAppClient] Info:', client.info ? client.info.pushname : 'No info');
       clientStatus = 'ready';
       qrCodeData = null;
+      pairingCodeData = null;
       initRetryCount = 0; // Reset on success
+
+      // Save a pristine snapshot of the session to the vault for permanent offline self-healing
+      setTimeout(() => {
+        try {
+          const authPath = getAuthDataPath();
+          backupSessionVault(authPath);
+        } catch (e) {
+          console.warn('[WhatsAppVault] Snapshot notice:', e.message);
+        }
+      }, 5000);
     });
 
     // 🤖 Hook WhatsApp Parent Auto-Reply Bot (catches incoming messages & self-test chats)

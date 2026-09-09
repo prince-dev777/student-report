@@ -129,7 +129,6 @@ body::before {
 
 #root {
   position: relative;
-  z-index: 1;
 }
 
 a {
@@ -2079,6 +2078,23 @@ body[data-card-theme="gradient"] {
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
+}
+
+/* ============================================
+   Global Highest-Priority Toast & Notification Fix
+   ============================================ */
+div[data-toaster-container],
+.react-hot-toast-container,
+div[style*="position: fixed"]:has([data-hot-toast]),
+div:has(> [data-hot-toast]) {
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+}
+
+[data-hot-toast],
+div[style*="position: fixed"]:has([data-hot-toast]) > div {
+  pointer-events: auto !important;
+  z-index: 2147483647 !important;
 }
 
 

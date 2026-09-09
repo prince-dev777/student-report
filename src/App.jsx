@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
+import { createPortal } from 'react-dom';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
@@ -7,31 +8,31 @@ import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import MouseTrail from './components/MouseTrail';
-import Dashboard from './pages/Dashboard';
-import Students from './pages/Students';
-import Attendance from './pages/Attendance';
-import SMSCenter from './pages/SMSCenter';
-import ShareApp from './pages/ShareApp';
-import Sessions from './pages/Sessions';
-import Inquiries from './pages/Inquiries';
-import SuperAdminLogin from './pages/SuperAdminLogin';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
-
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Tests from './pages/Tests';
-import TestSeries from './pages/TestSeries';
-import Settings from './pages/Settings';
+// 🚀 Lazy-load desktop-only admin modules to keep web & mobile portal bundle feather-light
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Students = lazy(() => import('./pages/Students'));
+const Attendance = lazy(() => import('./pages/Attendance'));
+const SMSCenter = lazy(() => import('./pages/SMSCenter'));
+const ShareApp = lazy(() => import('./pages/ShareApp'));
+const Sessions = lazy(() => import('./pages/Sessions'));
+const Inquiries = lazy(() => import('./pages/Inquiries'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Tests = lazy(() => import('./pages/Tests'));
+const Settings = lazy(() => import('./pages/Settings'));
 import { API_BASE } from './utils/api';
-
-import StaffAttendanceWeb from './pages/StaffAttendanceWeb';
-import SaaSShowcaseLandingPage from './pages/SaaSShowcaseLandingPage';
-import ParentPortalWeb from './pages/ParentPortalWeb';
-import TeacherPortalWeb from './pages/TeacherPortalWeb';
-import StaffInquiryWeb from './pages/StaffInquiryWeb';
 import GlobalScannerDeskListener from './components/GlobalScannerDeskListener';
-
 import { useApp } from './context/AppContext';
+
+// 🚀 Lazy-load massive modules to eliminate 17.5MB bundle from startup path
+const TestSeries = lazy(() => import('./pages/TestSeries'));
+const SuperAdminLogin = lazy(() => import('./pages/SuperAdminLogin'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
+const StaffAttendanceWeb = lazy(() => import('./pages/StaffAttendanceWeb'));
+const SaaSShowcaseLandingPage = lazy(() => import('./pages/SaaSShowcaseLandingPage'));
+const ParentPortalWeb = lazy(() => import('./pages/ParentPortalWeb'));
+const TeacherPortalWeb = lazy(() => import('./pages/TeacherPortalWeb'));
+const StaffInquiryWeb = lazy(() => import('./pages/StaffInquiryWeb'));
 
 const KEEP_ALIVE_ROUTES = [
   { path: '/', component: Dashboard, id: 'dashboard' },
@@ -84,15 +85,26 @@ function KeepAlivePageOutlet() {
               minHeight: '100%'
             }}
           >
-            <Component />
+            <Suspense fallback={
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: '#94a3b8' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ width: 36, height: 36, border: '3px solid rgba(59,130,246,0.2)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#cbd5e1' }}>Loading module...</p>
+                </div>
+              </div>
+            }>
+              <Component />
+            </Suspense>
           </div>
         );
       })}
 
       {!isKnownRoute && (
-        <Routes>
-          <Route path="*" element={<Dashboard />} />
-        </Routes>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="*" element={<Dashboard />} />
+          </Routes>
+        </Suspense>
       )}
     </div>
   );
@@ -244,16 +256,21 @@ export default function App() {
 
     return (
       <HashRouter>
-        <Routes>
-          <Route path="/staff" element={<StaffAttendanceWeb />} />
-          <Route path="/parent" element={<ParentPortalWeb />} />
-          <Route path="/teacher" element={<TeacherPortalWeb />} />
-          <Route path="/inquiry" element={<StaffInquiryWeb />} />
-          <Route path="/superadmin" element={<SuperAdminLogin />} />
-          <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
-          <Route path="/*" element={<SaaSShowcaseLandingPage />} />
-        </Routes>
-        <Toaster position="top-center" containerStyle={{ zIndex: 99999999 }} toastOptions={{ duration: 2500 }} />
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0f172a' }} />}>
+          <Routes>
+            <Route path="/staff" element={<StaffAttendanceWeb />} />
+            <Route path="/parent" element={<ParentPortalWeb />} />
+            <Route path="/teacher" element={<TeacherPortalWeb />} />
+            <Route path="/inquiry" element={<StaffInquiryWeb />} />
+            <Route path="/superadmin" element={<SuperAdminLogin />} />
+            <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
+            <Route path="/*" element={<SaaSShowcaseLandingPage />} />
+          </Routes>
+        </Suspense>
+        {typeof document !== 'undefined' && createPortal(
+          <Toaster position="top-center" containerStyle={{ zIndex: 2147483647 }} toastOptions={{ duration: 2500, style: { zIndex: 2147483647 } }} />,
+          document.body
+        )}
       </HashRouter>
     );
   }
@@ -261,50 +278,56 @@ export default function App() {
   return (
     <HashRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/superadmin" element={<SuperAdminLogin />} />
-          <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
-          <Route path="/teacher" element={<TeacherPortalWeb />} />
-          <Route path="/inquiry" element={<StaffInquiryWeb />} />
-          <Route path="/parent" element={<ParentPortalWeb />} />
-          <Route path="/staff" element={<StaffAttendanceWeb />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/*" element={
-            <ProtectedRoute>
-              <AppProvider>
-                <AppLayout />
-              </AppProvider>
-            </ProtectedRoute>
-          } />
-        </Routes>
-        <Toaster
-          position="top-center"
-          containerStyle={{ zIndex: 999999999 }}
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#0c1029',
-              color: '#f1f5f9',
-              border: '1px solid rgba(59, 130, 246, 0.15)',
-              borderRadius: '12px',
-              fontSize: '0.85rem',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-            },
-            success: {
-              iconTheme: {
-                primary: '#10b981',
-                secondary: '#0c1029',
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0f172a' }} />}>
+          <Routes>
+            <Route path="/superadmin" element={<SuperAdminLogin />} />
+            <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
+            <Route path="/teacher" element={<TeacherPortalWeb />} />
+            <Route path="/inquiry" element={<StaffInquiryWeb />} />
+            <Route path="/parent" element={<ParentPortalWeb />} />
+            <Route path="/staff" element={<StaffAttendanceWeb />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <AppProvider>
+                  <AppLayout />
+                </AppProvider>
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </Suspense>
+        {typeof document !== 'undefined' && createPortal(
+          <Toaster
+            position="top-center"
+            containerStyle={{ zIndex: 2147483647 }}
+            toastOptions={{
+              duration: 3500,
+              style: {
+                zIndex: 2147483647,
+                background: '#0c1029',
+                color: '#f1f5f9',
+                border: '1px solid rgba(59, 130, 246, 0.25)',
+                borderRadius: '12px',
+                fontSize: '0.85rem',
+                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(59, 130, 246, 0.2)',
               },
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#0c1029',
+              success: {
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#0c1029',
+                },
               },
-            },
-          }}
-        />
+              error: {
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#0c1029',
+                },
+              },
+            }}
+          />,
+          document.body
+        )}
       </AuthProvider>
     </HashRouter>
   );

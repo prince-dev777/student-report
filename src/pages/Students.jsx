@@ -11,6 +11,7 @@ import StudentProfileModal from '../components/StudentProfileModal';
 import BulkUploadModal from '../components/BulkUploadModal';
 import ManageClassesModal from '../components/ManageClassesModal';
 import * as XLSX from 'xlsx';
+import toast from 'react-hot-toast';
 
 const AnimatedCounter = ({ to }) => {
   const [count, setCount] = useState(0);
@@ -263,7 +264,7 @@ export default function Students() {
 
   const handleDownloadExcel = () => {
     if (!filteredStudents || filteredStudents.length === 0) {
-      alert('No students found matching current filters to export');
+      toast.error('No students found matching current filters to export');
       return;
     }
     const worksheetData = filteredStudents.map((s, index) => ({
@@ -280,6 +281,7 @@ export default function Students() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
     XLSX.writeFile(workbook, `Students_Export_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast.success(`Exported ${filteredStudents.length} students to Excel!`);
   };
 
   const handleEditClick = (student) => {
@@ -291,8 +293,10 @@ export default function Students() {
     try {
       if (editingStudent) {
         await updateStudent(editingStudent.id, formData);
+        toast.success('Student details updated successfully!');
       } else {
         const res = await addStudent(formData);
+        toast.success('New student registered successfully!');
         if (res && res.parentUserId && res.parentPlainPassword) {
           setCreatedStudentCreds({
             studentName: res.name,
@@ -307,7 +311,7 @@ export default function Students() {
       fetchData(currentPage, searchQuery);
     } catch (err) {
       console.error('Failed to save student:', err);
-      alert(err.message || 'Failed to save student');
+      toast.error(err.message || 'Failed to save student');
     }
   };
 
@@ -319,11 +323,12 @@ export default function Students() {
     if (!studentToDelete) return;
     try {
       await deleteStudent(studentToDelete.id);
+      toast.success('Student deleted successfully');
       setStudentToDelete(null);
       fetchData(currentPage, searchQuery);
     } catch (err) {
       console.error('Failed to delete student:', err);
-      alert(err.message || 'Failed to delete student');
+      toast.error(err.message || 'Failed to delete student');
     }
   };
 
