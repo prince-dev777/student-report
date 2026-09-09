@@ -25,6 +25,21 @@
       "purpose": "maskable"
     }
   ],
+  "screenshots": [
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "CX Parents Portal Desktop"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "label": "CX Parents Portal Mobile"
+    }
+  ],
   "protocol_handlers": [
     {
       "protocol": "web+cxparents",

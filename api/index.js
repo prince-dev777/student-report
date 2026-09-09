@@ -343,7 +343,17 @@ app.get('/api/teacher/data', async (req, res) => {
     const students = await Student.find({ isDeleted: { $ne: true } }).lean();
     const tests = await Test.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).lean();
     const attendance = await Attendance.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).limit(500).lean();
-    res.json({ success: true, students, tests, attendance });
+    const testResults = await TestResult.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).limit(500).lean();
+    res.json({ 
+      success: true, 
+      instituteName: 'Career Xone',
+      students: students || [], 
+      tests: tests || [], 
+      attendance: attendance || [], 
+      attendances: attendance || [], 
+      testResults: testResults || [],
+      sessions: []
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
