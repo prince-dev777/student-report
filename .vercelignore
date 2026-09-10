@@ -1,0 +1,55 @@
+# ==========================================================
+# Career Xone - Vercel Deployment Ignore Rules
+# ==========================================================
+# Excludes desktop-only engines, binaries, and heavy files from Vercel deployments.
+# These files remain 100% intact and tracked in Git/GitHub for Electron desktop builds.
+
+# Desktop Server & Background Daemons
+server/
+server.js
+
+# Electron Desktop Packaging & Installers
+dist-electron/
+dist-electron-v2/
+electron/
+main.cjs
+preload.cjs
+copy-build-to-server.js
+
+# Windows Binaries & Executables
+*.exe
+*.dll
+*.node
+*.zip
+*.spec
+server/bin/
+
+# Local Python & OMR Checking Files
+server/myenv/
+server/scratch/
+server/omr_engine_bin/
+server/omr_scanner/
+OMR_checking/
+OMR_PROJECT/
+__pycache__/
+*.pyc
+
+# Local Sessions & Hardware Logs
+.wwebjs_auth/
+.wwebjs_cache/
+server/.wwebjs_auth/
+server/.wwebjs_cache/
+logs/
+*.log
+
+# Build & Audit Test Scripts
+scripts/
+tests/
+
+# Internal Documentation & Guide Files
+*.txt
+AGENTS.md
+APP_BUILD_GUIDE.md
+PROJECT_DOCUMENTATION.md
+BUGFIX_REPORT.md
+release_Rules.md

@@ -12,7 +12,7 @@
     "audit:master": "node scripts/master-production-audit.js",
     "build": "node scripts/audit-codebase.js && node scripts/verify_all_api.js && vite build && node copy-build-to-server.js",
     "preview": "vite preview",
-    "postinstall": "cd server && npm install --omit=dev && node download-mongodb.js && cd .. && npm run build",
+    "postinstall": "node scripts/postinstall.cjs",
     "electron:dev": "node scripts/pre-dev.js && concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:publish": "npm run build && electron-builder -p always"
