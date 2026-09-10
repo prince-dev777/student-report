@@ -24,7 +24,7 @@ import Session from './models/Session.js';
 import Notification from './models/Notification.js';
 import SMSLog from './models/SMSLog.js';
 import { sendWhatsAppAlert } from './services/whatsappService.js';
-import { formatDurationHuman } from './services/sessionResolver.js';
+import { formatDurationHuman, resolveSessionForStudent } from './services/sessionResolver.js';
 import { logInfo, logError, logWarn } from './utils/logger.js';
 
 // ----------------------------------------------------------------------------
@@ -588,39 +588,19 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     } catch (durErr) {}
   }
 
-  // Auto-match session based on punch time
+  // Auto-match session based on punch time using central robust session resolver
   if (record.entryTime && record.entryTime !== '--' && !record.sessionName) {
     try {
-      const sessions = await Session.find({ isDeleted: { $ne: true }, instituteId: resolvedInstituteId });
-      let entryMin = parseTimeToMins(record.entryTime);
-
-      let bestMatch = null;
-      let bestScore = -1;
-      for (const sess of sessions) {
-        if (!sess.startTime || !sess.endTime) continue;
-        const [sH, sM] = sess.startTime.split(':').map(Number);
-        const [eH2, eM2] = sess.endTime.split(':').map(Number);
-        const startMin = sH * 60 + sM;
-        const endMin = eH2 * 60 + eM2;
-
-        if (entryMin >= startMin - 45 && entryMin <= endMin + 30) {
-          const sBatchId = sess.batchId || 'all';
-          const sClassName = sess.className || 'all';
-          let matchesBatch = sBatchId === 'all' || sBatchId === student.batch;
-          let matchesClass = sClassName === 'all' || sClassName === student.class;
-          if (matchesBatch && matchesClass) {
-            let score = 0;
-            if (sBatchId !== 'all') score += 1;
-            if (sClassName !== 'all') score += 1;
-            if (score > bestScore) {
-              bestScore = score;
-              bestMatch = sess;
-            }
-          }
-        }
+      const queryInst = resolvedInstituteId ? { instituteId: resolvedInstituteId } : {};
+      const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
+      const matchedSess = resolveSessionForStudent(record.entryTime, student, sessions);
+      if (matchedSess) {
+        record.sessionName = matchedSess.name;
+        record.sessionId = matchedSess.id || matchedSess._id;
       }
-      if (bestMatch) record.sessionName = bestMatch.name;
-    } catch (sessErr) {}
+    } catch (sessErr) {
+      console.warn('[Biometric] Session match error:', sessErr.message);
+    }
   }
 
   if (isNewPunch) {

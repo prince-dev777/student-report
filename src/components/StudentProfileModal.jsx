@@ -683,51 +683,51 @@ export default function StudentProfileModal({
                             }}>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Student should carry the ID card and produce it on demand.</span>
+                                <span>Students must carry their ID card daily and produce it upon demand.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Be ensured to update the Entry card before the Expiry date.</span>
+                                <span>Ensure the ID card is renewed before the expiry date.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Reach class before time; parent's permission needed to leave early.</span>
+                                <span>Arrive on time; prior parental permission is required to leave early.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>All students should wear proper uniform with shoes.</span>
+                                <span>All students must wear the prescribed uniform with shoes.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Student should maintain decency and decorum of institute.</span>
+                                <span>Students must maintain discipline, decency, and decorum on campus.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Student found guilty of any misbehaviour will be rusticated.</span>
+                                <span>Any student guilty of misconduct or indiscipline is liable to be rusticated.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Use or carry of Mobile Phone is strictly prohibited inside campus.</span>
+                                <span>Use or possession of mobile phones is strictly prohibited inside campus.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>To issue a New ID Card in case of Lost/Damage ₹200/- will be charged.</span>
+                                <span>A fee of ₹200/- will be charged for issuing a duplicate card if lost or damaged.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>If found outside premises, please deposit at Reception Counter.</span>
+                                <span>If found outside premises, please return it to the institute reception.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Unhealthy culture affecting academic reputation will be strictly dealt with.</span>
+                                <span>Any disruptive activity harming academic reputation will face strict action.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>All immoral, antisocial, communal activities of student are prohibited.</span>
+                                <span>All immoral, antisocial, or communal activities are strictly prohibited.</span>
                               </li>
                               <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                 <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>To change Course / Batch allotted at admission charges will apply.</span>
+                                <span>Applicable charges apply for course/batch changes after admission.</span>
                               </li>
                             </ul>
 
@@ -749,7 +749,7 @@ export default function StudentProfileModal({
 
                           {/* Footer */}
                           <div style={{ background: '#1e3a8a', padding: '4px', textAlign: 'center', fontSize: '0.52rem', color: '#fff', fontWeight: 700, letterSpacing: '0.5px' }}>
-                            CAREER XONE • ACADEMIC EXCELLENCE
+                            CAREER XONE • से सब संभव है
                           </div>
                         </div>
                       </div>

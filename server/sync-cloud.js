@@ -53,17 +53,17 @@ async function syncToCloud() {
     localConn = await getLocalConnection();
     logInfo('SYNC', 'Connected to local DB.');
     
-    cloudConn = await mongoose.createConnection(CLOUD_URI, {
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000
-    }).asPromise();
-    logInfo('SYNC', 'Connected to cloud DB.');
+    const cloudDb = cloudConn.useDb('test').db;
+    let cloudTombstones = [];
+    try {
+      cloudTombstones = await cloudDb.collection('deletedrecords').find({}).toArray();
+    } catch (tErr) {}
 
     const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
 
     for (const collName of collections) {
       const localColl = localConn.collection(collName);
-      const cloudColl = cloudConn.collection(collName);
+      const cloudColl = cloudDb.collection(collName);
 
       const docs = await localColl.find({}).toArray();
       if (docs.length === 0) {
@@ -85,8 +85,32 @@ async function syncToCloud() {
         }
       }
 
-      if (activeDocs.length === 0) {
-        console.log(`   - 0 active documents to sync.`);
+      // Filter out any local activeDocs that match tombstones so they are NEVER re-uploaded to Cloud!
+      const collTombstones = cloudTombstones.filter(t => t.collectionName === collName);
+      const tDocIds = new Set(collTombstones.map(t => String(t.docId)).filter(Boolean));
+      const tCustomIds = new Set(collTombstones.map(t => String(t.customId)).filter(Boolean));
+      const tTestIds = new Set(collTombstones.map(t => String(t.testId)).filter(Boolean));
+
+      const cleanActiveDocs = [];
+      const tombstonedLocalIds = [];
+      for (const doc of activeDocs) {
+        const isTombstoned = tDocIds.has(String(doc._id)) ||
+          (doc.id && tCustomIds.has(String(doc.id))) ||
+          (collName === 'testresults' && doc.testId && tTestIds.has(String(doc.testId)));
+        if (isTombstoned) {
+          tombstonedLocalIds.push(doc._id);
+        } else {
+          cleanActiveDocs.push(doc);
+        }
+      }
+
+      if (tombstonedLocalIds.length > 0) {
+        await localColl.deleteMany({ _id: { $in: tombstonedLocalIds } }).catch(() => {});
+        console.log(`   - 🧹 Purged ${tombstonedLocalIds.length} tombstoned records from local [${collName}]`);
+      }
+
+      if (cleanActiveDocs.length === 0) {
+        console.log(`   - 0 active documents to sync (after tombstone filter).`);
         continue;
       }
 
@@ -103,8 +127,8 @@ async function syncToCloud() {
           publishedTestIds = new Set(publishedTests.map(t => String(t.id || t._id)));
         } catch (e) {}
 
-        for (let i = 0; i < activeDocs.length; i++) {
-          const doc = activeDocs[i];
+        for (let i = 0; i < cleanActiveDocs.length; i++) {
+          const doc = cleanActiveDocs[i];
           // Check if this test result belongs to a published test
           const testIdStr = String(doc.testId || '');
           if (!publishedTestIds.has(testIdStr)) {
@@ -140,7 +164,7 @@ async function syncToCloud() {
       // Upsert active documents to cloud
       let bulkOps;
       if (collName === 'attendances') {
-        bulkOps = activeDocs.map(doc => ({
+        bulkOps = cleanActiveDocs.map(doc => ({
           replaceOne: {
             filter: { studentId: doc.studentId, date: doc.date },
             replacement: doc,
@@ -148,7 +172,7 @@ async function syncToCloud() {
           }
         }));
       } else {
-        bulkOps = activeDocs.map(doc => ({
+        bulkOps = cleanActiveDocs.map(doc => ({
           replaceOne: {
             filter: { _id: doc._id },
             replacement: doc,

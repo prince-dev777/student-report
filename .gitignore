@@ -65,4 +65,5 @@ server/verify_*.py
 server/warped_*.png
 OMR_checking/
 server/omr_engine_bin/
+student_photos/
 

@@ -52,18 +52,53 @@ async function restoreFromCloud() {
     
     localConn = await getLocalConnection();
 
+    const cloudDb = cloudConn.useDb('test').db;
+    let cloudTombstones = [];
+    try {
+      cloudTombstones = await cloudDb.collection('deletedrecords').find({}).toArray();
+    } catch (tErr) {}
+
     const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
     let totalRestored = 0;
 
     for (const collName of collections) {
       try {
-        const cloudColl = cloudConn.useDb('test').db.collection(collName);
+        const cloudColl = cloudDb.collection(collName);
         const localColl = localConn.collection(collName);
 
-        // Fetch all documents from Cloud
-        const docs = await cloudColl.find({}).toArray();
+        // Purge local docs that have tombstones on Cloud
+        const collTombstones = cloudTombstones.filter(t => t.collectionName === collName);
+        const tDocIds = collTombstones.map(t => t.docId).filter(Boolean);
+        const tCustomIds = collTombstones.map(t => t.customId).filter(Boolean);
+        const tTestIds = collTombstones.map(t => t.testId).filter(Boolean);
+        const tObjectIds = tDocIds.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
+
+        const tombFilterClauses = [
+          { _id: { $in: [...tDocIds, ...tObjectIds] } },
+          ...(tCustomIds.length > 0 ? [{ id: { $in: tCustomIds } }] : []),
+          ...(collName === 'testresults' && tTestIds.length > 0 ? [{ testId: { $in: tTestIds } }] : [])
+        ];
+
+        if (collTombstones.length > 0 && tombFilterClauses.length > 0) {
+          await localColl.deleteMany({ $or: tombFilterClauses }).catch(() => {});
+        }
+
+        const tombstoneDocIds = new Set(tDocIds.map(String));
+        const tombstoneCustomIds = new Set(tCustomIds.map(String));
+        const tombstoneTestIds = new Set(tTestIds.map(String));
+
+        // Fetch all documents from Cloud, filtering out tombstoned items
+        const rawDocs = await cloudColl.find({}).toArray();
+        const docs = rawDocs.filter(d => {
+          if (d.isDeleted) return false;
+          if (tombstoneDocIds.has(String(d._id))) return false;
+          if (d.id && tombstoneCustomIds.has(String(d.id))) return false;
+          if (collName === 'testresults' && d.testId && tombstoneTestIds.has(String(d.testId))) return false;
+          return true;
+        });
+
         if (docs.length === 0) {
-          logInfo('RESTORE', `Collection [${collName}]: 0 documents found in Cloud. Skipping.`);
+          logInfo('RESTORE', `Collection [${collName}]: 0 documents found in Cloud (after tombstone filter). Skipping.`);
           continue;
         }
 

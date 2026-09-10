@@ -799,11 +799,13 @@ export default function Attendance() {
   const availableBatches = useMemo(() => {
     const map = new Map();
     students.forEach((s) => {
-      const raw = s.batch || s.targetClass || s.course;
-      if (raw && !map.has(raw)) {
-        const formatted = formatBatchName(raw, batches);
-        map.set(raw, { id: raw, name: formatted || raw });
-      }
+      const candidates = [s.class, s.batch, s.targetClass, s.course].filter(Boolean);
+      candidates.forEach((raw) => {
+        if (raw && !map.has(raw)) {
+          const formatted = formatBatchName(raw, batches);
+          map.set(raw, { id: raw, name: formatted || raw });
+        }
+      });
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [students, batches]);
@@ -816,9 +818,13 @@ export default function Attendance() {
     if (selectedIdCardBatch !== 'all') {
       const bSel = selectedIdCardBatch.toLowerCase();
       pool = pool.filter((s) => {
-        const raw = (s.batch || s.targetClass || s.course || '').toLowerCase();
+        const rawBatch = (s.batch || '').toLowerCase();
+        const rawClass = (s.class || '').toLowerCase();
+        const rawTarget = (s.targetClass || '').toLowerCase();
+        const rawCourse = (s.course || '').toLowerCase();
         const formatted = formatBatchName(s.batch || s.targetClass || s.course, batches).toLowerCase();
-        return raw === bSel || raw.includes(bSel) || formatted === bSel || formatted.includes(bSel);
+        return rawBatch === bSel || rawClass === bSel || rawTarget === bSel || rawCourse === bSel ||
+               rawClass.includes(bSel) || rawBatch.includes(bSel) || formatted === bSel || formatted.includes(bSel);
       });
     }
 
@@ -846,12 +852,13 @@ export default function Attendance() {
       });
     }
 
-    // Text / Name Search (Substring in name or exact ID)
+    // Text / Name Search (Substring in name, class, or exact ID)
     return pool.filter((s) => {
       const name = (s.name || '').toLowerCase();
+      const cls = (s.class || '').toLowerCase();
       const id = String(s.id || '').toLowerCase();
       const roll = String(s.rollNo || '').toLowerCase();
-      return name.includes(qLower) || id.includes(qLower) || roll === qLower;
+      return name.includes(qLower) || cls.includes(qLower) || id.includes(qLower) || roll === qLower;
     });
   }, [activeStudents, selectedIdCardBatch, idCardSearch]);
 
@@ -1035,13 +1042,35 @@ export default function Attendance() {
       if (!todayRecord || !todayRecord.entryTime) {
         determinedType = 'entry';
       } else if (todayRecord.entryTime && !todayRecord.exitTime) {
-        const [eh, em] = todayRecord.entryTime.split(':').map(Number);
+        // Robust 12-hour/24-hour time to minutes parser
+        const parseEntryTimeToMins = (tStr) => {
+          if (!tStr || tStr === '--') return null;
+          const match12 = String(tStr).trim().match(/^(\d{1,2}):(\d{1,2})(?::\d{2})?\s*(AM|PM)?$/i);
+          if (match12) {
+            let h = parseInt(match12[1], 10);
+            const m = parseInt(match12[2], 10) || 0;
+            const mod = match12[3] ? match12[3].toUpperCase() : null;
+            if (mod === 'PM' && h < 12) h += 12;
+            if (mod === 'AM' && h === 12) h = 0;
+            return h * 60 + m;
+          }
+          const parts = String(tStr).split(':');
+          if (parts.length >= 2) {
+            const h = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10) || 0;
+            if (!isNaN(h)) return h * 60 + m;
+          }
+          return null;
+        };
+
         const cur = new Date();
         const currentMin = cur.getHours() * 60 + cur.getMinutes();
-        const entryMin = eh * 60 + em;
-        if (currentMin - entryMin < 2) {
+        const entryMin = parseEntryTimeToMins(todayRecord.entryTime);
+
+        // Anti-Bounce & Early Exit Guard: Require at least 15 minutes between Check-In and Check-Out
+        if (entryMin !== null && (currentMin - entryMin) < 15) {
           if (soundEnabled) playKioskSound('error');
-          toast(`⚠️ ${matchedStudent.name} already checked in at ${formatTime(todayRecord.entryTime)}!`, { icon: 'ℹ️' });
+          toast(`⚠️ ${matchedStudent.name} already checked in at ${formatTime(todayRecord.entryTime)}! Exit allowed after 15 mins.`, { icon: 'ℹ️' });
           return;
         }
         determinedType = 'exit';
@@ -4448,7 +4477,7 @@ export default function Attendance() {
                                                       {st.name}
                                                     </h3>
                                                     <p style={{ margin: '0 0 2px 0', fontSize: isCompact ? '0.62rem' : '0.70rem', color: '#2563eb', fontWeight: 700 }}>
-                                                      Course: {formatBatchName(st.batch || st.targetClass || st.course, batches) || 'General'}
+                                                      Course: {st.class || formatBatchName(st.batch || st.targetClass || st.course, batches) || 'General'}
                                                     </p>
 
                                                     {/* Info Table Box */}
@@ -4618,43 +4647,43 @@ export default function Attendance() {
                                                   }}>
                                                     <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                                       <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                                      <span>Student should carry the ID card and produce it on demand.</span>
+                                                      <span>Students must carry their ID card daily and produce it upon demand.</span>
                                                     </li>
                                                     <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                                       <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                                      <span>Be ensured to update the Entry card before the Expiry date.</span>
+                                                      <span>Ensure the ID card is renewed before the expiry date.</span>
                                                     </li>
                                                     <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                                       <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                                      <span>Reach class before time; parent's permission needed to leave early.</span>
+                                                      <span>Arrive on time; prior parental permission is required to leave early.</span>
                                                     </li>
                                                     <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                                       <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                                      <span>All students should wear proper uniform with shoes.</span>
+                                                      <span>All students must wear the prescribed uniform with shoes.</span>
                                                     </li>
                                                     <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                                       <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                                      <span>Student should maintain decency and decorum of institute.</span>
+                                                      <span>Students must maintain discipline, decency, and decorum on campus.</span>
                                                     </li>
                                                     <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                                       <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                                      <span>Student found guilty of any misbehaviour will be rusticated.</span>
+                                                      <span>Any student guilty of misconduct or indiscipline is liable to be rusticated.</span>
                                                     </li>
                                                     <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                                       <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                                      <span>Use or carry of Mobile Phone is strictly prohibited inside campus.</span>
+                                                      <span>Use or possession of mobile phones is strictly prohibited inside campus.</span>
                                                     </li>
                                                     <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                                       <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                                      <span>To issue a New ID Card in case of Lost/Damage ₹200/- will be charged.</span>
+                                                      <span>A fee of ₹200/- will be charged for issuing a duplicate card if lost or damaged.</span>
                                                     </li>
                                                     <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                                       <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                                      <span>If found outside premises, please deposit at Reception Counter.</span>
+                                                      <span>If found outside premises, please return it to the institute reception.</span>
                                                     </li>
                                                     <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                                       <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                                      <span>Unhealthy culture affecting academic reputation will be strictly dealt with.</span>
+                                                      <span>Any disruptive activity harming academic reputation will face strict action.</span>
                                                     </li>
                                                   </ul>
 
@@ -4676,7 +4705,7 @@ export default function Attendance() {
 
                                                 {/* Bottom Ribbon */}
                                                 <div style={{ background: '#1e3a8a', padding: isCompact ? '4px' : '5px', textAlign: 'center', fontSize: isCompact ? '0.52rem' : '0.62rem', color: '#ffffff', fontWeight: 800, letterSpacing: '0.5px' }}>
-                                                  CAREER XONE • ACADEMIC EXCELLENCE
+                                                  CAREER XONE • से सब संभव है
                                                 </div>
                                               </div>
                                             ) : (
@@ -4805,7 +4834,7 @@ export default function Attendance() {
                                          {st.name}
                                        </h3>
                                        <p style={{ margin: '0 0 2px 0', fontSize: '0.70rem', color: '#2563eb', fontWeight: 700 }}>
-                                         Course: {formatBatchName(st.batch || st.targetClass || st.course, batches) || 'General'}
+                                         Course: {st.class || formatBatchName(st.batch || st.targetClass || st.course, batches) || 'General'}
                                        </p>
 
                                        {/* Info Table Box */}
@@ -4918,43 +4947,43 @@ export default function Attendance() {
                                     }}>
                                       <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                         <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                        <span>Student should carry the ID card and produce it on demand.</span>
+                                        <span>Students must carry their ID card daily and produce it upon demand.</span>
                                       </li>
                                       <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                         <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                        <span>Be ensured to update the Entry card before the Expiry date.</span>
+                                        <span>Ensure the ID card is renewed before the expiry date.</span>
                                       </li>
                                       <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                         <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                        <span>Reach class before time; parent's permission needed to leave early.</span>
+                                        <span>Arrive on time; prior parental permission is required to leave early.</span>
                                       </li>
                                       <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                         <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                        <span>All students should wear proper uniform with shoes.</span>
+                                        <span>All students must wear the prescribed uniform with shoes.</span>
                                       </li>
                                       <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                         <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                        <span>Student should maintain decency and decorum of institute.</span>
+                                        <span>Students must maintain discipline, decency, and decorum on campus.</span>
                                       </li>
                                       <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                         <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                        <span>Student found guilty of any misbehaviour will be rusticated.</span>
+                                        <span>Any student guilty of misconduct or indiscipline is liable to be rusticated.</span>
                                       </li>
                                       <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                         <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                        <span>Use or carry of Mobile Phone is strictly prohibited inside campus.</span>
+                                        <span>Use or possession of mobile phones is strictly prohibited inside campus.</span>
                                       </li>
                                       <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                         <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                        <span>To issue a New ID Card in case of Lost/Damage ₹200/- will be charged.</span>
+                                        <span>A fee of ₹200/- will be charged for issuing a duplicate card if lost or damaged.</span>
                                       </li>
                                       <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                         <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                        <span>If found outside premises, please deposit at Reception Counter.</span>
+                                        <span>If found outside premises, please return it to the institute reception.</span>
                                       </li>
                                       <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                                         <span style={{ color: '#2563eb', fontSize: '0.42rem', marginTop: '1px' }}>◆</span>
-                                        <span>Unhealthy culture affecting academic reputation will be strictly dealt with.</span>
+                                        <span>Any disruptive activity harming academic reputation will face strict action.</span>
                                       </li>
                                     </ul>
 
@@ -4976,7 +5005,7 @@ export default function Attendance() {
 
                                   {/* Bottom Ribbon */}
                                   <div style={{ background: '#1e3a8a', padding: '5px', textAlign: 'center', fontSize: '0.62rem', color: '#ffffff', fontWeight: 800, letterSpacing: '0.5px' }}>
-                                    CAREER XONE • ACADEMIC EXCELLENCE
+                                    CAREER XONE • से सब संभव है
                                   </div>
                                 </div>
                               )}

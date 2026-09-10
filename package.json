@@ -12,7 +12,9 @@
     "audit:master": "node scripts/master-production-audit.js",
     "build": "node scripts/audit-codebase.js && node scripts/verify_all_api.js && vite build && node copy-build-to-server.js",
     "preview": "vite preview",
-    "postinstall": "node scripts/postinstall.cjs",
+    "photos:passport": "node scripts/run_passport_studio.js",
+    "photos:upload": "node scripts/bulk_upload_student_photos.js",
+    "postinstall": "node -e \"if (!process.env.VERCEL && require('fs').existsSync('./scripts/postinstall.cjs')) { require('./scripts/postinstall.cjs'); }\"",
     "electron:dev": "node scripts/pre-dev.js && concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:publish": "npm run build && electron-builder -p always"

@@ -98,18 +98,31 @@ export async function mirrorWrite(collectionName, doc) {
  */
 export async function dualDelete(collectionName, filter, cascadeRelations = []) {
   try {
-    const localColl = getLocalCollection(collectionName);
+    let localColl = null;
+    try {
+      localColl = getLocalCollection(collectionName);
+    } catch (e) {}
+
     const cloudColl = await getCloudCollection(collectionName);
     const fixedFilter = fixObjectIds(filter);
 
-    // 0. Gather IDs of records being deleted for tombstones
+    // 0. Gather IDs of records being deleted for tombstones (check local, fallback to cloud if local already deleted)
     let docsToDelete = [];
     try {
-      docsToDelete = await localColl.find(fixedFilter, { projection: { _id: 1, id: 1 } }).toArray();
+      if (localColl) {
+        docsToDelete = await localColl.find(fixedFilter, { projection: { _id: 1, id: 1, testId: 1 } }).toArray();
+      }
+      if (docsToDelete.length === 0 && cloudColl) {
+        docsToDelete = await cloudColl.find(fixedFilter, { projection: { _id: 1, id: 1, testId: 1 } }).toArray().catch(() => []);
+      }
     } catch (e) {}
 
     // 1. Delete from Local DB
-    const localRes = await localColl.deleteMany(fixedFilter);
+    let localDeleted = 0;
+    if (localColl) {
+      const localRes = await localColl.deleteMany(fixedFilter).catch(() => ({ deletedCount: 0 }));
+      localDeleted = localRes.deletedCount || 0;
+    }
 
     // 2. Delete from Cloud Atlas
     let cloudDeleted = 0;
@@ -122,27 +135,76 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
     const cascadedTombstones = [];
     for (const rel of cascadeRelations) {
       try {
-        const localRelColl = getLocalCollection(rel.collection);
+        let localRelColl = null;
+        try {
+          localRelColl = getLocalCollection(rel.collection);
+        } catch (e) {}
+
         const cloudRelColl = await getCloudCollection(rel.collection);
         const fixedRelFilter = fixObjectIds(rel.filter);
 
-        const relDocs = await localRelColl.find(fixedRelFilter, { projection: { _id: 1, id: 1 } }).toArray().catch(() => []);
+        let relDocs = [];
+        if (localRelColl) {
+          relDocs = await localRelColl.find(fixedRelFilter, { projection: { _id: 1, id: 1, testId: 1, studentId: 1 } }).toArray().catch(() => []);
+        }
+        if (relDocs.length === 0 && cloudRelColl) {
+          relDocs = await cloudRelColl.find(fixedRelFilter, { projection: { _id: 1, id: 1, testId: 1, studentId: 1 } }).toArray().catch(() => []);
+        }
+
         relDocs.forEach(d => {
           cascadedTombstones.push({
             collectionName: rel.collection,
             docId: String(d._id),
             customId: d.id ? String(d.id) : null,
+            testId: d.testId ? String(d.testId) : null,
+            studentId: d.studentId ? String(d.studentId) : null,
             deletedAt: new Date()
           });
         });
 
-        await localRelColl.deleteMany(fixedRelFilter);
+        // If rel.filter has testId, add explicit testId tombstone so PC-2 cleans ALL results for that testId
+        if (rel.collection === 'testresults' && rel.filter && rel.filter.testId) {
+          const rawTestIds = Array.isArray(rel.filter.testId?.$in) 
+            ? rel.filter.testId.$in 
+            : [rel.filter.testId];
+          rawTestIds.forEach(tId => {
+            if (tId) {
+              cascadedTombstones.push({
+                collectionName: 'testresults',
+                docId: null,
+                customId: null,
+                testId: String(tId),
+                deletedAt: new Date()
+              });
+            }
+          });
+        }
+
+        if (localRelColl) {
+          await localRelColl.deleteMany(fixedRelFilter).catch(() => {});
+        }
         if (cloudRelColl) {
           await cloudRelColl.deleteMany(fixedRelFilter);
         }
       } catch (relErr) {
         logWarn('SYNC_DELETE', `Cascade delete notice on [${rel.collection}]: ${relErr.message}`);
       }
+    }
+
+    // Also if tests were deleted, automatically add testId tombstones for testresults
+    if (collectionName === 'tests') {
+      docsToDelete.forEach(d => {
+        const tKeys = [d.id, String(d._id)].filter(Boolean);
+        tKeys.forEach(k => {
+          cascadedTombstones.push({
+            collectionName: 'testresults',
+            docId: null,
+            customId: null,
+            testId: String(k),
+            deletedAt: new Date()
+          });
+        });
+      });
     }
 
     // 4. Save tombstones to Cloud Atlas (so PC-2 deletes them and never pushes them back)
@@ -159,6 +221,7 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
             collectionName,
             docId: String(d._id),
             customId: d.id ? String(d.id) : null,
+            testId: d.testId ? String(d.testId) : null,
             deletedAt: new Date()
           })),
           ...cascadedTombstones
@@ -172,12 +235,12 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
       logWarn('SYNC_DELETE', `Tombstone record notice: ${tombErr.message}`);
     }
 
-    logInfo('SYNC_DELETE', `🗑️ Dual-deleted ${localRes.deletedCount} local & ${cloudDeleted} cloud docs from [${collectionName}]`);
+    logInfo('SYNC_DELETE', `🗑️ Dual-deleted ${localDeleted} local & ${cloudDeleted} cloud docs from [${collectionName}]`);
     
     // Broadcast live change
     broadcastUpdate('data-updated', { source: 'dual-delete', collection: collectionName });
 
-    return { localDeleted: localRes.deletedCount, cloudDeleted };
+    return { localDeleted, cloudDeleted };
   } catch (err) {
     logError('SYNC_DELETE', `Dual-delete failed on [${collectionName}]`, err);
     throw err;
@@ -221,24 +284,29 @@ export async function performFullSync() {
 
         // 0. Purge any Local docs that have tombstones on Cloud
         const collTombstones = cloudTombstones.filter(t => t.collectionName === collName);
-        if (collTombstones.length > 0) {
-          const tDocIds = collTombstones.map(t => t.docId).filter(Boolean);
-          const tCustomIds = collTombstones.map(t => t.customId).filter(Boolean);
-          const tObjectIds = tDocIds.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
+        const tDocIds = collTombstones.map(t => t.docId).filter(Boolean);
+        const tCustomIds = collTombstones.map(t => t.customId).filter(Boolean);
+        const tTestIds = collTombstones.map(t => t.testId).filter(Boolean);
+        const tObjectIds = tDocIds.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
 
-          const tombFilter = {
-            $or: [
-              { _id: { $in: [...tDocIds, ...tObjectIds] } },
-              ...(tCustomIds.length > 0 ? [{ id: { $in: tCustomIds } }] : [])
-            ]
-          };
+        const tombFilterClauses = [
+          { _id: { $in: [...tDocIds, ...tObjectIds] } },
+          ...(tCustomIds.length > 0 ? [{ id: { $in: tCustomIds } }] : []),
+          ...(collName === 'testresults' && tTestIds.length > 0 ? [{ testId: { $in: tTestIds } }] : [])
+        ];
 
+        if (collTombstones.length > 0 && tombFilterClauses.length > 0) {
+          const tombFilter = { $or: tombFilterClauses };
           const purgeRes = await localColl.deleteMany(tombFilter).catch(() => ({ deletedCount: 0 }));
           if (purgeRes.deletedCount > 0) {
             totalPurged += purgeRes.deletedCount;
             logInfo('SYNC', `🧹 Purged ${purgeRes.deletedCount} locally deleted records from [${collName}] via Cloud tombstones`);
           }
         }
+
+        const tombstoneDocIds = new Set(tDocIds.map(String));
+        const tombstoneCustomIds = new Set(tCustomIds.map(String));
+        const tombstoneTestIds = new Set(tTestIds.map(String));
 
         // Fetch Local docs after tombstone purge
         const localDocs = await localColl.find({}).toArray();
@@ -279,8 +347,24 @@ export async function performFullSync() {
         // 3. Push Active Local Docs to Cloud Atlas (Upsert)
         if (activeLocalDocs.length > 0) {
           if (collName === 'testresults') {
+            let publishedTestIds = new Set();
+            try {
+              const testsColl = await getLocalCollection('tests');
+              if (testsColl) {
+                const pubTests = await testsColl.find({
+                  isDeleted: { $ne: true },
+                  $or: [{ isPublished: true }, { status: 'Published' }, { status: 'published' }]
+                }, { projection: { id: 1, _id: 1 } }).toArray();
+                pubTests.forEach(t => {
+                  if (t.id) publishedTestIds.add(String(t.id));
+                  if (t._id) publishedTestIds.add(String(t._id));
+                });
+              }
+            } catch (pubErr) {}
+
             for (const doc of activeLocalDocs) {
-              if (doc.omrSheetImage && !doc.omrSheetImage.startsWith('http')) {
+              const isPub = publishedTestIds.has(String(doc.testId)) || doc.status === 'Published';
+              if (isPub && doc.omrSheetImage && !doc.omrSheetImage.startsWith('http')) {
                 try {
                   const res = await uploadOMRScan(doc.omrSheetImage, `${doc.testId}_${doc.studentId || doc.rollNo}`);
                   if (res && res.url) {
@@ -316,6 +400,16 @@ export async function performFullSync() {
           });
 
           const toPushToCloud = activeLocalDocs.filter(ld => {
+            // CRITICAL GUARD: Never push tombstoned records to Cloud! Delete locally instead.
+            const isTombstoned = tombstoneDocIds.has(String(ld._id)) ||
+              (ld.id && tombstoneCustomIds.has(String(ld.id))) ||
+              (collName === 'testresults' && ld.testId && tombstoneTestIds.has(String(ld.testId)));
+
+            if (isTombstoned) {
+              localColl.deleteOne({ _id: ld._id }).catch(() => {});
+              return false;
+            }
+
             let key = String(ld._id);
             if (collName === 'testresults') key = `${ld.testId}_${ld.studentId}`;
             else if (collName === 'attendances') key = `${ld.studentId}_${ld.date}`;
@@ -393,6 +487,17 @@ export async function performFullSync() {
 
             const toPullToLocal = cloudDocs.filter(cd => {
               if (cd.isDeleted) return false;
+
+              // CRITICAL GUARD: Never pull tombstoned records from Cloud to Local! Purge from Cloud instead.
+              const isTombstoned = tombstoneDocIds.has(String(cd._id)) ||
+                (cd.id && tombstoneCustomIds.has(String(cd.id))) ||
+                (collName === 'testresults' && cd.testId && tombstoneTestIds.has(String(cd.testId)));
+
+              if (isTombstoned) {
+                cloudColl.deleteOne({ _id: cd._id }).catch(() => {});
+                return false;
+              }
+
               let key = String(cd._id);
               if (collName === 'testresults') key = `${cd.testId}_${cd.studentId}`;
               else if (collName === 'attendances') key = `${cd.studentId}_${cd.date}`;
@@ -518,13 +623,50 @@ export async function pullAndRestoreFromCloud() {
     const cloudDb = cloudConn.useDb('test').db;
     let totalRestored = 0;
 
+    let cloudTombstones = [];
+    try {
+      cloudTombstones = await cloudDb.collection('deletedrecords').find({}).toArray();
+    } catch (tErr) {}
+
     for (const collName of ALL_COLLECTIONS) {
       try {
         const cloudColl = cloudDb.collection(collName);
         const localColl = mongoose.connection.collection(collName);
 
-        const docs = await cloudColl.find({}).toArray();
-        if (!docs || docs.length === 0) continue;
+        // Purge local docs that have tombstones on Cloud
+        const collTombstones = cloudTombstones.filter(t => t.collectionName === collName);
+        const tDocIds = collTombstones.map(t => t.docId).filter(Boolean);
+        const tCustomIds = collTombstones.map(t => t.customId).filter(Boolean);
+        const tTestIds = collTombstones.map(t => t.testId).filter(Boolean);
+        const tObjectIds = tDocIds.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
+
+        const tombFilterClauses = [
+          { _id: { $in: [...tDocIds, ...tObjectIds] } },
+          ...(tCustomIds.length > 0 ? [{ id: { $in: tCustomIds } }] : []),
+          ...(collName === 'testresults' && tTestIds.length > 0 ? [{ testId: { $in: tTestIds } }] : [])
+        ];
+
+        if (collTombstones.length > 0 && tombFilterClauses.length > 0) {
+          await localColl.deleteMany({ $or: tombFilterClauses }).catch(() => {});
+        }
+
+        const tombstoneDocIds = new Set(tDocIds.map(String));
+        const tombstoneCustomIds = new Set(tCustomIds.map(String));
+        const tombstoneTestIds = new Set(tTestIds.map(String));
+
+        const rawDocs = await cloudColl.find({}).toArray();
+        if (!rawDocs || rawDocs.length === 0) continue;
+
+        // Filter out any docs that match tombstones
+        const docs = rawDocs.filter(d => {
+          if (d.isDeleted) return false;
+          if (tombstoneDocIds.has(String(d._id))) return false;
+          if (d.id && tombstoneCustomIds.has(String(d.id))) return false;
+          if (collName === 'testresults' && d.testId && tombstoneTestIds.has(String(d.testId))) return false;
+          return true;
+        });
+
+        if (docs.length === 0) continue;
 
         const fixedDocs = docs.map(fixObjectIds);
         for (let i = 0; i < fixedDocs.length; i += 500) {

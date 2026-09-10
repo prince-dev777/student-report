@@ -43,7 +43,8 @@ logs/
 *.log
 
 # Build & Audit Test Scripts
-scripts/
+scripts/*
+!scripts/postinstall.cjs
 tests/
 
 # Internal Documentation & Guide Files

@@ -2997,6 +2997,22 @@ app.delete('/api/tests/:id', authenticateToken, async (req, res) => {
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
     const testIdKeys = [test.id, String(test.id), test._id, test._id.toString()].filter(Boolean);
+
+    // Clean up associated Cloudinary OMR images to prevent orphaned files
+    try {
+      const resultsWithImgs = await TestResult.find({
+        testId: { $in: testIdKeys },
+        omrSheetPublicId: { $exists: true, $ne: null }
+      }).select('omrSheetPublicId');
+      for (const r of resultsWithImgs) {
+        if (r.omrSheetPublicId) {
+          cloudinary.uploader.destroy(r.omrSheetPublicId).catch(() => {});
+        }
+      }
+    } catch (cleanErr) {
+      console.warn('Failed to cleanup Cloudinary images on test delete:', cleanErr.message);
+    }
+
     await dualDelete('tests', { $or: [{ _id: test._id }, { id: test.id }] }, [
       { collection: 'testresults', filter: { testId: { $in: testIdKeys } } }
     ]);
@@ -3163,8 +3179,9 @@ app.post('/api/test-results/bulk', authenticateToken, async (req, res) => {
         return res.status(404).json({ error: `Test not found for id ${r.testId}` });
       }
 
-      // Upload OMR image to Cloudinary (for both base64 and local disk scans)
-      if (r.omrSheetImage && !r.omrSheetImage.startsWith('http')) {
+      // Upload OMR image to Cloudinary ONLY if test or result is Published (to save Cloudinary quota)
+      const isTestPublished = test.isPublished === true || test.status === 'Published' || r.status === 'Published';
+      if (isTestPublished && r.omrSheetImage && !r.omrSheetImage.startsWith('http')) {
         try {
           const uploaded = await uploadOMRScan(r.omrSheetImage, `${test.id}_${r.studentId || r.rollNo}`);
           if (uploaded && uploaded.url) {
@@ -3781,23 +3798,11 @@ app.delete('/api/sms-logs/bulk', async (req, res) => {
     }
 
     const query = { $or: orClauses };
-    const localRes = await SMSLog.deleteMany(query);
+    const { localDeleted, cloudDeleted } = await dualDelete('smslogs', query);
 
-    // Delete from Cloud Atlas as well
-    let cloudDeleted = 0;
-    try {
-      const cloudColl = await getCloudCollection('smslogs');
-      if (cloudColl) {
-        const cloudRes = await cloudColl.deleteMany(query);
-        cloudDeleted = cloudRes.deletedCount || 0;
-      }
-    } catch (cErr) {
-      console.warn('Cloud Atlas bulk SMS delete notice:', cErr.message);
-    }
-
-    logInfo('SMS_LOGS', `🗑️ Bulk deleted ${localRes.deletedCount} local & ${cloudDeleted} cloud SMS logs`);
+    logInfo('SMS_LOGS', `🗑️ Bulk dual-deleted ${localDeleted} local & ${cloudDeleted} cloud SMS logs with tombstones`);
     triggerBackgroundCloudSync();
-    res.json({ message: `Successfully deleted ${localRes.deletedCount} SMS logs`, deletedCount: localRes.deletedCount });
+    res.json({ message: `Successfully deleted ${localDeleted} SMS logs`, deletedCount: localDeleted });
   } catch (err) {
     console.error('Error in SMSLog bulk delete:', err);
     res.status(500).json({ error: err.message });
@@ -3807,24 +3812,12 @@ app.delete('/api/sms-logs/bulk', async (req, res) => {
 // Clear All SMS Logs Permanently from Local and Cloud
 app.delete('/api/sms-logs/all', async (req, res) => {
   try {
-    // 1. Delete all from Local MongoDB
-    const localRes = await SMSLog.deleteMany({});
+    // Collect all SMS logs first to leave durable tombstones on Cloud Atlas
+    const { localDeleted, cloudDeleted } = await dualDelete('smslogs', {});
 
-    // 2. Delete all from Cloud MongoDB Atlas
-    let cloudDeleted = 0;
-    try {
-      const cloudColl = await getCloudCollection('smslogs');
-      if (cloudColl) {
-        const cloudRes = await cloudColl.deleteMany({});
-        cloudDeleted = cloudRes.deletedCount || 0;
-      }
-    } catch (cErr) {
-      console.warn('Cloud Atlas clear all SMS notice:', cErr.message);
-    }
-
-    logInfo('SMS_LOGS', `🧹 Cleared ALL SMS logs: ${localRes.deletedCount} local, ${cloudDeleted} cloud records`);
+    logInfo('SMS_LOGS', `🧹 Cleared ALL SMS logs with tombstones: ${localDeleted} local, ${cloudDeleted} cloud records`);
     triggerBackgroundCloudSync();
-    res.json({ message: `Cleared all ${localRes.deletedCount} SMS logs permanently from both Local and Cloud storage.`, deletedCount: localRes.deletedCount });
+    res.json({ message: `Cleared all ${localDeleted} SMS logs permanently from both Local and Cloud storage.`, deletedCount: localDeleted });
   } catch (err) {
     console.error('Error clearing all SMS logs:', err);
     res.status(500).json({ error: err.message });
@@ -3843,16 +3836,8 @@ app.delete('/api/sms-logs/:id', async (req, res) => {
       ]
     };
 
-    // 1. Delete from Local DB
-    const localRes = await SMSLog.deleteMany(query);
-
-    // 2. Delete from Cloud DB
-    try {
-      const cloudColl = await getCloudCollection('smslogs');
-      if (cloudColl) {
-        await cloudColl.deleteMany(query);
-      }
-    } catch (cErr) {}
+    // Use dualDelete to delete from local, cloud, and create durable Cloud tombstone
+    await dualDelete('smslogs', query);
 
     triggerBackgroundCloudSync();
     res.json({ message: 'SMS log permanently deleted successfully' });
