@@ -116,7 +116,7 @@ const EXAMS = [
 ];
 
 export default function TestSeries() {
-  const { institute = {} } = useApp();
+  const { institute = {}, addTest, batches = [] } = useApp();
 
   // Navigation Steps: 1: Exam | 2: Subject & Chapters | 3: Config & Questions | 4: Preview & Download
   const [step, setStep] = useState(1);
@@ -126,6 +126,12 @@ export default function TestSeries() {
   const [selectedChapters, setSelectedChapters] = useState({});
   const [selectedTopics, setSelectedTopics] = useState({});
   const [expandedChapter, setExpandedChapter] = useState(null);
+
+  // OMR & Live Schedule Modal State
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleBatch, setScheduleBatch] = useState('All Batches');
+  const [scheduleDate, setScheduleDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [isScheduling, setIsScheduling] = useState(false);
 
   // Question Count & Presets
   const [questionCountOption, setQuestionCountOption] = useState({ type: 'preset', preset: JEE_PRESETS[0] });
@@ -421,6 +427,214 @@ export default function TestSeries() {
     toast.success(`🎉 Generated test paper with ${flatList.length} questions across ${selectedSubjects.length} subject(s)!`);
   };
 
+  // Helper: Auto-detect matching pre-calibrated OMR master template (T1-T7)
+  const getMatchingOmrTemplate = () => {
+    if (!generatedPaper) return { templateId: 'T1', name: 'JEE Mains 75 MCQ (T1)', file: 'T1_JEE_75_MCQ.png' };
+    const totalQ = generatedPaper.totalQuestions;
+    const exam = selectedExam;
+
+    if (totalQ === 180 || exam === 'neet') {
+      return { templateId: 'T3', name: 'NEET 180 Questions (T3)', file: 'T3_NEET_180.png' };
+    }
+    if (totalQ === 90) {
+      return { templateId: 'T4', name: 'NEET 90 Questions (T4)', file: 'T4_NEET_90.png' };
+    }
+    if (totalQ === 200) {
+      return { templateId: 'T5', name: 'MHCET 200 Questions (T5)', file: 'T5_MHCET_200.png' };
+    }
+    if (totalQ <= 50) {
+      return { templateId: 'T7', name: 'Weekly Test 50 Questions (T7)', file: 'T7_OMR_50.png' };
+    }
+    const hasNumerical = selectedSubjects.some(sid => (generatedPaper.data[sid] || []).some(q => q.type === 'numerical'));
+    if (hasNumerical) {
+      return { templateId: 'T2', name: 'JEE Mains 75 Mixed (MCQ + Numerical) (T2)', file: 'T2_JEE_75_NUM.png' };
+    }
+    return { templateId: 'T1', name: 'JEE Mains 75 MCQ (T1)', file: 'T1_JEE_75_MCQ.png' };
+  };
+
+  // Client-side high-resolution browser print / PDF fallback (Zero failure guarantee)
+  const triggerClientSidePrint = (mode = 'without-solution') => {
+    if (!generatedPaper) return;
+    const safeTitle = testTitle || generatedPaper.examName || 'Career Xone Test Paper';
+    const subNames = selectedSubjects.map(s => currentExamSubjects.find(x => x.id === s)?.name || s.toUpperCase()).join(' • ');
+    const totalQ = generatedPaper.totalQuestions;
+    const maxMarks = totalQ * 4;
+    const totalTime = totalQ * 3;
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      toast.error('Pop-up blocked! Please allow pop-ups for Career Xone to print.');
+      return;
+    }
+
+    let questionsHtml = '';
+    let globalNum = 1;
+
+    selectedSubjects.forEach((sid, subIdx) => {
+      const subConfig = currentExamSubjects.find(s => s.id === sid);
+      const qs = generatedPaper.data[sid] || [];
+      if (qs.length === 0) return;
+
+      questionsHtml += `
+        <div style="page-break-before: ${subIdx > 0 ? 'always' : 'auto'}; margin-bottom: 24px;">
+          <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 16px;">
+            <h2 style="font-size: 16px; font-weight: 800; text-transform: uppercase; margin: 0;">
+              PART ${subIdx + 1}: ${subConfig?.name || sid.toUpperCase()} (${qs.length} Questions)
+            </h2>
+          </div>
+      `;
+
+      qs.forEach(q => {
+        const qNum = globalNum++;
+        const renderedText = renderLatexHtml(q.text || '');
+        let optsHtml = '';
+        if (q.type !== 'numerical' && q.options && q.options.length > 0) {
+          const labels = ['A', 'B', 'C', 'D'];
+          const renderedOpts = q.options.map((opt, idx) => {
+            const val = opt && opt.trim().length > 0 ? renderLatexHtml(opt) : `Option (${labels[idx]})`;
+            return `
+              <div style="display: flex; gap: 6px; align-items: flex-start; margin-bottom: 4px;">
+                <span style="font-weight: 700; min-width: 22px;">(${labels[idx]})</span>
+                <div>${val}</div>
+              </div>
+            `;
+          });
+          optsHtml = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; padding-left: 20px;">
+              ${renderedOpts.join('')}
+            </div>
+          `;
+        }
+
+        let imagesHtml = '';
+        if (q.images && q.images.length > 0) {
+          imagesHtml = `
+            <div style="text-align: center; margin: 8px 0;">
+              ${q.images.map(img => `<img src="${img}" style="max-height: 180px; max-width: 90%; object-fit: contain;" />`).join('')}
+            </div>
+          `;
+        }
+
+        questionsHtml += `
+          <div style="margin-bottom: 16px; page-break-inside: avoid; font-size: 13px; line-height: 1.5;">
+            <div style="display: flex; gap: 8px; align-items: flex-start;">
+              <span style="font-weight: 800; min-width: 28px;">Q.${qNum}.</span>
+              <div style="flex: 1;">${renderedText}</div>
+            </div>
+            ${imagesHtml}
+            ${optsHtml}
+          </div>
+        `;
+      });
+
+      questionsHtml += `</div>`;
+    });
+
+    let ansKeyHtml = '';
+    if (mode === 'with-anskey' || mode === 'with-solution') {
+      let keyCells = '';
+      let kNum = 1;
+      selectedSubjects.forEach(sid => {
+        const qs = generatedPaper.data[sid] || [];
+        qs.forEach(q => {
+          keyCells += `
+            <div style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: center; font-size: 11px;">
+              <span style="color: #64748b; font-weight: 600;">Q${kNum}</span>: <strong>${String(q.correct || '-').toUpperCase()}</strong>
+            </div>
+          `;
+          kNum++;
+        });
+      });
+
+      ansKeyHtml = `
+        <div style="page-break-before: always; margin-top: 30px;">
+          <h2 style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px;">OFFICIAL ANSWER KEY</h2>
+          <div style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-top: 14px;">
+            ${keyCells}
+          </div>
+        </div>
+      `;
+    }
+
+    let solHtml = '';
+    if (mode === 'with-solution') {
+      let solItems = '';
+      let sNum = 1;
+      selectedSubjects.forEach(sid => {
+        const qs = generatedPaper.data[sid] || [];
+        qs.forEach(q => {
+          const rawSol = q.solution ? renderLatexHtml(q.solution) : 'Detailed step-by-step solution.';
+          solItems += `
+            <div style="margin-bottom: 14px; page-break-inside: avoid; font-size: 12px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px;">
+              <div style="font-weight: 800; color: #0284c7;">Q.${sNum} [Correct: ${String(q.correct || '-').toUpperCase()}]</div>
+              <div style="margin-top: 4px; line-height: 1.45;">${rawSol}</div>
+            </div>
+          `;
+          sNum++;
+        });
+      });
+
+      solHtml = `
+        <div style="page-break-before: always; margin-top: 30px;">
+          <h2 style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px;">STEP-BY-STEP DETAILED SOLUTIONS</h2>
+          <div style="margin-top: 14px;">${solItems}</div>
+        </div>
+      `;
+    }
+
+    const htmlDoc = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>${safeTitle}</title>
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" />
+          <style>
+            @page { size: A4 portrait; margin: 15mm 15mm 15mm 15mm; }
+            body { font-family: 'Times New Roman', Times, serif; color: #000; margin: 0; padding: 10px; }
+            .header-box { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
+            .inst-name { font-size: 22px; font-weight: 900; letter-spacing: 1px; margin: 0; text-transform: uppercase; }
+            .test-name { font-size: 15px; font-weight: 800; margin: 4px 0; color: #1e293b; }
+            .sub-info { font-size: 11px; font-weight: 700; display: flex; justify-content: space-between; border-top: 1px solid #000; padding-top: 4px; margin-top: 6px; }
+            .instructions { font-size: 10.5px; border-bottom: 1px solid #000; padding-bottom: 6px; margin-bottom: 14px; line-height: 1.35; }
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .no-print { display: none !important; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header-box">
+            <h1 class="inst-name">${academyName || 'CAREER XONE'}</h1>
+            <div class="test-name">${safeTitle}</div>
+            <div class="sub-info">
+              <span><strong>Subjects:</strong> ${subNames}</span>
+              <span><strong>Time:</strong> ${totalTime} Mins</span>
+              <span><strong>Max Marks:</strong> ${maxMarks}</span>
+            </div>
+          </div>
+          <div class="instructions">
+            <strong>General Instructions:</strong>
+            1. All questions are compulsory. Correct answer carries +4 marks, wrong answer -1 mark (for MCQs).
+            2. Mark your answers on the matching OMR sheet using a black/blue ballpoint pen only.
+          </div>
+          ${questionsHtml}
+          ${ansKeyHtml}
+          ${solHtml}
+          <script>
+            window.onload = function() {
+              setTimeout(function() { window.print(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWin.document.open();
+    printWin.document.write(htmlDoc);
+    printWin.document.close();
+  };
+
   // Trigger PDF Generation & Download
   const handleDownloadPDF = async (mode = 'without-solution') => {
     if (!generatedPaper) return;
@@ -468,7 +682,7 @@ export default function TestSeries() {
       });
 
       if (!blob || blob.size < 100) {
-        throw new Error('Downloaded PDF is empty. Please verify LaTeX compiler.');
+        throw new Error('Downloaded PDF is empty.');
       }
 
       const url = window.URL.createObjectURL(blob);
@@ -484,11 +698,63 @@ export default function TestSeries() {
 
       toast.success(`📄 Downloaded ${modeSuffix.replace('_', '')} PDF successfully!`);
     } catch (err) {
-      console.error('PDF generation error:', err);
-      toast.error(`PDF generation failed: ${err.message}`);
+      console.warn('Backend LaTeX generation failed or timed out. Triggering Print fallback...', err.message);
+      toast('📄 LaTeX compiler fallback: Opening High-Res Print / Save as PDF...', { icon: '🖨️', duration: 4000 });
+      triggerClientSidePrint(mode);
     } finally {
       setIsDownloading(false);
       setDownloadingMode(null);
+    }
+  };
+
+  // 🚀 1-Click Schedule Test for OMR Scanning
+  const handleScheduleTest = async () => {
+    if (!generatedPaper) return;
+    setIsScheduling(true);
+
+    try {
+      const matchingTemplate = getMatchingOmrTemplate();
+      const flatAnswers = [];
+      const orderedSubjects = [];
+
+      selectedSubjects.forEach(sid => {
+        const subConfig = currentExamSubjects.find(s => s.id === sid);
+        orderedSubjects.push(subConfig?.name || sid.toUpperCase());
+        const qs = generatedPaper.data[sid] || [];
+        qs.forEach(q => {
+          flatAnswers.push(String(q.correct || 'A').toUpperCase());
+        });
+      });
+
+      const payload = {
+        name: testTitle || generatedPaper.examName || 'Test Series Paper',
+        subject: orderedSubjects.join(', '),
+        date: scheduleDate,
+        totalMarks: flatAnswers.length * 4,
+        batch: scheduleBatch,
+        templateId: matchingTemplate.templateId,
+        questionsToDetect: flatAnswers.length,
+        marksPerQuestion: 4,
+        negativeMarking: 1,
+        optionsPerQuestion: 4,
+        answerKey: flatAnswers,
+        isPublished: false,
+        status: 'Draft'
+      };
+
+      if (addTest) {
+        await addTest(payload);
+      } else {
+        await api.createTest(payload);
+      }
+
+      toast.success(`🎉 Test scheduled for OMR! Pre-filled ${flatAnswers.length} answer keys in ${matchingTemplate.templateId} template.`);
+      setShowScheduleModal(false);
+    } catch (err) {
+      console.error('Failed to schedule test:', err);
+      toast.error(`Scheduling failed: ${err.message}`);
+    } finally {
+      setIsScheduling(false);
     }
   };
 
@@ -1133,8 +1399,8 @@ export default function TestSeries() {
               </p>
             </div>
 
-            {/* 3 PDF Download Buttons (As instructed by User) */}
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {/* PDF, OMR & Schedule Action Buttons */}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
               <button
                 type="button"
                 className="btn btn-outline"
@@ -1166,7 +1432,7 @@ export default function TestSeries() {
                 ) : (
                   <Download size={15} />
                 )}
-                <span>📄 Question Paper (Only)</span>
+                <span>📄 Question Paper</span>
               </button>
 
               {/* 2. With Answer Key */}
@@ -1214,7 +1480,73 @@ export default function TestSeries() {
                 ) : (
                   <Sparkles size={15} />
                 )}
-                <span>💡 With Detailed Solutions</span>
+                <span>💡 With Solutions</span>
+              </button>
+
+              {/* 4. Matching Calibrated OMR Sheet Download */}
+              <a
+                href={`/templates/${getMatchingOmrTemplate().file}`}
+                download={getMatchingOmrTemplate().file}
+                className="btn"
+                style={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.84rem',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
+                  textDecoration: 'none'
+                }}
+                title={`Download official calibrated ${getMatchingOmrTemplate().name} Sheet`}
+              >
+                <FileText size={15} />
+                <span>📄 Matching OMR ({getMatchingOmrTemplate().templateId})</span>
+              </a>
+
+              {/* 5. 1-Click Schedule Test for OMR Scanning */}
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setShowScheduleModal(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.84rem',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)'
+                }}
+                title="Schedule this test directly in OMR Scanner with pre-filled Answer Key"
+              >
+                <Target size={15} />
+                <span>🚀 Schedule for OMR</span>
+              </button>
+
+              {/* 6. Instant High-Res Print Preview */}
+              <button
+                type="button"
+                className="btn"
+                onClick={() => triggerClientSidePrint('without-solution')}
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1.5px dashed var(--border-color)',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+                title="Instant Browser Print / Save as PDF (Zero compilation wait)"
+              >
+                <Eye size={14} />
+                <span>Print Preview</span>
               </button>
             </div>
           </div>
@@ -1511,6 +1843,161 @@ export default function TestSeries() {
                   style={{ padding: '8px 20px', fontWeight: 700 }}
                 >
                   Done & Apply
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* ============================================================ */}
+        {/* SCHEDULE TEST FOR OMR SCANNING MODAL                         */}
+        {/* ============================================================ */}
+        {showScheduleModal && generatedPaper && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.65)',
+              backdropFilter: 'blur(5px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px'
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="card"
+              style={{
+                width: '100%',
+                maxWidth: '520px',
+                background: 'var(--bg-card, #ffffff)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '16px',
+                padding: '24px',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.25)'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    🚀 Schedule for OMR Scanning
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    Test will be created in OMR Scanner with all Answer Keys pre-filled.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowScheduleModal(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Template Info Card */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(79, 70, 229, 0.12) 100%)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                borderRadius: '12px',
+                padding: '12px 14px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <ShieldCheck size={16} color="#6366f1" />
+                  <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#4f46e5' }}>
+                    Calibrated OMR Template: {getMatchingOmrTemplate().name}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.76rem', color: '#475569' }}>
+                  Target Questions: <strong>{generatedPaper.totalQuestions}</strong> • Pre-filled Answer Keys: <strong>{generatedPaper.totalQuestions}</strong> • Max Marks: <strong>{generatedPaper.totalQuestions * 4}</strong>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px' }}>
+                    Test Name
+                  </label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={testTitle}
+                    onChange={(e) => setTestTitle(e.target.value)}
+                    placeholder="e.g. JEE Mains Weekly Mock #01"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px' }}>
+                      Target Batch
+                    </label>
+                    <select
+                      className="select"
+                      value={scheduleBatch}
+                      onChange={(e) => setScheduleBatch(e.target.value)}
+                      style={{ width: '100%' }}
+                    >
+                      <option value="All Batches">All Batches</option>
+                      {((batches && batches.length > 0) ? batches : [
+                        { id: 'batch-4', name: 'JEE Mains' },
+                        { id: 'batch-1', name: 'JEE Advanced' },
+                        { id: 'batch-2', name: 'NEET' },
+                        { id: 'batch-3', name: 'MHCET' },
+                        { id: 'batch-5', name: 'Foundation' }
+                      ]).map((b) => (
+                        <option key={b.id || b._id} value={b.name || b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px' }}>
+                      Exam Date
+                    </label>
+                    <input
+                      type="date"
+                      className="input"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setShowScheduleModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleScheduleTest}
+                  disabled={isScheduling}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    border: 'none',
+                    fontWeight: 800
+                  }}
+                >
+                  {isScheduling ? <RefreshCw size={15} className="spin" /> : <CheckCircle2 size={15} />}
+                  <span>Confirm & Save Test</span>
                 </button>
               </div>
             </motion.div>

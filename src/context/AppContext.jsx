@@ -41,9 +41,10 @@ export function AppProvider({ children }) {
   const [startupSyncing, setStartupSyncing] = useState(false);
   const [startupSyncText, setStartupSyncText] = useState('Ready');
   
-  // ☁️ Cloud Atlas Live Sync State
-  const [cloudSyncStatus, setCloudSyncStatus] = useState('synced'); // 'syncing' | 'synced' | 'error' | 'idle'
-  const [cloudSyncMessage, setCloudSyncMessage] = useState('Cloud Atlas Synced');
+  // ☁️ Cloud Atlas Live Sync & Network State
+  const [isNetworkOnline, setIsNetworkOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
+  const [cloudSyncStatus, setCloudSyncStatus] = useState(() => (typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'synced'));
+  const [cloudSyncMessage, setCloudSyncMessage] = useState(() => (typeof navigator !== 'undefined' && !navigator.onLine ? 'Offline Mode (Local Database Active)' : 'Cloud Atlas Synced'));
   const [lastCloudSyncTime, setLastCloudSyncTime] = useState(null);
 
   // 🎨 Global Card Background Theme (Solid White vs Gradient Theme)
@@ -139,6 +140,21 @@ export function AppProvider({ children }) {
   }, []);
 
   const triggerCloudSync = useCallback(async (showToasts = true) => {
+    const hasNet = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    if (!hasNet) {
+      setIsNetworkOnline(false);
+      setCloudSyncStatus('offline');
+      setCloudSyncMessage('Offline Mode (Local Database Active)');
+      if (showToasts) {
+        toast('⚡ Operating in Offline Mode. Working seamlessly from local database.', {
+          icon: '⚡',
+          id: 'cloud-sync-offline',
+          duration: 4000
+        });
+      }
+      return;
+    }
+
     setCloudSyncStatus('syncing');
     setCloudSyncMessage('Syncing latest data from Cloud Atlas...');
     if (showToasts) {
@@ -146,8 +162,10 @@ export function AppProvider({ children }) {
     }
 
     try {
+      await api.bidirectionalSync().catch(() => {});
       await api.pullCloudData().catch(() => {});
       await loadServerData();
+      setIsNetworkOnline(true);
       setCloudSyncStatus('synced');
       setCloudSyncMessage('Cloud Atlas Data Synced');
       setLastCloudSyncTime(new Date());
@@ -186,17 +204,26 @@ export function AppProvider({ children }) {
       const isOnline = await checkBackendStatus(3, 200);
       setBackendOnline(isOnline);
 
+      // Check real network connectivity
+      const hasNet = typeof navigator !== 'undefined' ? navigator.onLine : true;
+      setIsNetworkOnline(hasNet);
+
       if (isOnline) {
         try {
           // Parallel fast load of local DB (<300ms)
           await loadServerData();
           setStartupSyncing(false);
           setLoading(false);
-          setCloudSyncStatus('synced');
-          setLastCloudSyncTime(new Date());
-
-          // 2. Silent background cloud pull (no intrusive toast or permanent badge)
-          api.pullCloudData().catch(() => {});
+          if (hasNet) {
+            setCloudSyncStatus('synced');
+            setCloudSyncMessage('Cloud Atlas Synced');
+            setLastCloudSyncTime(new Date());
+            // 2. Silent background cloud pull (no intrusive toast or permanent badge)
+            api.pullCloudData().catch(() => {});
+          } else {
+            setCloudSyncStatus('offline');
+            setCloudSyncMessage('Offline Mode (Local Database Active)');
+          }
         } catch (e) {
           console.error('Failed to load from server:', e.message);
           loadFallbackData();
@@ -223,7 +250,11 @@ export function AppProvider({ children }) {
             setBackendOnline(true);
             try {
               await loadServerData();
-              setCloudSyncStatus('synced');
+              if (typeof navigator !== 'undefined' && navigator.onLine) {
+                setCloudSyncStatus('synced');
+              } else {
+                setCloudSyncStatus('offline');
+              }
             } catch (e) {}
           }
         }, 1500);
@@ -235,21 +266,53 @@ export function AppProvider({ children }) {
     // Auto-sync on network reconnect
     const handleOnline = async () => {
       console.log('🌐 Network Reconnected! Triggering Auto-Cloud Sync...');
-      toast.loading('Internet Reconnected: Syncing data to Cloud...', { id: 'cloud-auto-sync' });
+      setIsNetworkOnline(true);
+      setCloudSyncStatus('syncing');
+      setCloudSyncMessage('Internet connected. Syncing with Cloud...');
+      toast.loading('🌐 Internet Reconnected: Syncing data to Cloud...', { id: 'cloud-auto-sync' });
       try {
-        await api.bidirectionalSync();
+        await api.bidirectionalSync().catch(() => {});
+        await api.pullCloudData().catch(() => {});
         await loadServerData();
         setCloudSyncStatus('synced');
+        setCloudSyncMessage('Cloud Atlas Data Synced');
+        setLastCloudSyncTime(new Date());
         toast.success('✅ Cloud Database Synchronized!', { id: 'cloud-auto-sync' });
       } catch(e) {
+        setCloudSyncStatus('synced');
         toast.dismiss('cloud-auto-sync');
       }
     };
 
+    const handleOffline = () => {
+      console.log('⚡ Network Disconnected! Switched to Offline Mode.');
+      setIsNetworkOnline(false);
+      setCloudSyncStatus('offline');
+      setCloudSyncMessage('Offline Mode (Local Database Active)');
+      toast('⚡ Internet disconnected. Switched to Offline Mode (Local DB).', { 
+        id: 'network-offline-toast', 
+        icon: '⚡',
+        duration: 4000
+      });
+    };
+
     window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Periodic network check
+    const netHeartbeat = setInterval(() => {
+      if (typeof navigator !== 'undefined') {
+        const currOnline = navigator.onLine;
+        if (!currOnline && isNetworkOnline) {
+          handleOffline();
+        }
+      }
+    }, 8000);
 
     return () => {
       window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(netHeartbeat);
     };
   }, [loadServerData]);
 
@@ -934,6 +997,7 @@ export function AppProvider({ children }) {
     cloudSyncMessage,
     lastCloudSyncTime,
     triggerCloudSync,
+    isNetworkOnline,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -95,9 +95,26 @@ const decodeEntities = (str) => {
     .replace(/&hArr;/g, '⇔');
 };
 
+export const balanceMathDelimiters = (str) => {
+  if (!str) return '';
+  let s = String(str);
+  const placeholder = '___DBL_DLR___';
+  let temp = s.replace(/\$\$/g, placeholder);
+  let count = 0;
+  for (let i = 0; i < temp.length; i++) {
+    if (temp[i] === '$' && (i === 0 || temp[i - 1] !== '\\')) {
+      count++;
+    }
+  }
+  if (count % 2 !== 0) {
+    temp += '$';
+  }
+  return temp.replace(new RegExp(placeholder, 'g'), '$$');
+};
+
 const escapeLatexText = (str) => {
   if (!str) return '';
-  const s = decodeEntities(String(str));
+  const s = balanceMathDelimiters(decodeEntities(String(str)));
   const parts = s.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$)/g);
 
   return parts.map((part) => {
@@ -117,34 +134,40 @@ const escapeLatexText = (str) => {
       }
       return res;
     } else {
-      res = res
-        .replace(/\\/g, '\\textbackslash{}')
-        .replace(/\{/g, '\\{')
-        .replace(/\}/g, '\\}')
-        .replace(/\^/g, '\\^{}')
-        .replace(/_/g, '\\_')
-        .replace(/&/g, '\\&')
-        .replace(/%/g, '\\%')
-        .replace(/#/g, '\\#')
-        .replace(/~/g, '\\textasciitilde{}')
-        .replace(/</g, '\\textless{}')
-        .replace(/>/g, '\\textgreater{}')
-        .replace(/\|/g, '\\textbar{}');
+      // If plain text itself contains unwrapped LaTeX commands, wrap them in math mode
+      res = res.replace(/\\(frac|sqrt|Omega|sigma|alpha|beta|gamma|delta|theta|lambda|mu|pi|rho|tau|phi|psi|omega|Delta|Sigma|vec|bar|hat|times|pm|le|ge|neq|approx|infty|int|sum|cdot)\b/g, '$\\$& $');
 
-      res = res.replace(/√\s*([0-9a-zA-Z.]+)/g, '$\\sqrt{$1}$');
-      res = res.replace(/∛\s*([0-9a-zA-Z.]+)/g, '$\\sqrt[3]{$1}$');
-      res = res.replace(/√/g, '$\\surd$ ');
-      res = res.replace(/>>/g, '$\\gg$ ');
-      res = res.replace(/<</g, '$\\ll$ ');
+      const subParts = res.split(/(\$[^$]*?\$)/g);
+      return subParts.map(sp => {
+        if (sp.startsWith('$')) return sp;
+        let out = sp
+          .replace(/\\/g, '\\textbackslash{}')
+          .replace(/\{/g, '\\{')
+          .replace(/\}/g, '\\}')
+          .replace(/\^/g, '\\^{}')
+          .replace(/_/g, '\\_')
+          .replace(/&/g, '\\&')
+          .replace(/%/g, '\\%')
+          .replace(/#/g, '\\#')
+          .replace(/~/g, '\\textasciitilde{}')
+          .replace(/</g, '\\textless{}')
+          .replace(/>/g, '\\textgreater{}')
+          .replace(/\|/g, '\\textbar{}')
+          .replace(/√\s*([0-9a-zA-Z.]+)/g, '$\\sqrt{$1}$')
+          .replace(/∛\s*([0-9a-zA-Z.]+)/g, '$\\sqrt[3]{$1}$')
+          .replace(/√/g, '$\\surd$ ')
+          .replace(/>>/g, '$\\gg$ ')
+          .replace(/<</g, '$\\ll$ ');
 
-      for (const [char, latex] of Object.entries(UNICODE_MAP)) {
-        if (['-', "'", '"'].includes(latex)) {
-          res = res.split(char).join(latex);
-        } else {
-          res = res.split(char).join('$' + latex + '$');
+        for (const [char, latex] of Object.entries(UNICODE_MAP)) {
+          if (['-', "'", '"'].includes(latex)) {
+            out = out.split(char).join(latex);
+          } else {
+            out = out.split(char).join('$' + latex + '$');
+          }
         }
-      }
-      return res;
+        return out;
+      }).join('');
     }
   }).join('');
 };
@@ -369,35 +392,39 @@ export const generateTex = ({
 
       if (!isNumerical && q.options && Array.isArray(q.options) && q.options.length > 0) {
         const labels = ['a', 'b', 'c', 'd'];
-        const rawOpts = q.options.map(o => cleanOptionText(o));
-        const hasContent = rawOpts.some(o => o.length > 0);
+        let rawOpts = q.options.map(o => cleanOptionText(o));
+        const hasContent = rawOpts.some(o => o && o.trim().length > 0);
 
-        if (hasContent) {
-          const layout = getOptionsLayout(rawOpts);
+        if (!hasContent) {
+          rawOpts = ['Option (A)', 'Option (B)', 'Option (C)', 'Option (D)'];
+        } else {
+          rawOpts = rawOpts.map((o, idx) => (o && o.trim().length > 0) ? o : `Option (${labels[idx]?.toUpperCase() || idx + 1})`);
+        }
 
-          if (layout === 'double') {
-            const opts = [...rawOpts];
-            while (opts.length % 2 !== 0) opts.push('');
-            out += `\\vspace{2pt}\n`;
-            out += `\\begin{tabular}{@{}p{0.46\\linewidth}@{\\hskip0.04\\linewidth}p{0.46\\linewidth}@{}}\n`;
-            for (let i = 0; i < opts.length; i += 2) {
-              const lbl1 = labels[i] || String.fromCharCode(97 + i);
-              const lbl2 = labels[i + 1] || String.fromCharCode(97 + i + 1);
-              const c1 = `\\textbf{(${lbl1})}~${escapeLatexText(opts[i] || '\\phantom{x}')}`;
-              const c2 = (i + 1 < opts.length)
-                ? `\\textbf{(${lbl2})}~${escapeLatexText(opts[i + 1] || '\\phantom{x}')}`
-                : '';
-              out += `  ${c1} & ${c2} \\\\[3pt]\n`;
-            }
-            out += `\\end{tabular}\n`;
-          } else {
-            out += `\\vspace{2pt}\n`;
-            out += `\\begin{enumerate}[label=\\textbf{(\\alph*)},leftmargin=22pt,itemsep=1pt,topsep=2pt]\n`;
-            rawOpts.forEach(opt => {
-              out += `  \\item ${opt.length > 0 ? escapeLatexText(opt) : '\\phantom{X}'}\n`;
-            });
-            out += `\\end{enumerate}\n`;
+        const layout = getOptionsLayout(rawOpts);
+
+        if (layout === 'double') {
+          const opts = [...rawOpts];
+          while (opts.length % 2 !== 0) opts.push('');
+          out += `\\vspace{2pt}\n`;
+          out += `\\begin{tabular}{@{}p{0.46\\linewidth}@{\\hskip0.04\\linewidth}p{0.46\\linewidth}@{}}\n`;
+          for (let i = 0; i < opts.length; i += 2) {
+            const lbl1 = labels[i] || String.fromCharCode(97 + i);
+            const lbl2 = labels[i + 1] || String.fromCharCode(97 + i + 1);
+            const c1 = `\\textbf{(${lbl1})}~${escapeLatexText(opts[i] || '\\phantom{x}')}`;
+            const c2 = (i + 1 < opts.length)
+              ? `\\textbf{(${lbl2})}~${escapeLatexText(opts[i + 1] || '\\phantom{x}')}`
+              : '';
+            out += `  ${c1} & ${c2} \\\\[3pt]\n`;
           }
+          out += `\\end{tabular}\n`;
+        } else {
+          out += `\\vspace{2pt}\n`;
+          out += `\\begin{enumerate}[label=\\textbf{(\\alph*)},leftmargin=22pt,itemsep=1pt,topsep=2pt]\n`;
+          rawOpts.forEach(opt => {
+            out += `  \\item ${opt.length > 0 ? escapeLatexText(opt) : '\\phantom{X}'}\n`;
+          });
+          out += `\\end{enumerate}\n`;
         }
       }
 
@@ -692,7 +719,12 @@ export const compilePdf = async ({
   logInfo('TEST_SERIES', `TeX file generated: ${texFile}`);
 
   const cleanAll = () => cleanup([...tempFiles, localLogoPath].filter(Boolean));
-  const cmd = `pdflatex -interaction=nonstopmode -output-directory="${workDir}" "${texFile}"`;
+  let pdflatexBin = 'pdflatex';
+  const miktexWinPath = 'C:\\Users\\sawar\\AppData\\Local\\Programs\\MiKTeX\\miktex\\bin\\x64\\pdflatex.exe';
+  if (process.platform === 'win32' && fs.existsSync(miktexWinPath)) {
+    pdflatexBin = `"${miktexWinPath}"`;
+  }
+  const cmd = `${pdflatexBin} -interaction=nonstopmode -output-directory="${workDir}" "${texFile}"`;
 
   return new Promise((resolve, reject) => {
     logInfo('TEST_SERIES', 'Running pdflatex compilation pass 1...');

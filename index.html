@@ -17,6 +17,28 @@
     <link id="app-manifest" rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-title" content="Career Xone" />
 
+    <!-- 🛡️ Heavy Anti-Bot & Selenium Shield: Blocks automated scrapers and headless browser drivers -->
+    <script>
+      (function() {
+        try {
+          var isBot = navigator.webdriver || 
+                      window.document.documentElement.getAttribute("webdriver") || 
+                      window.callPhantom || 
+                      window._phantom || 
+                      window.__nightmare;
+          var isGoogle = /googlebot/i.test(navigator.userAgent);
+          if (isBot && !isGoogle) {
+            window.stop && window.stop();
+            document.documentElement.innerHTML = '<div style="background:#090d16;color:#f87171;padding:60px 20px;font-family:system-ui,sans-serif;text-align:center;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
+              '<h1 style="font-size:2rem;margin-bottom:12px;color:#ef4444;">🛡️ Access Denied</h1>' +
+              '<p style="color:#94a3b8;max-width:500px;line-height:1.6;">Automated browsing tools, scrapers, and headless browser drivers (Selenium, Puppeteer) are strictly prohibited on this network.</p>' +
+            '</div>';
+            throw new Error("Automated scraper blocked by Career Xone Bot Shield");
+          }
+        } catch(e) {}
+      })();
+    </script>
+
     <script>
       function updatePWAManifest() {
         const path = (window.location.pathname || '').toLowerCase();

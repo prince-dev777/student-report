@@ -1621,18 +1621,6 @@ export default function ParentPortalWeb() {
         </div>
       </header>
 
-      {/* Synchronizing Data Live Bar */}
-      {isRefreshing && (
-        <div style={{
-          background: 'linear-gradient(90deg, #0284c7, #0369a1)', color: '#ffffff',
-          padding: '4px 12px', fontSize: '0.70rem', fontWeight: 800, textAlign: 'center',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-        }}>
-          <RefreshCw size={12} style={{ animation: 'spin 0.8s linear infinite' }} />
-          <span>Syncing latest marks & biometric attendance...</span>
-        </div>
-      )}
-
       {/* Main App Container */}
       <div style={{ maxWidth: '490px', margin: '8px auto 0', padding: '0 10px' }}>
 

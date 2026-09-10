@@ -119,7 +119,68 @@ cloudinary.config({
 });
 
 const app = express();
+app.disable('x-powered-by');
 const PORT = process.env.PORT || 5000;
+
+// 🛡️ Intelligent Anti-Bot & Brute-Force Rate Limiter for Authentication Routes
+const authAttemptMap = new Map(); // key: client IP, value: { count, firstAttempt, blockedUntil }
+
+function authRateLimiter(req, res, next) {
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : '') || req.ip || req.socket?.remoteAddress || 'unknown';
+  
+  // Whitelist loopback / local development addresses
+  if (ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') {
+    return next();
+  }
+
+  const now = Date.now();
+  const WINDOW_MS = 60 * 1000; // 1-minute window
+  const MAX_ATTEMPTS = 10; // Max 10 attempts per minute per IP
+  const BLOCK_MS = 60 * 1000; // 1-minute lockout
+
+  let record = authAttemptMap.get(ip);
+  if (record) {
+    if (record.blockedUntil && now < record.blockedUntil) {
+      const remainingSec = Math.ceil((record.blockedUntil - now) / 1000);
+      return res.status(429).json({
+        error: `Too many login attempts. Bot protection active. Please wait ${remainingSec} seconds.`
+      });
+    }
+    if (now - record.firstAttempt > WINDOW_MS) {
+      authAttemptMap.set(ip, { count: 1, firstAttempt: now, blockedUntil: 0 });
+    } else {
+      record.count += 1;
+      if (record.count > MAX_ATTEMPTS) {
+        record.blockedUntil = now + BLOCK_MS;
+        return res.status(429).json({
+          error: 'Too many login attempts. Bot protection active. Please wait 60 seconds.'
+        });
+      }
+    }
+  } else {
+    authAttemptMap.set(ip, { count: 1, firstAttempt: now, blockedUntil: 0 });
+  }
+  next();
+}
+
+function clearAuthAttempts(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : '') || req.ip || req.socket?.remoteAddress;
+  if (ip && authAttemptMap.has(ip)) {
+    authAttemptMap.delete(ip);
+  }
+}
+
+// Periodic cleanup of stale rate limiter records
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of authAttemptMap.entries()) {
+    if (now - entry.firstAttempt > 15 * 60 * 1000 && (!entry.blockedUntil || now > entry.blockedUntil)) {
+      authAttemptMap.delete(ip);
+    }
+  }
+}, 10 * 60 * 1000);
 
 // Middleware
 app.use((req, res, next) => {
@@ -128,7 +189,75 @@ app.use((req, res, next) => {
   }
   next();
 });
+// 🛡️ HEAVY-DUTY ANTI-BOT & BANDWIDTH DEFENSE SHIELD
+// 1. Whitelist legitimate search engines & social media link previews for SEO
+const ALLOWED_SEARCH_BOTS = /googlebot|bingbot|duckduckbot|slurp|baiduspider|yandexbot|whatsapp|telegrambot|facebookexternalhit|twitterbot|careerxone/i;
+
+// 2. Blacklist automated scrapers, headless drivers, and bandwidth leechers
+const BLOCKED_SCRAPERS = /selenium|puppeteer|playwright|webdriver|headlesschrome|phantomjs|python-requests|aiohttp|urllib|scrapy|wget|curl|libwww|httpclient|java|go-http-client|apache-httpclient|bytespider|gptbot|ccbot|claudebot|diffbot|ahrefsbot|semrushbot|dotbot|petalbot|dataforseobot/i;
+
+const generalIpThrottleMap = new Map();
+
+function heavyBotAndBandwidthShield(req, res, next) {
+  const p = req.path || '';
+  // Bypass internal health checks, biometric hardware push receivers, and ping
+  if (
+    p === '/ping' || p === '/health' || p.startsWith('/api/health') ||
+    p.startsWith('/iclock') || p.startsWith('/cdata') || p.startsWith('/hdata') ||
+    p.startsWith('/biometric') || p.startsWith('/FKWeb') || p.startsWith('/fdata') ||
+    p.startsWith('/getrequest') || p.startsWith('/devicecmd') || p.startsWith('/rtlog')
+  ) {
+    return next();
+  }
+
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : '') || req.ip || req.socket?.remoteAddress || 'unknown';
+  if (ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') {
+    return next();
+  }
+
+  const ua = req.headers['user-agent'] || '';
+
+  // 1. Allow legitimate search engine bots (Googlebot, Bingbot, WhatsApp)
+  if (ALLOWED_SEARCH_BOTS.test(ua)) {
+    return next();
+  }
+
+  // 2. Reject automated scrapers, Selenium, Puppeteer, HeadlessChrome, Python libraries
+  if (!ua || BLOCKED_SCRAPERS.test(ua)) {
+    return res.status(403).type('text/plain').send('403 Forbidden: Automated scraper access is blocked.');
+  }
+
+  // 3. Bandwidth preservation rate limiter (Max 120 requests/minute per client IP)
+  const now = Date.now();
+  let track = generalIpThrottleMap.get(ip);
+  if (track) {
+    if (now - track.startTime > 60000) {
+      generalIpThrottleMap.set(ip, { count: 1, startTime: now });
+    } else {
+      track.count += 1;
+      if (track.count > 120) {
+        return res.status(429).type('text/plain').send('429 Too Many Requests: Bandwidth protection limit reached.');
+      }
+    }
+  } else {
+    generalIpThrottleMap.set(ip, { count: 1, startTime: now });
+  }
+
+  next();
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, track] of generalIpThrottleMap.entries()) {
+    if (now - track.startTime > 10 * 60 * 1000) {
+      generalIpThrottleMap.delete(ip);
+    }
+  }
+}, 10 * 60 * 1000);
+
 app.use(cors());
+app.use(heavyBotAndBandwidthShield);
 app.use(['/iclock', '/cdata', '/getrequest', '/devicecmd', '/fdata', '/rtlog', '/registry', '/push', '/ping', '/hdata.aspx', '/hdata', '/data.aspx', '/data', '/FKWeb.aspx', '/FKWeb'], express.text({ type: '*/*', limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -634,11 +763,12 @@ app.put('/api/superadmin/institutes/:id/notes', superAdminProtect, async (req, r
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authRateLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
     const user = await User.findOne({ isDeleted: { $ne: true },  username }).populate('instituteId');
     if (user && (await user.comparePassword(password))) {
+      clearAuthAttempts(req);
       const token = jwt.sign(
         { id: user._id, username: user.username, instituteId: user.instituteId._id, instituteName: user.instituteId.name },
         JWT_SECRET,
@@ -905,7 +1035,7 @@ app.post('/api/auth/staff-login', async (req, res) => {
 });
 
 // Teacher Login API (Scoped to Institute)
-app.post('/api/auth/teacher-login', async (req, res) => {
+app.post('/api/auth/teacher-login', authRateLimiter, async (req, res) => {
   try {
     const { username, passcode } = req.body;
     if (!passcode) {
@@ -930,6 +1060,8 @@ app.post('/api/auth/teacher-login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid Teacher Passcode' });
     }
 
+    clearAuthAttempts(req);
+
     const token = jwt.sign(
       { id: user._id, username: user.username, instituteId: institute._id, role: 'teacher' },
       JWT_SECRET,
@@ -941,8 +1073,7 @@ app.post('/api/auth/teacher-login', async (req, res) => {
       username: user.username,
       instituteName: institute.name,
       instituteId: institute._id,
-      logo: institute.logo || null,
-      passcode: validPasscode
+      logo: institute.logo || null
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -950,7 +1081,7 @@ app.post('/api/auth/teacher-login', async (req, res) => {
 });
 
 // Inquiry Login API (Scoped to Institute)
-app.post('/api/auth/inquiry-login', async (req, res) => {
+app.post('/api/auth/inquiry-login', authRateLimiter, async (req, res) => {
   try {
     const { username, passcode } = req.body;
     if (!passcode) {
@@ -975,6 +1106,8 @@ app.post('/api/auth/inquiry-login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid Inquiry Passcode' });
     }
 
+    clearAuthAttempts(req);
+
     const token = jwt.sign(
       { id: user._id, username: user.username, instituteId: institute._id, role: 'staff' },
       JWT_SECRET,
@@ -986,8 +1119,7 @@ app.post('/api/auth/inquiry-login', async (req, res) => {
       username: user.username,
       instituteName: institute.name,
       instituteId: institute._id,
-      logo: institute.logo || null,
-      passcode: validPasscode
+      logo: institute.logo || null
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1021,7 +1153,7 @@ app.get('/api/teacher/data', async (req, res) => {
     } : {};
 
     let [students, tests, testResults, attendances, sessions, institute] = await Promise.all([
-      Student.find({ ...instQuery, isDeleted: { $ne: true } }).lean(),
+      Student.find({ ...instQuery, isDeleted: { $ne: true } }).select('-parentPasswordHash -parentPasswordPlain').lean(),
       Test.find({ ...instQuery, isDeleted: { $ne: true } }).sort({ date: -1 }).lean(),
       TestResult.find({ ...instQuery, isDeleted: { $ne: true } }).lean(),
       Attendance.find({ ...instQuery, isDeleted: { $ne: true } }).sort({ date: -1 }).limit(2000).lean(),
@@ -1031,7 +1163,7 @@ app.get('/api/teacher/data', async (req, res) => {
 
     // Fallback if instQuery filtered out all students due to legacy ID format
     if (!students || students.length === 0) {
-      students = await Student.find({ isDeleted: { $ne: true } }).lean();
+      students = await Student.find({ isDeleted: { $ne: true } }).select('-parentPasswordHash -parentPasswordPlain').lean();
     }
     if (!tests || tests.length === 0) {
       tests = await Test.find({ isDeleted: { $ne: true } }).sort({ date: -1 }).lean();
@@ -1061,7 +1193,7 @@ app.get('/api/teacher/data', async (req, res) => {
   }
 });
 
-app.post('/api/parent/login', async (req, res) => {
+app.post('/api/parent/login', authRateLimiter, async (req, res) => {
   try {
     const userIdInput = req.body.user_id || req.body.userId || req.body.rollNo;
     const passwordInput = req.body.password || req.body.rollNo;
@@ -1232,10 +1364,16 @@ app.post('/api/parent/login', async (req, res) => {
       createdAt: n.createdAt
     }));
 
+    clearAuthAttempts(req);
+
+    const safeStudentData = student.toObject ? student.toObject() : { ...student };
+    delete safeStudentData.parentPasswordHash;
+    delete safeStudentData.parentPasswordPlain;
+
     res.json({
       token,
       success: true,
-      student_data: student,
+      student_data: safeStudentData,
       student: {
         id: student.id,
         name: student.name,
@@ -1358,9 +1496,13 @@ app.get('/api/parent/data', async (req, res) => {
       createdAt: n.createdAt
     }));
 
+    const safeStudentData = student.toObject ? student.toObject() : { ...student };
+    delete safeStudentData.parentPasswordHash;
+    delete safeStudentData.parentPasswordPlain;
+
     res.json({
       success: true,
-      student_data: student,
+      student_data: safeStudentData,
       student: {
         id: student.id,
         name: student.name,
@@ -3697,7 +3839,6 @@ app.delete('/api/sms-logs/:id', async (req, res) => {
       $or: [
         { id: rawId },
         { id: String(rawId) },
-        { _id: rawId },
         ...(isObjId ? [{ _id: new mongoose.Types.ObjectId(rawId) }] : [])
       ]
     };

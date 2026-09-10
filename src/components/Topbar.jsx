@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Bell, LogOut, MessageSquare, UserPlus, ClipboardCheck, X, Sparkles, Maximize2, Minimize2, Cloud, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Menu, Bell, LogOut, MessageSquare, UserPlus, ClipboardCheck, X, Sparkles, Maximize2, Minimize2, Cloud, RefreshCw, CheckCircle2, Wifi, WifiOff, CloudOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,7 +8,7 @@ import { api } from '../utils/api';
 import SettingsModal from './SettingsModal';
 
 export default function Topbar() {
-  const { setSidebarOpen, smsHistory, students, appCardTheme, toggleAppCardTheme, cloudSyncStatus, cloudSyncMessage, triggerCloudSync, lastCloudSyncTime } = useApp();
+  const { setSidebarOpen, smsHistory, students, appCardTheme, toggleAppCardTheme, cloudSyncStatus, cloudSyncMessage, triggerCloudSync, lastCloudSyncTime, isNetworkOnline } = useApp();
   const { logout, user } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -179,9 +179,33 @@ export default function Topbar() {
             </div>
           )}
 
-          {/* ☁️ Cloud Atlas Live Sync Indicator in Top Header */}
+          {/* 🌐 Online / Offline Mode & Cloud Atlas Sync Indicator */}
           <div style={{ marginRight: '8px', display: 'flex', alignItems: 'center' }}>
-            {cloudSyncStatus === 'syncing' ? (
+            {!isNetworkOnline || cloudSyncStatus === 'offline' ? (
+              <button
+                type="button"
+                onClick={() => triggerCloudSync(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.15) 100%)',
+                  border: '1.5px solid rgba(245, 158, 11, 0.5)',
+                  color: '#d97706',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.1)'
+                }}
+                title="⚡ Offline Mode: Working seamlessly on local database. Real-time auto-sync will resume when internet reconnects. (Click to check connection)"
+              >
+                <WifiOff size={14} color="#d97706" />
+                <span>⚡ Offline Mode (Local DB)</span>
+              </button>
+            ) : cloudSyncStatus === 'syncing' ? (
               <div
                 style={{
                   display: 'flex',
@@ -190,21 +214,15 @@ export default function Topbar() {
                   padding: '5px 12px',
                   borderRadius: '12px',
                   background: 'rgba(59, 130, 246, 0.12)',
-                  border: '1.5px solid rgba(59, 130, 246, 0.3)',
+                  border: '1.5px solid rgba(59, 130, 246, 0.35)',
                   color: '#0284c7',
                   fontSize: '0.78rem',
                   fontWeight: 800
                 }}
+                title="Synchronizing local data with MongoDB Atlas cloud..."
               >
-                <div style={{
-                  width: '12px',
-                  height: '12px',
-                  border: '2px solid rgba(2, 132, 199, 0.3)',
-                  borderTopColor: '#0284c7',
-                  borderRadius: '50%',
-                  animation: 'spin 0.8s linear infinite'
-                }} />
-                <span>Syncing...</span>
+                <RefreshCw size={13} color="#0284c7" style={{ animation: 'spin 1s linear infinite' }} />
+                <span>Syncing Cloud...</span>
               </div>
             ) : cloudSyncStatus === 'error' ? (
               <button
@@ -216,20 +234,21 @@ export default function Topbar() {
                   gap: '6px',
                   padding: '5px 11px',
                   borderRadius: '12px',
-                  background: 'rgba(254, 242, 242, 0.9)',
+                  background: 'rgba(254, 242, 242, 0.95)',
                   border: '1.5px solid #fca5a5',
                   color: '#dc2626',
                   fontSize: '0.78rem',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   cursor: 'pointer'
                 }}
-                title="Cloud Atlas Offline / Local Mode (Click to retry sync)"
+                title="Cloud sync encountered an issue. Click to retry connection."
               >
-                <Cloud size={14} color="#dc2626" />
-                <span>Offline / Local</span>
+                <CloudOff size={14} color="#dc2626" />
+                <span>Cloud Sync Error</span>
               </button>
             ) : (
-              <div
+              <button
+                type="button"
                 onClick={() => triggerCloudSync(true)}
                 style={{
                   display: 'flex',
@@ -242,13 +261,15 @@ export default function Topbar() {
                   color: '#059669',
                   fontSize: '0.78rem',
                   fontWeight: 800,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 6px rgba(16, 185, 129, 0.08)'
                 }}
-                title="✅ Cloud Atlas Real-Time Synced! (Click to force re-sync)"
+                title="🟢 Online & Synced with MongoDB Atlas Cloud. (Click to force instant cloud refresh)"
               >
                 <CheckCircle2 size={14} color="#059669" />
-                <span>Cloud Synced</span>
-              </div>
+                <span>🟢 Online (Cloud Synced)</span>
+              </button>
             )}
           </div>
 

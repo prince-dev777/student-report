@@ -3,7 +3,7 @@ import { getLocalDb, getLocalCollection, isLocalDbReady } from './localDb.js';
 import { connectCloudDb, getCloudDb, getCloudCollection, isCloudDbAvailable } from './cloudDb.js';
 import { ALL_COLLECTIONS } from '../services/jsonBackupService.js';
 import { logInfo, logError, logWarn } from '../utils/logger.js';
-import { uploadOMRScan } from '../services/cloudinaryService.js';
+import { uploadOMRScan, uploadStudentPhoto } from '../services/cloudinaryService.js';
 import fs from 'fs';
 import path from 'path';
 import { mergeDuplicatesOnDb } from './duplicateCleaner.js';
@@ -55,12 +55,38 @@ export async function mirrorWrite(collectionName, doc) {
     const cloudColl = await getCloudCollection(collectionName);
     if (!cloudColl) return;
 
-    await cloudColl.replaceOne(
-      { _id: doc._id },
-      doc,
-      { upsert: true }
-    );
-    logInfo('SYNC_MIRROR', `⚡ Mirrored doc [${doc._id}] to Cloud [${collectionName}]`);
+    const repl = { ...doc };
+    delete repl._id;
+
+    if (collectionName === 'students' || collectionName === 'tests') {
+      if (collectionName === 'students' && !repl.photo) {
+        delete repl.photo;
+      }
+      await cloudColl.updateOne(
+        { $or: [{ id: doc.id }, { _id: doc._id }] },
+        { $set: repl },
+        { upsert: true }
+      );
+    } else if (collectionName === 'testresults') {
+      await cloudColl.updateOne(
+        { $or: [{ testId: doc.testId, studentId: doc.studentId }, { id: doc.id }, { _id: doc._id }] },
+        { $set: repl },
+        { upsert: true }
+      );
+    } else if (collectionName === 'attendances' && doc.studentId && doc.date) {
+      await cloudColl.updateOne(
+        { studentId: doc.studentId, date: doc.date },
+        { $set: repl },
+        { upsert: true }
+      );
+    } else {
+      await cloudColl.updateOne(
+        { _id: doc._id },
+        { $set: repl },
+        { upsert: true }
+      );
+    }
+    logInfo('SYNC_MIRROR', `⚡ Mirrored doc [${doc._id || doc.id}] to Cloud [${collectionName}]`);
   } catch (err) {
     logWarn('SYNC_MIRROR', `Failed to mirror write on [${collectionName}]: ${err.message}`);
   }
@@ -267,6 +293,20 @@ export async function performFullSync() {
             }
           }
 
+          if (collName === 'students') {
+            for (const doc of activeLocalDocs) {
+              if (doc.photo && typeof doc.photo === 'string' && !doc.photo.startsWith('http') && doc.photo.trim() !== '') {
+                try {
+                  const cloudUrl = await uploadStudentPhoto(doc.photo, doc.rollNo || doc.id);
+                  if (cloudUrl && cloudUrl.startsWith('http')) {
+                    doc.photo = cloudUrl;
+                    await localColl.updateOne({ _id: doc._id }, { $set: { photo: cloudUrl } }).catch(() => {});
+                  }
+                } catch (photoErr) {}
+              }
+            }
+          }
+
           const cloudMap = new Map();
           cloudDocs.forEach(cd => {
             if (collName === 'testresults') cloudMap.set(`${cd.testId}_${cd.studentId}`, cd);
@@ -296,6 +336,20 @@ export async function performFullSync() {
                 return {
                   updateOne: {
                     filter: { $or: [{ testId: doc.testId, studentId: doc.studentId }, { id: doc.id }, { _id: doc._id }] },
+                    update: { $set: repl },
+                    upsert: true
+                  }
+                };
+              }
+              if (collName === 'students' || collName === 'tests') {
+                const repl = { ...doc };
+                delete repl._id;
+                if (collName === 'students' && !repl.photo) {
+                  delete repl.photo;
+                }
+                return {
+                  updateOne: {
+                    filter: { $or: [{ id: doc.id }, { _id: doc._id }] },
                     update: { $set: repl },
                     upsert: true
                   }
@@ -380,6 +434,9 @@ export async function performFullSync() {
                   if (collName === 'students' || collName === 'tests') {
                     const repl = { ...doc };
                     delete repl._id;
+                    if (collName === 'students' && !repl.photo) {
+                      delete repl.photo;
+                    }
                     return {
                       updateOne: {
                         filter: { $or: [{ id: doc.id }, { _id: doc._id }] },
@@ -497,6 +554,9 @@ export async function pullAndRestoreFromCloud() {
             if (collName === 'students' || collName === 'tests') {
               const repl = { ...doc };
               delete repl._id;
+              if (collName === 'students' && !repl.photo) {
+                delete repl.photo;
+              }
               return {
                 updateOne: {
                   filter: { $or: [{ id: doc.id }, { _id: doc._id }] },

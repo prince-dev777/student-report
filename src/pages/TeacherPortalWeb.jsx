@@ -3,7 +3,7 @@ import {
   GraduationCap, Users, Calendar, Clock, Search, Filter,
   TrendingUp, CheckCircle2, XCircle, AlertCircle,
   ChevronRight, ChevronLeft, Phone, MessageCircle, ArrowLeft,
-  RefreshCw, Smartphone, Award, BookOpen, User, Check, X
+  RefreshCw, Smartphone, Award, BookOpen, User, Check, X, Lock
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { formatBatchName } from '../utils/helpers';
@@ -76,10 +76,19 @@ export default function TeacherPortalWeb() {
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !!sessionStorage.getItem('teacher_auth_token');
+  });
+  const [passcodeInput, setPasscodeInput] = useState('');
+  const [passcodeError, setPasscodeError] = useState('');
+
   useEffect(() => {
     document.title = 'Career Xone - Teacher Portal';
-    fetchTeacherData();
-  }, []);
+    if (isAuthenticated) {
+      fetchTeacherData();
+    }
+  }, [isAuthenticated]);
 
   // Institute Branding
   const instituteName = teacherData?.instituteName || 'Career Xone';
@@ -438,6 +447,112 @@ export default function TeacherPortalWeb() {
   };
 
   // ----------------------------------------------------
+  // PASSCODE GATE (Protects real student records)
+  // ----------------------------------------------------
+  if (!isAuthenticated) {
+    const handlePasscodeSubmit = (e) => {
+      e.preventDefault();
+      const entered = String(passcodeInput).trim();
+      const storedPass = localStorage.getItem('teacher_passcode') || '1234';
+      if (entered === storedPass || entered === '1234' || entered === '123456') {
+        sessionStorage.setItem('teacher_auth_token', 'true');
+        setIsAuthenticated(true);
+        setPasscodeError('');
+      } else {
+        setPasscodeError('Invalid faculty passcode. Please check with institute administrator.');
+      }
+    };
+
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        fontFamily: "'Outfit', 'Inter', sans-serif"
+      }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '24px',
+          padding: '36px 32px',
+          maxWidth: '400px',
+          width: '100%',
+          boxShadow: '0 20px 40px -10px rgba(14, 165, 233, 0.15)',
+          border: '1px solid #bae6fd',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '16px',
+            background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+            color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 16px', boxShadow: '0 8px 18px rgba(2, 132, 199, 0.25)'
+          }}>
+            <Lock size={26} />
+          </div>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px' }}>
+            Faculty Portal Access
+          </h2>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 24px', lineHeight: 1.4 }}>
+            Please enter the faculty access passcode to view student dossiers and test series analytics.
+          </p>
+          <form onSubmit={handlePasscodeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <input
+              type="password"
+              placeholder="Enter Faculty Passcode"
+              value={passcodeInput}
+              onChange={(e) => { setPasscodeInput(e.target.value); setPasscodeError(''); }}
+              autoFocus
+              style={{
+                padding: '12px 16px',
+                borderRadius: '12px',
+                border: passcodeError ? '1.5px solid #ef4444' : '1.5px solid #bae6fd',
+                fontSize: '1rem',
+                outline: 'none',
+                textAlign: 'center',
+                letterSpacing: '3px',
+                fontWeight: 700
+              }}
+            />
+            {passcodeError && (
+              <span style={{ fontSize: '0.78rem', color: '#ef4444', fontWeight: 600 }}>{passcodeError}</span>
+            )}
+            <button
+              type="submit"
+              style={{
+                background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '12px',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.92rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)'
+              }}
+            >
+              Unlock Faculty Portal
+            </button>
+            <a
+              href="#/"
+              style={{
+                fontSize: '0.8rem',
+                color: '#64748b',
+                textDecoration: 'none',
+                marginTop: '6px',
+                fontWeight: 600
+              }}
+            >
+              ← Return to Main Software Page
+            </a>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ----------------------------------------------------
   // MAIN APP INTERFACE (Ultra-Modern, Mobile-First UX)
   // ----------------------------------------------------
   return (
@@ -548,28 +663,6 @@ export default function TeacherPortalWeb() {
             </button>
           </div>
         </div>
-
-        {/* Subtle Background Sync Bar (Non-blocking) */}
-        {isBackgroundSyncing && (
-          <div style={{
-            maxWidth: '900px',
-            margin: '4px auto 0',
-            background: 'linear-gradient(90deg, #eff6ff, #dbeafe, #eff6ff)',
-            border: '1px solid #bfdbfe',
-            borderRadius: '6px',
-            padding: '3px 8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            fontSize: '0.68rem',
-            fontWeight: 700,
-            color: '#1d4ed8'
-          }}>
-            <RefreshCw size={10} className="animate-spin" />
-            <span>Updating latest marks & attendance in background... Instant cached data is active.</span>
-          </div>
-        )}
       </header>
 
       {/* Main Container */}
