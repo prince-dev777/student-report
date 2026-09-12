@@ -146,7 +146,10 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   const formattedDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
 
   // Build message text based on type
-  const pName = parentName || 'Parent';
+  const rawParent = (parentName || '').trim();
+  const pName = (rawParent && !['undefined', 'null'].includes(rawParent.toLowerCase()))
+    ? rawParent
+    : 'Parent';
   const isStaffAlert = (typeof detail === 'string' && detail.includes('Staff Attendance')) || (sessionName && sessionName.includes('Duty'));
   let messageText;
   if (isStaffAlert) {

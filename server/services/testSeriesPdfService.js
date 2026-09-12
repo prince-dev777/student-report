@@ -47,7 +47,10 @@ const UNICODE_MAP = {
   '⁺': '^+', '⁻': '^-', '⁼': '^=', '⁽': '^{(}', '⁾': '^{)}', 'ⁿ': '^n',
   '₀': '_0', '₁': '_1', '₂': '_2', '₃': '_3', '₄': '_4', '₅': '_5', '₆': '_6', '₇': '_7', '₈': '_8', '₉': '_9',
   '₊': '_+', '₋': '_-', '₌': '_=', '₍': '_{(', '₎': '_{)}',
-  '≫': '\\gg', '≪': '\\ll', '¯': '\\bar{}'
+  '≫': '\\gg', '≪': '\\ll', '¯': '\\bar{}',
+  '∀': '\\forall', '∃': '\\exists',
+  '∣': '|', '∥': '\\parallel',
+  '∅': '\\emptyset', 'ϕ': '\\phi', 'Φ': '\\Phi'
 };
 
 const decodeEntities = (str) => {
@@ -128,6 +131,14 @@ const escapeLatexText = (str) => {
       res = res.replace(/√/g, '\\surd ');
       res = res.replace(/>>/g, '\\gg ');
       res = res.replace(/<</g, '\\ll ');
+
+      // Fix unescaped curly delimiters: \left{ and \right}
+      res = res.replace(/\\left\s*(?!\\)\{/g, '\\left\\{');
+      res = res.replace(/\\right\s*(?!\\)\}/g, '\\right\\}');
+
+      // Fix set braces like ={ ... } or \in { ... } where not preceded by ^ or _ or \command
+      res = res.replace(/(=\s*)\{([^{}]+)\}/g, '$1\\{$2\\}');
+      res = res.replace(/(\\in\s*)\{([^{}]+)\}/g, '$1\\{$2\\}');
 
       for (const [char, latex] of Object.entries(UNICODE_MAP)) {
         res = res.split(char).join(latex + ' ');

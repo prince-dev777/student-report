@@ -426,7 +426,13 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
         : '';
 
       // Create respectful, session-aware in-app Notification for Parents App
-      const pName = student.parentName || 'Parent';
+      const rawParent = (student.parentName || '').trim();
+      const rawFather = (student.fatherName || '').trim();
+      const pName = (rawParent && !['undefined', 'null'].includes(rawParent.toLowerCase()))
+        ? rawParent
+        : ((rawFather && !['undefined', 'null'].includes(rawFather.toLowerCase()))
+          ? rawFather
+          : 'Parent');
       const formattedDate = todayStr.includes('-') ? (todayStr.split('-')[0].length === 4 ? todayStr.split('-').reverse().join('-') : todayStr) : todayStr;
       const title = effectiveType === 'IN' ? 'Check-In Alert' : 'Check-Out Alert';
       let notifMessage;

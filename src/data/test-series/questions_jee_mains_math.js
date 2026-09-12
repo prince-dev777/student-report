@@ -212,7 +212,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_12",
     "number": "12",
     "type": "mcq",
-    "text": "Among the statements (S1) : ${2023}^{2022}-{1999}^{2022}$ is divisible by 8 (S2) : $13(13{)}^{n}-11n-13$ is divisible by 144 for infinitely many $n\\in N$",
+    "text": "Among the statements \n(S1) : ${2023}^{2022}-{1999}^{2022}$ is divisible by 8 \n(S2) : $13(13{)}^{n}-11n-13$ is divisible by 144 for infinitely many $n\\in N$",
     "images": [],
     "options": [
       "only (S2) is correct",
@@ -725,7 +725,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_39",
     "number": "39",
     "type": "mcq",
-    "text": "If ${p}$ denotes the fractional part of the number $p$ , then $\\left( \\frac{{3}^{200}}{8} \\right)$ , is equal to",
+    "text": "If ${p}$ denotes the fractional part of the number $p$ , then $\\left{ \\frac{{3}^{200}}{8} \\right}$ , is equal to",
     "images": [],
     "options": [
       "$\\frac{5}{8}$",
@@ -782,7 +782,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_42",
     "number": "42",
     "type": "mcq",
-    "text": "If ${∑}_{r=0}^{25} \\left( {}^{50}{C}_{r}⋅{}^{50-r}{C}_{25-r} \\right) =K \\left( {}^{50}{C}_{25} \\right)$ , then $K$ is equal to",
+    "text": "If ${∑}_{r=0}^{25} \\left{ {}^{50}{C}_{r}⋅{}^{50-r}{C}_{25-r} \\right} =K \\left( {}^{50}{C}_{25} \\right)$ , then $K$ is equal to",
     "images": [],
     "options": [
       "${2}^{25}$",
@@ -858,7 +858,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_46",
     "number": "46",
     "type": "mcq",
-    "text": "If $X= \\left( {4}^{n}-3n-1,n\\in N \\right)$ and $Y={9(n-1):n\\in N}$ , where $N$ is the set of natural numbers, then $X\\cup Y$ is equal to",
+    "text": "If $X= \\left{ {4}^{n}-3n-1,n\\in N \\right}$ and $Y={9(n-1):n\\in N}$ , where $N$ is the set of natural numbers, then $X\\cup Y$ is equal to",
     "images": [],
     "options": [
       "$Y-X$",
@@ -934,7 +934,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_50",
     "number": "50",
     "type": "mcq",
-    "text": "Statement-1: ${∑}_{r=0}^{n} (r+1{)}^{n}{C}_{r}=(n+2){2}^{n-1}$ Statement-2: ${∑}_{r=0}^{n} (r+1{)}^{n}{C}_{r}{x}^{r}=(1+x{)}^{n}+nx(1+x{)}^{n-1}$",
+    "text": "Statement-1: ${∑}_{r=0}^{n} (r+1{)}^{n}{C}_{r}=(n+2){2}^{n-1}$ \nStatement-2: ${∑}_{r=0}^{n} (r+1{)}^{n}{C}_{r}{x}^{r}=(1+x{)}^{n}+nx(1+x{)}^{n-1}$",
     "images": [],
     "options": [
       "Statement-1 is true, Statement-2 is false",
@@ -1356,7 +1356,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_78",
     "number": "78",
     "type": "numerical",
-    "text": "Let $\\left( \\frac{n}{k} \\right)$ denote ${}^{n}{C}_{k}$ and $\\left( \\begin{bmatrix} n \\\\ k \\end{bmatrix} \\right) = \\left( \\begin{bmatrix} \\left( \\frac{n}{k} \\right) , if 0\\leq k\\leq n \\\\ 0, otherwise. \\end{bmatrix} \\right)$ If ${A}_{k}={∑}_{i=0}^{9} \\left( \\frac{9}{i} \\right) \\left( \\begin{bmatrix} 12 \\\\ 12-k+i \\end{bmatrix} \\right) +{∑}_{i=0}^{8} \\left( \\frac{8}{i} \\right) \\left( \\begin{bmatrix} 13 \\\\ 13-k+i \\end{bmatrix} \\right)$ and ${A}_{4}-{A}_{3}=190p$ , then $p$ is equal to _________ .",
+    "text": "Let $\\left( \\frac{n}{k} \\right)$ denote ${}^{n}{C}_{k}$ and $\\left[ n \\\\ k \\right] = \\left{ \\left( \\frac{n}{k} \\right) , if 0\\leq k\\leq n \\\\ 0, otherwise.$ If ${A}_{k}={∑}_{i=0}^{9} \\left( \\frac{9}{i} \\right) \\left[ 12 \\\\ 12-k+i \\right] +{∑}_{i=0}^{8} \\left( \\frac{8}{i} \\right) \\left[ 13 \\\\ 13-k+i \\right)$ and ${A}_{4}-{A}_{3}=190p$ , then $p$ is equal to _________ .",
     "images": [],
     "options": [],
     "correct": "49",
@@ -1384,7 +1384,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_80",
     "number": "80",
     "type": "numerical",
-    "text": "Let $n\\in N$ and $[x]$ denote the greatest integer less than or equal to $x$ . If the sum of $(n+1)$ terms ${}^{n}{C}_{0},3⋅{}^{n}{C}_{1},5⋅{}^{n}{C}_{2},7⋅{}^{n}{C}_{3},…$ is equal to ${2}^{100}⋅101$ , then $2 \\left( \\frac{n-1}{2} \\right)$ is equal to _______________",
+    "text": "Let $n\\in N$ and $[x]$ denote the greatest integer less than or equal to $x$ . If the sum of $(n+1)$ terms ${}^{n}{C}_{0},3⋅{}^{n}{C}_{1},5⋅{}^{n}{C}_{2},7⋅{}^{n}{C}_{3},…$ is equal to ${2}^{100}⋅101$ , then $2 \\left[ \\frac{n-1}{2} \\right]$ is equal to _______________",
     "images": [],
     "options": [],
     "correct": "98",
@@ -1440,7 +1440,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_84",
     "number": "84",
     "type": "numerical",
-    "text": "For integers $n$ and $r$ , let $\\left( \\frac{n}{r} \\right) = \\left( \\begin{bmatrix} {}^{n}{C}_{r}, & if n\\geq r\\geq 0 \\\\ 0, & otherwise \\end{bmatrix} \\right)$ The maximum value of $k$ for which the sum ${∑}_{i=0}^{k} \\left( \\frac{10}{i} \\right) \\left( \\frac{15}{k-i} \\right) +{∑}_{i=0}^{k+1} \\left( \\frac{12}{i} \\right) \\left( \\frac{13}{k+1-i} \\right)$ exists, is equal to ___________________",
+    "text": "For integers $n$ and $r$ , let $\\left( \\frac{n}{r} \\right) = \\left{ {}^{n}{C}_{r}, & if n\\geq r\\geq 0 \\\\ 0, & otherwise $ The maximum value of $k$ for which the sum ${∑}_{i=0}^{k} \\left( \\frac{10}{i} \\right) \\left( \\frac{15}{k-i} \\right) +{∑}_{i=0}^{k+1} \\left( \\frac{12}{i} \\right) \\left( \\frac{13}{k+1-i} \\right)$ exists, is equal to ___________________",
     "images": [],
     "options": [],
     "correct": "24",
@@ -1496,7 +1496,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_88",
     "number": "88",
     "type": "numerical",
-    "text": "If ${C}_{r}≡{}^{25}{C}_{r}$ and ${C}_{0}+5{C}_{1}+9{C}_{2}+….+(101)⋅{C}_{25}={2}^{25}⋅k$ , then $k$ is equal to ___________ - $\\left( {9}^{th} \\right)$ Jan ${2}^{nd}$ Shift 2020)",
+    "text": "If ${C}_{r}≡{}^{25}{C}_{r}$ and ${C}_{0}+5{C}_{1}+9{C}_{2}+….+(101)⋅{C}_{25}={2}^{25}⋅k$ , then $k$ is equal to ___________ - $",
     "images": [],
     "options": [],
     "correct": "51",
@@ -2023,7 +2023,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_118",
     "number": "118",
     "type": "mcq",
-    "text": "A possible value of ' $x$ ', for which the ninth term in the expansion of ${\\left( {3}^{{log}_{3} \\sqrt{{25}^{x-1}+7}}+{3}^{\\left( - \\frac{1}{8} \\right) {log}_{3} \\left( {5}^{x-1}+1 \\right)} \\right)}^{10}$ in the increasing powers of ${3}^{\\left( - \\frac{1}{8} \\right) {log}_{3} \\left( {5}^{x-1}+1 \\right)}$ is equal to 180 , is",
+    "text": "A possible value of ' $x$ ', for which the ninth term in the expansion of ${\\left{ {3}^{{log}_{3} \\sqrt{{25}^{x-1}+7}}+{3}^{\\left( - \\frac{1}{8} \\right) {log}_{3} \\left( {5}^{x-1}+1 \\right)} \\right}}^{10}$ in the increasing powers of ${3}^{\\left( - \\frac{1}{8} \\right) {log}_{3} \\left( {5}^{x-1}+1 \\right)}$ is equal to 180 , is",
     "images": [],
     "options": [
       "-1",
@@ -2878,7 +2878,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_163",
     "number": "163",
     "type": "mcq",
-    "text": "If the coefficient of ${x}^{7}$ in ${\\left( a{x}^{2}+ \\left( \\frac{1}{bx} \\right) \\right)}^{11}$ equals the coefficient of ${x}^{-7}$ in ${\\left( ax- \\left( \\frac{1}{b{x}^{2}} \\right) \\right)}^{11}$ , then $a$ and $b$ satisfy the relation",
+    "text": "If the coefficient of ${x}^{7}$ in ${\\left[ a{x}^{2}+ \\left( \\frac{1}{bx} \\right) \\right]}^{11}$ equals the coefficient of ${x}^{-7}$ in ${\\left[ ax- \\left( \\frac{1}{b{x}^{2}} \\right) \\right]}^{11}$ , then $a$ and $b$ satisfy the relation",
     "images": [],
     "options": [
       "$a+b=1$",
@@ -3072,7 +3072,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_174",
     "number": "174",
     "type": "numerical",
-    "text": "Number of integral terms in the expansion of ${\\left( {7}^{\\left( \\frac{1}{2} \\right)}+{11}^{\\left( \\frac{1}{6} \\right)} \\right)}^{824}$ is equal to ______________ .",
+    "text": "Number of integral terms in the expansion of ${\\left{ {7}^{\\left( \\frac{1}{2} \\right)}+{11}^{\\left( \\frac{1}{6} \\right)} \\right}}^{824}$ is equal to ______________ .",
     "images": [],
     "options": [],
     "correct": "138",
@@ -3128,7 +3128,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_178",
     "number": "178",
     "type": "numerical",
-    "text": "The number of integral terms in the expansion of ${\\left( {3}^{1/2}+{5}^{1/4} \\right)}^{680}$ is equal to___________。 $\\left( {11}^{th} \\right)$ April ${1}^{st}$ Shift 2023)",
+    "text": "The number of integral terms in the expansion of ${\\left( {3}^{1/2}+{5}^{1/4} \\right)}^{680}$ is equal to___________。 $",
     "images": [],
     "options": [],
     "correct": "171",
@@ -3624,7 +3624,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_binomial_theorem_and_its_simple_applications_213",
     "number": "213",
     "type": "mcq",
-    "text": "Let $[x]$ denote greatest integer less than or equal to $x$ . If for $n\\in N,{\\left( 1-x+{x}^{3} \\right)}^{n}={∑}_{j=0}^{3n} {a}_{j}{x}^{j}$ , then $\\left( \\frac{3n}{2} \\right) \\left( \\frac{3n-1}{2} \\right)$ ${∑}_{j=0} {a}_{2j}+4{∑}_{j=0} {a}_{2j+1}$ is equal to",
+    "text": "Let $[x]$ denote greatest integer less than or equal to $x$ . If for $n\\in N,{\\left( 1-x+{x}^{3} \\right)}^{n}={∑}_{j=0}^{3n} {a}_{j}{x}^{j}$ , then $\\left[ \\frac{3n}{2} \\right] \\left[ \\frac{3n-1}{2} \\right]$ ${∑}_{j=0} {a}_{2j}+4{∑}_{j=0} {a}_{2j+1}$ is equal to",
     "images": [],
     "options": [
       "${2}^{n-1}$",
@@ -3761,6 +3761,17 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
+
+
+
+
+
+
+
+
+
+
+  //
   {
     "id": "jee_mains_math_complex_numbers_1",
     "number": "1",
@@ -3841,7 +3852,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_complex_numbers_5",
     "number": "5",
     "type": "mcq",
-    "text": "Let $a\\neq b$ be two non-zero real numbers. Then the number of elements in the set $X={z\\in C$ : $Re \\left( a{z}^{2}+bz \\right) =a$ and $\\left( Re \\left( b{z}^{2}+az \\right) =b \\right)$ is equal to",
+    "text": "Let $a\\neq b$ be two non-zero real numbers. Then the number of elements in the set $X=\\left{ z\\in C$ : $Re \\left( a{z}^{2}+bz \\right) =a$ and $\\left( Re \\left( b{z}^{2}+az \\right) =b \\right}$ is equal to",
     "images": [],
     "options": [
       "2",
@@ -4012,7 +4023,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_complex_numbers_14",
     "number": "14",
     "type": "mcq",
-    "text": "Let $A= \\left( \\theta \\in \\left( - \\frac{\\pi }{2} ,\\pi \\right) : \\frac{3+2isin\\theta }{1-2isin\\theta } \\right)$ is purely imaginary $}$ . Then the sum of the elements in $A$ is",
+    "text": "Let $A= \\left{ \\theta \\in \\left( - \\frac{\\pi }{2} ,\\pi \\right) : \\frac{3+2isin\\theta }{1-2isin\\theta } \\right)$ is purely imaginary $\\right}$ . Then the sum of the elements in $A$ is",
     "images": [],
     "options": [
       "$3\\pi /4$",
@@ -4088,7 +4099,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_complex_numbers_18",
     "number": "18",
     "type": "mcq",
-    "text": "Let $ω$ be a complex number such that $2ω+1=z$ where $z= \\sqrt{-3}$ . If $\\left( \\begin{bmatrix} 1 & 1 & 1 \\\\ 1 & -{ω}^{2}-1 & {ω}^{2} \\\\ 1 & {ω}^{2} & {ω}^{7} \\end{bmatrix} \\right) =3k$ , then $k$ is equal to",
+    "text": "Let $ω$ be a complex number such that $2ω+1=z$ where $z= \\sqrt{-3}$ . If $\\left| 1 & 1 & 1 \\\\ 1 & -{ω}^{2}-1 & {ω}^{2} \\\\ 1 & {ω}^{2} & {ω}^{7} \\right| =3k$ , then $k$ is equal to",
     "images": [],
     "options": [
       "$z$",
@@ -4529,25 +4540,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_complex_numbers_44",
-    "number": "44",
-    "type": "mcq",
-    "text": "For $a\\in C$ , let $A={z\\in C:Re(a+ \\vec{z} )>Im( \\vec{a} +z)}$ and $B={z\\in C:Re(a+ \\vec{z} )0$ , then the set $A$ contains all the real numbers (S2) : If $Re(a),Im(a)<0$ , then the set $B$ contains all the real numbers,",
-    "images": [],
-    "options": [
-      "only (S2) is true",
-      "both are true",
-      "only (S1) is true",
-      "both are false"
-    ],
-    "correct": "d",
-    "chapter": "Complex Numbers",
-    "topic": "Modulus And Conjugate",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
+  
   {
     "id": "jee_mains_math_complex_numbers_45",
     "number": "45",
@@ -4780,7 +4773,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_complex_numbers_58",
     "number": "58",
     "type": "mcq",
-    "text": "Let $s={z=x+iy:|z-1+i|\\geq |z|,|z|<2,|z+i|=|z-1|}$ . Then the set of all values of $x$ , for which $w=2x+iy\\in S$ for some $y\\in R$ , is",
+    "text": "Let $s=\\left{ z=x+iy:|z-1+i|\\geq |z|,|z|<2,|z+i|=|z-1| \\right}$ . Then the set of all values of $x$ , for which $w=2x+iy\\in S$ for some $y\\in R$ , is",
     "images": [],
     "options": [
       "$\\left( - \\sqrt{2} , \\frac{1}{2 \\sqrt{2}} \\right)$",
@@ -4894,7 +4887,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_complex_numbers_64",
     "number": "64",
     "type": "mcq",
-    "text": "The region represented by ${z=x+iy\\in C:|z|-Re(z)\\leq 1}$ is also given by the inequality",
+    "text": "The region represented by $\\left{ z=x+iy\\in C:|z|-Re(z)\\leq 1 \\right}$ is also given by the inequality",
     "images": [],
     "options": [
       "${y}^{2}\\geq 2(x+1)$",
@@ -4951,13 +4944,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_complex_numbers_67",
     "number": "67",
     "type": "mcq",
-    "text": "Let $z\\in C$ be such that $|z|<1$ . If $ω= \\frac{5+3z}{5(1-z)}$ , then (a) $5Re(ω)>4$ (b) $5Im(ω)<1$ (c) $5Re(ω)>1$ (d) $4Im(ω)>5$",
+    "text": "Let $z\\in C$ be such that $|z|<1$ . If $ω= \\frac{5+3z}{5(1-z)}$ , then ",
     "images": [],
     "options": [
-      "",
-      "",
-      "",
-      ""
+      "$5Re(ω)>4$",
+      "$5Im(ω)<1$ ",
+      "$5Re(ω)>1$",
+      "$4Im(ω)>5$"
     ],
     "correct": "c",
     "chapter": "Complex Numbers",
@@ -5065,7 +5058,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_complex_numbers_73",
     "number": "73",
     "type": "mcq",
-    "text": "The largest value of $r$ for which the region represented by the set ${ω\\in C:|ω-4-i|\\leq r}$ is contained in the region represented by the set ${z\\in C:|z-1|\\leq |z+i|}$ , is equal to",
+    "text": "The largest value of $r$ for which the region represented by the set $\\left{ ω\\in C:|ω-4-i|\\leq r \\right}$ is contained in the region represented by the set $\\left{ z\\in C:|z-1|\\leq |z+i| \\right}$ , is equal to",
     "images": [],
     "options": [
       "$\\sqrt{17}$",
@@ -5106,10 +5099,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Let $a=lm \\left( \\frac{1+{z}^{2}}{2iz} \\right) w(Imw\\neq 0)$ be a complex number. Then the set of all complex numbers $z$ satisfying the equation $w- \\vec{w} z=k(1-z)$ , for some real number $k$ , is",
     "images": [],
     "options": [
-      "${z:|z|=1}$",
-      "${z:z= \\vec{z} }$",
-      "${z:z\\neq 1}$",
-      "${z:|z|=1,z\\neq 1}$"
+      "$\\left{ z:|z|=1 \\righ}$",
+      "$\\left{ z:z= \\vec{z} \\righ}$",
+      "$\\left{ z:z\\neq 1 \\righ}$",
+      "$\\left{ z:|z|=1,z\\neq 1} \\righ$"
     ],
     "correct": "d",
     "chapter": "Complex Numbers",
@@ -5122,7 +5115,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_complex_numbers_76",
     "number": "76",
     "type": "mcq",
-    "text": "Let $a=Im \\left( \\frac{1+{z}^{2}}{2iz} \\right)$ , where $z$ is any non-zero complex number. The set $A={a:|z|=1$ and $z\\neq \\pm 1}$ is equal to",
+    "text": "Let $a=Im \\left( \\frac{1+{z}^{2}}{2iz} \\right)$ , where $z$ is any non-zero complex number. The set $A=\\left{ a:|z|=1$ and $z\\neq \\pm 1 \\right}$ is equal to",
     "images": [],
     "options": [
       "$(-1,1)$",
@@ -5217,13 +5210,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_complex_numbers_81",
     "number": "81",
     "type": "mcq",
-    "text": "If $|z-4|<|z-2|$ , its solution is given by (a) $Re(z)>0$ (b) $Re(z)<0$ (c) $Re(z)>3$ (d) $Re(z)>2$",
+    "text": "If $|z-4|<|z-2|$ , its solution is given by ",
     "images": [],
     "options": [
-      "",
-      "",
-      "",
-      ""
+      "$Re(z)>0$",
+      "$Re(z)<0$",
+      "$Re(z)>3$",
+      "$Re(z)>2$"
     ],
     "correct": "c",
     "chapter": "Complex Numbers",
@@ -5704,7 +5697,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_complex_numbers_110",
     "number": "110",
     "type": "mcq",
-    "text": "Let $A={z\\in C:1\\leq |z-(1+i)|\\leq 2}$ and $B={z\\in A:|z-(1-i)|=1}$ . Then, $B$",
+    "text": "Let $A=\\left{ z\\in C:1\\leq |z-(1+i)|\\leq 2 \\right}$ and $B=\\left{ z\\in A:|z-(1-i)|=1 \\left}$ . Then, $B$",
     "images": [],
     "options": [
       "is an empty set",
@@ -5814,957 +5807,16 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_complex_numbers_116",
-    "number": "116",
-    "type": "mcq",
-    "text": "Let $arg(z)$ represent the principal argument of the complex number $z$ . Then, $|z|=3$ and $arg(z-1)-arg(z+1)= \\frac{\\pi }{4}$ intersect",
-    "images": [],
-    "options": [
-      "exactly at one point",
-      "exactly at two points",
-      "nowhere",
-      "at infinitely many points"
-    ],
-    "correct": "c",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_117",
-    "number": "117",
-    "type": "mcq",
-    "text": "The equation $arg \\left( \\frac{z-1}{z+1} \\right) = \\frac{\\pi }{4}$ represents a circle with",
-    "images": [],
-    "options": [
-      "centre at $(0,0)$ and radius $\\sqrt{2}$",
-      "centre at $(0,1)$ and radius 2",
-      "centre at $(0,-1)$ and radius $\\sqrt{2}$",
-      "centre at $(0,1)$ and radius $\\sqrt{2}$"
-    ],
-    "correct": "d",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_118",
-    "number": "118",
-    "type": "mcq",
-    "text": "If $S= \\left( z\\in C: \\frac{z-i}{z+2i} \\in R \\right)$ , then",
-    "images": [],
-    "options": [
-      "$S$ is a circle in the complex plane",
-      "$S$ contains exactly two elements",
-      "$S$ contains only one element",
-      "$S$ is a straight line in the complex plane"
-    ],
-    "correct": "d",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_119",
-    "number": "119",
-    "type": "mcq",
-    "text": "If $z$ is a complex number such that $\\frac{z-i}{z-1}$ is purely imaginary, then the minimum value of $|z-(3+3i)|$ is",
-    "images": [],
-    "options": [
-      "$3 \\sqrt{2}$",
-      "$2 \\sqrt{2}$",
-      "$2 \\sqrt{2} -1$",
-      "$6 \\sqrt{2}$"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_120",
-    "number": "120",
-    "type": "mcq",
-    "text": "If $z$ and $ω$ are two complex numbers such that $|zω|=1$ and $arg(z)-arg(ω)= \\frac{3\\pi }{2}$ , then $arg \\left( \\frac{1-2 \\vec{z} ω}{1+2 \\vec{z} ω} \\right)$ is",
-    "images": [],
-    "options": [
-      "$- \\frac{\\pi }{4}$",
-      "$- \\frac{3\\pi }{4}$",
-      "$\\frac{3\\pi }{4}$",
-      "$\\frac{\\pi }{4}$"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_121",
-    "number": "121",
-    "type": "mcq",
-    "text": "Let $C$ be the set of all complex numbers. Let ${S}_{1}={z\\in C:|z-2|\\leq 1}$ and ${S}_{2}={z\\in C:z(1+i)+ \\vec{z} (1-i)\\geq 4}$ . Then, the maximum value of ${\\left( z- \\frac{5}{2} \\right)}^{2}$ for $z\\in {S}_{1}\\cap {S}_{2}$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{3+2 \\sqrt{2}}{4}$",
-      "$\\frac{5+2 \\sqrt{2}}{4}$",
-      "$\\frac{5+2 \\sqrt{2}}{2}$",
-      "$\\frac{3+2 \\sqrt{2}}{2}$"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_122",
-    "number": "122",
-    "type": "mcq",
-    "text": "The area of the triangle with vertices $A(z),B(iz)$ and $C(z+iz)$ is",
-    "images": [],
-    "options": [
-      "$\\frac{1}{2} |z{|}^{2}$",
-      "$\\frac{1}{2}$",
-      "1",
-      "$\\frac{1}{2} |z+iz{|}^{2}$"
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_123",
-    "number": "123",
-    "type": "mcq",
-    "text": "If the equation $a|z{|}^{2}+ \\overline{\\vec{\\alpha } z+\\alpha \\vec{z}} +d=0$ represents a circle, where $a,d$ are real constants, then which of the following conditions is correct?",
-    "images": [],
-    "options": [
-      "$|\\alpha {|}^{2}-ad>0$ and $a\\in R-{0}$",
-      "$|\\alpha {|}^{2}-ad\\geq 0$ and $a\\in R$",
-      "$|\\alpha {|}^{2}-ad\\neq 0$",
-      "$\\alpha =0,a,d\\in {R}^{+}$"
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_124",
-    "number": "124",
-    "type": "mcq",
-    "text": "Let a complex number be $w=1- \\sqrt{3} i$ . Let another complex number $z$ be such that $|zw|=1$ and $arg(z)-arg(w)= \\frac{\\pi }{2}$ . Then, the area of the triangle with vertices origin, $z$ and $w$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{1}{2}$",
-      "$\\frac{1}{4}$",
-      "4",
-      "2"
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_125",
-    "number": "125",
-    "type": "mcq",
-    "text": "Let the lines $(2-i)z=(2+i) \\vec{z}$ and $(2+i)z+(i-2) \\vec{z}$ $-4i=0$ , (here ${i}^{2}=-1$ ) be normal to a circle $C$ . If the line $iz+ \\vec{z} +1+i=0$ is tangent to this circle $C$ , then its radius is",
-    "images": [],
-    "options": [
-      "$\\frac{3}{2 \\sqrt{2}}$",
-      "$\\frac{3}{\\sqrt{2}}$",
-      "$\\frac{1}{2 \\sqrt{2}}$",
-      "$3 \\sqrt{2}$"
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_126",
-    "number": "126",
-    "type": "mcq",
-    "text": "If ${z}_{1},{z}_{2}$ are complex numbers such that $Re \\left( {z}_{1} \\right) = \\left( {z}_{1}-1 \\right) ,Re \\left( {z}_{2} \\right) = \\left( {z}_{2}-1 \\right)$ and $arg \\left( {z}_{1}-{z}_{2} \\right) = \\frac{\\pi }{6}$ , then $Im \\left( {z}_{1}+{z}_{2} \\right)$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{2}{\\sqrt{3}}$",
-      "$2 \\sqrt{3}$",
-      "$\\frac{\\sqrt{3}}{2}$",
-      "$\\frac{1}{\\sqrt{3}}$"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_127",
-    "number": "127",
-    "type": "mcq",
-    "text": "If the four complex numbers $z, \\vec{z} , \\vec{z} -2Re( \\vec{z} )$ and $z-2Re(z)$ represent the vertices of a square of side 4 units in the Argand plane, then $|z|$ is equal to",
-    "images": [],
-    "options": [
-      "$4 \\sqrt{2}$",
-      "4",
-      "$2 \\sqrt{2}$",
-      "2"
-    ],
-    "correct": "c",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_128",
-    "number": "128",
-    "type": "mcq",
-    "text": "Let $z=x+iy$ be a non-zero complex number such that ${z}^{2}=i|z{|}^{2}$ , where $i= \\sqrt{-1}$ , then $z$ lies on the",
-    "images": [],
-    "options": [
-      "line, $y=-x$",
-      "imaginary axis",
-      "line, $y=x$",
-      "real axis"
-    ],
-    "correct": "c",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_129",
-    "number": "129",
-    "type": "mcq",
-    "text": "If $Re \\left( \\frac{z-1}{2z+i} \\right) =1$ , where $z=x+iy$ , then the point $(x,y)$ lies on a",
-    "images": [],
-    "options": [
-      "circle whose centre is at $\\left( - \\frac{1}{2} ,- \\frac{3}{2} \\right)$ .",
-      "straight line whose slope is $\\frac{3}{2}$ .",
-      "circle whose diameter is $\\frac{\\sqrt{5}}{2}$ .",
-      "straight line whose slope is $- \\frac{2}{3}$ ."
-    ],
-    "correct": "c",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_130",
-    "number": "130",
-    "type": "mcq",
-    "text": "If $\\frac{3+isin\\theta }{4-icos\\theta } ,\\theta \\in [0,2\\pi ]$ is a real number, then an argument of $sin\\theta +icos\\theta$ is",
-    "images": [],
-    "options": [
-      "$\\pi -{tan}^{-1} \\left( \\frac{3}{4} \\right)$",
-      "${tan}^{-1} \\left( \\frac{4}{3} \\right)$",
-      "$-{tan}^{-1} \\left( \\frac{3}{4} \\right)$",
-      "$\\pi -{tan}^{-1} \\left( \\frac{4}{3} \\right)$"
-    ],
-    "correct": "d",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_131",
-    "number": "131",
-    "type": "mcq",
-    "text": "If $z= \\frac{\\sqrt{3}}{2} + \\frac{i}{2} (i= \\sqrt{-1} )$ , then ${\\left( 1+iz+{z}^{5}+i{z}^{8} \\right)}^{9}$ is equal to",
-    "images": [],
-    "options": [
-      "$(-1+2i{)}^{9}$",
-      "0",
-      "1",
-      "-1"
-    ],
-    "correct": "d",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_132",
-    "number": "132",
-    "type": "mcq",
-    "text": "All the points in the set $S= \\left( \\frac{\\alpha +i}{\\alpha -i} :\\alpha \\in R \\right) (i= \\sqrt{-1} )$ lie on a",
-    "images": [],
-    "options": [
-      "circle whose radius is 1 .",
-      "straight line whose slope is 1 .",
-      "circle whose radius is $\\sqrt{2}$ .",
-      "straight line whose slope is -1 ."
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_133",
-    "number": "133",
-    "type": "mcq",
-    "text": "If $z$ and $w$ are two complex numbers such that $|zw|=1$ and $arg(z)-arg(w)= \\frac{\\pi }{2}$ , then",
-    "images": [],
-    "options": [
-      "$z \\vec{w} = \\frac{1-i}{\\sqrt{2}}$",
-      "$\\vec{z} w=-i$",
-      "$z \\vec{w} = \\frac{-1+i}{\\sqrt{2}}$",
-      "$\\vec{z} w=i$"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_134",
-    "number": "134",
-    "type": "mcq",
-    "text": "The equation $|z-i|=|z-1|,i= \\sqrt{-1}$ , represents",
-    "images": [],
-    "options": [
-      "a circle of radius $1/2$",
-      "the line through the origin with slope 1",
-      "a circle of radius 1",
-      "the line through the origin with slope -1"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_135",
-    "number": "135",
-    "type": "mcq",
-    "text": "Let ${z}_{0}$ be a root of the quadratic equation, ${x}^{2}+x+1=0$ . If $z=3+6i{z}_{0}^{81}-3i{z}_{0}^{93}$ , then $arg(z)$ is equal to",
-    "images": [],
-    "options": [
-      "$\\pi /4$",
-      "$\\pi /6$",
-      "$\\pi /3$",
-      "0"
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_137",
-    "number": "137",
-    "type": "mcq",
-    "text": "Let ${z}_{1}$ and ${z}_{2}$ be two complex numbers satisfying $\\left( {z}_{1} \\right) =9$ and $\\left( {z}_{2}-3-4i \\right) =4$ . Then the minimum value of $\\left( {z}_{1}-{z}_{2} \\right)$ is",
-    "images": [],
-    "options": [
-      "$\\sqrt{2}$",
-      "2",
-      "0",
-      "1"
-    ],
-    "correct": "c",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_138",
-    "number": "138",
-    "type": "mcq",
-    "text": "If $|z-3+2i|\\leq 4$ then the difference between the greatest value and the least value of $|z|$ is",
-    "images": [],
-    "options": [
-      "$\\sqrt{13}$",
-      "$4+ \\sqrt{13}$",
-      "8",
-      "$2 \\sqrt{13}$"
-    ],
-    "correct": "d",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_139",
-    "number": "139",
-    "type": "mcq",
-    "text": "Let $z\\in C$ , the set of complex numbers. Then the equation, $2|z+3i|-|z-i|=0$ represents",
-    "images": [],
-    "options": [
-      "a circle with radius $\\frac{8}{3}$ .",
-      "a circle with diameter $\\frac{10}{3}$ .",
-      "an ellipse with length of major axis $\\frac{16}{3}$ .",
-      "an ellipse with length of minor axis $\\frac{16}{9}$ ."
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_140",
-    "number": "140",
-    "type": "mcq",
-    "text": "The equation $Im \\left( \\frac{iz-2}{z-i} \\right) +1=0,z\\in C,z\\neq i$ represents a part of a circle having radius equal to",
-    "images": [],
-    "options": [
-      "1",
-      "$\\frac{3}{4}$",
-      "$\\frac{1}{2}$",
-      "2"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_141",
-    "number": "141",
-    "type": "mcq",
-    "text": "The point represented by $2+i$ in the Argand plane moves 1 unit eastwards, then 2 units northwards and finally from there $2 \\sqrt{2}$ units in the southwestwards direction. Then its new position in the Argand plane is at the point represented by",
-    "images": [],
-    "options": [
-      "$1+i$",
-      "$2+2i$",
-      "$-2-2i$",
-      "$-1-i$"
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_142",
-    "number": "142",
-    "type": "mcq",
-    "text": "Let $z=1+ai$ be a complex number, $a>0$ , such that ${z}^{3}$ is a real number. Then the sum $1+z+{z}^{2}+……..+$ ${z}^{11}$ is equal to",
-    "images": [],
-    "options": [
-      "$1365 \\sqrt{3} i$",
-      "$-1365 \\sqrt{3} i$",
-      "$-1250 \\sqrt{3} i$",
-      "$1250 \\sqrt{3} i$"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_143",
-    "number": "143",
-    "type": "mcq",
-    "text": "If $z$ is a non-real complex number, then the minimum value of $\\frac{Im{z}^{5}}{(Imz{)}^{5}}$ is",
-    "images": [],
-    "options": [
-      "-1",
-      "-2",
-      "-4",
-      "-5"
-    ],
-    "correct": "c",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_144",
-    "number": "144",
-    "type": "mcq",
-    "text": "If $z$ is a complex number of unit modulus and argument $\\theta$ , then $arg \\left( \\frac{1+z}{1+ \\vec{z}} \\right)$ equals",
-    "images": [],
-    "options": [
-      "$\\frac{\\pi }{2} -\\theta$",
-      "$\\theta$",
-      "$\\pi -\\theta$",
-      "$–\\theta$"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_145",
-    "number": "145",
-    "type": "mcq",
-    "text": "Let $Z$ and $W$ be complex numbers such that $|Z|=|W|$ , and $argZ$ denotes the principal argument of $Z$ . Statement 1: If $argZ+argW=\\pi$ , then $Z=- \\vec{W}$ . Statement 2: $|Z|=|W|$ implies $argZ-arg \\vec{W} =\\pi$ .",
-    "images": [],
-    "options": [
-      "Statement 1 is true, Statement 2 is false.",
-      "Statement 1 is true, Statement 2 is true, Statement 2 is a correct explanation for Statement 1.",
-      "Statement 1 is true, Statement 2 is true, Statement 2 is not a correct explanation for Statement 1.",
-      "Statement 1 is false, Statement 2 is true."
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_146",
-    "number": "146",
-    "type": "mcq",
-    "text": "If $z\\neq 1$ and $\\frac{{z}^{2}}{z-1}$ is real, then the point represented by the complex number $z$ lies",
-    "images": [],
-    "options": [
-      "either on the real axis or on a circle not passing through the origin.",
-      "on the imaginary axis.",
-      "either on the real axis or on a circle passing through the origin.",
-      "on a circle with centre at the origin."
-    ],
-    "correct": "c",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_147",
-    "number": "147",
-    "type": "mcq",
-    "text": "If $|z+4|\\leq 3$ , then the maximum value of $|z+1|$ is",
-    "images": [],
-    "options": [
-      "6",
-      "0",
-      "4",
-      "10"
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_148",
-    "number": "148",
-    "type": "mcq",
-    "text": "The value of $\\sum\\limits_{k=1}^{10} \\left( sin \\frac{2k\\pi }{11} +icos \\frac{2k\\pi }{11} \\right)$ is",
-    "images": [],
-    "options": [
-      "$i$",
-      "1",
-      "-1",
-      "$–i$"
-    ],
-    "correct": "d",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_149",
-    "number": "149",
-    "type": "mcq",
-    "text": "If ${z}_{1}$ and ${z}_{2}$ are two non-zero complex numbers such that $\\left( {z}_{1}+{z}_{2} \\right) = \\left( {z}_{1} \\right) + \\left( {z}_{2} \\right)$ , then $arg{z}_{1}-arg{z}_{2}$ is equal to",
-    "images": [],
-    "options": [
-      "$–\\pi$",
-      "$\\pi /2$",
-      "$-\\pi /2$",
-      "0"
-    ],
-    "correct": "d",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_150",
-    "number": "150",
-    "type": "mcq",
-    "text": "If $ω= \\frac{z}{z-(1/3)i}$ and $|ω|=1$ , then $z$ lies on",
-    "images": [],
-    "options": [
-      "a circle",
-      "an ellipse",
-      "a parabola",
-      "a straight line"
-    ],
-    "correct": "d",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_151",
-    "number": "151",
-    "type": "mcq",
-    "text": "Let $z,ω$ be complex numbers such that $\\vec{z} +i \\vec{ω} =0$ and $argzω=\\pi$ . Then $argz$ equals",
-    "images": [],
-    "options": [
-      "$3\\pi /4$",
-      "$\\pi /2$",
-      "$\\pi /4$",
-      "$5\\pi /4$"
-    ],
-    "correct": "a",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_152",
-    "number": "152",
-    "type": "mcq",
-    "text": "If $z$ and $ω$ are two non-zero complex numbers such that $|zω|=1$ , and $Arg(z)-Arg(ω)=\\pi /2$ , then $\\vec{z} ω$ is equal to",
-    "images": [],
-    "options": [
-      "-1",
-      "$i$",
-      "$–i$",
-      "1"
-    ],
-    "correct": "c",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_153",
-    "number": "153",
-    "type": "mcq",
-    "text": "Let ${z}_{1}$ and ${z}_{2}$ be two roots of the equation ${z}^{2}+az+b$ $=0,z$ being complex further, assume that the origin, ${z}_{1}$ and ${z}_{2}$ form an equilateral triangle, then",
-    "images": [],
-    "options": [
-      "${a}^{2}=2b$",
-      "${a}^{2}=3b$",
-      "${a}^{2}=4b$",
-      "${a}^{2}=b$"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_154",
-    "number": "154",
-    "type": "mcq",
-    "text": "$z$ and $ω$ are two nonzero complex number such that $|z|=|ω|$ and $Argz+Argω=\\pi$ then $z$ equals",
-    "images": [],
-    "options": [
-      "$\\vec{ω}$",
-      "$- \\vec{ω}$",
-      "$ω$",
-      "$–ω$"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_155",
-    "number": "155",
-    "type": "mcq",
-    "text": "The locus of the centre of a circle which touches the circle $\\left( z-{z}_{1} \\right) =a$ and $\\left( z-{z}_{2} \\right) =b$ externally $\\left( z,{z}_{1}& \\right)$ ${z}_{2}$ are complex numbers) will be",
-    "images": [],
-    "options": [
-      "an ellipse",
-      "a hyperbola",
-      "a circle",
-      "none of these"
-    ],
-    "correct": "b",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_156",
-    "number": "156",
-    "type": "numerical",
-    "text": "The sum of the square of the modulus of the elements in the set ${z=a+ib:a,b\\in Z,z\\in C,|z-1|\\leq 1,|z-5|$ $\\leq |z-5i|}$ is _____________ -",
-    "images": [],
-    "options": [],
-    "correct": "9",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 9</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_157",
-    "number": "157",
-    "type": "numerical",
-    "text": "Let the complex numbers $\\alpha$ and $\\frac{1}{\\vec{\\alpha }}$ lie on the circles ${\\left( z-{z}_{0} \\right)}^{2}=4$ and ${\\left( z-{z}_{0} \\right)}^{2}=16$ respectively, where ${z}_{0}=1+i$ . Then, the value of $100|\\alpha {|}^{2}$ is _________________ .",
-    "images": [],
-    "options": [],
-    "correct": "20",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 20</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_158",
-    "number": "158",
-    "type": "numerical",
-    "text": "If $\\alpha$ denotes the number of solutions of $|1-i{|}^{x}={2}^{x}$ and $\\beta = \\left( \\frac{|z|}{arg(z)} \\right)$ , where $z= \\frac{\\pi }{4} (1+i{)}^{4} \\left( \\frac{1- \\sqrt{\\pi } i}{\\sqrt{\\pi } +i} + \\frac{\\sqrt{\\pi } -i}{1+ \\sqrt{\\pi } i} \\right)$ , $i= \\sqrt{-1}$ , then the distance of the point ( $\\alpha ,\\beta$ ) from the line $4x-3y=7$ is _____________ .",
-    "images": [],
-    "options": [],
-    "correct": "3",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 3</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_159",
-    "number": "159",
-    "type": "numerical",
-    "text": "For $\\alpha ,\\beta ,z\\in C$ and $\\lambda >1$ , if $\\sqrt{\\lambda -1}$ is the radius of the circle $|z-\\alpha {|}^{2}+|z-\\beta {|}^{2}=2\\lambda$ , then $|\\alpha -\\beta |$ is equal to _______________ -",
-    "images": [],
-    "options": [],
-    "correct": "2",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 2</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_160",
-    "number": "160",
-    "type": "numerical",
-    "text": "Let $w=z \\vec{z} +{k}_{1}z+{k}_{2}iz+\\lambda (1+i),{k}_{1},{k}_{2}\\in R$ . Let $Re(w)$ $=0$ be the circle $C$ of radius 1 in the first quadrant touching the line $y=1$ and the $y$ -axis. If the curve $Im(w)=0$ intersects $C$ at $A$ and $B$ , then $30(AB{)}^{2}$ is equal to ________________ .",
-    "images": [],
-    "options": [],
-    "correct": "24",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 24</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_161",
-    "number": "161",
-    "type": "numerical",
-    "text": "Let $z=1+i$ and ${z}_{1}= \\frac{1+i \\vec{z}}{\\vec{z} (1-z)+ \\frac{1}{z}}$ . Then $\\frac{12}{\\pi } arg \\left( {z}_{1} \\right)$ is equal to ______________ . $\\left( {30}^{th} \\right)$ Jan ${1}^{st}$ Shift 2023)",
-    "images": [],
-    "options": [],
-    "correct": "9",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 9</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_162",
-    "number": "162",
-    "type": "numerical",
-    "text": "Let $S={z\\in C:|z-3|\\leq 1$ and $z(4+3i)+ \\vec{z} (4-3i)\\leq 24}$ . If $\\alpha +i\\beta$ is the point in $S$ which is closest to $4i$ , then $25(\\alpha +\\beta )$ is equal to _________________ .",
-    "images": [],
-    "options": [],
-    "correct": "80",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 80</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_163",
-    "number": "163",
-    "type": "numerical",
-    "text": "If ${z}^{2}+z+1=0,z\\in C$ , then $\\left( \\sum\\limits_{n=1}^{15} {\\left( {z}^{n}+(-1{)}^{n} \\frac{1}{{z}^{n}} \\right)}^{2} \\right)$ is equal to _______________ - $\\left( {26}^{th} \\right)$ June ${2}^{nd}$ Shift 2022)",
-    "images": [],
-    "options": [],
-    "correct": "2",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 2</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_164",
-    "number": "164",
-    "type": "numerical",
-    "text": "The number of elements in the set ${z=a+ib\\in R$ : $a,b\\in R$ and $1<|z-3+2i|<4}$ is __________ .",
-    "images": [],
-    "options": [],
-    "correct": "40",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 40</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_165",
-    "number": "165",
-    "type": "numerical",
-    "text": "Let $z= \\frac{1-i \\sqrt{3}}{2} ,i= \\sqrt{-1}$ . Then the value of $21+{\\left( z+ \\frac{1}{z} \\right)}^{3}+{\\left( {z}^{2}+ \\frac{1}{{z}^{2}} \\right)}^{3}+{\\left( {z}^{3}+ \\frac{1}{{z}^{3}} \\right)}^{3}+…$ $+{\\left( {z}^{21}+ \\frac{1}{{z}^{21}} \\right)}^{3}$ is ",
-    "images": [],
-    "options": [],
-    "correct": "13",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 13</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_166",
-    "number": "166",
-    "type": "numerical",
-    "text": "Let ${z}_{1}$ and ${z}_{2}$ be two complex numbers such that $arg \\left( {z}_{1}-{z}_{2} \\right) = \\frac{\\pi }{4}$ and ${z}_{1},{z}_{2}$ satisfy the equation $|z-3|=Re(z)$ . Then the imaginary part of ${z}_{1}+{z}_{2}$ is equal to _____________ -",
-    "images": [],
-    "options": [],
-    "correct": "6",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 6</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_167",
-    "number": "167",
-    "type": "numerical",
-    "text": "A point $z$ moves in the complex plane such that $arg \\left( \\frac{z-2}{z+2} \\right) = \\frac{\\pi }{4}$ , then the minimum value of $|z-9 \\sqrt{2} -2i{|}^{2}$ is equal to ________________ .",
-    "images": [],
-    "options": [],
-    "correct": "98",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 98</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_168",
-    "number": "168",
-    "type": "numerical",
-    "text": "The equation of a circle is $e \\left( {z}^{2} \\right) +2(Im(z){)}^{2}+$ $2Re(z)=0$ , where $z=x+iy$ . A line which passes through the center of the given circle and the vertex of the parabola, ${x}^{2}-6x-y+13=0$ , has $y$ -intercept equal to ______________ .",
-    "images": [],
-    "options": [],
-    "correct": "1",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 1</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_169",
-    "number": "169",
-    "type": "numerical",
-    "text": "Let $z$ and $w$ be two complex number such that $w=z \\vec{z} -2z+2, \\left( \\frac{z+i}{z-3i} \\right) =1$ and $Re(w)$ has minimum value. Then, the minimum value of $n\\in N$ for which ${w}^{n}$ is real, is equal to _____________",
-    "images": [],
-    "options": [],
-    "correct": "4",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 4</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_complex_numbers_170",
-    "number": "170",
-    "type": "numerical",
-    "text": "If $f(x)$ and $g(x)$ are two polynomials such that the polynomial $P(x)=f \\left( {x}^{3} \\right) +xg \\left( {x}^{3} \\right)$ is divisible by ${x}^{2}+x+1$ , then $P(1)$ is equal to _______ .",
-    "images": [],
-    "options": [],
-    "correct": "0",
-    "chapter": "Complex Numbers",
-    "topic": "Geometry Of Argand Plane",
-    "solution": "<p><strong>Ans: 0</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Complex Numbers\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
+
+
+
+
+
+
+  //                    "chapter": "Differential Calculus",
+
+
+
   {
     "id": "jee_mains_math_differential_calculus_1",
     "number": "1",
@@ -7092,7 +6144,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_18",
     "number": "18",
     "type": "mcq",
-    "text": "${lim}_{n\\rightarrow \\infty } \\left( \\left( {2}^{\\frac{1}{2}}-{2}^{\\frac{1}{3}} \\right) \\left( {2}^{\\frac{1}{2}}-{2}^{\\frac{1}{5}} \\right) …... \\left( {2}^{\\frac{1}{2}}-{2}^{\\frac{1}{2n+1}} \\right) \\right)$ is equal to",
+    "text": "${lim}_{n\\rightarrow \\infty } \\left{ \\left( {2}^{\\frac{1}{2}}-{2}^{\\frac{1}{3}} \\right) \\left( {2}^{\\frac{1}{2}}-{2}^{\\frac{1}{5}} \\right) …... \\left( {2}^{\\frac{1}{2}}-{2}^{\\frac{1}{2n+1}} \\right) \\right}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{1}{\\sqrt{2}}$",
@@ -7244,7 +6296,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_26",
     "number": "26",
     "type": "mcq",
-    "text": "Let $x=2$ be a root of the equation ${x}^{2}+px+q=0$ and $f(x)= \\left( \\begin{bmatrix} \\frac{1-cos \\left( {x}^{2}-4px+{q}^{2}+8q+16 \\right)}{(x-2p{)}^{4}} , & x\\neq 2p \\\\ 0, & x=2p \\end{bmatrix} \\right)$ Then ${lim}_{x\\rightarrow 2{p}^{+}} [f(x)]$ , where $[⋅]$ denotes greatest integer function, is",
+    "text": "Let $x=2$ be a root of the equation ${x}^{2}+px+q=0$ and $f(x)= \\left{ \\frac{1-cos \\left( {x}^{2}-4px+{q}^{2}+8q+16 \\right)}{(x-2p{)}^{4}} , & x\\neq 2p \\\\ 0, & x=2p $ Then ${lim}_{x\\rightarrow 2{p}^{+}} [f(x)]$ , where $[⋅]$ denotes greatest integer function, is",
     "images": [],
     "options": [
       "2",
@@ -7776,7 +6828,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_54",
     "number": "54",
     "type": "mcq",
-    "text": "Let $[t]$ denote the greatest integer $\\leq t$ . If for some $\\lambda \\in R-{0,1},{lim}_{x\\rightarrow 0} \\left( \\frac{1-x+|x|}{\\lambda -x+[x]} \\right) =L$ , then $L$ is equal to",
+    "text": "Let $[t]$ denote the greatest integer $\\leq t$ . If for some $\\lambda \\in R-{0,1},{lim}_{x\\rightarrow 0} \\left| \\frac{1-x+|x|}{\\lambda -x+[x]} \\right| =L$ , then $L$ is equal to",
     "images": [],
     "options": [
       "1",
@@ -8958,7 +8010,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_123",
     "number": "123",
     "type": "mcq",
-    "text": "If $y(x)= \\left( \\begin{bmatrix} sinx & cosx & sinx+cosx+1 \\\\ 27 & 28 & 27 \\\\ 1 & 1 & 1 \\end{bmatrix} \\right) ,x\\in R$ , then $\\frac{{d}^{2}y}{d{x}^{2}} +y$ is equal to",
+    "text": "If $y(x)= \\left| sinx & cosx & sinx+cosx+1 \\\\ 27 & 28 & 27 \\\\ 1 & 1 & 1 ,x\\in R$ , then $\\frac{{d}^{2}y}{d{x}^{2}} +y$ is equal to",
     "images": [],
     "options": [
       "-1",
@@ -9072,7 +8124,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_130",
     "number": "130",
     "type": "mcq",
-    "text": "If the function $f(x)= \\left( \\begin{bmatrix} \\frac{{72}^{x}-{9}^{x}-{8}^{x}+1}{\\sqrt{2} - \\sqrt{1+cosx}} , & x\\neq 0 \\\\ a{log}_{e}2{log}_{e}3, & x=0 \\end{bmatrix} \\right)$ is continuous at $x=0$ , then the value of ${a}^{2}$ is equal to",
+    "text": "If the function $f(x)= \\left{ \\frac{{72}^{x}-{9}^{x}-{8}^{x}+1}{\\sqrt{2} - \\sqrt{1+cosx}} , & x\\neq 0 \\\\ a{log}_{e}2{log}_{e}3, & x=0 $ is continuous at $x=0$ , then the value of ${a}^{2}$ is equal to",
     "images": [],
     "options": [
       "746",
@@ -9148,7 +8200,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_134",
     "number": "134",
     "type": "mcq",
-    "text": "Let $f:[-1,2]\\rightarrow R$ be given by $f(x)=2{x}^{2}+x+ \\left( {x}^{2} \\right) -[x]$ , where $[t]$ denotes the greatest integer less than or equal to $t$ . The number of points, where $f$ is not continuous, is",
+    "text": "Let $f:[-1,2]\\rightarrow R$ be given by $f(x)=2{x}^{2}+x+ \\left[ {x}^{2} \\right] -[x]$ , where $[t]$ denotes the greatest integer less than or equal to $t$ . The number of points, where $f$ is not continuous, is",
     "images": [],
     "options": [
       "4",
@@ -9167,7 +8219,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_136",
     "number": "136",
     "type": "mcq",
-    "text": "If $f(x)= \\left( \\begin{bmatrix} {x}^{3}sin \\left( \\frac{1}{x} \\right) , & x\\neq 0 \\\\ 0, & x=0 \\end{bmatrix} \\right)$ , then",
+    "text": "If $f(x)= \\left{ {x}^{3}sin \\left( \\frac{1}{x} \\right) , & x\\neq 0 \\\\ 0, & x=0 $ , then",
     "images": [],
     "options": [
       "${f}^{''}(0)=0$",
@@ -9201,25 +8253,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
-  {
-    "id": "jee_mains_math_differential_calculus_138",
-    "number": "138",
-    "type": "mcq",
-    "text": "For $a,b>0$ , let $f(x)= \\left( \\begin{bmatrix} \\frac{tan((a+1)x)+btanx}{x} , & x0 \\end{bmatrix} \\right)$ be a continuous function at $x=0$ . Then $\\frac{b}{a}$ is equal to",
-    "images": [],
-    "options": [
-      "5",
-      "6",
-      "8",
-      "4"
-    ],
-    "correct": "b",
-    "chapter": "Differential Calculus",
-    "topic": "Continuity And Differentiability",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_differential_calculus_139",
     "number": "139",
@@ -9258,30 +8292,12 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Easy"
   },
-  {
-    "id": "jee_mains_math_differential_calculus_141",
-    "number": "141",
-    "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} \\frac{a-bcos2x}{{x}^{2}} ; & x1 \\end{bmatrix} \\right)$ If $f$ is continuous everywhere in $R$ and $m$ is the number of points where $f$ is NOT differential then $m+a+b+c$ equals",
-    "images": [],
-    "options": [
-      "3",
-      "1",
-      "4",
-      "2"
-    ],
-    "correct": "d",
-    "chapter": "Differential Calculus",
-    "topic": "Continuity And Differentiability",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_differential_calculus_142",
     "number": "142",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( 2{x}^{2}+5 \\right) x|-3|,x\\in R$ . If $m$ and $n$ denote the number of points where $f$ is not continuous and not differentiable respectively, then $m+n$ is equal to",
+    "text": "Let $f(x)= \\left| 2{x}^{2}+5 \\right| x|-3|,x\\in R$ . If $m$ and $n$ denote the number of points where $f$ is not continuous and not differentiable respectively, then $m+n$ is equal to",
     "images": [],
     "options": [
       "5",
@@ -9296,30 +8312,12 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_differential_calculus_143",
-    "number": "143",
-    "type": "mcq",
-    "text": "Consider the function, $f(x)= \\left( \\begin{bmatrix} \\frac{a \\left( 7x-12-{x}^{2} \\right)}{b \\left( {x}^{2}-7x+12 \\right)} , & x3 \\\\ b, & x=3 \\end{bmatrix} \\right)$ where $[x]$ denotes the greatest integer less than or equal to $x$ . If $S$ denotes the set of all ordered pairs ( $a,b$ ) such that $f(x)$ is continuous at $x=3$ , then the number of elements in $S$ is :",
-    "images": [],
-    "options": [
-      "2",
-      "Infinitely many",
-      "1",
-      "4"
-    ],
-    "correct": "c",
-    "chapter": "Differential Calculus",
-    "topic": "Continuity And Differentiability",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
+  
   {
     "id": "jee_mains_math_differential_calculus_144",
     "number": "144",
     "type": "mcq",
-    "text": "Consider the function $f:(0,2)\\rightarrow R$ defined by $f(x)= \\frac{x}{2} + \\frac{2}{x}$ and the function $g(x)$ defined by $g(x)= \\left( \\begin{bmatrix} min{f(t)}, & 0<t\\leq x and 0<x\\leq 1 \\\\ \\frac{3}{2} +x, & 1<x<2 \\end{bmatrix} \\right)$ Then,",
+    "text": "Consider the function $f:(0,2)\\rightarrow R$ defined by $f(x)= \\frac{x}{2} + \\frac{2}{x}$ and the function $g(x)$ defined by $g(x)= \\left{ min{f(t)}, & 0<t\\leq x and 0<x\\leq 1 \\\\ \\frac{3}{2} +x, & 1<x<2 $ Then,",
     "images": [],
     "options": [
       "$g$ is neither continuous nor differentiable at $x=1$",
@@ -9376,7 +8374,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_147",
     "number": "147",
     "type": "mcq",
-    "text": "If $f(x)= \\left( \\begin{bmatrix} 2{cos}^{4}x & 2{sin}^{4}x & 3+{sin}^{2}2x \\\\ 3+2{cos}^{4}x & 2{sin}^{4}x & {sin}^{2}2x \\\\ 2{cos}^{4}x & 3+2{sin}^{4}x & {sin}^{2}2x \\end{bmatrix} \\right)$ , then $\\frac{1}{5} {f}^{'}(0)$ is equal to",
+    "text": "If $f(x)= \\left| 2{cos}^{4}x & 2{sin}^{4}x & 3+{sin}^{2}2x \\\\ 3+2{cos}^{4}x & 2{sin}^{4}x & {sin}^{2}2x \\\\ 2{cos}^{4}x & 3+2{sin}^{4}x & {sin}^{2}2x $ , then $\\frac{1}{5} {f}^{'}(0)$ is equal to",
     "images": [],
     "options": [
       "1",
@@ -9433,7 +8431,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_150",
     "number": "150",
     "type": "mcq",
-    "text": "Let $g(x)$ be a linear function and $f(x)= \\left( \\begin{bmatrix} g(x), & x\\leq 0 \\\\ {\\left( \\frac{1+x}{2+x} \\right)}^{\\frac{1}{x}}, & x>0 \\end{bmatrix} \\right)$ , is continuous at $x=0$ . If ${f}^{'}(1)=f(-1)$ , then the value of $g(3)$ is",
+    "text": "Let $g(x)$ be a linear function and $f(x)= \\left{ g(x), & x\\leq 0 \\\\ {\\left( \\frac{1+x}{2+x} \\right)}^{\\frac{1}{x}}, & x>0 $ , is continuous at $x=0$ . If ${f}^{'}(1)=f(-1)$ , then the value of $g(3)$ is",
     "images": [],
     "options": [
       "${log}_{e} \\left( \\frac{4}{9} \\right) -1$",
@@ -9452,7 +8450,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_151",
     "number": "151",
     "type": "mcq",
-    "text": "If $f(x)= \\left( \\begin{bmatrix} {x}^{3} & 2{x}^{2}+1 & 1+3x \\\\ 3{x}^{2}+2 & 2x & {x}^{3}+6 \\\\ {x}^{3}-x & 4 & {x}^{2}-2 \\end{bmatrix} \\right)$ for all $x\\in R$ , then $2f(0)+{f}^{'}(0)$ is equal to",
+    "text": "If $f(x)= \\left| {x}^{3} & 2{x}^{2}+1 & 1+3x \\\\ 3{x}^{2}+2 & 2x & {x}^{3}+6 \\\\ {x}^{3}-x & 4 & {x}^{2}-2 \\right|$ for all $x\\in R$ , then $2f(0)+{f}^{'}(0)$ is equal to",
     "images": [],
     "options": [
       "18",
@@ -9471,7 +8469,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_152",
     "number": "152",
     "type": "mcq",
-    "text": "Consider the function $f:(0,\\infty )\\rightarrow R$ defined by $f(x)={e}^{- \\left( {log}_{e}x \\right)}$ . If $m$ and $n$ be respectively the number of points at which $f$ is not continuous and $f$ is not differentiable, then $m+n$ is",
+    "text": "Consider the function $f:(0,\\infty )\\rightarrow R$ defined by $f(x)={e}^{- \\left| {log}_{e}x \\right|}$ . If $m$ and $n$ be respectively the number of points at which $f$ is not continuous and $f$ is not differentiable, then $m+n$ is",
     "images": [],
     "options": [
       "1",
@@ -9509,7 +8507,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_154",
     "number": "154",
     "type": "mcq",
-    "text": "Let $f(x)= \\frac{sinx+cosx- \\sqrt{2}}{sinx-cosx} ,x\\in [0,\\pi ]- \\left( \\frac{\\pi }{4} \\right)$ . Then $f \\left( \\frac{7\\pi }{12} \\right) {f}^{''} \\left( \\frac{7\\pi }{12} \\right)$ is equal to",
+    "text": "Let $f(x)= \\frac{sinx+cosx- \\sqrt{2}}{sinx-cosx} ,x\\in [0,\\pi ]- \\left{ \\frac{\\pi }{4} \\right}$ . Then $f \\left( \\frac{7\\pi }{12} \\right) {f}^{''} \\left( \\frac{7\\pi }{12} \\right)$ is equal to",
     "images": [],
     "options": [
       "$\\frac{-1}{3 \\sqrt{3}}$",
@@ -9528,7 +8526,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_155",
     "number": "155",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( {x}^{2}-x \\right) +|-x+[x]|$ , where $x\\in R$ and $[t]$ denotes the greatest integer less than or equal to $t$ . Then, $f$ is",
+    "text": "Let $f(x)= \\left[ {x}^{2}-x \\right] +|-x+[x]|$ , where $x\\in R$ and $[t]$ denotes the greatest integer less than or equal to $t$ . Then, $f$ is",
     "images": [],
     "options": [
       "continuous at $x=0$ , but not continuous at $x=1$",
@@ -9547,7 +8545,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_156",
     "number": "156",
     "type": "mcq",
-    "text": "Let $f$ and $g$ be two functions defined by $f(x)= \\left( \\begin{bmatrix} x+1, & x<0 \\\\ |x-1|, & x\\geq 0 \\end{bmatrix} \\right)$ and $g(x)= \\left( \\begin{bmatrix} x+1, & x<0 \\\\ 1, & x\\geq 0 \\end{bmatrix} \\right)$ Then (gof) (x) is",
+    "text": "Let $f$ and $g$ be two functions defined by $f(x)= \\left{ x+1, & x<0 \\\\ |x-1|, & x\\geq 0 $ and $g(x)= \\left{ x+1, & x<0 \\\\ 1, & x\\geq 0$ Then (gof) (x) is",
     "images": [],
     "options": [
       "continuous everywhere but not differentiable exactly at one point",
@@ -9566,7 +8564,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_157",
     "number": "157",
     "type": "mcq",
-    "text": "For the differentiable function $f:R-{0}\\rightarrow R$ , let $3f(x)+2f \\left( \\frac{1}{x} \\right) = \\frac{1}{x} -10$ , then $\\left( f(3)+{f}^{'} \\left( \\frac{1}{4} \\right) \\right)$ is equal to",
+    "text": "For the differentiable function $f:R-{0}\\rightarrow R$ , let $3f(x)+2f \\left( \\frac{1}{x} \\right) = \\frac{1}{x} -10$ , then $\\left| f(3)+{f}^{'} \\left( \\frac{1}{4} \\right) \\right|$ is equal to",
     "images": [],
     "options": [
       "13",
@@ -9585,7 +8583,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_158",
     "number": "158",
     "type": "mcq",
-    "text": "Let $[x]$ denote the greatest integer function and $f(x)=max{1+x+[x],2+x,x+2[x]},0\\leq x\\leq 2$ . Let $m$ be the number of points in $[0,2]$ , where $f$ is not continuous and $n$ be the number of points in $(0,2)$ , where $f$ is not differentiable. Then $(m+n{)}^{2}+2$ is equal to",
+    "text": "Let $[x]$ denote the greatest integer function and $f(x)=max{\\left {1+x+[x],2+x,x+2[x]} \\right},0\\leq x\\leq 2$ . Let $m$ be the number of points in $[0,2]$ , where $f$ is not continuous and $n$ be the number of points in $(0,2)$ , where $f$ is not differentiable. Then $(m+n{)}^{2}+2$ is equal to",
     "images": [],
     "options": [
       "2",
@@ -9623,7 +8621,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_160",
     "number": "160",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( \\begin{bmatrix} {x}^{2}sin \\left( \\frac{1}{x} \\right) , & x\\neq 0 \\\\ 0, & x=0 \\end{bmatrix} \\right)$ Then at $x=0$",
+    "text": "Let $f(x)= \\left{ {x}^{2}sin \\left( \\frac{1}{x} \\right) , & x\\neq 0 \\\\ 0, & x=0 $ Then at $x=0$",
     "images": [],
     "options": [
       "$f$ is continuous but not differentiable",
@@ -9680,7 +8678,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_163",
     "number": "163",
     "type": "mcq",
-    "text": "If the function $f(x)= \\left( \\begin{bmatrix} (1+|cosx|) \\frac{\\lambda }{|cosx|} , & 0<x< \\frac{\\pi }{2} \\\\ \\mu , & x= \\frac{\\pi }{2} \\\\ \\frac{cot6x}{ecot4x} , & \\frac{\\pi }{2} <x<\\pi \\end{bmatrix} \\right)$ is continuous at $x= \\frac{\\pi }{2}$ , then $9\\lambda +6{log}_{e}\\mu +{\\mu }^{6}-{e}^{6\\lambda }$ is equal to",
+    "text": "If the function $f(x)= \\left{ (1+|cosx|) \\frac{\\lambda }{|cosx|} , & 0<x< \\frac{\\pi }{2} \\\\ \\mu , & x= \\frac{\\pi }{2} \\\\ \\frac{cot6x}{ecot4x} , & \\frac{\\pi }{2} <x<\\pi$ is continuous at $x= \\frac{\\pi }{2}$ , then $9\\lambda +6{log}_{e}\\mu +{\\mu }^{6}-{e}^{6\\lambda }$ is equal to",
     "images": [],
     "options": [
       "$2{e}^{4}+8$",
@@ -9699,10 +8697,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_164",
     "number": "164",
     "type": "mcq",
-    "text": "Let $f$ and $g$ be twice differentiable function on $R$ such that ${f}^{''}(x)={g}^{''}(x)+6x$ ${f}^{'}(1)=4{g}^{'}(1)-3=9$ $f(2)=3g(2)=12$ . Then which of the following is NOT true?",
+    "text": "Let $f$ and $g$ be twice differentiable function on $R$ such that \n${f}^{''}(x)={g}^{''}(x)+6x$ \n${f}^{'}(1)=4{g}^{'}(1)-3=9$ \n$f(2)=3g(2)=12$ . Then which of the following is NOT true?",
     "images": [],
     "options": [
-      "$\\left( {f}^{'}(x)-{g}^{'}(x) \\right) <6⇒-1<x<1$",
+      "$\\left| {f}^{'}(x)-{g}^{'}(x) \\right| <6⇒-1<x<1$",
       "If $-1<x<2$ , then $|f(x)-g(x)|<8$",
       "There exists ${x}_{0}\\in (1,3/2)$ such that $f \\left( {x}_{0} \\right) =g \\left( {x}_{0} \\right)$",
       "$g(-2)-f(-2)=20$"
@@ -9737,7 +8735,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_166",
     "number": "166",
     "type": "mcq",
-    "text": "If the function $f(x)= \\left( \\begin{bmatrix} \\frac{{log}_{e} \\left( 1-x+{x}^{2} \\right) +{log}_{e} \\left( 1+x+{x}^{2} \\right)}{secx-cosx} , & x\\in \\left( \\frac{-\\pi }{2} , \\frac{\\pi }{2} \\right) -{0} \\\\ k, & x=0 \\end{bmatrix} \\right)$ is continuous at $x=0$ , then $k$ is equal to",
+    "text": "If the function $f(x)= \\left{ \\frac{{log}_{e} \\left( 1-x+{x}^{2} \\right) +{log}_{e} \\left( 1+x+{x}^{2} \\right)}{secx-cosx} , & x\\in \\left( \\frac{-\\pi }{2} , \\frac{\\pi }{2} \\right) -{0} \\\\ k, & x=0$ is continuous at $x=0$ , then $k$ is equal to",
     "images": [],
     "options": [
       "1",
@@ -9756,7 +8754,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_167",
     "number": "167",
     "type": "mcq",
-    "text": "If $f(x)= \\left( \\begin{bmatrix} x+a, & x\\leq 0 \\\\ |x-4|, & x>0 \\end{bmatrix} \\right)$ and $g(x)= \\left( \\begin{bmatrix} x+1, & x<0 \\\\ (x-4{)}^{2}+b, & x\\geq 0 \\end{bmatrix} \\right)$ are continuous on $R$ , then $(g∘f)(2)+(f∘g)(-2)$ is equal to",
+    "text": "If $f(x)= \\left{ x+a, & x\\leq 0 \\\\ |x-4|, & x>0$ and $g(x)= \\left{ x+1, & x<0 \\\\ (x-4{)}^{2}+b, & x\\geq 0$ are continuous on $R$ , then $(g∘f)(2)+(f∘g)(-2)$ is equal to",
     "images": [],
     "options": [
       "-10",
@@ -9794,7 +8792,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_169",
     "number": "169",
     "type": "mcq",
-    "text": "Let a function $f:R\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} x & (5-|t-3|)dt, \\\\ 0 & x>4 \\\\ {x}^{2}+bx, & x\\leq 4 \\end{bmatrix} \\right)$ where $b\\in R$ . If $f$ is continuous at $x=4$ , then which of the following statements is not true?",
+    "text": "Let a function $f:R\\rightarrow R$ be defined as $f(x)= \\left{ x & (5-|t-3|)dt, \\\\ 0 & x>4 \\\\ {x}^{2}+bx, & x\\leq 4$ where $b\\in R$ . If $f$ is continuous at $x=4$ , then which of the following statements is not true?",
     "images": [],
     "options": [
       "$f$ is not differentiable at $x=4$",
@@ -9889,7 +8887,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_174",
     "number": "174",
     "type": "mcq",
-    "text": "Let the function $f(x)= \\left( \\begin{bmatrix} \\frac{{log}_{e}(1+5x)-{log}_{e}(1+\\alpha x)}{x} & ; if x\\neq 0 \\\\ 10; & if x=0 \\end{bmatrix} \\right)$ be continuous at $x=0$ . Then $\\alpha$ is equal to",
+    "text": "Let the function $f(x)= \\left{ \\frac{{log}_{e}(1+5x)-{log}_{e}(1+\\alpha x)}{x} & ; if x\\neq 0 \\\\ 10; & if x=0$ be continuous at $x=0$ . Then $\\alpha$ is equal to",
     "images": [],
     "options": [
       "10",
@@ -9908,7 +8906,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_175",
     "number": "175",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( \\begin{bmatrix} \\frac{sin(x-[x])}{x-[x]} , & x\\in (-2,-1) \\\\ max{2x,3[|x|]}, & |x|<1 \\\\ 1, & otherwise \\end{bmatrix} \\right)$ where $[t]$ denotes greatest integer $\\leq t$ . If $m$ is the number of points where $f$ is not continuous and $n$ is the number of points where $f$ is not differentiable, then the ordered pair ( $m,n$ ) is",
+    "text": "Let $f(x)= \\left{ \\frac{sin(x-[x])}{x-[x]} , & x\\in (-2,-1) \\\\ max{2x,3[|x|]}, & |x|<1 \\\\ 1, & otherwise$ where $[t]$ denotes greatest integer $\\leq t$ . If $m$ is the number of points where $f$ is not continuous and $n$ is the number of points where $f$ is not differentiable, then the ordered pair ( $m,n$ ) is",
     "images": [],
     "options": [
       "$(3,3)$",
@@ -9984,7 +8982,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_179",
     "number": "179",
     "type": "mcq",
-    "text": "Let $f,g:R\\rightarrow R$ be two real valued functions defined as $f(x)= \\left( \\begin{bmatrix} -|x+3|, & x<0 \\\\ {e}^{x}, & x\\geq 0 \\end{bmatrix} \\right)$ and $g(x)= \\left( \\begin{bmatrix} {x}^{2}+{k}_{1}x, & x<0 \\\\ 4x+{k}_{2}, & x\\geq 0 \\end{bmatrix} \\right)$ , where ${k}_{1}$ and ${k}_{2}$ are real constants. If ( $g∘f$ ) is differentiable at $x=0$ , then $(gof)(-4)+(gof)(4)$ is equal to",
+    "text": "Let $f,g:R\\rightarrow R$ be two real valued functions defined as $f(x)= \\left{ -|x+3|, & x<0 \\\\ {e}^{x}, & x\\geq 0$ and $g(x)= \\left {x}^{2}+{k}_{1}x, & x<0 \\\\ 4x+{k}_{2}, & x\\geq 0$ , where ${k}_{1}$ and ${k}_{2}$ are real constants. If ( $g∘f$ ) is differentiable at $x=0$ , then $(gof)(-4)+(gof)(4)$ is equal to",
     "images": [],
     "options": [
       "$4 \\left( {e}^{4}+1 \\right)$",
@@ -10003,7 +9001,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_180",
     "number": "180",
     "type": "mcq",
-    "text": "Let $f(x)=min{1,1+xsinx},0\\leq x\\leq 2\\pi$ . If $m$ is the number of points, where $f$ is not differentiable and $n$ is the number of points, where $f$ is not continuous, then the ordered pair ( $m,n$ ) is equal to",
+    "text": "Let $f(x)=min\\left {1,1+xsinx} \\right,0\\leq x\\leq 2\\pi$ . If $m$ is the number of points, where $f$ is not differentiable and $n$ is the number of points, where $f$ is not continuous, then the ordered pair ( $m,n$ ) is equal to",
     "images": [],
     "options": [
       "$(2,0)$",
@@ -10041,7 +9039,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_182",
     "number": "182",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( \\begin{bmatrix} a & -1 & 0 \\\\ ax & a & -1 \\\\ a{x}^{2} & ax & a \\end{bmatrix} \\right) ,a\\in R$ . Then the sum of the squares of all the values of $a$ , for which $2{f}^{'}(10)-{f}^{'}(5)+100=0$ , is",
+    "text": "Let $f(x)= \\left| a & -1 & 0 \\\\ ax & a & -1 \\\\ a{x}^{2} & ax & a \\right| ,a\\in R$ . Then the sum of the squares of all the values of $a$ , for which $2{f}^{'}(10)-{f}^{'}(5)+100=0$ , is",
     "images": [],
     "options": [
       "117",
@@ -10079,7 +9077,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_184",
     "number": "184",
     "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} \\left( {e}^{x} \\right) , & x<0 \\\\ a{e}^{x}+[x-1], & 0\\leq x<1 \\\\ b+[sin(\\pi x)], & 1\\leq x<2 \\\\ \\left( {e}^{-x} \\right) -c, & x\\geq 2 \\end{bmatrix} \\right)$ where $a,b,c\\in R$ and $[t]$ denotes greatest integer less than or equal to $t$ . Then, which of the following statements is true?",
+    "text": "Let $f:R\\rightarrow R$ be defined as $f(x)= \\left| \\left[ {e}^{x} \\right] , & x<0 \\\\ a{e}^{x}+[x-1], & 0\\leq x<1 \\\\ b+[sin(\\pi x)], & 1\\leq x<2 \\\\ \\left[ {e}^{-x} \\right] -c, & x\\geq 2 \\end{bmatrix} \\right)$ where $a,b,c\\in R$ and $[t]$ denotes greatest integer less than or equal to $t$ . Then, which of the following statements is true?",
     "images": [],
     "options": [
       "There exists $a,b,c\\in R$ such that $f$ is continuous on $R$ .",
@@ -10098,7 +9096,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_185",
     "number": "185",
     "type": "mcq",
-    "text": "Let $f,g:R\\rightarrow R$ be functions defined by $f(x)= \\left( \\begin{bmatrix} [x], & x<0 \\\\ |1-x|, & x\\geq 0 \\end{bmatrix} \\right)$ and $g(x)= \\left( \\begin{bmatrix} {e}^{x}-x, & x<0 \\\\ (x-1{)}^{2}-1 & x\\geq 0 \\end{bmatrix} \\right)$ where $[x]$ denote the greatest integer less than or equal to $x$ . Then, the function fog is discontinuous at exactly:",
+    "text": "Let $f,g:R\\rightarrow R$ be functions defined by $f(x)= \\lef{ [x], & x<0 \\\\ |1-x|, & x\\geq 0$ and $g(x)= \\left{ {e}^{x}-x, & x<0 \\\\ (x-1{)}^{2}-1 & x\\geq 0$ where $[x]$ denote the greatest integer less than or equal to $x$ . Then, the function fog is discontinuous at exactly:",
     "images": [],
     "options": [
       "one point",
@@ -10170,30 +9168,12 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_differential_calculus_189",
-    "number": "189",
-    "type": "mcq",
-    "text": "If the function $f(x)= \\left( \\begin{bmatrix} \\frac{1}{x} {log}_{e} \\left( \\frac{1+ \\frac{x}{a}}{1- \\frac{x}{b}} \\right) , & x0 \\end{bmatrix} \\right)$ is continuous at $x=0$ , then $\\frac{1}{a} + \\frac{1}{b} + \\frac{4}{k}$ is equal to",
-    "images": [],
-    "options": [
-      "4",
-      "5",
-      "-4",
-      "-5"
-    ],
-    "correct": "d",
-    "chapter": "Differential Calculus",
-    "topic": "Continuity And Differentiability",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_differential_calculus_190",
     "number": "190",
     "type": "mcq",
-    "text": "The function $f(x)= \\left( {x}^{2}-2x-3 \\right) ⋅{e}^{\\left( 9{x}^{2}-12x+4 \\right)}$ is not differentiable at exactly",
+    "text": "The function $f(x)= \\left| {x}^{2}-2x-3 \\right| ⋅{e}^{\\left| 9{x}^{2}-12x+4 \\right|}$ is not differentiable at exactly",
     "images": [],
     "options": [
       "two points",
@@ -10231,7 +9211,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_192",
     "number": "192",
     "type": "mcq",
-    "text": "Let a function $f:R\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} sinx-{e}^{x}, & if x\\leq 0 \\\\ a+[-x], & if 0<x<1 \\\\ 2x-b, & if x\\geq 1 \\end{bmatrix} \\right)$ where $[x]$ is the greatest integer less than or equal to $x$ . If $f$ is continuous on $R$ , then $(a+b)$ is equal to",
+    "text": "Let a function $f:R\\rightarrow R$ be defined as $f(x)= \\left{ sinx-{e}^{x}, & if x\\leq 0 \\\\ a+[-x], & if 0<x<1 \\\\ 2x-b, & if x\\geq 1$ where $[x]$ is the greatest integer less than or equal to $x$ . If $f$ is continuous on $R$ , then $(a+b)$ is equal to",
     "images": [],
     "options": [
       "3",
@@ -10250,7 +9230,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_193",
     "number": "193",
     "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} \\frac{{x}^{3}}{(1-cos2x{)}^{2}} {log}_{e} \\left( \\frac{1+2x{e}^{-2x}}{{\\left( 1-x{e}^{-x} \\right)}^{2}} \\right) , & x\\neq 0 \\\\ \\alpha , & x=0 \\end{bmatrix} \\right)$ . If $f$ is continuous at $x=0$ , then $\\alpha$ is equal to",
+    "text": "Let $f:R\\rightarrow R$ be defined as $f(x)= \\left{{ \\frac{{x}^{3}}{(1-cos2x{)}^{2}} {log}_{e} \\left( \\frac{1+2x{e}^{-2x}}{{\\left( 1-x{e}^{-x} \\right)}^{2}} \\right) , & x\\neq 0 \\\\ \\alpha , & x=0$ . If $f$ is continuous at $x=0$ , then $\\alpha$ is equal to",
     "images": [],
     "options": [
       "2",
@@ -10265,30 +9245,12 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Easy"
   },
-  {
-    "id": "jee_mains_math_differential_calculus_194",
-    "number": "194",
-    "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} \\frac{\\lambda \\left( {x}^{2}-5x+6 \\right)}{\\mu \\left( 5x-{x}^{2}-6 \\right)} , & x2 \\\\ \\mu , & x=2 \\end{bmatrix} \\right)$ where $[x]$ is the greatest integer less than or equal to $x$ . If $f$ is continuous at $x=2$ , then $\\lambda +\\mu$ is equal to",
-    "images": [],
-    "options": [
-      "$e(-e+1)$",
-      "$e(e-2)$",
-      "1",
-      "$2e-1$"
-    ],
-    "correct": "a",
-    "chapter": "Differential Calculus",
-    "topic": "Continuity And Differentiability",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
+  
   {
     "id": "jee_mains_math_differential_calculus_195",
     "number": "195",
     "type": "mcq",
-    "text": "If $f(x)= \\left( \\begin{bmatrix} {∫}_{0}^{x} (5+|1-t|)dt, & x>2 \\\\ 5x+1, & x\\leq 2 \\end{bmatrix} \\right)$ , then",
+    "text": "If $f(x)= \\left{ {∫}_{0}^{x} (5+|1-t|)dt, & x>2 \\\\ 5x+1, & x\\leq 2$ , then",
     "images": [],
     "options": [
       "$f(x)$ is not continuous at $x=2$",
@@ -10326,7 +9288,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_197",
     "number": "197",
     "type": "mcq",
-    "text": "Let $f: \\left( - \\frac{\\pi }{4} , \\frac{\\pi }{4} \\right) \\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} (1+|sinx|{)}^{\\frac{3a}{|sinx|}}, & - \\frac{\\pi }{4} <x<0 \\\\ b & x=0 \\\\ {e}^{cot4x/cot2x}, & 0<x< \\frac{\\pi }{4} \\end{bmatrix} \\right)$ If $f$ is continuous at $x=0$ , then the value of $6a+{b}^{2}$ is equal to",
+    "text": "Let $f: \\left( - \\frac{\\pi }{4} , \\frac{\\pi }{4} \\right) \\rightarrow R$ be defined as $f(x)= \\left{ (1+|sinx|{)}^{\\frac{3a}{|sinx|}}, & - \\frac{\\pi }{4} <x<0 \\\\ b & x=0 \\\\ {e}^{cot4x/cot2x}, & 0<x< \\frac{\\pi }{4}$ If $f$ is continuous at $x=0$ , then the value of $6a+{b}^{2}$ is equal to",
     "images": [],
     "options": [
       "$1-e$",
@@ -10364,7 +9326,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_199",
     "number": "199",
     "type": "mcq",
-    "text": "Let $f:[0,\\infty )\\rightarrow [0,3]$ be a function defined by $f(x)= \\left( \\begin{bmatrix} max{sint:0\\leq t\\leq x}, & 0\\leq x\\leq \\pi \\\\ 2+cosx, & x>\\pi \\end{bmatrix} \\right)$ Then which of the following is true?",
+    "text": "Let $f:[0,\\infty )\\rightarrow [0,3]$ be a function defined by $f(x)= \\left{ max{sint:0\\leq t\\leq x}, & 0\\leq x\\leq \\pi \\\\ 2+cosx, & x>\\pi$ Then which of the following is true?",
     "images": [],
     "options": [
       "$f$ is not continuous exactly at two points in $(0,\\infty )$",
@@ -10383,7 +9345,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_200",
     "number": "200",
     "type": "mcq",
-    "text": "Let the functions $f:R\\rightarrow R$ and $g:R\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} x+2, & x<0 \\\\ {x}^{2}, & x\\geq 0 \\end{bmatrix} \\right)$ and $g(x)= \\left( \\begin{bmatrix} {x}^{3}, & x<1 \\\\ 3x-2, & x\\geq 1 \\end{bmatrix} \\right)$ Then, the number of points in $R$ where $(fog)(x)$ is NOT differentiable is equal to",
+    "text": "Let the functions $f:R\\rightarrow R$ and $g:R\\rightarrow R$ be defined as $f(x)= \\left{ x+2, & x<0 \\\\ {x}^{2}, & x\\geq 0$ and $g(x)= \\left{ {x}^{3}, & x<1 \\\\ 3x-2, & x\\geq 1$ Then, the number of points in $R$ where $(fog)(x)$ is NOT differentiable is equal to",
     "images": [],
     "options": [
       "3",
@@ -10402,7 +9364,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_201",
     "number": "201",
     "type": "mcq",
-    "text": "Let $\\alpha \\in R$ be such that the function $f(x)= \\left( \\begin{bmatrix} \\frac{{cos}^{-1} \\left( 1-{x{}}^{2} \\right) {sin}^{-1}(1-{x})}{{x}-{x{}}^{3}} , & x\\neq 0 \\\\ \\alpha , & x=0 \\end{bmatrix} \\right)$ is continuous at $x=0$ , where ${x}=x-[x],[x]$ is the greatest integer less than or equal to $x$ . Then",
+    "text": "Let $\\alpha \\in R$ be such that the function $f(x)= \\left{ \\frac{{cos}^{-1} \\left( 1-{x{}}^{2} \\right) {sin}^{-1}(1-{x})}{{x}-{x{}}^{3}} , & x\\neq 0 \\\\ \\alpha , & x=0$ is continuous at $x=0$ , where ${x}=x-[x],[x]$ is the greatest integer less than or equal to $x$ . Then",
     "images": [],
     "options": [
       "no such $\\alpha$ exists",
@@ -10440,7 +9402,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_203",
     "number": "203",
     "type": "mcq",
-    "text": "If $f(x)= \\left( \\begin{bmatrix} \\frac{1}{|x|} ; & |x|\\geq 1 \\\\ a{x}^{2}+b; & |x|<1 \\end{bmatrix} \\right)$ is differentiable at every point of the domain, then the values of $a$ and $b$ are respectively",
+    "text": "If $f(x)= \\left{ \\frac{1}{|x|} ; & |x|\\geq 1 \\\\ a{x}^{2}+b; & |x|<1$ is differentiable at every point of the domain, then the values of $a$ and $b$ are respectively",
     "images": [],
     "options": [
       "$\\frac{5}{2} ,- \\frac{3}{2}$",
@@ -10455,25 +9417,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Easy"
   },
-  {
-    "id": "jee_mains_math_differential_calculus_204",
-    "number": "204",
-    "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be a function defined as $f(x)= \\left( \\begin{bmatrix} \\frac{sin(a+1)x+sin2x}{2x} , & if x0 \\end{bmatrix} \\right)$ If $f$ is continuous at $x=0$ , then the value of $a+b$ is equal to",
-    "images": [],
-    "options": [
-      "$- \\frac{3}{2}$",
-      "-3",
-      "$- \\frac{5}{2}$",
-      "-2"
-    ],
-    "correct": "a",
-    "chapter": "Differential Calculus",
-    "topic": "Continuity And Differentiability",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
+  
   {
     "id": "jee_mains_math_differential_calculus_205",
     "number": "205",
@@ -10516,7 +9460,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_207",
     "number": "207",
     "type": "mcq",
-    "text": "Let $f$ be any function defined on $R$ and let it satisfy the condition : $|f(x)-f(y)|\\leq \\left( (x-y{)}^{2} \\right) ,∀(x,y)\\in R$ If $f(0)=1$ , then (a) $f(x)<0,∀x\\in R$ (b) $f(x)=0,∀x\\in R$ (c) $f(x)$ can take any value in $R$ (d) $f(x)>0,∀x\\in R$",
+    "text": "Let $f$ be any function defined on $R$ and let it satisfy the condition : $|f(x)-f(y)|\\leq \\left| (x-y{)}^{2} \\right| ,∀(x,y)\\in R$ If $f(0)=1$ , then (a) $f(x)<0,∀x\\in R$ (b) $f(x)=0,∀x\\in R$ (c) $f(x)$ can take any value in $R$ (d) $f(x)>0,∀x\\in R$",
     "images": [],
     "options": [
       "",
@@ -10550,30 +9494,12 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_differential_calculus_209",
-    "number": "209",
-    "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} 2sin \\left( - \\frac{\\pi x}{2} \\right) , & if x1 \\end{bmatrix} \\right)$ If $f(x)$ is continuous on $R$ , then $a+b$ equals",
-    "images": [],
-    "options": [
-      "3",
-      "-3",
-      "1",
-      "-1"
-    ],
-    "correct": "d",
-    "chapter": "Differential Calculus",
-    "topic": "Continuity And Differentiability",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_differential_calculus_210",
     "number": "210",
     "type": "mcq",
-    "text": "If a function $f(x)$ defined by $f(x)= \\left( \\begin{bmatrix} a{e}^{x}+b{e}^{-x}, & -1\\leq x<1 \\\\ c{x}^{2}, & 1\\leq x\\leq 3 \\\\ a{x}^{2}+2cx, & 3<x\\leq 4 \\end{bmatrix} \\right)$ be continuous for some $a,b,c\\in R$ and ${f}^{'}(0)+{f}^{'}(2)=e$ , then the value of $a$ is",
+    "text": "If a function $f(x)$ defined by $f(x)= \\left{ a{e}^{x}+b{e}^{-x}, & -1\\leq x<1 \\\\ c{x}^{2}, & 1\\leq x\\leq 3 \\\\ a{x}^{2}+2cx, & 3<x\\leq 4$ be continuous for some $a,b,c\\in R$ and ${f}^{'}(0)+{f}^{'}(2)=e$ , then the value of $a$ is",
     "images": [],
     "options": [
       "$\\frac{1}{{e}^{2}-3e+13}$",
@@ -10630,7 +9556,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_213",
     "number": "213",
     "type": "mcq",
-    "text": "The function $f(x)= \\left( \\begin{bmatrix} \\frac{\\pi }{4} +{tan}^{-1}x,|x|\\leq 1 \\\\ \\frac{1}{2} (|x|-1),|x|>1 \\end{bmatrix} \\right)$ is",
+    "text": "The function $f(x)= \\left{ \\frac{\\pi }{4} +{tan}^{-1}x,|x|\\leq 1 \\\\ \\frac{1}{2} (|x|-1),|x|>1$ is",
     "images": [],
     "options": [
       "both continuous and differentiable on $R-{-1}$ .",
@@ -10649,7 +9575,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_214",
     "number": "214",
     "type": "mcq",
-    "text": "If the function $f(x)= \\left( \\begin{bmatrix} {k}_{1}(x-\\pi {)}^{2}-1, & x\\leq \\pi \\\\ {k}_{2}cosx, & x>\\pi \\end{bmatrix} \\right)$ is twice differentiable, then the ordered pair ( ${k}_{1},{k}_{2}$ ) is equal to",
+    "text": "If the function $f(x)= \\left{ {k}_{1}(x-\\pi {)}^{2}-1, & x\\leq \\pi \\\\ {k}_{2}cosx, & x>\\pi$ is twice differentiable, then the ordered pair ( ${k}_{1},{k}_{2}$ ) is equal to",
     "images": [],
     "options": [
       "$\\left( \\frac{1}{2} ,1 \\right)$",
@@ -10687,7 +9613,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_216",
     "number": "216",
     "type": "mcq",
-    "text": "The position of a moving car at time $t$ is given by $f(t)=a{t}^{2}+bt+c,t>0$ , where $a,b$ and $c$ are real numbers greater than 1 . Then the average speed of the car over the time interval $\\left( {t}_{1},{t}_{2} \\right)$ is attained at the point",
+    "text": "The position of a moving car at time $t$ is given by $f(t)=a{t}^{2}+bt+c,t>0$ , where $a,b$ and $c$ are real numbers greater than 1 . Then the average speed of the car over the time interval $\\left[ {t}_{1},{t}_{2} \\right]$ is attained at the point",
     "images": [],
     "options": [
       "$\\left( {t}_{2}-{t}_{1} \\right) /2$",
@@ -10725,7 +9651,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_218",
     "number": "218",
     "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be a function defined by $f(x)=max \\left( x,{x}^{2} \\right)$ . Let $S$ denoted the set of all points in $R$ , where $f$ is not differentiable. Then $S$ belongs to",
+    "text": "Let $f:R\\rightarrow R$ be a function defined by $f(x)=max \\left{ x,{x}^{2} \\right}$ . Let $S$ denoted the set of all points in $R$ , where $f$ is not differentiable. Then $S$ belongs to",
     "images": [],
     "options": [
       "${0,1}$",
@@ -10858,13 +9784,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_225",
     "number": "225",
     "type": "mcq",
-    "text": "Let $S$ be the set of all functions $f:[0,1]\\rightarrow R$ , which are continuous on $[0,1]$ and differentiable on $(0,1)$ . Then for every $f$ in $S$ , there exists a $c\\in (0,1)$ , depending on $f$ , such that (a) $\\frac{f(1)-f(c)}{1-c} ={f}^{'}(c)$ (b) $|f(c)-f(1)|< \\left( {f}^{'}(c) \\right)$ (c) $|f(c)+f(1)|<(1+c) \\left( {f}^{'}(c) \\right)$ (d) $|f(c)-f(1)|<(1-c) \\left( {f}^{'}(c) \\right)$",
+    "text": "Let $S$ be the set of all functions $f:[0,1]\\rightarrow R$ , which are continuous on $[0,1]$ and differentiable on $(0,1)$ . Then for every $f$ in $S$ , there exists a $c\\in (0,1)$ , depending on $f$ , such that",
     "images": [],
     "options": [
-      "",
-      "",
-      "",
-      ""
+      " $\\frac{f(1)-f(c)}{1-c} ={f}^{'}(c)$",
+      "$|f(c)-f(1)|< \\left( {f}^{'}(c) \\right|$",
+      "$|f(c)+f(1)|<(1+c) \\left( {f}^{'}(c) \\right|$",
+      "$|f(c)-f(1)|<(1-c) \\left( {f}^{'}(c) \\right|$"
     ],
     "correct": "a",
     "chapter": "Differential Calculus",
@@ -10873,44 +9799,8 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_differential_calculus_226",
-    "number": "226",
-    "type": "mcq",
-    "text": "Let $f$ be any function continuous on $[a,b]$ and twice differentiable on $(a,b)$ . If for all $x\\in (a,b),{f}^{'}(x)>0$ and ${f}^{''}(x)<0$ , then for any $c\\in (a,b), \\frac{f(c)-f",
-    "images": [],
-    "options": [
-      "$\\frac{b-c}{c-a}$",
-      "1",
-      "$\\frac{c-a}{b-c}$",
-      "$\\frac{b+a}{b-a}$"
-    ],
-    "correct": "c",
-    "chapter": "Differential Calculus",
-    "topic": "Continuity And Differentiability",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_differential_calculus_227",
-    "number": "227",
-    "type": "mcq",
-    "text": "If $f(x)= \\left( \\begin{bmatrix} \\frac{sin(a+2)x+sinx}{x} ; & x0 \\end{bmatrix} \\right)$ is continuous at $x=0$ , then $a+2b$ is equal to",
-    "images": [],
-    "options": [
-      "-2",
-      "1",
-      "0",
-      "-1"
-    ],
-    "correct": "c",
-    "chapter": "Differential Calculus",
-    "topic": "Continuity And Differentiability",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
+  
+  
   {
     "id": "jee_mains_math_differential_calculus_229",
     "number": "229",
@@ -10934,7 +9824,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_230",
     "number": "230",
     "type": "mcq",
-    "text": "Let $[t]$ denote the greatest integer $\\leq t$ and ${lim}_{x\\rightarrow 0} x \\left( \\frac{4}{x} \\right) =A$ . Then the function, $f(x)= \\left( {x}^{2} \\right) sin(\\pi x)$ is discontinuous, when $x$ is equal to",
+    "text": "Let $[t]$ denote the greatest integer $\\leq t$ and ${lim}_{x\\rightarrow 0} x \\left[ \\frac{4}{x} \\right] =A$ . Then the function, $f(x)= \\left( {x}^{2} \\right) sin(\\pi x)$ is discontinuous, when $x$ is equal to",
     "images": [],
     "options": [
       "$\\sqrt{A+1}$",
@@ -10991,7 +9881,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_233",
     "number": "233",
     "type": "mcq",
-    "text": "Let $f:[-1,3]\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} |x|+[x], & -1\\leq x<1 \\\\ x+|x|, & 1\\leq x<2 \\\\ x+∣x], & 2\\leq x\\leq 3 \\end{bmatrix} \\right)$ where $[t]$ denotes the greatest integer less than or equal to $t$ . Then, $f$ is discontinuous at",
+    "text": "Let $f:[-1,3]\\rightarrow R$ be defined as $f(x)= \\left{ |x|+[x], & -1\\leq x<1 \\\\ x+|x|, & 1\\leq x<2 \\\\ x+∣x], & 2\\leq x\\leq 3$ where $[t]$ denotes the greatest integer less than or equal to $t$ . Then, $f$ is discontinuous at",
     "images": [],
     "options": [
       "only two points",
@@ -11029,7 +9919,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_235",
     "number": "235",
     "type": "mcq",
-    "text": "If the function $f$ defined on $\\left( \\frac{\\pi }{6} , \\frac{\\pi }{3} \\right)$ by $f(x)= \\left( \\begin{bmatrix} \\frac{\\sqrt{2} cosx-1}{cotx-1} , & x\\neq \\frac{\\pi }{4} \\\\ k, & x= \\frac{\\pi }{4} \\end{bmatrix} \\right)$ is continuous, then $k$ is equal to",
+    "text": "If the function $f$ defined on $\\left( \\frac{\\pi }{6} , \\frac{\\pi }{3} \\right)$ by $f(x)= \\left{ \\frac{\\sqrt{2} cosx-1}{cotx-1} , & x\\neq \\frac{\\pi }{4} \\\\ k, & x= \\frac{\\pi }{4}$ is continuous, then $k$ is equal to",
     "images": [],
     "options": [
       "1",
@@ -11067,7 +9957,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_237",
     "number": "237",
     "type": "mcq",
-    "text": "If $f(x)=[x]- \\left( \\frac{x}{4} \\right) ,x\\in R$ , where $[x]$ denotes the greatest integer function, then",
+    "text": "If $f(x)=[x]- \\left[ \\frac{x}{4} \\right] ,x\\in R$ , where $[x]$ denotes the greatest integer function, then",
     "images": [],
     "options": [
       "${lim}_{x\\rightarrow {4}^{-}} f(x)$ exists but ${lim}_{x\\rightarrow {4}^{+}} f(x)$ does not exist.",
@@ -11086,7 +9976,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_238",
     "number": "238",
     "type": "mcq",
-    "text": "If the function $f(x)= \\left( \\begin{bmatrix} a|\\pi -x|+1,x\\leq 5 \\\\ b|x-\\pi |+3,x>b \\end{bmatrix} \\right)$ is continuous at $x=5$ , then the value of $a-b$ is",
+    "text": "If the function $f(x)= \\left{ a|\\pi -x|+1,x\\leq 5 \\\\ b|x-\\pi |+3,x>b$ is continuous at $x=5$ , then the value of $a-b$ is",
     "images": [],
     "options": [
       "$\\frac{2}{5-\\pi }$",
@@ -11101,25 +9991,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
-  {
-    "id": "jee_mains_math_differential_calculus_239",
-    "number": "239",
-    "type": "mcq",
-    "text": "If $f(x)= \\left( \\begin{bmatrix} \\frac{sin(p+1)x+sinx}{x} , & x0 \\end{bmatrix} \\right)$ is continuous at $x=0$ , then the ordered pair $(p,q)$ is equal to",
-    "images": [],
-    "options": [
-      "$\\left( \\frac{5}{2} , \\frac{1}{2} \\right)$",
-      "$\\left( - \\frac{3}{2} , \\frac{1}{2} \\right)$",
-      "$\\left( - \\frac{3}{2} ,- \\frac{1}{2} \\right)$",
-      "$\\left( - \\frac{1}{2} , \\frac{3}{2} \\right)$"
-    ],
-    "correct": "b",
-    "chapter": "Differential Calculus",
-    "topic": "Continuity And Differentiability",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_differential_calculus_240",
     "number": "240",
@@ -11181,7 +10053,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_243",
     "number": "243",
     "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be a function defined as $f(x)= \\left( \\begin{bmatrix} 5, & if & x\\leq 1 \\\\ a+bx, & if & 1<x<3 \\\\ b+5x, & if & 3\\leq x<5 \\\\ 30, & if & x\\geq 5 \\end{bmatrix} \\right)$ . Then $f$ is",
+    "text": "Let $f:R\\rightarrow R$ be a function defined as $f(x)= \\left{ 5, & if & x\\leq 1 \\\\ a+bx, & if & 1<x<3 \\\\ b+5x, & if & 3\\leq x<5 \\\\ 30, & if & x\\geq 5$ . Then $f$ is",
     "images": [],
     "options": [
       "continuous if $a=-5$ and $b=10$",
@@ -11204,7 +10076,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "images": [],
     "options": [
       "$\\frac{1}{6 \\sqrt{2}}$",
-      "$\\begin{bmatrix} 3 \\\\ 2 \\sqrt{2} \\end{bmatrix}$",
+      "$3 \\\\ 2 \\sqrt{2}$",
       "$\\frac{1}{3 \\sqrt{2}}$",
       "$\\frac{1}{6}$"
     ],
@@ -11238,7 +10110,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_246",
     "number": "246",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( \\begin{bmatrix} max \\left( |x|,{x}^{2} \\right) , & |x|\\leq 2 \\\\ 8-2|x|, & 2<|x|\\leq 4 \\end{bmatrix} \\right)$ Let $S$ be the set of points in the interval $(-4,4)$ at which $f$ is not differentiable. Then $S$",
+    "text": "Let $f(x)= \\left{ \\left( |x|,{x}^{2} \\right) , & |x|\\leq 2 \\\\ 8-2|x|, & 2<|x|\\leq 4$ Let $S$ be the set of points in the interval $(-4,4)$ at which $f$ is not differentiable. Then $S$",
     "images": [],
     "options": [
       "equals ${-2,2}$",
@@ -11276,7 +10148,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_248",
     "number": "248",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( \\begin{bmatrix} -1, & -2\\leq x<0 \\\\ {x}^{2}-1, & 0\\leq x\\leq 2 \\end{bmatrix} \\right)$ and $g(x)=|f(x)|+f(|x|)$ . Then, in the interval (-2,2), $g$ is",
+    "text": "Let $f(x)= \\left{ -1, & -2\\leq x<0 \\\\ {x}^{2}-1, & 0\\leq x\\leq 2$ and $g(x)=|f(x)|+f(|x|)$ . Then, in the interval (-2,2), $g$ is",
     "images": [],
     "options": [
       "not differentiable at one point",
@@ -11355,10 +10227,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Let $S$ be the set of all points in $(-\\pi ,\\pi )$ at which the function, $f(x)=min{sinx,cosx}$ is not differentiable. Then $S$ is a subset of which of the following?",
     "images": [],
     "options": [
-      "$\\left( - \\frac{\\pi }{4} ,0, \\frac{\\pi }{4} \\right)$",
-      "$\\left( - \\frac{3\\pi }{4} ,- \\frac{\\pi }{4} , \\frac{3\\pi }{4} , \\frac{\\pi }{4} \\right)$",
-      "$\\left( - \\frac{3\\pi }{4} ,- \\frac{\\pi }{2} , \\frac{\\pi }{2} , \\frac{3\\pi }{4} \\right)$",
-      "$\\left( - \\frac{\\pi }{2} ,- \\frac{\\pi }{4} , \\frac{\\pi }{4} , \\frac{\\pi }{2} \\right)$"
+      "$\\left{ - \\frac{\\pi }{4} ,0, \\frac{\\pi }{4} \\right}$",
+      "$\\left{ - \\frac{3\\pi }{4} ,- \\frac{\\pi }{4} , \\frac{3\\pi }{4} , \\frac{\\pi }{4} \\right}$",
+      "$\\left{ - \\frac{3\\pi }{4} ,- \\frac{\\pi }{2} , \\frac{\\pi }{2} , \\frac{3\\pi }{4} \\right}$",
+      "$\\left{ - \\frac{\\pi }{2} ,- \\frac{\\pi }{4} , \\frac{\\pi }{4} , \\frac{\\pi }{2} \\right}$"
     ],
     "correct": "b",
     "chapter": "Differential Calculus",
@@ -11371,7 +10243,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_253",
     "number": "253",
     "type": "mcq",
-    "text": "Let $S= \\left( t\\in R:f(x)=|x-\\pi |⋅ \\left( {e}^{|x|}-1 \\right) sin|x| \\right)$ is not differentiable at $t}$ , then the set $S$ is equal to",
+    "text": "Let $S= \\left{ t\\in R:f(x)=|x-\\pi |⋅ \\left( {e}^{|x|}-1 \\right) sin|x| \\right}$ is not differentiable at $t}$ , then the set $S$ is equal to",
     "images": [],
     "options": [
       "${0,\\pi }$",
@@ -11390,7 +10262,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_254",
     "number": "254",
     "type": "mcq",
-    "text": "If $f(x)= \\left( \\begin{bmatrix} cosx & x & 1 \\\\ 2sinx & {x}^{2} & 2x \\\\ tanx & x & 1 \\end{bmatrix} \\right)$ , then ${lim}_{x\\rightarrow 0} \\frac{{f}^{'}(x)}{x}$",
+    "text": "If $f(x)= \\left| cosx & x & 1 \\\\ 2sinx & {x}^{2} & 2x \\\\ tanx & x & 1 \\right|$ , then ${lim}_{x\\rightarrow 0} \\frac{{f}^{'}(x)}{x}$",
     "images": [],
     "options": [
       "exists and is equal to 0",
@@ -11409,7 +10281,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_255",
     "number": "255",
     "type": "mcq",
-    "text": "Let $S= \\left( (\\lambda ,\\mu )\\in R\\times R:f(t)= \\left( |\\lambda |{e}^{|t|}-\\mu \\right) sin(2|t|),t\\in R \\right)$ , is a differentiable function $}$ . Then $S$ is a subset of",
+    "text": "Let $S= \\left{ (\\lambda ,\\mu )\\in R\\times R:f(t)= \\left( |\\lambda |{e}^{|t|}-\\mu \\right) sin(2|t|),t\\in R \\right)$ , is a differentiable function $ \\right}$ . Then $S$ is a subset of",
     "images": [],
     "options": [
       "$[0,\\infty )\\times R$",
@@ -11466,7 +10338,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_258",
     "number": "258",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( \\begin{bmatrix} (x-1{)}^{\\frac{1}{2-x}}, & x>1,x\\neq 2 \\\\ k, & x=2 \\end{bmatrix} \\right)$ The value of $k$ for which $f$ is continuous at $x=2$ is",
+    "text": "Let $f(x)= \\left{ (x-1{)}^{\\frac{1}{2-x}}, & x>1,x\\neq 2 \\\\ k, & x=2 \\end{bmatrix} \\right)$ The value of $k$ for which $f$ is continuous at $x=2$ is",
     "images": [],
     "options": [
       "${e}^{-1}$",
@@ -11542,7 +10414,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_262",
     "number": "262",
     "type": "mcq",
-    "text": "If $y={\\left( x+ \\sqrt{{x}^{2}-1} \\right)}^{15}+{\\left( x- \\sqrt{{x}^{2}-1} \\right)}^{15}$ , then $\\left( {x}^{2}-1 \\right) \\frac{{d}^{2}y}{d{x}^{2}} +x \\frac{dy}{dx}$ is equal to",
+    "text": "If $y={\\left[ x+ \\sqrt{{x}^{2}-1} \\right]}^{15}+{\\left[ x- \\sqrt{{x}^{2}-1} \\right]}^{15}$ , then $\\left( {x}^{2}-1 \\right) \\frac{{d}^{2}y}{d{x}^{2}} +x \\frac{dy}{dx}$ is equal to",
     "images": [],
     "options": [
       "$225{y}^{2}$",
@@ -11599,7 +10471,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_265",
     "number": "265",
     "type": "mcq",
-    "text": ". The value of $k$ for which the function $f(x)= \\left( \\begin{bmatrix} {\\left( \\frac{4}{5} \\right)}^{\\frac{tan4x}{tan5x}}, & 0<x< \\frac{\\pi }{2} \\\\ k+ \\frac{2}{5} , & x= \\frac{\\pi }{2} \\end{bmatrix} \\right)$ is continuous at $x= \\frac{\\pi }{2}$ , is",
+    "text": ". The value of $k$ for which the function $f(x)= \\left{ {\\left( \\frac{4}{5} \\right)}^{\\frac{tan4x}{tan5x}}, & 0<x< \\frac{\\pi }{2} \\\\ k+ \\frac{2}{5} , & x= \\frac{\\pi }{2}$ is continuous at $x= \\frac{\\pi }{2}$ , is",
     "images": [],
     "options": [
       "$\\frac{17}{20}$",
@@ -11637,7 +10509,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_267",
     "number": "267",
     "type": "mcq",
-    "text": "If the function $f(x)= \\left( \\begin{bmatrix} -x, & x<1 \\\\ a+{cos}^{-1}(x+b), & 1\\leq x\\leq 2 \\end{bmatrix} \\right)$ is differentiable at $x=1$ , then $\\frac{a}{b}$ is equal to",
+    "text": "If the function $f(x)= \\left{ -x, & x<1 \\\\ a+{cos}^{-1}(x+b), & 1\\leq x\\leq 2$ is differentiable at $x=1$ , then $\\frac{a}{b}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{\\pi +2}{2}$",
@@ -11656,7 +10528,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_268",
     "number": "268",
     "type": "mcq",
-    "text": "Let $a,b\\in R,(a\\neq 0)$ . If the function $f$ defined as $f(x)= \\left( \\begin{bmatrix} \\frac{2{x}^{2}}{a} , & 0\\leq x<1 \\\\ a, & 1\\leq x< \\sqrt{2} \\\\ \\frac{2{b}^{2}-4b}{{x}^{3}} , & \\sqrt{2} \\leq x<\\infty \\end{bmatrix} \\right)$ is continuous in the interval $[0,\\infty )$ , then an ordered pair $(a,b)$ is",
+    "text": "Let $a,b\\in R,(a\\neq 0)$ . If the function $f$ defined as $f(x)= \\left{ \\frac{2{x}^{2}}{a} , & 0\\leq x<1 \\\\ a, & 1\\leq x< \\sqrt{2} \\\\ \\frac{2{b}^{2}-4b}{{x}^{3}} , & \\sqrt{2} \\leq x<\\infty$ is continuous in the interval $[0,\\infty )$ , then an ordered pair $(a,b)$ is",
     "images": [],
     "options": [
       "$( \\sqrt{2} ,1- \\sqrt{3} )$",
@@ -11675,7 +10547,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_269",
     "number": "269",
     "type": "mcq",
-    "text": "If the function $g(x)= \\left( \\begin{bmatrix} k \\sqrt{x+1} , & 0\\leq x\\leq 3 \\\\ mx+2, & 3<x\\leq 5 \\end{bmatrix} \\right)$ is differentiable, then the value of $k+m$ is",
+    "text": "If the function $g(x)= \\left{ k \\sqrt{x+1} , & 0\\leq x\\leq 3 \\\\ mx+2, & 3<x\\leq 5$ is differentiable, then the value of $k+m$ is",
     "images": [],
     "options": [
       "$\\frac{10}{3}$",
@@ -11713,7 +10585,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_271",
     "number": "271",
     "type": "mcq",
-    "text": "Let $k$ be a non-zero real number. If $f(x)= \\left( \\begin{bmatrix} \\frac{{\\left( {e}^{x}-1 \\right)}^{2}}{sin \\left( \\frac{x}{k} \\right) log \\left( 1+ \\frac{x}{4} \\right)} , & x\\neq 0 \\\\ 12, & x=0 \\end{bmatrix} \\right)$ is a continuous function, then the value of $k$ is",
+    "text": "Let $k$ be a non-zero real number. If $f(x)= \\left{ \\frac{{\\left( {e}^{x}-1 \\right)}^{2}}{sin \\left( \\frac{x}{k} \\right) log \\left( 1+ \\frac{x}{4} \\right)} , & x\\neq 0 \\\\ 12, & x=0$ is a continuous function, then the value of $k$ is",
     "images": [],
     "options": [
       "1",
@@ -11732,7 +10604,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_272",
     "number": "272",
     "type": "mcq",
-    "text": "Let $f,g:R\\rightarrow R$ be two functions defined by $f(x)- \\left( \\begin{bmatrix} xsin \\left( \\frac{1}{x} \\right) , & x\\neq 0 \\\\ 0, & x=0 \\end{bmatrix} \\right)$ , and $g(x)-xf(x)$ Statement 1 : $f$ is a continuous function at $x-0$ . Stallement 2: $g$ is a differentiable function at $x=0$ .",
+    "text": "Let $f,g:R\\rightarrow R$ be two functions defined by $f(x)- \\left{ xsin \\left( \\frac{1}{x} \\right) , & x\\neq 0 \\\\ 0, & x=0$ , and $g(x)-xf(x)$ \nStatement 1 : $f$ is a continuous function at $x-0$ . \nStallement 2: $g$ is a differentiable function at $x=0$ .",
     "images": [],
     "options": [
       "Both statements 1 and 2 are false",
@@ -11776,7 +10648,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "4",
       "3",
       "2",
-      "1 (Online2013)"
+      "1"
     ],
     "correct": "b",
     "chapter": "Differential Calculus",
@@ -11808,7 +10680,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_277",
     "number": "277",
     "type": "mcq",
-    "text": "Consider the function, $f(x)=|x-2|+|x-5|,x\\in R$ Statement 1 : ${f}^{'}(4)-0$ Statement 2: $f$ is continuous in [2,5], differentiable in $(2,5)$ and $f(2)=f(5)$ .",
+    "text": "Consider the function, $f(x)=|x-2|+|x-5|,x\\in R$ \nStatement 1 : ${f}^{'}(4)-0$ \nStatement 2: $f$ is continuous in [2,5], differentiable in $(2,5)$ and $f(2)=f(5)$ .",
     "images": [],
     "options": [
       "Statement 1 is true, Statement 2 is true; Statement 2 is not a correct explanation for Statement 1.",
@@ -11884,7 +10756,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_281",
     "number": "281",
     "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be a continuous function defined by $f(x)= \\frac{1}{{e}^{x}+2{e}^{-x}}$ . Statement-1 : $f(c)=1/3$ , for some $c\\in R$ . Statement-2: $0<f(x)\\leq \\frac{1}{2 \\sqrt{2}}$ , for all $x\\in R$ .",
+    "text": "Let $f:R\\rightarrow R$ be a continuous function defined by $f(x)= \\frac{1}{{e}^{x}+2{e}^{-x}}$ . \nStatement-1 : $f(c)=1/3$ , for some $c\\in R$ . \nStatement-2: $0<f(x)\\leq \\frac{1}{2 \\sqrt{2}}$ , for all $x\\in R$ .",
     "images": [],
     "options": [
       "Statement-1 is true, Statement-2 is true; Statement-2 is a correct explanation of Statement-1.",
@@ -11903,7 +10775,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_282",
     "number": "282",
     "type": "mcq",
-    "text": "Let $f(x)=x|x|$ and $g(x)=sinx$ . Statement-1 : gof is differentiable at $x=0$ and its derivative is continuous at that point. Statement-2 : gof is twice differentiable at $x=0$ .",
+    "text": "Let $f(x)=x|x|$ and $g(x)=sinx$ . \nStatement-1 : gof is differentiable at $x=0$ and its derivative is continuous at that point. \nStatement-2 : gof is twice differentiable at $x=0$ .",
     "images": [],
     "options": [
       "Statement-1 is true, Statement-2 is true; Statement-2 is not a correct explanation for Statement-1.",
@@ -11941,7 +10813,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_284",
     "number": "284",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( \\begin{bmatrix} (x-1)sin \\frac{1}{x-1} , & if & x\\neq 1 \\\\ 0, & if & x=1 \\end{bmatrix} \\right)$ Then which one of the following is true?",
+    "text": "Let $f(x)= \\left{ (x-1)sin \\frac{1}{x-1} , & if & x\\neq 1 \\\\ 0, & if & x=1$ Then which one of the following is true?",
     "images": [],
     "options": [
       "$f$ is differentiable at $x=1$ but not at $x=0$",
@@ -11979,7 +10851,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_286",
     "number": "286",
     "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be a function defined by $f(x)=min{x+1$ , $|x|+1}$ . Then which of the following is true?",
+    "text": "Let $f:R\\rightarrow R$ be a function defined by $f(x)=min\\left{ x+1$ , $|x|+1 \\right}$ . Then which of the following is true?",
     "images": [],
     "options": [
       "$f(x)$ is differentiable everywhere",
@@ -12131,7 +11003,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_294",
     "number": "294",
     "type": "mcq",
-    "text": "Let $f(x)= \\frac{1-tanx}{4x-\\pi } ,x\\neq \\frac{\\pi }{4} ,x\\in \\left( 0, \\frac{\\pi }{2} \\right)$ . $f(x)$ is continuous in $\\left( 0, \\frac{\\pi }{2} \\right)$ , then $f \\left( \\frac{\\pi }{4} \\right)$ is",
+    "text": "Let $f(x)= \\frac{1-tanx}{4x-\\pi } ,x\\neq \\frac{\\pi }{4} ,x\\in \\left[ 0, \\frac{\\pi }{2} \\right]$ . $f(x)$ is continuous in $\\left[ 0, \\frac{\\pi }{2} \\right]$ , then $f \\left( \\frac{\\pi }{4} \\right)$ is",
     "images": [],
     "options": [
       "$- \\frac{1}{2}$",
@@ -12156,7 +11028,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$\\frac{1-x}{x}$",
       "$\\frac{1}{x}$",
       "$\\frac{x}{1+x}$",
-      "$\\begin{bmatrix} 1+x \\\\ x \\end{bmatrix}$"
+      "$ 1+x \\\\ x$"
     ],
     "correct": "a",
     "chapter": "Differential Calculus",
@@ -12169,7 +11041,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_296",
     "number": "296",
     "type": "mcq",
-    "text": "If $f(x)= \\left( \\begin{bmatrix} x{e}^{- \\left( \\frac{1}{|x|} + \\frac{1}{x} \\right)}, & x\\neq 0, \\\\ 0, & x-0 \\end{bmatrix} \\right)$ then $f(x)$ is",
+    "text": "If $f(x)= \\left{ x{e}^{- \\left( \\frac{1}{|x|} + \\frac{1}{x} \\right)}, & x\\neq 0, \\\\ 0, & x-0$ then $f(x)$ is",
     "images": [],
     "options": [
       "continuous for all $x$ , but not differentiable at $x=0$",
@@ -12245,7 +11117,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_300",
     "number": "300",
     "type": "mcq",
-    "text": "$f$ is defined in $[-5,5]$ as $f(x)= \\left( \\begin{bmatrix} x, if x is rational \\\\ -x, if x is irrational \\end{bmatrix} \\right)$ Then",
+    "text": "$f$ is defined in $[-5,5]$ as $f(x)= \\left{ x, if x is rational \\\\ -x, if x is irrational$ Then",
     "images": [],
     "options": [
       "$f(x)$ is continuous at every $x$ , except $x=0$",
@@ -13221,7 +12093,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_364",
     "number": "364",
     "type": "mcq",
-    "text": "For the function $f(x)=sinx+3x- \\frac{2}{\\pi } \\left( {x}^{2}+x \\right)$ , where $x\\in \\left( 0, \\frac{\\pi }{2} \\right)$ , consider the following two statements : (I) $f$ is increasing in $\\left( 0, \\frac{\\pi }{2} \\right)$ . (II) ${f}^{'}$ is decreasing in $\\left( 0, \\frac{\\pi }{2} \\right)$ . Between the above two statements,",
+    "text": "For the function $f(x)=sinx+3x- \\frac{2}{\\pi } \\left( {x}^{2}+x \\right)$ , where $x\\in \\left( 0, \\frac{\\pi }{2} \\right)$ , consider the following two statements : \n(I) $f$ is increasing in $\\left( 0, \\frac{\\pi }{2} \\right)$ . \n(II) ${f}^{'}$ is decreasing in $\\left( 0, \\frac{\\pi }{2} \\right)$ . Between the above two statements,",
     "images": [],
     "options": [
       "neither (I) nor (II) is true.",
@@ -13243,9 +12115,9 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The interval in which the function $f(x)={x}^{x},x>0$ , is strictly increasing is",
     "images": [],
     "options": [
-      "$\\left( \\frac{1}{e} ,\\infty \\right)$",
-      "$\\left( \\frac{1}{{e}^{2}} ,1 \\right)$",
-      "$\\left( 0, \\frac{1}{e} \\right)$",
+      "$\\left[ \\frac{1}{e} ,\\infty \\right)$",
+      "$\\left[ \\frac{1}{{e}^{2}} ,1 \\right)$",
+      "$\\left( 0, \\frac{1}{e} \\right]$",
       "$(0,\\infty )$"
     ],
     "correct": "a",
@@ -13278,7 +12150,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_367",
     "number": "367",
     "type": "mcq",
-    "text": "For the function $f(x)=(cosx)-x+1,x\\in R$ , between the following two statements (S1) $f(x)=0$ for only one value of $x$ in $[0,\\pi ]$ . (S2) $f(x)$ is decreasing in $\\left( 0, \\frac{\\pi }{2} \\right)$ and increasing in $\\left( \\frac{\\pi }{2} ,\\pi \\right)$ .",
+    "text": "For the function $f(x)=(cosx)-x+1,x\\in R$ , between the following two statements \n(S1) $f(x)=0$ for only one value of $x$ in $[0,\\pi ]$ . \n(S2) $f(x)$ is decreasing in $\\left[ 0, \\frac{\\pi }{2} \\right]$ and increasing in $\\left[ \\frac{\\pi }{2} ,\\pi \\right]$ .",
     "images": [],
     "options": [
       "Only (S2) is correct.",
@@ -13303,7 +12175,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$\\left( -\\infty , \\frac{1}{\\sqrt{5}} \\right) \\cup \\left( 0, \\frac{1}{\\sqrt{5}} \\right)$",
       "$\\left( - \\frac{1}{\\sqrt{5}} ,0 \\right) \\cup \\left( 0, \\frac{1}{\\sqrt{5}} \\right)$",
       "$\\left( 0, \\frac{1}{\\sqrt{5}} \\right) \\cup \\left( \\frac{1}{\\sqrt{5}} ,\\infty \\right)$",
-      "$\\left( - \\frac{1}{\\sqrt{5}} ,0 \\right) \\cup \\left( \\frac{1}{\\sqrt{5}} ,\\infty \\right)$ $\\left( {1}^{st} \\right)$ Feb ${1}^{st}$ Shift 2024)"
+      "$\\left( - \\frac{1}{\\sqrt{5}} ,0 \\right) \\cup \\left( \\frac{1}{\\sqrt{5}} ,\\infty \\right)$"
     ],
     "correct": "d",
     "chapter": "Differential Calculus",
@@ -13335,7 +12207,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_370",
     "number": "370",
     "type": "mcq",
-    "text": "Consider the function $f: \\left( \\frac{1}{2} ,1 \\right) \\rightarrow R$ defined by $f(x)=4 \\sqrt{2} {x}^{3}-3 \\sqrt{2} x-1$ . Consider the statements (I) The curve $y=f(x)$ intersects the $x$ -axis exactly at one point. (II) The curve $y=f(x)$ intersects the $x$ -axis at $x=cos \\frac{\\pi }{12} .$ Then",
+    "text": "Consider the function $f: \\left[ \\frac{1}{2} ,1 \\right] \\rightarrow R$ defined by $f(x)=4 \\sqrt{2} {x}^{3}-3 \\sqrt{2} x-1$ . Consider the statements \n(I) The curve $y=f(x)$ intersects the $x$ -axis exactly at one point. \n(II) The curve $y=f(x)$ intersects the $x$ -axis at $x=cos \\frac{\\pi }{12} .$ Then",
     "images": [],
     "options": [
       "Both (I) and (II) are incorrect.",
@@ -13373,7 +12245,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_372",
     "number": "372",
     "type": "mcq",
-    "text": "Let $f:R\\rightarrow (0,\\infty )$ be strictly increasing function such that $\\mathop{lim}_{x\\rightarrow \\infty } \\frac{f(7x)}{f(x)} =1$ . Then, the value of $\\mathop{lim}_{x\\rightarrow \\infty } \\left( \\frac{f(5x)}{f(x)} -1 \\right)$ is equal to",
+    "text": "Let $f:R\\rightarrow (0,\\infty )$ be strictly increasing function such that $\\mathop{lim}_{x\\rightarrow \\infty } \\frac{f(7x)}{f(x)} =1$ . Then, the value of $\\mathop{lim}_{x\\rightarrow \\infty } \\left[ \\frac{f(5x)}{f(x)} -1 \\right]$ is equal to",
     "images": [],
     "options": [
       "4",
@@ -13411,7 +12283,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_374",
     "number": "374",
     "type": "mcq",
-    "text": "Let $f:[2,4]\\rightarrow R$ be a differentiable function such that $\\left( x{log}_{e}x \\right) {f}^{'}(x)+ \\left( {log}_{e}x \\right) f(x)+f(x)\\geq 1,x\\in [2,4]$ with $f(2)= \\frac{1}{2}$ and $f(4)= \\frac{1}{4}$ . Consider the following two statements. (A) : $f(x)\\leq 1$ , for all $x\\in [2,4]$ (B) : $f(x)\\geq \\frac{1}{8}$ , for all $x\\in [2,4]$ Then,",
+    "text": "Let $f:[2,4]\\rightarrow R$ be a differentiable function such that $\\left( x{log}_{e}x \\right) {f}^{'}(x)+ \\left( {log}_{e}x \\right) f(x)+f(x)\\geq 1,x\\in [2,4]$ with $f(2)= \\frac{1}{2}$ and $f(4)= \\frac{1}{4}$ . Consider the following two statements. \n(A) : $f(x)\\leq 1$ , for all $x\\in [2,4]$ \n(B) : $f(x)\\geq \\frac{1}{8}$ , for all $x\\in [2,4]$ Then,",
     "images": [],
     "options": [
       "Only statement (B) is true",
@@ -13544,7 +12416,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_382",
     "number": "382",
     "type": "mcq",
-    "text": "The function $f(x)={x}^{3}-6{x}^{2}+ax+b$ is such that $f(2)=f(4)=0$ . Consider two statements. $\\left( {S}_{1} \\right)$ there exists ${x}_{1},{x}_{2}\\in (2,4),{x}_{1}<{x}_{2}$ , such that ${f}^{'} \\left( {x}_{1} \\right) =-1$ and ${f}^{'} \\left( {x}_{2} \\right) =0$ . $\\left( {S}_{2} \\right)$ there exists ${x}_{3},{x}_{4}\\in (2,4),{x}_{3}<{x}_{4}$ , such that $f$ is decreasing in ( $2,{x}_{4}$ ), increasing in ( ${x}_{4},4$ ) and $2{f}^{'} \\left( {x}_{3} \\right) = \\sqrt{3} f \\left( {x}_{4} \\right)$ . Then",
+    "text": "The function $f(x)={x}^{3}-6{x}^{2}+ax+b$ is such that $f(2)=f(4)=0$ . Consider two statements. \n$\\left( {S}_{1} \\right)$ there exists ${x}_{1},{x}_{2}\\in (2,4),{x}_{1}<{x}_{2}$ , such that ${f}^{'} \\left( {x}_{1} \\right) =-1$ and ${f}^{'} \\left( {x}_{2} \\right) =0$ . \n$\\left( {S}_{2} \\right)$ there exists ${x}_{3},{x}_{4}\\in (2,4),{x}_{3}<{x}_{4}$ , such that $f$ is decreasing in ( $2,{x}_{4}$ ), increasing in ( ${x}_{4},4$ ) and $2{f}^{'} \\left( {x}_{3} \\right) = \\sqrt{3} f \\left( {x}_{4} \\right)$ . Then",
     "images": [],
     "options": [
       "$\\left( {S}_{1} \\right)$ is true and $\\left( {S}_{2} \\right)$ is false",
@@ -13601,7 +12473,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_385",
     "number": "385",
     "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} - \\frac{4}{3} {x}^{3}+2{x}^{2}+3x, & x>0 \\\\ 3x{e}^{x}, & x\\leq 0 \\end{bmatrix} \\right)$ . Then $f$ is increasing function in the interval",
+    "text": "Let $f:R\\rightarrow R$ be defined as $f(x)= \\left{ - \\frac{4}{3} {x}^{3}+2{x}^{2}+3x, & x>0 \\\\ 3x{e}^{x}, & x\\leq 0$ . Then $f$ is increasing function in the interval",
     "images": [],
     "options": [
       "$\\left( -1, \\frac{3}{2} \\right)$",
@@ -13620,7 +12492,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_386",
     "number": "386",
     "type": "mcq",
-    "text": "Let $f(x)=3{sin}^{4}x+10{sin}^{3}x+6{sin}^{2}x-3,x\\in \\left( - \\frac{\\pi }{6} , \\frac{\\pi }{2} \\right)$ . Then, $f$ is",
+    "text": "Let $f(x)=3{sin}^{4}x+10{sin}^{3}x+6{sin}^{2}x-3,x\\in \\left[ - \\frac{\\pi }{6} , \\frac{\\pi }{2} \\right]$ . Then, $f$ is",
     "images": [],
     "options": [
       "increasing in $\\left( - \\frac{\\pi }{6} ,0 \\right)$",
@@ -13639,12 +12511,12 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_387",
     "number": "387",
     "type": "mcq",
-    "text": "Let $f$ be a real valued function, defined on $R-{-1,1}$ and given by $f(x)=3{log}_{e} \\left( \\frac{x-1}{x+1} \\right) - \\frac{2}{x-1}$ . Then in which of the following intervals, function $f(x)$ is increasing?",
+    "text": "Let $f$ be a real valued function, defined on $R-\\left{ -1,1 \\right}$ and given by $f(x)=3{log}_{e} \\left| \\frac{x-1}{x+1} \\right| - \\frac{2}{x-1}$ . Then in which of the following intervals, function $f(x)$ is increasing?",
     "images": [],
     "options": [
-      "$\\left( -1, \\frac{1}{2} \\right)$",
-      "$(-\\infty ,-1)\\cup \\left( \\left( \\frac{1}{2} ,\\infty \\right) -{1} \\right)$",
-      "$\\left( -\\infty , \\frac{1}{2} \\right) -{-1}$",
+      "$\\left( -1, \\frac{1}{2} \\right]$",
+      "$(-\\infty ,-1)\\cup \\left( \\left[ \\frac{1}{2} ,\\infty \\right) -{1} \\right)$",
+      "$\\left( -\\infty , \\frac{1}{2} \\right] -{-1}$",
       "$(-\\infty ,\\infty )-{-1,1}$"
     ],
     "correct": "b",
@@ -13658,7 +12530,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_388",
     "number": "388",
     "type": "mcq",
-    "text": "Consider the function $f:R\\rightarrow R$ is given by $f(x)= \\left( \\begin{bmatrix} \\left( 2-sin \\left( \\frac{1}{x} \\right) \\right) |x|, & x\\neq 0 \\\\ 0, & x=0 \\end{bmatrix} \\right)$ . Then $f$ is",
+    "text": "Consider the function $f:R\\rightarrow R$ is given by $f(x)= \\left{ \\left( 2-sin \\left( \\frac{1}{x} \\right) \\right) |x|, & x\\neq 0 \\\\ 0, & x=0$ . Then $f$ is",
     "images": [],
     "options": [
       "monotonic on $(-\\infty ,0)\\cup (0,\\infty )$",
@@ -13680,10 +12552,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The function $f(x)= \\frac{4{x}^{3}-3{x}^{2}}{6} -2sinx+(2x-1)cosx$",
     "images": [],
     "options": [
-      "increases in $\\left( \\frac{1}{2} ,\\infty \\right)$",
-      "decreases in $\\left( -\\infty , \\frac{1}{2} \\right)$",
-      "decreases in $\\left( \\frac{1}{2} ,\\infty \\right)$",
-      "increases in $\\left( -\\infty , \\frac{1}{2} \\right)$"
+      "increases in $\\left[ \\frac{1}{2} ,\\infty \\right)$",
+      "decreases in $\\left( -\\infty , \\frac{1}{2} \\right]$",
+      "decreases in $\\left[ \\frac{1}{2} ,\\infty \\right)$",
+      "increases in $\\left( -\\infty , \\frac{1}{2} \\right]$"
     ],
     "correct": "a",
     "chapter": "Differential Calculus",
@@ -13692,25 +12564,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Easy"
   },
-  {
-    "id": "jee_mains_math_differential_calculus_390",
-    "number": "390",
-    "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be defined as $f(x)= \\left( \\begin{bmatrix} -55x, & if x4 \\end{bmatrix} \\right)$ Let $A={x\\in R:f$ is increasing $}$ . Then $A$ is equal to",
-    "images": [],
-    "options": [
-      "$(-5,\\infty )$",
-      "$(-\\infty ,-5)\\cup (-1,\\infty )$",
-      "$(-5,-4)\\cup (4,\\infty )$",
-      "$(-\\infty ,-5)\\cup (4,\\infty )$"
-    ],
-    "correct": "c",
-    "chapter": "Differential Calculus",
-    "topic": "Increasing And Decreasing Functions",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Differential Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
+  
   {
     "id": "jee_mains_math_differential_calculus_391",
     "number": "391",
@@ -13753,7 +12607,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_393",
     "number": "393",
     "type": "mcq",
-    "text": "Let $f(x)=x{cos}^{-1}(-sin|x|),x\\in \\left( - \\frac{\\pi }{2} , \\frac{\\pi }{2} \\right)$ , then which of the following is true?",
+    "text": "Let $f(x)=x{cos}^{-1}(-sin|x|),x\\in \\left[ - \\frac{\\pi }{2} , \\frac{\\pi }{2} \\right]$ , then which of the following is true?",
     "images": [],
     "options": [
       "${f}^{'}(0)=- \\frac{\\pi }{2}$",
@@ -13794,10 +12648,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Let $f(x)={e}^{x}-x$ and $g(x)={x}^{2} x,∀x\\in R$ . Then the set of all $x\\in R$ , where the function $h(x)=(fog)(x)$ is increasing, is :",
     "images": [],
     "options": [
-      "$\\left( \\frac{-1}{2} ,0 \\right) \\cup [1,\\infty )$",
+      "$\\left[ \\frac{-1}{2} ,0 \\right] \\cup [1,\\infty )$",
       "$[0,\\infty )$",
-      "$\\left( 0, \\frac{1}{2} \\right) \\cup [1,\\infty )$",
-      "$\\left( -1, \\frac{-1}{2} \\right) \\cup \\left( \\frac{1}{2} ,\\infty \\right)$"
+      "$\\left[ 0, \\frac{1}{2} \\right] \\cup [1,\\infty )$",
+      "$\\left[ -1, \\frac{-1}{2} \\right] \\cup \\left[ \\frac{1}{2} ,\\infty \\right)$"
     ],
     "correct": "c",
     "chapter": "Differential Calculus",
@@ -14122,7 +12976,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_414",
     "number": "414",
     "type": "mcq",
-    "text": "Let $x=-1$ and $x=2$ be the critical points of the function $f(x)={x}^{3}+a{x}^{2}+b{log}_{e}|x|+1,x\\neq 0$ . Let $m$ and $M$ respectively be the absolute minimum and the absolute maximum values of $f$ in the interval $\\left( -2,- \\frac{1}{2} \\right)$ . Then $|M+m|$ is equal to (Take ${log}_{e}2=0.7$ ) :",
+    "text": "Let $x=-1$ and $x=2$ be the critical points of the function $f(x)={x}^{3}+a{x}^{2}+b{log}_{e}|x|+1,x\\neq 0$ . Let $m$ and $M$ respectively be the absolute minimum and the absolute maximum values of $f$ in the interval $\\left[ -2,- \\frac{1}{2} \\right]$ . Then $|M+m|$ is equal to (Take ${log}_{e}2=0.7$ ) :",
     "images": [],
     "options": [
       "19.8",
@@ -14179,7 +13033,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_417",
     "number": "417",
     "type": "mcq",
-    "text": "Consider the region $R= \\left( (x,y):x\\leq y\\leq 9- \\frac{11}{3} {x}^{2},x\\geq 0 \\right)$ . The area, of the largest rectangle of sides parallel to the coordinate axes and inscribed in $R$ , is :",
+    "text": "Consider the region $R= \\left{ (x,y):x\\leq y\\leq 9- \\frac{11}{3} {x}^{2},x\\geq 0 \\right}$ . The area, of the largest rectangle of sides parallel to the coordinate axes and inscribed in $R$ , is :",
     "images": [],
     "options": [
       "$\\frac{821}{123}$",
@@ -14241,7 +13095,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "options": [
       "$(2e{)}^{\\pi }>{\\pi }^{(2e)}$",
       "${e}^{2\\pi }{\\pi }^{e}$",
-      "",
+      "${e}^{\\pi }>{\\pi }^{e}$",
       "${e}^{\\pi }<{\\pi }^{e}$"
     ],
     "correct": "c",
@@ -14407,7 +13261,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_429",
     "number": "429",
     "type": "mcq",
-    "text": "${max}_{0\\leq x\\leq \\pi } \\left( x-2sinxcosx+ \\frac{1}{3} sin3x \\right) =$",
+    "text": "${max}_{0\\leq x\\leq \\pi } \\left{ x-2sinxcosx+ \\frac{1}{3} sin3x \\right} =$",
     "images": [],
     "options": [
       "$\\pi$",
@@ -14431,7 +13285,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "options": [
       "$min{f}^{'}(x)=1+max{g}^{'}(x)$",
       "there exist $0maxg(x)$",
-      "",
+      "max${f}^{'}(x)<min{g}^{'}(x)$",
       "there exists $\\vec{x} \\in [0,3]$ such that ${f}^{'}( \\vec{x} )<{g}^{'}( \\vec{x} )$"
     ],
     "correct": "c",
@@ -14445,7 +13299,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_431",
     "number": "431",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( \\begin{bmatrix} 1+{sin}^{2}x & {cos}^{2}x & sin2x \\\\ {sin}^{2}x & 1+{cos}^{2}x & sin2x \\\\ {sin}^{2}x & {cos}^{2}x & 1+sin2x \\end{bmatrix} \\right) ,x\\in \\left( \\frac{\\pi }{6} , \\frac{\\pi }{3} \\right)$ . If $\\alpha$ and $\\beta$ respectively are the maximum and the minimum values of $f$ , then",
+    "text": "Let $f(x)= \\left| 1+{sin}^{2}x & {cos}^{2}x & sin2x \\\\ {sin}^{2}x & 1+{cos}^{2}x & sin2x \\\\ {sin}^{2}x & {cos}^{2}x & 1+sin2x \\right| ,x\\in \\left[ \\frac{\\pi }{6} , \\frac{\\pi }{3} \\right]$ . If $\\alpha$ and $\\beta$ respectively are the maximum and the minimum values of $f$ , then",
     "images": [],
     "options": [
       "${\\beta }^{2}+2 \\sqrt{\\alpha } = \\frac{19}{4}$",
@@ -14464,7 +13318,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_432",
     "number": "432",
     "type": "mcq",
-    "text": "The sum of the absolute maximum and minimum values of the function $f(x)= \\left( {x}^{2}-5x+6 \\right) -3x+2$ in the interval $[-1,3]$ is equal to",
+    "text": "The sum of the absolute maximum and minimum values of the function $f(x)= \\left| {x}^{2}-5x+6 \\right| -3x+2$ in the interval $[-1,3]$ is equal to",
     "images": [],
     "options": [
       "12",
@@ -14502,7 +13356,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_434",
     "number": "434",
     "type": "mcq",
-    "text": "Let the function $f(x)=2{x}^{3}+(2p-7){x}^{2}+3(2p-9)x$ - 6 have a maxima for some value of $x0$ . Then, the set of all values of $p$ is",
+    "text": "Let the function $f(x)=2{x}^{3}+(2p-7){x}^{2}+3(2p-9)x$ - 6 have a maxima for some value of $x < 0$ and a minima for some value of $x > 0$. Then, the set of all values of $p$ is",
     "images": [],
     "options": [
       "$\\left( \\frac{9}{2} ,\\infty \\right)$",
@@ -14597,7 +13451,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_439",
     "number": "439",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( \\begin{bmatrix} {x}^{3}-{x}^{2}+10x-7, & x\\leq 1 \\\\ -2x+{log}_{2} \\left( {b}^{2}-4 \\right) , & x>1 \\end{bmatrix} \\right)$ Then the set of all values of $b$ , for which $f(x)$ has maximum value al $x=1$ , is",
+    "text": "Let $f(x)= \\left{ {x}^{3}-{x}^{2}+10x-7, & x\\leq 1 \\\\ -2x+{log}_{2} \\left( {b}^{2}-4 \\right) , & x>1$ Then the set of all values of $b$ , for which $f(x)$ has maximum value al $x=1$ , is",
     "images": [],
     "options": [
       "$(-6,-2)$",
@@ -14654,7 +13508,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_442",
     "number": "442",
     "type": "mcq",
-    "text": "The sum of absolute maximum and absolute minimum values of the function $f(x)= \\left( 2{x}^{2}+3x-2 \\right)$ $+sinxcosx$ in the interval $[0,1]$ is",
+    "text": "The sum of absolute maximum and absolute minimum values of the function $f(x)= \\left| 2{x}^{2}+3x-2 \\right|$ $+sinxcosx$ in the interval $[0,1]$ is",
     "images": [],
     "options": [
       "$3+ \\frac{sin(1){cos}^{2}(1/2)}{2}$",
@@ -14673,7 +13527,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_443",
     "number": "443",
     "type": "mcq",
-    "text": "Let the maximum area of the triangle that can be inscribed in the ellipse $\\begin{bmatrix} & {x}^{2} \\\\ & {a}^{2} \\end{bmatrix} + \\frac{{y}^{2}}{4} =1,a⩾2$ , having one of its vertices at one end of the major axis of the ellipse and one of its sides parallcl to the $y$ -axis, be $6 \\sqrt{3}$ . Then the eccentricity of the ellipse is",
+    "text": "Let the maximum area of the triangle that can be inscribed in the ellipse $\\ {x}^{2} \\\\ & {a}^{2} + \\frac{{y}^{2}}{4} =1,a⩾2$ , having one of its vertices at one end of the major axis of the ellipse and one of its sides parallcl to the $y$ -axis, be $6 \\sqrt{3}$ . Then the eccentricity of the ellipse is",
     "images": [],
     "options": [
       "$\\frac{\\sqrt{3}}{2}$",
@@ -14692,7 +13546,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_444",
     "number": "444",
     "type": "mcq",
-    "text": "The sum of the absolute minimum and the absolute maximum values of the function $f(x)= \\left( 3x-{x}^{2}+2 \\right) -x$ in the interval $[-1,2]$ is",
+    "text": "The sum of the absolute minimum and the absolute maximum values of the function $f(x)= \\left| 3x-{x}^{2}+2 \\right| -x$ in the interval $[-1,2]$ is",
     "images": [],
     "options": [
       "$\\frac{\\sqrt{17} +3}{2}$",
@@ -14812,7 +13666,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "For ${n}_{1}=3,{n}_{2}=4$ , there exists $\\alpha \\in (3,5)$ where $f$ attains local maxima.",
       "For ${n}_{1}=4,{n}_{2}=3$ , there exists $\\alpha \\in (3,5)$ where $f$ attains local minima.",
       "For ${n}_{1}=3,{n}_{2}=5$ , there exists $\\alpha \\in (3,5)$ where $f$ attains local maxima.",
-      "For ${n}_{1}=4,{n}_{2}=6$ , there exists $\\alpha \\in (3,5)$ where $f$ attains local maxima. $\\left( {29}^{th} \\right)$ June ${2}^{nd}$ Shift 2022)"
+      "For ${n}_{1}=4,{n}_{2}=6$ , there exists $\\alpha \\in (3,5)$ where $f$ attains local maxima."
     ],
     "correct": "c",
     "chapter": "Differential Calculus",
@@ -14882,7 +13736,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_454",
     "number": "454",
     "type": "mcq",
-    "text": "Let $A= \\left( {a}_{ij} \\right)$ be a $3\\times 3$ matrix, where ${a}_{ij}= \\left( \\begin{bmatrix} 1, & if i=j \\\\ -x, & if |i-j|=1 \\\\ 2x+1, & otherwise \\end{bmatrix} \\right)$ Let a function $f:R\\rightarrow R$ be defined as $f(x)=det(A)$ . Then the sum of maximum and minimum values of $f$ on $R$ is equal to",
+    "text": "Let $A= \\left[ {a}_{ij} \\right]$ be a $3\\times 3$ matrix, where ${a}_{ij}= \\left{ 1, & if i=j \\\\ -x, & if |i-j|=1 \\\\ 2x+1, & otherwise$ Let a function $f:R\\rightarrow R$ be defined as $f(x)=det(A)$ . Then the sum of maximum and minimum values of $f$ on $R$ is equal to",
     "images": [],
     "options": [
       "$\\frac{88}{27}$",
@@ -14924,9 +13778,9 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "images": [],
     "options": [
       "$(-3,1)$",
-      "$\\left( - \\frac{4}{3} ,2 \\right)$",
+      "$\\left[ - \\frac{4}{3} ,2 \\right)$",
       "$[1,\\infty )$",
-      "$"
+      "$(-\\infty ,-3)\\cup (1,\\infty )$"
     ],
     "correct": "b",
     "chapter": "Differential Calculus",
@@ -15059,7 +13913,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$x=1$ is a point of minima and $x=-1$ is a point of maxima of $f$ .",
       "$f$ is an odd function.",
       "$x=1$ is a point of maxima and $x=-1$ is a point of minimum of $f$ .",
-      "$f(1)-4f(-1)=4$ $\\left( {7}^{th} \\right)$ Jan ${2}^{nd}$ Shift 2020)"
+      "$f(1)-4f(-1)=4$"
     ],
     "correct": "a",
     "chapter": "Differential Calculus",
@@ -15205,7 +14059,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_471",
     "number": "471",
     "type": "mcq",
-    "text": "The maximum value of the function $f(x)=3{x}^{3}-$ $18{x}^{2}+27x-40$ on the set $S= \\left( x\\in R:{x}^{2}+30\\leq 11x \\right)$ is",
+    "text": "The maximum value of the function $f(x)=3{x}^{3}-$ $18{x}^{2}+27x-40$ on the set $S= \\left{ x\\in R:{x}^{2}+30\\leq 11x \\right}$ is",
     "images": [],
     "options": [
       "-122",
@@ -15395,7 +14249,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_481",
     "number": "481",
     "type": "mcq",
-    "text": "Let $f(x)$ be a polynomial of degree four having extreme values at $x=1$ and $x=2$ . If $\\mathop{lim}_{x\\rightarrow 0} \\left( 1+ \\frac{f(x)}{{x}^{2}} \\right) =3$ then $f(2)$ is equal to",
+    "text": "Let $f(x)$ be a polynomial of degree four having extreme values at $x=1$ and $x=2$ . If $\\mathop{lim}_{x\\rightarrow 0} \\left[ 1+ \\frac{f(x)}{{x}^{2}} \\right] =3$ then $f(2)$ is equal to",
     "images": [],
     "options": [
       "0",
@@ -15490,7 +14344,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_486",
     "number": "486",
     "type": "mcq",
-    "text": "Let $a,b\\in R$ be such that the function $f$ given by $f(x)=ln|x|+b{x}^{2}+ax,x\\neq 0$ has extreme values at $x=-1$ and $x=2$ . Statement 1: $f$ has local maximum at $x=-1$ and at $x=2$ . Statement 2: $a= \\frac{1}{2}$ and $b= \\frac{-1}{4}$",
+    "text": "Let $a,b\\in R$ be such that the function $f$ given by $f(x)=ln|x|+b{x}^{2}+ax,x\\neq 0$ has extreme values at $x=-1$ and $x=2$ . \nStatement 1: $f$ has local maximum at $x=-1$ and at $x=2$ . \nStatement 2: $a= \\frac{1}{2}$ and $b= \\frac{-1}{4}$",
     "images": [],
     "options": [
       "Statement 1 is true, Statement 2 is true; Statement 2 is not a correct explanation for Statement 1.",
@@ -15509,7 +14363,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_calculus_487",
     "number": "487",
     "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be defined by $f(x)= \\left( \\begin{bmatrix} k-2x, & if x\\leq -1 \\\\ 2x+3, & if x>-1 \\end{bmatrix} \\right)$ If $f$ has a local minimum at $x=-1$ , then a possible value of $k$ is",
+    "text": "Let $f:R\\rightarrow R$ be defined by $f(x)= \\left{ k-2x, & if x\\leq -1 \\\\ 2x+3, & if x>-1$ If $f$ has a local minimum at $x=-1$ , then a possible value of $k$ is",
     "images": [],
     "options": [
       "1",
@@ -15883,6 +14737,15 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
+
+
+
+
+
+
+
+
+  // 
   {
     "id": "jee_mains_math_differential_equations_1",
     "number": "1",
@@ -16058,7 +14921,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_10",
     "number": "10",
     "type": "mcq",
-    "text": "Statement 1 : The degrees of the differential equations $\\frac{dy}{dx} +{y}^{2}=x$ and $\\frac{{d}^{2}y}{d{x}^{2}} +{y}^{2}=sinx$ are equal. Statement 2: The degree of a differential equation, when it is a polynomial equation in derivatives, is the highest positive integral power of the highest order derivative involved in the differential equation, otherwise degree is not defined.",
+    "text": "Statement 1 : The degrees of the differential equations $\\frac{dy}{dx} +{y}^{2}=x$ and $\\frac{{d}^{2}y}{d{x}^{2}} +{y}^{2}=sinx$ are equal. \nStatement 2: The degree of a differential equation, when it is a polynomial equation in derivatives, is the highest positive integral power of the highest order derivative involved in the differential equation, otherwise degree is not defined.",
     "images": [],
     "options": [
       "Statement 1 is true,Statement2 istrue;Statement2 is not a correct explanation for Statement 1.",
@@ -16276,7 +15139,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_22",
     "number": "22",
     "type": "mcq",
-    "text": "Let $g$ be a differentiable function such that $\\int\\limits_{0}^{x} g(t)dt=x- \\int\\limits_{0}^{x} tg(t)dt,x\\geq 0$ and let $y=y(x)$ satisfy the differential equation $\\frac{dy}{dx} -ytanx=2(x+1)secxg(x),x\\in \\left( 0, \\frac{\\pi }{2} \\right)$ . If $y(0)=0$ , then $y \\left( \\frac{\\pi }{3} \\right)$ is equal to",
+    "text": "Let $g$ be a differentiable function such that $\\int\\limits_{0}^{x} g(t)dt=x- \\int\\limits_{0}^{x} tg(t)dt,x\\geq 0$ and let $y=y(x)$ satisfy the differential equation $\\frac{dy}{dx} -ytanx=2(x+1)secxg(x),x\\in \\left[ 0, \\frac{\\pi }{2} \\right)$ . If $y(0)=0$ , then $y \\left( \\frac{\\pi }{3} \\right)$ is equal to",
     "images": [],
     "options": [
       "$\\frac{2\\pi }{3 \\sqrt{3}}$",
@@ -16735,10 +15598,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The solution of the differential equation $\\left( {x}^{2}+{y}^{2} \\right) dx-5xydy=0,y(1)=0$ , is :",
     "images": [],
     "options": [
-      "${\\left( {x}^{2}-2{y}^{2} \\right)}^{5}={x}^{2}$",
-      "${\\left( {x}^{2}-2{y}^{2} \\right)}^{6}=x$",
-      "${\\left( {x}^{2}-4{y}^{2} \\right)}^{5}={x}^{2}$",
-      "${\\left( {x}^{2}-4{y}^{2} \\right)}^{6}=x$"
+      "${\\left| {x}^{2}-2{y}^{2} \\right|}^{5}={x}^{2}$",
+      "${\\left| {x}^{2}-2{y}^{2} \\right|}^{6}=x$",
+      "${\\left| {x}^{2}-4{y}^{2} \\right|}^{5}={x}^{2}$",
+      "${\\left| {x}^{2}-4{y}^{2} \\right|}^{6}=x$"
     ],
     "correct": "c",
     "chapter": "Differential Equations",
@@ -16906,10 +15769,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The solution curve of the differential equation $y \\frac{dx}{dy} -x \\left( {log}_{e}x-{log}_{e}y+1 \\right) ,x>0,y>0$ passing through the point ( $e,1$ ) is",
     "images": [],
     "options": [
-      "$\\left( {log}_{e} \\frac{x}{y} \\right) =y$",
-      "$\\left( {log}_{e} \\frac{y}{x} \\right) ={y}^{2}$",
-      "$2 \\left( {log}_{e} \\frac{x}{y} \\right) =y+1$",
-      "$\\left( {log}_{e} \\frac{y}{x} \\right) =x$"
+      "$\\left| {log}_{e} \\frac{x}{y} \\right| =y$",
+      "$\\left| {log}_{e} \\frac{y}{x} \\right| ={y}^{2}$",
+      "$2 \\left| {log}_{e} \\frac{x}{y} \\right| =y+1$",
+      "$\\left| {log}_{e} \\frac{y}{x} \\right| =x$"
     ],
     "correct": "a",
     "chapter": "Differential Equations",
@@ -17245,13 +16108,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_74",
     "number": "74",
     "type": "mcq",
-    "text": "Let the solution curve $y=y(x)$ of the differential equation $\\frac{dy}{dx} - \\frac{3{x}^{5}{tan}^{-1} \\left( {x}^{3} \\right)}{{\\left( 1+{x}^{6} \\right)}^{3/2}} y=2xexp \\left( \\frac{{x}^{3}-{tan}^{-1}{x}^{3}}{\\sqrt{\\left( 1+{x}^{6} \\right)}} \\right)$ pass through the origin. Then $y(1)$ is equal to",
+    "text": "Let the solution curve $y=y(x)$ of the differential equation $\\frac{dy}{dx} - \\frac{3{x}^{5}{tan}^{-1} \\left( {x}^{3} \\right)}{{\\left( 1+{x}^{6} \\right)}^{3/2}} y=2xexp \\left{ \\frac{{x}^{3}-{tan}^{-1}{x}^{3}}{\\sqrt{\\left( 1+{x}^{6} \\right)}} \\right}$ pass through the origin. Then $y(1)$ is equal to",
     "images": [],
     "options": [
-      "$exp \\left( \\frac{4+\\pi }{4 \\sqrt{2}} \\right)$",
-      "$exp \\left( \\frac{4-\\pi }{4 \\sqrt{2}} \\right)$",
-      "$exp \\left( \\frac{1-\\pi }{4 \\sqrt{2}} \\right)$",
-      "$exp \\left( \\frac{\\pi -4}{4 \\sqrt{2}} \\right)$"
+      "$exp \\left{ \\frac{4+\\pi }{4 \\sqrt{2}} \\right}$",
+      "$exp \\left{ \\frac{4-\\pi }{4 \\sqrt{2}} \\right}$",
+      "$exp \\left{ \\frac{1-\\pi }{4 \\sqrt{2}} \\right}$",
+      "$exp \\left{ \\frac{\\pi -4}{4 \\sqrt{2}} \\right}$"
     ],
     "correct": "b",
     "chapter": "Differential Equations",
@@ -17302,7 +16165,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_77",
     "number": "77",
     "type": "mcq",
-    "text": "Let $y=y(x)$ be the solution of the differential equation $\\left( 3{y}^{2}-5{x}^{2} \\right) ydx+2x \\left( {x}^{2}-{y}^{2} \\right) dy=0$ such that $y(1)=1$ . Then $\\left( (y(2){)}^{3}-12y(2) \\right)$ is equal to",
+    "text": "Let $y=y(x)$ be the solution of the differential equation $\\left( 3{y}^{2}-5{x}^{2} \\right) ydx+2x \\left( {x}^{2}-{y}^{2} \\right) dy=0$ such that $y(1)=1$ . Then $\\left| (y(2){)}^{3}-12y(2) \\right|$ is equal to",
     "images": [],
     "options": [
       "64",
@@ -17343,10 +16206,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The general solution of the differential equation $\\left( x-{y}^{2} \\right) dx+y \\left( 5x+{y}^{2} \\right) dy=0$ is :",
     "images": [],
     "options": [
-      "${\\left( {y}^{2}+x \\right)}^{4}=C \\left( {\\left( {y}^{2}+2x \\right)}^{3} \\right)$",
-      "${\\left( {y}^{2}+2x \\right)}^{4}=C \\left( {\\left( {y}^{2}+x \\right)}^{3} \\right)$",
-      "$\\left( {\\left( {y}^{2}+x \\right)}^{3} \\right) =C{\\left( 2{y}^{2}+x \\right)}^{4}$",
-      "$\\left( {\\left( {y}^{2}+2x \\right)}^{3} \\right) =C{\\left( 2{y}^{2}+x \\right)}^{4}$"
+      "${\\left( {y}^{2}+x \\right)}^{4}=C \\left( {\\left( {y}^{2}+2x \\right)}^{3} \\right|$",
+      "${\\left( {y}^{2}+2x \\right)}^{4}=C \\left( {\\left( {y}^{2}+x \\right)}^{3} \\right|$",
+      "$\\left| {\\left( {y}^{2}+x \\right)}^{3} \\right| =C{\\left( 2{y}^{2}+x \\right)}^{4}$",
+      "$\\left| {\\left( {y}^{2}+2x \\right)}^{3} \\right| =C{\\left( 2{y}^{2}+x \\right)}^{4}$"
     ],
     "correct": "a",
     "chapter": "Differential Equations",
@@ -17359,7 +16222,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_80",
     "number": "80",
     "type": "mcq",
-    "text": "Let a smooth curve $y=f(x)$ be such that the slope of the tangent at any point $(x,y)$ on it is directly proportional to $\\left( \\frac{-y}{x} \\right)$ . If the curve passes through the points $(1,2)$ and $(8,1)$ , then $\\left( y \\left( \\frac{1}{8} \\right) \\right)$ is equal to",
+    "text": "Let a smooth curve $y=f(x)$ be such that the slope of the tangent at any point $(x,y)$ on it is directly proportional to $\\left( \\frac{-y}{x} \\right)$ . If the curve passes through the points $(1,2)$ and $(8,1)$ , then $\\left| y \\left( \\frac{1}{8} \\right) \\right|$ is equal to",
     "images": [],
     "options": [
       "$2{log}_{e}2$",
@@ -18045,7 +16908,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_116",
     "number": "116",
     "type": "mcq",
-    "text": "If $y \\frac{dy}{dx} =x \\left( \\frac{{y}^{2}}{{x}^{2}} + \\frac{\\phi \\left( \\frac{{y}^{2}}{{x}^{2}} \\right)}{{\\phi}^{'} \\left( \\frac{{y}^{2}}{{x}^{2}} \\right)} \\right) ,x>0,\\phi>0$ , and $y(1)=-1$ , then $\\phi \\left( \\frac{{y}^{2}}{4} \\right)$ is equal to",
+    "text": "If $y \\frac{dy}{dx} =x \\left[ \\frac{{y}^{2}}{{x}^{2}} + \\frac{\\phi \\left( \\frac{{y}^{2}}{{x}^{2}} \\right)}{{\\phi}^{'} \\left( \\frac{{y}^{2}}{{x}^{2}} \\right)} \\right] ,x>0,\\phi>0$ , and $y(1)=-1$ , then $\\phi \\left( \\frac{{y}^{2}}{4} \\right)$ is equal to",
     "images": [],
     "options": [
       "$2\\phi(1)$",
@@ -18068,9 +16931,9 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "images": [],
     "options": [
       "$(1,2)$",
-      "$\\left( \\frac{1}{2} ,1 \\right)$",
+      "$\\left( \\frac{1}{2} ,1 \\right]$",
       "$(2,3)$",
-      "$\\left( 0, \\frac{1}{2} \\right)$"
+      "$\\left( 0, \\frac{1}{2} \\right]$"
     ],
     "correct": "a",
     "chapter": "Differential Equations",
@@ -18159,7 +17022,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_122",
     "number": "122",
     "type": "mcq",
-    "text": "Let $y=y(x)$ satisfies the equation $\\frac{dy}{dx} -|A|=0$ , for all $x>0$ , where $A= \\left( \\begin{bmatrix} y & sinx & 1 \\\\ 0 & -1 & 1 \\\\ 2 & 0 & 1/x \\end{bmatrix} \\right)$ . If $y(\\pi )=\\pi +2$ , then the value of $y(\\pi /2)$ is",
+    "text": "Let $y=y(x)$ satisfies the equation $\\frac{dy}{dx} -|A|=0$ , for all $x>0$ , where $A= \\left[ y & sinx & 1 \\\\ 0 & -1 & 1 \\\\ 2 & 0 & 1/x \\right]$ . If $y(\\pi )=\\pi +2$ , then the value of $y(\\pi /2)$ is",
     "images": [],
     "options": [
       "$\\frac{3\\pi }{2} - \\frac{1}{\\pi }$",
@@ -18444,7 +17307,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_137",
     "number": "137",
     "type": "mcq",
-    "text": "Let $f$ be a twice differentiable function defined on $R$ such that $f(0)=1,{f}^{'}(0)=2$ and ${f}^{'}(x)\\neq 0$ for all $x\\in R$ . If $\\left( \\begin{bmatrix} f(x) & {f}^{'}(x) \\\\ {f}^{'}(x) & {f}^{''}(x) \\end{bmatrix} \\right) =0$ , for all $x\\in R$ , then the value of $f(1)$ lies in the interval",
+    "text": "Let $f$ be a twice differentiable function defined on $R$ such that $f(0)=1,{f}^{'}(0)=2$ and ${f}^{'}(x)\\neq 0$ for all $x\\in R$ . If $\\left| f(x) & {f}^{'}(x) \\\\ {f}^{'}(x) & {f}^{''}(x) \\right| =0$ , for all $x\\in R$ , then the value of $f(1)$ lies in the interval",
     "images": [],
     "options": [
       "$(3,6)$",
@@ -18602,7 +17465,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "${y}^{2}+1=y \\left( {log}_{e} \\left( \\frac{1+{e}^{-x}}{2} \\right) +2 \\right)$",
       "${y}^{2}+1=y \\left( {log}_{e} \\left( \\frac{1+{e}^{x}}{2} \\right) +2 \\right)$",
       "${y}^{2}=1+y{log}_{e} \\left( \\frac{1+{e}^{x}}{2} \\right)$",
-      "${y}^{2}=1+y{log}_{e} \\left( \\frac{1+{e}^{-x}}{2} \\right)$ $\\left( {3}^{rd} \\right)$ Sept ${1}^{st}$ Shift 2020)"
+      "${y}^{2}=1+y{log}_{e} \\left( \\frac{1+{e}^{-x}}{2} \\right)$"
     ],
     "correct": "c",
     "chapter": "Differential Equations",
@@ -18697,7 +17560,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$x-2{log}_{e}(y+3x)=C$",
       "$x-{log}_{e}(y+3x)=C$",
       "$y+3x- \\frac{1}{2} {\\left( {log}_{e}x \\right)}^{2}=C$",
-      "$x- \\frac{1}{2} {\\left( {log}_{e}(y+3x) \\right)}^{2}=C$ $\\left( {4}^{th} \\right)$ Sept ${2}^{nd}$ Shift 2020)"
+      "$x- \\frac{1}{2} {\\left( {log}_{e}(y+3x) \\right)}^{2}=C$"
     ],
     "correct": "d",
     "chapter": "Differential Equations",
@@ -19001,7 +17864,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "${y}^{'} \\left( \\frac{\\pi }{4} \\right) -{y}^{'} \\left( - \\frac{\\pi }{4} \\right) =\\pi - \\sqrt{2}$",
       "$y \\left( \\frac{\\pi }{4} \\right) +y \\left( - \\frac{\\pi }{4} \\right) = \\frac{{\\pi }^{2}}{2} +2$",
       "${y}^{'} \\left( \\frac{\\pi }{4} \\right) +{y}^{'} \\left( - \\frac{\\pi }{4} \\right) =- \\sqrt{2}$",
-      "$y \\left( \\frac{\\pi }{4} \\right) -y \\left( - \\frac{\\pi }{4} \\right) = \\sqrt{2}$ $\\left( {10}^{th} \\right)$ April ${2}^{nd}$ Shift 2019)"
+      "$y \\left( \\frac{\\pi }{4} \\right) -y \\left( - \\frac{\\pi }{4} \\right) = \\sqrt{2}$"
     ],
     "correct": "a",
     "chapter": "Differential Equations",
@@ -19153,7 +18016,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$y \\left( {log}_{e}2 \\right) ={log}_{e}4$",
       "$y(x)$ is decreasing in $(0,1)$",
       "$y(x)$ is decreasing in $\\left( \\frac{1}{2} ,1 \\right)$",
-      "$y \\left( {log}_{e}2 \\right) = \\frac{{log}_{e}2}{4}$ $\\left( {11}^{th} \\right)$ Jan ${1}^{st}$ Shift 2019)"
+      "$y \\left( {log}_{e}2 \\right) = \\frac{{log}_{e}2}{4}$ "
     ],
     "correct": "c",
     "chapter": "Differential Equations",
@@ -19169,10 +18032,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The solution of the differential equation, $\\frac{dy}{dx} =(x-y{)}^{2}$ , when $y(1)=1$ is",
     "images": [],
     "options": [
-      "$-{log}_{e} \\left( \\frac{1+x-y}{1-x+y} \\right) =x+y-2$",
-      "${log}_{e} \\left( \\frac{2-x}{2-y} \\right) =x-y$",
-      "$-{log}_{e} \\left( \\frac{1-x+y}{1+x-y} \\right) =2(x-1)$",
-      "${log}_{e} \\left( \\frac{2-y}{2-x} \\right) =2(y-1)$"
+      "$-{log}_{e} \\left| \\frac{1+x-y}{1-x+y} \\right| =x+y-2$",
+      "${log}_{e} \\left| \\frac{2-x}{2-y} \\right| =x-y$",
+      "$-{log}_{e} \\left| \\frac{1-x+y}{1+x-y} \\right| =2(x-1)$",
+      "${log}_{e} \\left| \\frac{2-y}{2-x} \\right| =2(y-1)$"
     ],
     "correct": "c",
     "chapter": "Differential Equations",
@@ -19261,7 +18124,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_180",
     "number": "180",
     "type": "mcq",
-    "text": "Let $y=y(x)$ be the solution of the differential equation $\\frac{dy}{dx} +2y=f(x)$ , where $f(x)= \\left( \\begin{bmatrix} 1, & x\\in [0,1] \\\\ 0, & otherwise \\end{bmatrix} \\right)$ . If $y(0)=0$ , then $y(3/2)$ is :",
+    "text": "Let $y=y(x)$ be the solution of the differential equation $\\frac{dy}{dx} +2y=f(x)$ , where $f(x)= \\left{ 1, & x\\in [0,1] \\\\ 0, & otherwise \\right)$ . If $y(0)=0$ , then $y(3/2)$ is :",
     "images": [],
     "options": [
       "$\\frac{{e}^{2}-1}{2{e}^{3}}$",
@@ -19810,7 +18673,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_211",
     "number": "211",
     "type": "numerical",
-    "text": "Let $y=y(x)$ be the solution of the differential equation $(x+y+2{)}^{2}dx=dy,y(0)=-2$ . Let the maximum and minimum values of the function $y=y(x)$ in $\\left( 0, \\frac{\\pi }{3} \\right)$ be $\\alpha$ and $\\beta$ , respectively. If $(3\\alpha +\\pi {)}^{2}+{\\beta }^{2}=\\gamma +δ \\sqrt{3} ,\\gamma ,δ\\in Z$ , then $\\gamma +δ$ equals____________.",
+    "text": "Let $y=y(x)$ be the solution of the differential equation $(x+y+2{)}^{2}dx=dy,y(0)=-2$ . Let the maximum and minimum values of the function $y=y(x)$ in $\\left[ 0, \\frac{\\pi }{3} \\right]$ be $\\alpha$ and $\\beta$ , respectively. If $(3\\alpha +\\pi {)}^{2}+{\\beta }^{2}=\\gamma +δ \\sqrt{3} ,\\gamma ,δ\\in Z$ , then $\\gamma +δ$ equals____________.",
     "images": [],
     "options": [],
     "correct": "31",
@@ -19922,7 +18785,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_221",
     "number": "221",
     "type": "numerical",
-    "text": "Let $f(x)= \\sqrt{{lim}_{r\\rightarrow x} \\left( \\frac{2{r}^{2} \\left( (f(r){)}^{2}-f(x)f(r) \\right)}{{r}^{2}-{x}^{2}} -{r}^{3}{e}^{\\frac{f(r)}{r}} \\right)}$ be differentiable in $(-\\infty ,0)\\cup (0,\\infty )$ and $f(1)=1$ . Then the value of $ea$ , such that $f(a)=0$ , is equal to_____________ .",
+    "text": "Let $f(x)= \\sqrt{{lim}_{r\\rightarrow x} \\left{ \\frac{2{r}^{2} \\left[ (f(r){)}^{2}-f(x)f(r) \\right]}{{r}^{2}-{x}^{2}} -{r}^{3}{e}^{\\frac{f(r)}{r}} \\right]}$ be differentiable in $(-\\infty ,0)\\cup (0,\\infty )$ and $f(1)=1$ . Then the value of $ea$ , such that $f(a)=0$ , is equal to_____________ .",
     "images": [],
     "options": [],
     "correct": "2",
@@ -19936,7 +18799,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_222",
     "number": "222",
     "type": "numerical",
-    "text": "Let $y=y(x)$ be the solution of the differential equation $\\left( 1-{x}^{2} \\right) dy= \\left( xy+ \\left( {x}^{3}+2 \\right) \\sqrt{3 \\left( 1-{x}^{2} \\right)} \\right) dx$ , $-1<x<1,y(0)=0$ . If $y \\left( \\frac{1}{2} \\right) = \\frac{m}{n} ,m$ and $n$ are co-prime numbers, then $m+n$ is equal to ____________ .",
+    "text": "Let $y=y(x)$ be the solution of the differential equation $\\left( 1-{x}^{2} \\right) dy= \\left[ xy+ \\left( {x}^{3}+2 \\right) \\sqrt{3 \\left( 1-{x}^{2} \\right)} \\right] dx$ , $-1<x<1,y(0)=0$ . If $y \\left( \\frac{1}{2} \\right) = \\frac{m}{n} ,m$ and $n$ are co-prime numbers, then $m+n$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "97",
@@ -20048,7 +18911,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_231",
     "number": "231",
     "type": "numerical",
-    "text": "Let $f$ be a differentiable function defined on $\\left( 0, \\frac{\\pi }{2} \\right)$ such that $f(x)>0$ and such that $f(x)>0$ and $f(x)+{∫}_{0}^{x} f(t) \\sqrt{1-{\\left( {log}_{e}f(t) \\right)}^{2}} dt=e,∀x\\in \\left( 0, \\frac{\\pi }{2} \\right)$ . Then ${\\left( 6{log}_{e}f \\left( \\frac{\\pi }{6} \\right) \\right)}^{2}$ is equal to ____________ .",
+    "text": "Let $f$ be a differentiable function defined on $\\left[ 0, \\frac{\\pi }{2} \\right]$ such that $f(x)>0$ and such that $f(x)>0$ and $f(x)+{∫}_{0}^{x} f(t) \\sqrt{1-{\\left( {log}_{e}f(t) \\right)}^{2}} dt=e,∀x\\in \\left( 0, \\frac{\\pi }{2} \\right)$ . Then ${\\left( 6{log}_{e}f \\left( \\frac{\\pi }{6} \\right) \\right)}^{2}$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "27",
@@ -20090,7 +18953,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_235",
     "number": "235",
     "type": "numerical",
-    "text": "Let $y=y(x)$ be the solution curve of the differential equation $sin \\left( 2{x}^{2} \\right) {log}_{e} \\left( tan{x}^{2} \\right) dy+ \\left( 4xy-4 \\sqrt{2} xsin \\left( {x}^{2}- \\frac{\\pi }{4} \\right) \\right) dx=0$ , $0<x< \\sqrt{\\frac{\\pi }{2}}$ , which passes through the point $\\left( \\sqrt{\\frac{\\pi }{6}} ,1 \\right)$ . Then $\\left( y \\left( \\sqrt{\\frac{\\pi }{3}} \\right) \\right)$ is equal to ____________ .",
+    "text": "Let $y=y(x)$ be the solution curve of the differential equation $sin \\left( 2{x}^{2} \\right) {log}_{e} \\left( tan{x}^{2} \\right) dy+ \\left( 4xy-4 \\sqrt{2} xsin \\left( {x}^{2}- \\frac{\\pi }{4} \\right) \\right) dx=0$ , $0<x< \\sqrt{\\frac{\\pi }{2}}$ , which passes through the point $\\left( \\sqrt{\\frac{\\pi }{6}} ,1 \\right)$ . Then $\\left| y \\left( \\sqrt{\\frac{\\pi }{3}} \\right) \\right)$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "1",
@@ -20118,7 +18981,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_237",
     "number": "237",
     "type": "numerical",
-    "text": "Let $S=(0,2\\pi )- \\left( \\frac{\\pi }{2} , \\frac{3\\pi }{4} , \\frac{3\\pi }{2} , \\frac{7\\pi }{4} \\right)$ . Let $y=y(x),x\\in S$ , be the solution curve of the differential equation $\\frac{dy}{dx} = \\frac{1}{1+sin2x} ,y \\left( \\frac{\\pi }{4} \\right) = \\frac{1}{2}$ . If the sum of abscissas of all the points of intersection of the curve $y=y(x)$ with the curve $y= \\sqrt{2} sinx$ is $\\frac{k\\pi }{12}$ , then $k$ is equal to____________ .",
+    "text": "Let $S=(0,2\\pi )- \\left{ \\frac{\\pi }{2} , \\frac{3\\pi }{4} , \\frac{3\\pi }{2} , \\frac{7\\pi }{4} \\right}$ . Let $y=y(x),x\\in S$ , be the solution curve of the differential equation $\\frac{dy}{dx} = \\frac{1}{1+sin2x} ,y \\left( \\frac{\\pi }{4} \\right) = \\frac{1}{2}$ . If the sum of abscissas of all the points of intersection of the curve $y=y(x)$ with the curve $y= \\sqrt{2} sinx$ is $\\frac{k\\pi }{12}$ , then $k$ is equal to____________ .",
     "images": [],
     "options": [],
     "correct": "42",
@@ -20244,7 +19107,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_differential_equations_246",
     "number": "246",
     "type": "numerical",
-    "text": "If $y=y(x),y\\in \\left( 0, \\frac{\\pi }{2} \\right)$ is the solution of the differential equation $secy \\frac{dy}{dx} -sin(x+y)-sin(x-y)=0$ , with $y(0)=0$ , then $5{y}^{'} \\left( \\frac{\\pi }{2} \\right)$ is equal to ___________ .",
+    "text": "If $y=y(x),y\\in \\left[ 0, \\frac{\\pi }{2} \\right)$ is the solution of the differential equation $secy \\frac{dy}{dx} -sin(x+y)-sin(x-y)=0$ , with $y(0)=0$ , then $5{y}^{'} \\left( \\frac{\\pi }{2} \\right)$ is equal to ___________ .",
     "images": [],
     "options": [],
     "correct": "2",
@@ -20338,6 +19201,14 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
+
+
+
+
+
+
+
+
   {
     "id": "jee_mains_math_integral_calculus_1",
     "number": "1",
@@ -20516,10 +19387,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The integral $\\int\\limits_{}^{} \\frac{\\left( {x}^{8}-{x}^{2} \\right) dx}{\\left( {x}^{12}+3{x}^{6}+1 \\right) {tan}^{-1} \\left( {x}^{3}+ \\frac{1}{{x}^{3}} \\right)}$ is equal to: equal to :",
     "images": [],
     "options": [
-      "${log}_{e} \\left( \\left( {tan}^{-1} \\left( {x}^{3}+ \\frac{1}{{x}^{3}} \\right) \\right) \\right) +C$",
-      "${log}_{e}{\\left( \\left( {tan}^{-1} \\left( {x}^{3}+ \\frac{1}{{x}^{3}} \\right) \\right) \\right)}^{3}+C$",
-      "${log}_{e}{\\left( \\left( \\left( {tan}^{-1} \\left( {x}^{3}+ \\frac{1}{{x}^{3}} \\right) \\right) \\right) \\right)}^{1/3}+C$",
-      "${log}_{e}{\\left( \\left( {tan}^{-1} \\left( {x}^{3}+ \\frac{1}{{x}^{3}} \\right) \\right) \\right)}^{1/2}+C$"
+      "${log}_{e} \\left( \\left| {tan}^{-1} \\left( {x}^{3}+ \\frac{1}{{x}^{3}} \\right) \\right| \\right) +C$",
+      "${log}_{e}{\\left( \\left| {tan}^{-1} \\left( {x}^{3}+ \\frac{1}{{x}^{3}} \\right) \\right| \\right)}^{3}+C$",
+      "${log}_{e}{\\left( \\left| \\left( {tan}^{-1} \\left( {x}^{3}+ \\frac{1}{{x}^{3}} \\right) \\right| \\right| \\right)}^{1/3}+C$",
+      "${log}_{e}{\\left( \\left| {tan}^{-1} \\left( {x}^{3}+ \\frac{1}{{x}^{3}} \\right) \\right| \\right)}^{1/2}+C$"
     ],
     "correct": "c",
     "chapter": "Integral Calculus",
@@ -20576,7 +19447,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "${log}_{e} \\frac{(\\pi +4{)}^{2}}{16} + \\frac{{\\pi }^{2}}{4(\\pi +4)}$",
       "${log}_{e} \\frac{(\\pi +4{)}^{2}}{32} + \\frac{{\\pi }^{2}}{4(\\pi +4)}$",
       "${log}_{e} \\frac{(\\pi +4{)}^{2}}{16} - \\frac{{\\pi }^{2}}{4(\\pi +4)}$",
-      "${log}_{e} \\frac{(\\pi +4{)}^{2}}{32} - \\frac{{\\pi }^{2}}{4(\\pi +4)}$ $\\left( {6}^{th} \\right)$ April ${1}^{st}$ Shift 2023)"
+      "${log}_{e} \\frac{(\\pi +4{)}^{2}}{32} - \\frac{{\\pi }^{2}}{4(\\pi +4)}$"
     ],
     "correct": "d",
     "chapter": "Integral Calculus",
@@ -20649,10 +19520,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The integral $\\int\\limits_{}^{} \\frac{\\left( 1- \\frac{1}{\\sqrt{3}} \\right) (cosx-sinx)}{\\left( 1+ \\frac{2}{\\sqrt{3}} sin2x \\right)} dx$ is equal to",
     "images": [],
     "options": [
-      "$\\frac{1}{2} {log}_{e} \\left( \\frac{tan \\left( \\frac{x}{2} + \\frac{\\pi }{12} \\right)}{tan \\left( \\frac{x}{2} + \\frac{\\pi }{6} \\right)} \\right) +C$",
-      "$\\frac{1}{2} {log}_{e} \\left( \\frac{tan \\left( \\frac{x}{2} + \\frac{\\pi }{6} \\right)}{tan \\left( \\frac{x}{2} + \\frac{\\pi }{3} \\right)} \\right) +C$",
-      "$\\frac{1}{2} {log}_{e} \\left( \\frac{tan \\left( \\frac{x}{2} + \\frac{\\pi }{6} \\right)}{tan \\left( \\frac{x}{2} + \\frac{\\pi }{12} \\right)} \\right) +C$",
-      "$\\frac{1}{2} {log}_{e} \\left( \\frac{tan \\left( \\frac{x}{2} - \\frac{\\pi }{12} \\right)}{tan \\left( \\frac{x}{2} - \\frac{\\pi }{6} \\right)} \\right) +C$ $\\left( {26}^{th} \\right)$ July ${2}^{nd}$ Shift 2022)"
+      "$\\frac{1}{2} {log}_{e} \\left| \\frac{tan \\left( \\frac{x}{2} + \\frac{\\pi }{12} \\right)}{tan \\left( \\frac{x}{2} + \\frac{\\pi }{6} \\right)} \\right| +C$",
+      "$\\frac{1}{2} {log}_{e} \\left| \\frac{tan \\left( \\frac{x}{2} + \\frac{\\pi }{6} \\right)}{tan \\left( \\frac{x}{2} + \\frac{\\pi }{3} \\right)} \\right| +C$",
+      "$\\frac{1}{2} {log}_{e} \\left| \\frac{tan \\left( \\frac{x}{2} + \\frac{\\pi }{6} \\right)}{tan \\left( \\frac{x}{2} + \\frac{\\pi }{12} \\right)} \\right| +C$",
+      "$\\frac{1}{2} {log}_{e} \\left| \\frac{tan \\left( \\frac{x}{2} - \\frac{\\pi }{12} \\right)}{tan \\left( \\frac{x}{2} - \\frac{\\pi }{6} \\right)} \\right| +C$"
     ],
     "correct": "a",
     "chapter": "Integral Calculus",
@@ -20801,10 +19672,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The integral $\\int\\limits_{}^{} \\frac{{e}^{3 \\operatorname{{log}_{e}} {2x}}+5{e}^{2 \\operatorname{{log}_{e}} {2x}}}{{e}^{4 \\operatorname{{log}_{e}} {x}}+5{e}^{3 \\operatorname{{log}_{e}} {x}}-7{e}^{2 \\operatorname{{log}_{e}} {x}}} dx,x>0$ , is equal to (where $c$ is a constant of integration)",
     "images": [],
     "options": [
-      "$\\operatorname{{log}_{e}} {\\left( {x}^{2}+5x-7 \\right)} +c$",
-      "$4 \\operatorname{{log}_{r}} {\\left( {x}^{2}+5x-7 \\right)} +c$",
-      "$\\frac{1}{4} \\operatorname{{log}_{e}} {\\left( {x}^{2}+5x-7 \\right)} +c$",
-      "$\\operatorname{{log}_{e}} {\\left( \\sqrt{{x}^{2}+5x-7} \\right)} +c$ $\\left( {25}^{th} \\right)$ Feb ${2}^{nd}$ Shift 2021)"
+      "$\\operatorname{{log}_{e}} {\\left| {x}^{2}+5x-7 \\right|} +c$",
+      "$4 \\operatorname{{log}_{r}} {\\left| {x}^{2}+5x-7 \\right|} +c$",
+      "$\\frac{1}{4} \\operatorname{{log}_{e}} {\\left| {x}^{2}+5x-7 \\right|} +c$",
+      "$\\operatorname{{log}_{e}} {\\left| \\sqrt{{x}^{2}+5x-7} \\right|} +c$"
     ],
     "correct": "b",
     "chapter": "Integral Calculus",
@@ -20842,7 +19713,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$\\sec x + \\frac{\\operatorname{xtan} {x}}{\\operatorname{xsin} {x} + \\cos x} +C$",
       "$\\sec x - \\frac{\\operatorname{xtan} {x}}{\\operatorname{xsin} {x} + \\cos x} +C$",
       "$\\tan x + \\frac{\\operatorname{xsec} {x}}{\\operatorname{xsin} {x} ∣ \\cos x} +C$",
-      "$\\tan x - \\frac{\\operatorname{xsec} {x}}{\\operatorname{xsin} {x} + \\cos x} +C$ $\\left( {4}^{th} \\right)$ Sept ${1}^{st}$ Shift 2020)"
+      "$\\tan x - \\frac{\\operatorname{xsec} {x}}{\\operatorname{xsin} {x} + \\cos x} +C$"
     ],
     "correct": "d",
     "chapter": "Integral Calculus",
@@ -21086,10 +19957,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The integral $\\int\\limits_{}^{} \\frac{2{x}^{3}-1}{{x}^{4}+x} dx$ is equal to (Here $C$ is a constant of integration)",
     "images": [],
     "options": [
-      "${log}_{e} \\frac{\\left( {x}^{3}+1 \\right)}{{x}^{2}} +C$",
+      "${log}_{e} \\frac{\\left| {x}^{3}+1 \\right|}{{x}^{2}} +C$",
       "$\\frac{1}{2} {log}_{e} \\frac{{\\left( {x}^{3}+1 \\right)}^{2}}{\\left( {x}^{3} \\right)} +C$",
-      "${log}_{e} \\left( \\frac{{x}^{3}+1}{x} \\right) +C$",
-      "$\\frac{1}{2} {log}_{e} \\frac{\\left( {x}^{3}+1 \\right)}{{x}^{2}} +C$"
+      "${log}_{e} \\left| \\frac{{x}^{3}+1}{x} \\right| +C$",
+      "$\\frac{1}{2} {log}_{e} \\frac{\\left| {x}^{3}+1 \\right|}{{x}^{2}} +C$"
     ],
     "correct": "c",
     "chapter": "Integral Calculus",
@@ -21124,10 +19995,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "For ${x}^{2}\\neq n\\pi +1,n\\in N$ (the set of natural numbers), the integral $\\int\\limits_{}^{} x \\sqrt{\\frac{2sin \\left( {x}^{2}-1 \\right) -sin2 \\left( {x}^{2}-1 \\right)}{2sin \\left( {x}^{2}-1 \\right) +sin2 \\left( {x}^{2}-1 \\right)}} dx$ is equal to (where $c$ is a constant of integration)",
     "images": [],
     "options": [
-      "$\\frac{1}{2} {log}_{e} \\left( {sec}^{2} \\left( \\frac{{x}^{2}-1}{2} \\right) \\right) +c$",
-      "${log}_{e} \\left( \\frac{1}{2} {sec}^{2} \\left( {x}^{2}-1 \\right) \\right) +c$",
-      "$\\frac{1}{2} {log}_{e} \\left( sec \\left( {x}^{2}-1 \\right) \\right) +c$",
-      "${log}_{e} \\left( sec \\left( \\frac{{x}^{2}-1}{2} \\right) \\right) +c"
+      "$\\frac{1}{2} {log}_{e} \\left| {sec}^{2} \\left( \\frac{{x}^{2}-1}{2} \\right) \\right| +c$",
+      "${log}_{e} \\left| \\frac{1}{2} {sec}^{2} \\left( {x}^{2}-1 \\right) \\right| +c$",
+      "$\\frac{1}{2} {log}_{e} \\left| sec \\left( {x}^{2}-1 \\right) \\right| +c$",
+      "${log}_{e} \\left| sec \\left( \\frac{{x}^{2}-1}{2} \\right) \\right| +c"
     ],
     "correct": "a",
     "chapter": "Integral Calculus",
@@ -21238,10 +20109,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Integral $\\int\\limits_{}^{} cos \\left( {log}_{e}x \\right) dx$ equals (where $C$ is the constant of integration)",
     "images": [],
     "options": [
-      "$\\frac{x}{2} \\left( sin \\left( {log}_{e}x \\right) -cos \\left( {log}_{e}x \\right) \\right) +C$",
-      "$x \\left( cos \\left( {log}_{e}x \\right) -sin \\left( {log}_{e}x \\right) \\right) +C$",
-      "$\\frac{x}{2} \\left( cos \\left( {log}_{e}x \\right) +sin \\left( {log}_{e}x \\right) \\right) +C$",
-      "$x \\left( cos \\left( {log}_{e}x \\right) +sin \\left( {log}_{e}x \\right) \\right) +C$"
+      "$\\frac{x}{2} \\left[ sin \\left( {log}_{e}x \\right) -cos \\left( {log}_{e}x \\right) \\right] +C$",
+      "$x \\left[ cos \\left( {log}_{e}x \\right) -sin \\left( {log}_{e}x \\right) \\right] +C$",
+      "$\\frac{x}{2} \\left[ cos \\left( {log}_{e}x \\right) +sin \\left( {log}_{e}x \\right) \\right] +C$",
+      "$x \\left[ cos \\left( {log}_{e}x \\right) +sin \\left( {log}_{e}x \\right) \\right] +C$"
     ],
     "correct": "c",
     "chapter": "Integral Calculus",
@@ -21406,13 +20277,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_58",
     "number": "58",
     "type": "mcq",
-    "text": "The integral $\\int\\limits_{}^{} \\frac{2{x}^{12}+5{x}^{9}}{{\\left( {x}^{5}+{x}^{3}+1 \\right)}^{3}} dx$ is equal to",
+    "text": "The integral $\\int\\limits_{}^{} \\frac{2{x}^{12}+5{x}^{9}}{{\\left( {x}^{5}+{x}^{3}+1 \\right)}^{3}} dx$ is equal to: \nwhere $C$ is an arbitrary constant.",
     "images": [],
     "options": [
       "$\\frac{-{x}^{5}}{{\\left( {x}^{5}+{x}^{3}+1 \\right)}^{2}} +C$",
       "$\\frac{{x}^{10}}{2{\\left( {x}^{5}+{x}^{3}+1 \\right)}^{2}} +C$",
       "$\\frac{{x}^{5}}{2{\\left( {x}^{5}+{x}^{3}+1 \\right)}^{2}} +C$",
-      "$\\frac{-{x}^{10}}{2{\\left( {x}^{5}+{x}^{3}+1 \\right)}^{2}} +C$ where $C$ is an arbitrary constant."
+      "$\\frac{-{x}^{10}}{2{\\left( {x}^{5}+{x}^{3}+1 \\right)}^{2}} +C$"
     ],
     "correct": "b",
     "chapter": "Integral Calculus",
@@ -21580,10 +20451,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The value of $\\sqrt{2} \\int\\limits_{}^{} \\frac{sinxdx}{sin \\left( x- \\frac{\\pi }{4} \\right)}$ is",
     "images": [],
     "options": [
-      "$x-log \\left( cos \\left( x- \\frac{\\pi }{4} \\right) \\right) +c$",
-      "$x+log \\left( cos \\left( x- \\frac{\\pi }{4} \\right) \\right) +c$",
-      "$x-log \\left( sin \\left( x- \\frac{\\pi }{4} \\right) \\right) +c$",
-      "$x+log \\left( sin \\left( x- \\frac{\\pi }{4} \\right) \\right) +c$"
+      "$x-log \\left| cos \\left( x- \\frac{\\pi }{4} \\right) \\right| +c$",
+      "$x+log \\left| cos \\left( x- \\frac{\\pi }{4} \\right) \\right| +c$",
+      "$x-log \\left| sin \\left( x- \\frac{\\pi }{4} \\right) \\right| +c$",
+      "$x+log \\left| sin \\left( x- \\frac{\\pi }{4} \\right) \\right| +c$"
     ],
     "correct": "d",
     "chapter": "Integral Calculus",
@@ -21615,7 +20486,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_70",
     "number": "70",
     "type": "mcq",
-    "text": "$\\int\\limits_{}^{} {\\left( \\frac{(logx-1)}{1+(logx{)}^{2}} \\right)}^{2}dx$ is equal to",
+    "text": "$\\int\\limits_{}^{} {\\left{ \\frac{(logx-1)}{1+(logx{)}^{2}} \\right}}^{2}dx$ is equal to",
     "images": [],
     "options": [
       "$\\frac{x}{{x}^{2}+1} +C$",
@@ -21637,10 +20508,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "$\\int\\limits_{}^{} \\frac{dx}{cosx-sinx}$ is equal to",
     "images": [],
     "options": [
-      "$\\frac{1}{\\sqrt{2}} log \\left( tan \\left( \\frac{x}{2} - \\frac{3\\pi }{8} \\right) \\right) +C$",
-      "$\\frac{1}{\\sqrt{2}} log \\left( cot \\left( \\frac{x}{2} \\right) \\right) +C$",
-      "$\\frac{1}{\\sqrt{2}} log \\left( tan \\left( \\frac{x}{2} - \\frac{\\pi }{8} \\right) \\right) +C$",
-      "$\\frac{1}{\\sqrt{2}} log \\left( tan \\left( \\frac{x}{2} + \\frac{3\\pi }{8} \\right) \\right) +C$"
+      "$\\frac{1}{\\sqrt{2}} log \\left| tan \\left( \\frac{x}{2} - \\frac{3\\pi }{8} \\right) \\right| +C$",
+      "$\\frac{1}{\\sqrt{2}} log \\left| cot \\left( \\frac{x}{2} \\right) \\right| +C$",
+      "$\\frac{1}{\\sqrt{2}} log \\left| tan \\left( \\frac{x}{2} - \\frac{\\pi }{8} \\right) \\right| +C$",
+      "$\\frac{1}{\\sqrt{2}} log \\left| tan \\left( \\frac{x}{2} + \\frac{3\\pi }{8} \\right) \\right| +C$"
     ],
     "correct": "d",
     "chapter": "Integral Calculus",
@@ -21700,7 +20571,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_75",
     "number": "75",
     "type": "numerical",
-    "text": "If $∫ \\frac{2{x}^{2}+5x+9}{\\sqrt{{x}^{2}+x+1}} dx=x \\sqrt{{x}^{2}+x+1} +\\alpha \\sqrt{{x}^{2}+x+1}$ $+\\beta {log}_{e} \\left( x+ \\frac{1}{2} + \\sqrt{{x}^{2}+x+1} \\right) +C$ , where $C$ is the constant of integration, then $\\alpha +2\\beta$ is equal to _____________ .",
+    "text": "If $∫ \\frac{2{x}^{2}+5x+9}{\\sqrt{{x}^{2}+x+1}} dx=x \\sqrt{{x}^{2}+x+1} +\\alpha \\sqrt{{x}^{2}+x+1}$ $+\\beta {log}_{e} \\left| x+ \\frac{1}{2} + \\sqrt{{x}^{2}+x+1} \\right| +C$ , where $C$ is the constant of integration, then $\\alpha +2\\beta$ is equal to _____________ .",
     "images": [],
     "options": [],
     "correct": "16",
@@ -21714,7 +20585,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_76",
     "number": "76",
     "type": "numerical",
-    "text": "If $∫{cosec}^{5}xdx=\\alpha cotxcosecx \\left( {cosec}^{2}x+ \\frac{3}{2} \\right)$ $+\\beta {log}_{e} \\left( tan \\frac{x}{2} \\right) +C$ , where $\\alpha ,\\beta \\in R$ and $C$ is the constant of integration, then the value of $8(\\alpha +\\beta )$ equals _______________ .",
+    "text": "If $∫{cosec}^{5}xdx=\\alpha cotxcosecx \\left( {cosec}^{2}x+ \\frac{3}{2} \\right)$ $+\\beta {log}_{e} \\left| tan \\frac{x}{2} \\right| +C$ , where $\\alpha ,\\beta \\in R$ and $C$ is the constant of integration, then the value of $8(\\alpha +\\beta )$ equals _______________ .",
     "images": [],
     "options": [],
     "correct": "1",
@@ -21770,7 +20641,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_80",
     "number": "80",
     "type": "numerical",
-    "text": "If $∫ \\sqrt{sec2x-1} dx=\\alpha {log}_{e} \\left( cos2x+\\beta + \\sqrt{cos2x \\left( 1+cos \\frac{1}{\\beta } x \\right)} \\right)$ + constant, then $\\beta -\\alpha$ is equal to  .",
+    "text": "If $∫ \\sqrt{sec2x-1} dx=\\alpha {log}_{e} \\left| cos2x+\\beta + \\sqrt{cos2x \\left( 1+cos \\frac{1}{\\beta } x \\right)} \\right|$ + constant, then $\\beta -\\alpha$ is equal to  .",
     "images": [],
     "options": [],
     "correct": "1",
@@ -21812,7 +20683,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_83",
     "number": "83",
     "type": "numerical",
-    "text": "If $\\left( ∫ \\frac{sinx}{{sin}^{3}x+{cos}^{3}x} dx=\\alpha {log}_{e}|1+tanx|+\\beta {log}_{e} \\right) 1-$ $tanx+{tan}^{2}x \\left( +\\gamma {tan}^{-1} \\left( \\frac{2tanx-1}{\\sqrt{3}} \\right) +C \\right)$ , where $C$ is constant of integration, then the value of $18 \\left( \\alpha +\\beta +{\\gamma }^{2} \\right)$ is _____________ .",
+    "text": "If $\\left( ∫ \\frac{sinx}{{sin}^{3}x+{cos}^{3}x} dx=\\alpha {log}_{e}|1+tanx|+\\beta {log}_{e} \\right| 1-$ $tanx+{tan}^{2}x \\left| +\\gamma {tan}^{-1} \\left( \\frac{2tanx-1}{\\sqrt{3}} \\right) +C$ , where $C$ is constant of integration, then the value of $18 \\left( \\alpha +\\beta +{\\gamma }^{2} \\right)$ is _____________ .",
     "images": [],
     "options": [],
     "correct": "3",
@@ -21892,7 +20763,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_88",
     "number": "88",
     "type": "mcq",
-    "text": "Let the domain of the function $f(x)={log}_{2}{log}_{4}{log}_{6} \\left( 3+4x-{x}^{2} \\right)$ be $(a,b)$ . If ${∫}_{0}^{b-a} \\left( {x}^{2} \\right) dx=p- \\sqrt{q} - \\sqrt{r} ,p,q,r\\in N,gcd(p,q,r)=1$ , where $[⋅]$ is the greatest integer function, then $p+q+r$ is equal to",
+    "text": "Let the domain of the function $f(x)={log}_{2}{log}_{4}{log}_{6} \\left( 3+4x-{x}^{2} \\right)$ be $(a,b)$ . If ${∫}_{0}^{b-a} \\left[ {x}^{2} \\right] dx=p- \\sqrt{q} - \\sqrt{r} ,p,q,r\\in N,gcd(p,q,r)=1$ , where $[⋅]$ is the greatest integer function, then $p+q+r$ is equal to",
     "images": [],
     "options": [
       "8",
@@ -21987,7 +20858,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_93",
     "number": "93",
     "type": "mcq",
-    "text": "The integral ${∫}_{-1}^{3/2} \\left( \\left( {\\pi }^{2}xsin(\\pi x) \\right) \\right) dx$ is equal to :",
+    "text": "The integral ${∫}_{-1}^{3/2} \\left( \\left| {\\pi }^{2}xsin(\\pi x) \\right| \\right) dx$ is equal to :",
     "images": [],
     "options": [
       "$3+2\\pi$",
@@ -22196,7 +21067,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_104",
     "number": "104",
     "type": "mcq",
-    "text": "Let $f(x)= \\left( \\begin{bmatrix} -2, & -2\\leq x\\leq 0 \\\\ x-2, & 0<x\\leq 2 \\end{bmatrix} \\right)$ and $h(x)=f(|x|)+|f(x)|$ . Then ${∫}_{-2}^{2} h(x)dx$ is equal to",
+    "text": "Let $f(x)= \\left{ -2, & -2\\leq x\\leq 0 \\\\ x-2, & 0<x\\leq 2$ and $h(x)=f(|x|)+|f(x)|$ . Then ${∫}_{-2}^{2} h(x)dx$ is equal to",
     "images": [],
     "options": [
       "6",
@@ -22576,7 +21447,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_124",
     "number": "124",
     "type": "mcq",
-    "text": "Let $f: \\left( - \\frac{\\pi }{2} , \\frac{\\pi }{2} \\right) \\rightarrow R$ be a differentiable function such that $f(0)= \\frac{1}{2}$ . If the ${lim}_{x\\rightarrow 0} \\frac{x{∫}_{0}^{x} f(t)dt}{{e}^{{x}^{2}}-1} =\\alpha$ , then $8{\\alpha }^{2}$ is equal to",
+    "text": "Let $f: \\left[ - \\frac{\\pi }{2} , \\frac{\\pi }{2} \\right] \\rightarrow R$ be a differentiable function such that $f(0)= \\frac{1}{2}$ . If the ${lim}_{x\\rightarrow 0} \\frac{x{∫}_{0}^{x} f(t)dt}{{e}^{{x}^{2}}-1} =\\alpha$ , then $8{\\alpha }^{2}$ is equal to",
     "images": [],
     "options": [
       "2",
@@ -22652,7 +21523,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_128",
     "number": "128",
     "type": "mcq",
-    "text": "Let $a$ and $b$ be real constants such that the function $f$ defined by $f(x)= \\left( \\begin{bmatrix} {x}^{2}+3x+a, & x\\leq 1 \\\\ bx+2, & x>1 \\end{bmatrix} \\right)$ be differentiable on $R$ . Then, the value of ${∫}_{-2}^{2} f(x)dx$ equals",
+    "text": "Let $a$ and $b$ be real constants such that the function $f$ defined by $f(x)= \\left{ {x}^{2}+3x+a, & x\\leq 1 \\\\ bx+2, & x>1$ be differentiable on $R$ . Then, the value of ${∫}_{-2}^{2} f(x)dx$ equals",
     "images": [],
     "options": [
       "$\\frac{19}{6}$",
@@ -22842,7 +21713,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_138",
     "number": "138",
     "type": "mcq",
-    "text": "Let the function $f:[0,2]\\rightarrow$ be defined as $f(x)= \\left( \\begin{bmatrix} {e}^{min \\left( {x}^{2},x-[x] \\right)}, & x\\in [0,1) \\\\ {e}^{\\left( x-{log}_{e}x \\right)}, & x\\in [1,2) \\end{bmatrix} \\right)$ where $[t]$ denotes the greatest integer less than or equal to $t$ . Then the value of the integral ${∫}_{0}^{2} xf(x)dx$ is",
+    "text": "Let the function $f:[0,2]\\rightarrow$ be defined as $f(x)= \\left{ {e}^{min \\left{ {x}^{2},x-[x] \\right}}, & x\\in [0,1) \\\\ {e}^{\\left[ x-{log}_{e}x \\right]}, & x\\in [1,2)$ where $[t]$ denotes the greatest integer less than or equal to $t$ . Then the value of the integral ${∫}_{0}^{2} xf(x)dx$ is",
     "images": [],
     "options": [
       "$(e-1) \\left( {e}^{2}+ \\frac{1}{2} \\right)$",
@@ -22918,7 +21789,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_142",
     "number": "142",
     "type": "mcq",
-    "text": "${lim}_{n\\rightarrow \\infty } \\left( \\frac{1}{1+n} + \\frac{1}{2+n} + \\frac{1}{3+n} +…+ \\frac{1}{2n} \\right)$ is equal to",
+    "text": "${lim}_{n\\rightarrow \\infty } \\left[ \\frac{1}{1+n} + \\frac{1}{2+n} + \\frac{1}{3+n} +…+ \\frac{1}{2n} \\right]$ is equal to",
     "images": [],
     "options": [
       "${log}_{e}2$",
@@ -23013,7 +21884,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_147",
     "number": "147",
     "type": "mcq",
-    "text": "Let $[x]$ denote the greatest integer $\\leq x$ . Consider the function $f(x)=max \\left( {x}^{2},1+[x] \\right)$ . Then the value of the integral ${∫}_{0}^{2} f(x)dx$ is",
+    "text": "Let $[x]$ denote the greatest integer $\\leq x$ . Consider the function $f(x)=max \\left{ {x}^{2},1+[x] \\right}$ . Then the value of the integral ${∫}_{0}^{2} f(x)dx$ is",
     "images": [],
     "options": [
       "$\\frac{5+4 \\sqrt{2}}{3}$",
@@ -23035,7 +21906,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Let $f(x)=x+ \\frac{a}{{\\pi }^{2}-4} sinx+ \\frac{b}{{\\pi }^{2}-4} cosx,x\\in R$ be a function which satisfies $f(x)=x+{∫}_{0}^{\\pi /2} sin(x+y)f(y)dy$ . Then $(a+b)$ is equal to",
     "images": [],
     "options": [
-      "$\\pi (\\pi ∣2)$",
+      "$\\pi (\\pi \\left ∣ 2)$",
       "$-\\pi (\\pi -2)$",
       "$-2\\pi (\\pi +2)$",
       "$-2\\pi (\\pi -2)$"
@@ -23076,7 +21947,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "${tan}^{-1}2- \\frac{1}{3} {tan}^{-1}8+ \\frac{\\pi }{3}$",
       "${tan}^{-1}2+ \\frac{1}{3} {tan}^{-1}8- \\frac{\\pi }{3}$",
       "${tan}^{-1} \\frac{1}{2} + \\frac{1}{3} {tan}^{-1}8- \\frac{\\pi }{3}$",
-      "${tan}^{-1} \\frac{1}{2} - \\frac{1}{3} {tan}^{-1}8+ \\frac{\\pi }{3}$ $\\left( {29}^{th} \\right)$ Jan ${2}^{nd}$ Shift 2023)"
+      "${tan}^{-1} \\frac{1}{2} - \\frac{1}{3} {tan}^{-1}8+ \\frac{\\pi }{3}$"
     ],
     "correct": "b",
     "chapter": "Integral Calculus",
@@ -23089,7 +21960,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_151",
     "number": "151",
     "type": "mcq",
-    "text": "If $[t]$ denotes the greatest integer $\\leq t$ , then the value of $\\frac{3(e-1)}{e} {∫}_{1}^{2} {x}^{2}{e}^{[x]+ \\left( {x}^{3} \\right)}dx$ is",
+    "text": "If $[t]$ denotes the greatest integer $\\leq t$ , then the value of $\\frac{3(e-1)}{e} {∫}_{1}^{2} {x}^{2}{e}^{[x]+ \\left[ {x}^{3} \\right]}dx$ is",
     "images": [],
     "options": [
       "${e}^{8}-1$",
@@ -23108,7 +21979,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_152",
     "number": "152",
     "type": "mcq",
-    "text": "${lim}_{n\\rightarrow \\infty } \\frac{3}{n} \\left( 4+{\\left( 2+ \\frac{1}{n} \\right)}^{2}+{\\left( 2+ \\frac{2}{n} \\right)}^{2}+…+{\\left( 3- \\frac{1}{n} \\right)}^{2} \\right)$ is equal to",
+    "text": "${lim}_{n\\rightarrow \\infty } \\frac{3}{n} \\left{ 4+{\\left( 2+ \\frac{1}{n} \\right)}^{2}+{\\left( 2+ \\frac{2}{n} \\right)}^{2}+…+{\\left( 3- \\frac{1}{n} \\right)}^{2} \\right}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{19}{3}$",
@@ -23203,7 +22074,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_157",
     "number": "157",
     "type": "mcq",
-    "text": "For any real number $x$ , let $[x]$ denote the largest integer less than equal to $x$ . Let $f$ be a real valued function defined on the interval $[-10,10]$ by $f(x)= \\left( \\begin{bmatrix} x-[x], if [x] is odd \\\\ 1+[x]-x, if [x] is even \\end{bmatrix} \\right)$ . Then the value of $\\frac{{\\pi }^{2}}{10} {∫}_{-10}^{10} f(x)cos\\pi xdx$ is",
+    "text": "For any real number $x$ , let $[x]$ denote the largest integer less than equal to $x$ . Let $f$ be a real valued function defined on the interval $[-10,10]$ by $f(x)= \\left({ x-[x], if [x] is odd \\\\ 1+[x]-x, if [x] is even$ . Then the value of $\\frac{{\\pi }^{2}}{10} {∫}_{-10}^{10} f(x)cos\\pi xdx$ is",
     "images": [],
     "options": [
       "4",
@@ -23355,7 +22226,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_165",
     "number": "165",
     "type": "mcq",
-    "text": "${∫}_{0}^{2} \\left( \\left( 2{x}^{2}-3x \\right) + \\left( x- \\frac{1}{2} \\right) \\right) dx$ , where $[t]$ is the greatest integer function, is equal to",
+    "text": "${∫}_{0}^{2} \\left( \\left| 2{x}^{2}-3x \\right| + \\left[ x- \\frac{1}{2} \\right] \\right) dx$ , where $[t]$ is the greatest integer function, is equal to",
     "images": [],
     "options": [
       "$\\frac{7}{6}$",
@@ -23450,7 +22321,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_170",
     "number": "170",
     "type": "mcq",
-    "text": "If $[l]$ denotes the greatest integer $\\leq t$ , then the value of ${∫}_{0}^{1} \\left( 2x- \\left( 3{x}^{2}-5x+2 \\right) +1 \\right) dx$ is",
+    "text": "If $[l]$ denotes the greatest integer $\\leq t$ , then the value of ${∫}_{0}^{1} \\left[ 2x- \\left| 3{x}^{2}-5x+2 \\right| +1 \\right] dx$ is",
     "images": [],
     "options": [
       "$\\frac{\\sqrt{37} + \\sqrt{13} -4}{6}$",
@@ -23475,7 +22346,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$2\\pi$",
       "0",
       "$\\pi$",
-      "$\\frac{\\pi }{2}$ (24 ${}^{th}$ June ${2}^{nd}$ Shift 2022"
+      "$\\frac{\\pi }{2}$"
     ],
     "correct": "c",
     "chapter": "Integral Calculus",
@@ -23545,7 +22416,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_175",
     "number": "175",
     "type": "mcq",
-    "text": "The value of the integral ${∫}_{-2}^{2} \\frac{\\left( {x}^{3}+x \\right)}{\\left( {e}^{x|x|}+1 \\right)} dx$ is equal to",
+    "text": "The value of the integral ${∫}_{-2}^{2} \\frac{\\left| {x}^{3}+x \\right|}{\\left( {e}^{x|x|}+1 \\right)} dx$ is equal to",
     "images": [],
     "options": [
       "$5{e}^{2}$",
@@ -23564,7 +22435,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_176",
     "number": "176",
     "type": "mcq",
-    "text": "The integral ${∫}_{0}^{1} \\frac{1}{{}_{7} \\left( \\frac{1}{x} \\right)} dx$ , where $[⋅]$ denotes the greatest integer function, is equal to",
+    "text": "The integral ${∫}_{0}^{1} \\frac{1}{{}_{7} \\left[ \\frac{1}{x} \\right]} dx$ , where $[⋅]$ denotes the greatest integer function, is equal to",
     "images": [],
     "options": [
       "$1+6{log}_{e} \\left( \\frac{6}{7} \\right)$",
@@ -23583,7 +22454,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_177",
     "number": "177",
     "type": "mcq",
-    "text": "Let $[t]$ denote the greatest integer less than or equal to $t$ . Then, the value of the integral ${∫}_{0}^{1} \\left( -8{x}^{2}+6x-1 \\right) dx$ is equal to",
+    "text": "Let $[t]$ denote the greatest integer less than or equal to $t$ . Then, the value of the integral ${∫}_{0}^{1} \\left[ -8{x}^{2}+6x-1 \\right] dx$ is equal to",
     "images": [],
     "options": [
       "-1",
@@ -23602,7 +22473,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_178",
     "number": "178",
     "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be a differentiable function such that $f \\left( \\frac{\\pi }{4} \\right) = \\sqrt{2} ,f \\left( \\frac{\\pi }{2} \\right) =0$ and ${f}^{'} \\left( \\frac{\\pi }{2} \\right) =1$ and let $g(x)={∫}_{x}^{\\pi /4} \\left( {f}^{'}(t)sect+tantsectf(t) \\right) dt$ for $x\\in \\left( \\frac{\\pi }{4} , \\frac{\\pi }{2} \\right)$ . Then ${lim}_{x\\rightarrow {\\left( \\frac{\\pi }{2} \\right)}^{-}} g(x)$ is equal to",
+    "text": "Let $f:R\\rightarrow R$ be a differentiable function such that $f \\left( \\frac{\\pi }{4} \\right) = \\sqrt{2} ,f \\left( \\frac{\\pi }{2} \\right) =0$ and ${f}^{'} \\left( \\frac{\\pi }{2} \\right) =1$ and let $g(x)={∫}_{x}^{\\pi /4} \\left( {f}^{'}(t)sect+tantsectf(t) \\right) dt$ for $x\\in \\left[ \\frac{\\pi }{4} , \\frac{\\pi }{2} \\right)$ . Then ${lim}_{x\\rightarrow {\\left( \\frac{\\pi }{2} \\right)}^{-}} g(x)$ is equal to",
     "images": [],
     "options": [
       "2",
@@ -23636,30 +22507,12 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_integral_calculus_180",
-    "number": "180",
-    "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be a function defined by $f(x)= \\left( \\begin{bmatrix} \\mathop{max}_{t\\leq x} \\left( {t}^{3}-3t \\right) & ; & x\\leq 2 \\\\ {x}^{2}+2x-6 & ; & 25 \\end{bmatrix} \\right)$ where $[t]$ is the greatest integer less than or equal to $t$ . Let $m$ be the number of points where $f$ is not differentiable and $I={∫}_{-2}^{2} f(x)dx$ . Then the ordered pair ( $m,I$ ) is equal to",
-    "images": [],
-    "options": [
-      "$\\left( 3, \\frac{27}{4} \\right)$",
-      "$\\left( 3, \\frac{23}{4} \\right)$",
-      "$\\left( 4, \\frac{27}{4} \\right)$",
-      "$\\left( 4, \\frac{23}{4} \\right)$"
-    ],
-    "correct": "c",
-    "chapter": "Integral Calculus",
-    "topic": "Definite Integrals",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Integral Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_integral_calculus_181",
     "number": "181",
     "type": "mcq",
-    "text": "${∫}_{0}^{5} cos \\left( \\pi \\left( x- \\left( \\frac{x}{2} \\right) \\right) \\right) dx$ , where $[t]$ denotes greatest integer less than or equal to $t$ , is equal to",
+    "text": "${∫}_{0}^{5} cos \\left( \\pi \\left( x- \\left[ \\frac{x}{2} \\right] \\right) \\right) dx$ , where $[t]$ denotes greatest integer less than or equal to $t$ , is equal to",
     "images": [],
     "options": [
       "-3",
@@ -23716,7 +22569,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_184",
     "number": "184",
     "type": "mcq",
-    "text": "Let ${J}_{n,m}={∫}_{0}^{1/2} \\frac{{x}^{n}}{{x}^{m}-1} dx,∀n>m$ and $n,m\\in N$ . Consider a matrix $A={\\left( {a}_{ij} \\right)}_{3\\times 3}$ , where ${a}_{ij}= \\left( \\begin{bmatrix} {J}_{6+i,3}-{J}_{i+3,3}, & i\\leq j \\\\ 0, & i>j \\end{bmatrix} \\right)$ . Then $\\left( adj{A}^{-1} \\right)$ is",
+    "text": "Let ${J}_{n,m}={∫}_{0}^{1/2} \\frac{{x}^{n}}{{x}^{m}-1} dx,∀n>m$ and $n,m\\in N$ . Consider a matrix $A={\\left[ {a}_{ij} \\right]}_{3\\times 3}$ , where ${a}_{ij}= \\left{ {J}_{6+i,3}-{J}_{i+3,3}, & i\\leq j \\\\ 0, & i>j$ . Then $\\left| adj{A}^{-1} \\right|$ is",
     "images": [],
     "options": [
       "$(15{)}^{2}\\times {2}^{34}$",
@@ -23925,7 +22778,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_195",
     "number": "195",
     "type": "mcq",
-    "text": "If $f:R\\rightarrow R$ is given by $f(x)=x+1$ , then the value of ${lim}_{n\\rightarrow \\infty } \\frac{1}{n} \\left( f(0)+f \\left( \\frac{5}{n} \\right) +f \\left( \\frac{10}{n} \\right) +…+f \\left( \\frac{5(n-1)}{n} \\right) \\right)$ , is",
+    "text": "If $f:R\\rightarrow R$ is given by $f(x)=x+1$ , then the value of ${lim}_{n\\rightarrow \\infty } \\frac{1}{n} \\left[ f(0)+f \\left( \\frac{5}{n} \\right) +f \\left( \\frac{10}{n} \\right) +…+f \\left( \\frac{5(n-1)}{n} \\right) \\right]$ , is",
     "images": [],
     "options": [
       "$1/2$",
@@ -24175,10 +23028,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Let $f:R\\rightarrow R$ be defined as $f(x)={e}^{-x}sinx$ . If $F:[0,1]\\rightarrow R$ is a differential function such that $F(x)={∫}_{0}^{x} f(t)dt$ , then the value of ${∫}_{0}^{1} \\left( {F}^{'}(x)+f(x) \\right) {e}^{x}dx$ lies in the interval",
     "images": [],
     "options": [
-      "$\\left( \\frac{335}{360} , \\frac{336}{360} \\right)$",
-      "$\\left( \\frac{330}{360} , \\frac{331}{360} \\right)$",
-      "$\\left( \\frac{327}{360} , \\frac{329}{360} \\right)$",
-      "$\\left( \\frac{331}{360} , \\frac{334}{360} \\right)$"
+      "$\\left[ \\frac{335}{360} , \\frac{336}{360} \\right]$",
+      "$\\left[ \\frac{330}{360} , \\frac{331}{360} \\right]$",
+      "$\\left[ \\frac{327}{360} , \\frac{329}{360} \\right]$",
+      "$\\left[ \\frac{331}{360} , \\frac{334}{360} \\right]$"
     ],
     "correct": "b",
     "chapter": "Integral Calculus",
@@ -24194,10 +23047,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Let $g(x)={∫}_{0}^{x} f(t)dt$ , where $f$ is continuous function in $[0,3]$ such that $\\frac{1}{3} \\leq f(t)\\leq 1$ for all $t\\in [0,1]$ and $0\\leq f(t)\\leq \\frac{1}{2}$ for all $t\\in (1,3]$ . The largest possible interval in which $g(3)$ lies is",
     "images": [],
     "options": [
-      "$\\left( - \\frac{3}{2} ,-1 \\right)$",
-      "$\\left( \\frac{1}{3} ,2 \\right)$",
+      "$\\left[ - \\frac{3}{2} ,-1 \\right]$",
+      "$\\left[ \\frac{1}{3} ,2 \\right]$",
       "$[1,3]$",
-      "$\\left( -1,- \\frac{1}{2} \\right)$"
+      "$\\left[ -1,- \\frac{1}{2} \\right]$"
     ],
     "correct": "b",
     "chapter": "Integral Calculus",
@@ -24229,7 +23082,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_211",
     "number": "211",
     "type": "mcq",
-    "text": "The value of the integral, ${∫}_{1}^{3} \\left( {x}^{2}-2x-2 \\right) dx$ , where $[x]$ denotes the greatest integer less than or equal to $x$ , is",
+    "text": "The value of the integral, ${∫}_{1}^{3} \\left[ {x}^{2}-2x-2 \\right] dx$ , where $[x]$ denotes the greatest integer less than or equal to $x$ , is",
     "images": [],
     "options": [
       "-5",
@@ -24248,7 +23101,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_212",
     "number": "212",
     "type": "mcq",
-    "text": ". The value of ${∫}_{-1}^{1} {x}^{2}{e}^{\\left( {x}^{3} \\right)}dx$ , where $[t]$ denotes the greatest integer $\\leq t$ , is",
+    "text": ". The value of ${∫}_{-1}^{1} {x}^{2}{e}^{\\left[ {x}^{3} \\right]}dx$ , where $[t]$ denotes the greatest integer $\\leq t$ , is",
     "images": [],
     "options": [
       "$\\frac{1}{3e}$",
@@ -24286,7 +23139,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_214",
     "number": "214",
     "type": "mcq",
-    "text": "${lim}_{n\\rightarrow \\infty } \\left( \\frac{1}{n} + \\frac{n}{(n+1{)}^{2}} + \\frac{n}{(n+2{)}^{2}} +….+ \\frac{n}{(2n-1{)}^{2}} \\right)$ is equal to",
+    "text": "${lim}_{n\\rightarrow \\infty } \\left[ \\frac{1}{n} + \\frac{n}{(n+1{)}^{2}} + \\frac{n}{(n+2{)}^{2}} +….+ \\frac{n}{(2n-1{)}^{2}} \\right]$ is equal to",
     "images": [],
     "options": [
       "$1/2$",
@@ -24612,10 +23465,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "If for all real triplets $(a,b,c),f(x)=a+bx+c{x}^{2}$ ; then ${∫}_{0}^{1} f(x)dx$ is equal to",
     "images": [],
     "options": [
-      "$2 \\left( 3f(1)+2f \\left( \\frac{1}{2} \\right) \\right)$",
-      "$\\frac{1}{3} \\left( f(0)+f \\left( \\frac{1}{2} \\right) \\right)$",
-      "$\\frac{1}{2} \\left( f(1)+3f \\left( \\frac{1}{2} \\right) \\right)$",
-      "$\\frac{1}{6} \\left( f(0)+f(1)+4f \\left( \\frac{1}{2} \\right) \\right)$"
+      "$2 \\left{ 3f(1)+2f \\left( \\frac{1}{2} \\right) \\right}$",
+      "$\\frac{1}{3} \\left{ f(0)+f \\left( \\frac{1}{2} \\right) \\right}$",
+      "$\\frac{1}{2} \\left{ f(1)+3f \\left( \\frac{1}{2} \\right) \\right}$",
+      "$\\frac{1}{6} \\left{ f(0)+f(1)+4f \\left( \\frac{1}{2} \\right) \\right}$"
     ],
     "correct": "d",
     "chapter": "Integral Calculus",
@@ -24913,7 +23766,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_247",
     "number": "247",
     "type": "mcq",
-    "text": "The value of the integral ${∫}_{-2}^{2} \\frac{{sin}^{2}x}{\\left( \\frac{x}{\\pi } \\right) + \\frac{1}{2}} dx$ (where $[x]$ denotes the greatest integer less than or equal to $x$ ) is",
+    "text": "The value of the integral ${∫}_{-2}^{2} \\frac{{sin}^{2}x}{\\left[ \\frac{x}{\\pi } \\right] + \\frac{1}{2}} dx$ (where $[x]$ denotes the greatest integer less than or equal to $x$ ) is",
     "images": [],
     "options": [
       "0",
@@ -24970,7 +23823,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_250",
     "number": "250",
     "type": "mcq",
-    "text": "The integral ${∫}_{1}^{e} \\left( {\\left( \\frac{x}{e} \\right)}^{2x}-{\\left( \\frac{e}{x} \\right)}^{x} \\right) {log}_{e}xdx$ is equal to",
+    "text": "The integral ${∫}_{1}^{e} \\left{ {\\left( \\frac{x}{e} \\right)}^{2x}-{\\left( \\frac{e}{x} \\right)}^{x} \\right} {log}_{e}xdx$ is equal to",
     "images": [],
     "options": [
       "$\\frac{1}{2} -e- \\frac{1}{{e}^{2}}$",
@@ -25369,7 +24222,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_271",
     "number": "271",
     "type": "mcq",
-    "text": "Statement-I: The value of the integral ${∫}_{\\pi /6}^{\\pi /3} \\frac{dx}{1+ \\sqrt{tanx}}$ is equal to $\\pi /6$ . . Statement-II : ${∫}_{a}^{b} f(x)dx={∫}_{a}^{b} f(a+b-x)dx$ .",
+    "text": "Statement-I: The value of the integral ${∫}_{\\pi /6}^{\\pi /3} \\frac{dx}{1+ \\sqrt{tanx}}$ is equal to $\\pi /6$ . . \nStatement-II : ${∫}_{a}^{b} f(x)dx={∫}_{a}^{b} f(a+b-x)dx$ .",
     "images": [],
     "options": [
       "Statement-I is true, Statement-II is true, Statement-II is not a correct explanation for Statement-I.",
@@ -25536,30 +24389,12 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_integral_calculus_280",
-    "number": "280",
-    "type": "mcq",
-    "text": "The value of ${∫}_{1}^{a} [x]{f}^{'}(x)dx,a>1$ , where $[x]$ denotes the greatest integer not exceeding $x$ is (a) $af",
-    "images": [],
-    "options": [
-      "}$",
-      "$[a]f",
-      "$[a]f([a])-{f(1)+f(2)+…+f",
-      "$af([a])-{f(1)+f(2)+…+f"
-    ],
-    "correct": "b",
-    "chapter": "Integral Calculus",
-    "topic": "Definite Integrals",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Integral Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_integral_calculus_281",
     "number": "281",
     "type": "mcq",
-    "text": "${∫}_{-3\\pi /2}^{-\\pi /2} \\left( (x+\\pi {)}^{3}+{cos}^{2}(x+3\\pi ) \\right) dx$ is equal to",
+    "text": "${∫}_{-3\\pi /2}^{-\\pi /2} \\left[ (x+\\pi {)}^{3}+{cos}^{2}(x+3\\pi ) \\right] dx$ is equal to",
     "images": [],
     "options": [
       "$\\frac{{\\pi }^{4}}{32}$",
@@ -25616,7 +24451,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_284",
     "number": "284",
     "type": "mcq",
-    "text": "${lim}_{n\\rightarrow \\infty } \\left( \\frac{1}{{n}^{2}} {sec}^{2} \\frac{1}{{n}^{2}} + \\frac{2}{{n}^{2}} {sec}^{2} \\frac{4}{{n}^{2}} +….+ \\frac{1}{n} {sec}^{2}1 \\right)$ equals",
+    "text": "${lim}_{n\\rightarrow \\infty } \\left[ \\frac{1}{{n}^{2}} {sec}^{2} \\frac{1}{{n}^{2}} + \\frac{2}{{n}^{2}} {sec}^{2} \\frac{4}{{n}^{2}} +….+ \\frac{1}{n} {sec}^{2}1 \\right]$ equals",
     "images": [],
     "options": [
       "$\\frac{1}{2} cosec1$",
@@ -25749,7 +24584,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_291",
     "number": "291",
     "type": "mcq",
-    "text": "The value of ${∫}_{-2}^{3} \\left( 1-{x}^{2} \\right) dx$ is",
+    "text": "The value of ${∫}_{-2}^{3} \\left| 1-{x}^{2} \\right| dx$ is",
     "images": [],
     "options": [
       "$7/3$",
@@ -25840,25 +24675,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
-  {
-    "id": "jee_mains_math_integral_calculus_296",
-    "number": "296",
-    "type": "single mcq",
-    "text": "If $f(a+b-x)=f(x)$ , then ${∫}_{a}^{b} xf(x)dx$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{a+b}{2} {∫}_{a}^{b} f(x)dx$",
-      "$\\frac{b-a}{2} {∫}_{a}^{b} f(x)dx$",
-      "$\\frac{a+b}{2} {∫}_{a}^{b} f(a+b-x)dx$",
-      "$\\frac{a+b}{2} {∫}_{a}^{b} f(b-x)dx$"
-    ],
-    "correct": "297",
-    "chapter": "Integral Calculus",
-    "topic": "Definite Integrals",
-    "solution": "<p><strong>Ans: 297</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Integral Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+
   {
     "id": "jee_mains_math_integral_calculus_298",
     "number": "298",
@@ -25939,7 +24756,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_302",
     "number": "302",
     "type": "mcq",
-    "text": "${I}_{n}={∫}_{0}^{\\pi /4} {tan}^{n}xdx$ , then ${lim}_{n\\rightarrow \\infty } n \\left( {I}_{n}+{I}_{n-2} \\right)$ equals",
+    "text": "${I}_{n}={∫}_{0}^{\\pi /4} {tan}^{n}xdx$ , then ${lim}_{n\\rightarrow \\infty } n \\left[ {I}_{n}+{I}_{n-2} \\right]$ equals",
     "images": [],
     "options": [
       "$1/2$",
@@ -25958,7 +24775,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_303",
     "number": "303",
     "type": "mcq",
-    "text": "${∫}_{0}^{\\sqrt{2}} \\left( {x}^{2} \\right) dx$ is",
+    "text": "${∫}_{0}^{\\sqrt{2}} \\left[ {x}^{2} \\right] dx$ is",
     "images": [],
     "options": [
       "$2- \\sqrt{2}$",
@@ -25977,7 +24794,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_304",
     "number": "304",
     "type": "numerical",
-    "text": "Let [ $⋅$ ] denote the greatest integer function. If ${∫}_{0}^{{e}^{3}} \\left( \\frac{1}{{e}^{x-1}} \\right) dx=\\alpha -{log}_{e}2$ , then ${\\alpha }^{3}$ is equal to __________",
+    "text": "Let [ $⋅$ ] denote the greatest integer function. If ${∫}_{0}^{{e}^{3}} \\left[ \\frac{1}{{e}^{x-1}} \\right] dx=\\alpha -{log}_{e}2$ , then ${\\alpha }^{3}$ is equal to __________",
     "images": [],
     "options": [],
     "correct": "8",
@@ -26005,7 +24822,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_306",
     "number": "306",
     "type": "numerical",
-    "text": "If $24{∫}_{0}^{\\frac{\\pi }{4}} \\left( sin \\left( 4x- \\frac{\\pi }{12} \\right) +[2sinx] \\right) dx=2\\pi +\\alpha$ , where [.] denotes the greatest integer function, then $\\alpha$ is equal to _______________ .",
+    "text": "If $24{∫}_{0}^{\\frac{\\pi }{4}} \\left( sin \\left| 4x- \\frac{\\pi }{12} \\right| +[2sinx] \\right) dx=2\\pi +\\alpha$ , where [.] denotes the greatest integer function, then $\\alpha$ is equal to _______________ .",
     "images": [],
     "options": [],
     "correct": "12",
@@ -26061,7 +24878,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_310",
     "number": "310",
     "type": "numerical",
-    "text": "Let $[t]$ denote the largest integer less than or equal to $t$ . If ${∫}_{0}^{3} \\left( \\left( {x}^{2} \\right) + \\left( \\frac{{x}^{2}}{2} \\right) \\right) dx=a+b \\sqrt{2} - \\sqrt{3} - \\sqrt{5} +c \\sqrt{6} - \\sqrt{7}$ , where $a,b,c\\in Z$ , then $a+b+c$ is equal to _______________ .",
+    "text": "Let $[t]$ denote the largest integer less than or equal to $t$ . If ${∫}_{0}^{3} \\left[ \\left( {x}^{2} \\right] + \\left[ \\frac{{x}^{2}}{2} \\right] \\right) dx=a+b \\sqrt{2} - \\sqrt{3} - \\sqrt{5} +c \\sqrt{6} - \\sqrt{7}$ , where $a,b,c\\in Z$ , then $a+b+c$ is equal to _______________ .",
     "images": [],
     "options": [],
     "correct": "23",
@@ -26089,7 +24906,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_312",
     "number": "312",
     "type": "numerical",
-    "text": "Consider the matrices : $A= \\left( \\begin{bmatrix} 2 & -5 \\\\ 3 & m \\end{bmatrix} \\right) ,B= \\left( \\begin{bmatrix} 20 \\\\ m \\end{bmatrix} \\right)$ and $X= \\left( \\begin{bmatrix} x \\\\ y \\end{bmatrix} \\right)$ . Let the set of all $m$ , for which the system of equations $AX=B$ has a negative solution (i.e., $x<0$ and $y<0$ ), be the interval $(a,b)$ . Then $8{∫}_{a}^{b} |A|dm$ is equal to ____________ .",
+    "text": "Consider the matrices : $A= \\left[ 2 & -5 \\\\ 3 & m \\right] ,B= \\left[ 20 \\\\ m \\right)$ and $X= \\left[ x \\\\ y \\right)$ . Let the set of all $m$ , for which the system of equations $AX=B$ has a negative solution (i.e., $x<0$ and $y<0$ ), be the interval $(a,b)$ . Then $8{∫}_{a}^{b} |A|dm$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "450",
@@ -26173,7 +24990,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_318",
     "number": "318",
     "type": "numerical",
-    "text": "The value of $9{∫}_{0}^{9} \\left( \\sqrt{\\frac{10x}{x+1}} \\right) dx$ , where $[t]$ denotes the greatest integer less than or equal to $t$ , is ________________ .",
+    "text": "The value of $9{∫}_{0}^{9} \\left[ \\sqrt{\\frac{10x}{x+1}} \\right] dx$ , where $[t]$ denotes the greatest integer less than or equal to $t$ , is ________________ .",
     "images": [],
     "options": [],
     "correct": "155",
@@ -26229,7 +25046,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_322",
     "number": "322",
     "type": "numerical",
-    "text": "$\\left( \\frac{120}{{\\pi }^{3}} {∫}_{0}^{\\pi } \\frac{{x}^{2}sinxcosx}{{sin}^{4}x+{cos}^{4}x} dx \\right)$ is equal to _____________ .",
+    "text": "$\\left| \\frac{120}{{\\pi }^{3}} {∫}_{0}^{\\pi } \\frac{{x}^{2}sinxcosx}{{sin}^{4}x+{cos}^{4}x} dx \\right|$ is equal to _____________ .",
     "images": [],
     "options": [],
     "correct": "15",
@@ -26271,7 +25088,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_325",
     "number": "325",
     "type": "numerical",
-    "text": "Let $[t]$ denote the greatest integer function. If ${∫}_{0}^{2⋅4} \\left( {x}^{2} \\right) dx=\\alpha +\\beta \\sqrt{2} +\\gamma \\sqrt{3} +δ \\sqrt{5}$ , then $\\alpha +\\beta +\\gamma +$ $δ$ is equal to _____________ .",
+    "text": "Let $[t]$ denote the greatest integer function. If ${∫}_{0}^{2⋅4} \\left[ {x}^{2} \\right] dx=\\alpha +\\beta \\sqrt{2} +\\gamma \\sqrt{3} +δ \\sqrt{5}$ , then $\\alpha +\\beta +\\gamma +$ $δ$ is equal to _____________ .",
     "images": [],
     "options": [],
     "correct": "6",
@@ -26299,7 +25116,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_327",
     "number": "327",
     "type": "numerical",
-    "text": "If ${∫}_{-0.15}^{0.15} \\left( 100{x}^{2}-1 \\right) dx= \\frac{k}{3000}$ , then $k$ is equal to ________________ .",
+    "text": "If ${∫}_{-0.15}^{0.15} \\left| 100{x}^{2}-1 \\right| dx= \\frac{k}{3000}$ , then $k$ is equal to ________________ .",
     "images": [],
     "options": [],
     "correct": "575",
@@ -26383,7 +25200,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_333",
     "number": "333",
     "type": "numerical",
-    "text": "The value of $12{∫}_{0}^{3} \\left( {x}^{2}-3x+2 \\right) dx$ is __________ .",
+    "text": "The value of $12{∫}_{0}^{3} \\left| {x}^{2}-3x+2 \\right| dx$ is __________ .",
     "images": [],
     "options": [],
     "correct": "22",
@@ -26397,7 +25214,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_334",
     "number": "334",
     "type": "numerical",
-    "text": "If ${∫}_{\\frac{1}{3}}^{3} \\left( {log}_{e}x \\right) dx= \\frac{m}{n} {log}_{e} \\left( \\frac{{n}^{2}}{e} \\right)$ , where $m$ and $n$ are coprime natural numbers, then ${m}^{2}+{n}^{2}-5$ is equal to ____________ .",
+    "text": "If ${∫}_{\\frac{1}{3}}^{3} \\left| {log}_{e}x \\right| dx= \\frac{m}{n} {log}_{e} \\left( \\frac{{n}^{2}}{e} \\right)$ , where $m$ and $n$ are coprime natural numbers, then ${m}^{2}+{n}^{2}-5$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "20",
@@ -26439,7 +25256,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_337",
     "number": "337",
     "type": "numerical",
-    "text": "Let ${a}_{n}={∫}_{-1}^{n} \\left( 1+ \\frac{x}{2} + \\frac{{x}^{2}}{3} +…+ \\frac{{x}^{n-1}}{n} \\right) dx$ for every $n\\in N$ . Then the sum of all the elements of the set $\\left( n\\in N:{a}_{n}\\in (2,30) \\right)$ is _____________ .",
+    "text": "Let ${a}_{n}={∫}_{-1}^{n} \\left( 1+ \\frac{x}{2} + \\frac{{x}^{2}}{3} +…+ \\frac{{x}^{n-1}}{n} \\right) dx$ for every $n\\in N$ . Then the sum of all the elements of the set $\\left{ n\\in N:{a}_{n}\\in (2,30) \\right}$ is _____________ .",
     "images": [],
     "options": [],
     "correct": "5",
@@ -26523,7 +25340,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_343",
     "number": "343",
     "type": "numerical",
-    "text": "Let $f(\\theta )=sin\\theta +{∫}_{-\\pi /2}^{\\pi /2} (sin\\theta +tcos\\theta )f(t)dt$ . Then the value of $\\left( {∫}_{0}^{\\pi /2} f(\\theta )d\\theta \\right)$ is __________ .",
+    "text": "Let $f(\\theta )=sin\\theta +{∫}_{-\\pi /2}^{\\pi /2} (sin\\theta +tcos\\theta )f(t)dt$ . Then the value of $\\left| {∫}_{0}^{\\pi /2} f(\\theta )d\\theta \\right|$ is __________ .",
     "images": [],
     "options": [],
     "correct": "1",
@@ -26537,7 +25354,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_344",
     "number": "344",
     "type": "numerical",
-    "text": "Let $\\mathop{Max}_{0\\leq x\\leq 2} \\left( \\frac{9-{x}^{2}}{5-x} \\right) =\\alpha$ and $\\mathop{Min}_{0\\leq x\\leq 2} \\left( \\frac{9-{x}^{2}}{5-x} \\right) =\\beta$ . If ${∫}_{\\beta - \\frac{8}{3}}^{2\\alpha -1} Max \\left( \\frac{9-{x}^{2}}{5-x} ,x \\right) dx={\\alpha }_{1}+{\\alpha }_{2}{log}_{e} \\left( \\frac{8}{15} \\right)$ , then ${\\alpha }_{1}+{\\alpha }_{2}$ is equal to ____________ .",
+    "text": "Let $\\mathop{Max}_{0\\leq x\\leq 2} \\left{ \\frac{9-{x}^{2}}{5-x} \\right} =\\alpha$ and $\\mathop{Min}_{0\\leq x\\leq 2} \\left{ \\frac{9-{x}^{2}}{5-x} \\right} =\\beta$ . If ${∫}_{\\beta - \\frac{8}{3}}^{2\\alpha -1} Max \\left{ \\frac{9-{x}^{2}}{5-x} ,x \\right} dx={\\alpha }_{1}+{\\alpha }_{2}{log}_{e} \\left( \\frac{8}{15} \\right)$ , then ${\\alpha }_{1}+{\\alpha }_{2}$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "34",
@@ -26565,7 +25382,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_346",
     "number": "346",
     "type": "numerical",
-    "text": "Let $f(x)=max{|x+1|,|x+2|,…,|x+5|}$ . Then ${∫}_{-6}^{0} f(x)dx$ is equal to _________________",
+    "text": "Let $f(x)=max\\left{ |x+1|,|x+2|,…,|x+5| }\\right$ . Then ${∫}_{-6}^{0} f(x)dx$ is equal to _________________",
     "images": [],
     "options": [],
     "correct": "21",
@@ -26677,7 +25494,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_354",
     "number": "354",
     "type": "numerical",
-    "text": "If [.] represents the greatest integer function, then the value of $\\left( {∫}_{0}^{\\sqrt{\\frac{\\pi }{2}}} \\left( \\left( {x}^{2} \\right) -cosx \\right) dx \\right)$ is  .",
+    "text": "If [.] represents the greatest integer function, then the value of $\\left| {∫}_{0}^{\\sqrt{\\frac{\\pi }{2}}} \\left( \\left( {x}^{2} \\right) -cosx \\right| dx \\right)$ is  .",
     "images": [],
     "options": [],
     "correct": "1",
@@ -26747,7 +25564,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_359",
     "number": "359",
     "type": "numerical",
-    "text": "The value of ${∫}_{-2}^{2} \\left( 3{x}^{2}-3x-6 \\right) dx$ is _______________ .",
+    "text": "The value of ${∫}_{-2}^{2} \\left| 3{x}^{2}-3x-6 \\right| dx$ is _______________ .",
     "images": [],
     "options": [],
     "correct": "19",
@@ -26983,7 +25800,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_373",
     "number": "373",
     "type": "mcq",
-    "text": "If the area of the region $\\left( (x,y):-1\\leq x\\leq 1,0\\leq y\\leq a+{e}^{|x|}-{e}^{-x},a>0 \\right)$ is $\\frac{{e}^{2}+8e+1}{e}$ , then the value of $a$ is :",
+    "text": "If the area of the region $\\left{ (x,y):-1\\leq x\\leq 1,0\\leq y\\leq a+{e}^{|x|}-{e}^{-x},a>0 \\right}$ is $\\frac{{e}^{2}+8e+1}{e}$ , then the value of $a$ is :",
     "images": [],
     "options": [
       "6",
@@ -27021,7 +25838,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_375",
     "number": "375",
     "type": "mcq",
-    "text": "The area of the region enclosed by the curves $y={e}^{x}$ , $y= \\left( {e}^{x}-1 \\right)$ and $y$ -axis is:",
+    "text": "The area of the region enclosed by the curves $y={e}^{x}$ , $y= \\left| {e}^{x}-1 \\right|$ and $y$ -axis is:",
     "images": [],
     "options": [
       "${log}_{e}2$",
@@ -27078,7 +25895,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_378",
     "number": "378",
     "type": "mcq",
-    "text": "Let the area of the region $\\left( (x,y):2y\\leq {x}^{2}+3,y+|x| \\right)$ $\\leq 3,y\\geq |x-1|}$ be $A$ . Then $6A$ is equal to:",
+    "text": "Let the area of the region $\\left{ (x,y):2y\\leq {x}^{2}+3,y+|x| \\right)$ $\\leq 3,y\\geq |x-1| \\right}$ be $A$ . Then $6A$ is equal to:",
     "images": [],
     "options": [
       "14",
@@ -27135,7 +25952,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_381",
     "number": "381",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region described by $\\left( (x,y):{y}^{2}\\leq 2x \\right)$ , and $\\left( y\\geq 4x-1 \\right)$ is",
+    "text": "The area (in sq. units) of the region described by $\\left{ (x,y):{y}^{2}\\leq 2x \\right)$ , and $\\left( y\\geq 4x-1 \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{11}{12}$",
@@ -27192,7 +26009,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_384",
     "number": "384",
     "type": "mcq",
-    "text": "If the area of the region $\\left( (x,y): \\frac{a}{{x}^{2}} \\leq y\\leq \\frac{1}{x} ,1\\leq x\\leq 2,0<a<1 \\right)$ is $\\left( {log}_{e}2 \\right) - \\frac{1}{7}$ , then the value of $7a-3$ is equal to:",
+    "text": "If the area of the region $\\left{ (x,y): \\frac{a}{{x}^{2}} \\leq y\\leq \\frac{1}{x} ,1\\leq x\\leq 2,0<a<1 \\right}$ is $\\left( {log}_{e}2 \\right) - \\frac{1}{7}$ , then the value of $7a-3$ is equal to:",
     "images": [],
     "options": [
       "2",
@@ -27302,25 +26119,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Easy"
   },
-  {
-    "id": "jee_mains_math_integral_calculus_390",
-    "number": "390",
-    "type": "mcq",
-    "text": "The area of the region $\\left( (x,y):{y}^{2}\\leq 4x,x0,x\\neq 3 \\right)$ is",
-    "images": [],
-    "options": [
-      "$\\frac{32}{3}$",
-      "$\\frac{16}{3}$",
-      "$\\frac{8}{3}$",
-      "$\\frac{64}{3}$"
-    ],
-    "correct": "a",
-    "chapter": "Integral Calculus",
-    "topic": "Area Of Bounded Region",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Integral Calculus\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_integral_calculus_391",
     "number": "391",
@@ -27363,7 +26162,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_393",
     "number": "393",
     "type": "mcq",
-    "text": "The area of the region $\\left( (x,y):{x}^{2}\\leq y\\leq 8-{x}^{2},y\\leq 7 \\right)$ is",
+    "text": "The area of the region $\\left{ (x,y):{x}^{2}\\leq y\\leq 8-{x}^{2},y\\leq 7 \\right]$ is",
     "images": [],
     "options": [
       "24",
@@ -27420,7 +26219,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_396",
     "number": "396",
     "type": "mcq",
-    "text": "The area of the region enclosed by the curve $f(x)=max{sinx,cosx},-\\pi \\leq x\\leq \\pi$ and the $x$ -axis is",
+    "text": "The area of the region enclosed by the curve $f(x)=max{\\left sinx,cosx \\right},-\\pi \\leq x\\leq \\pi$ and the $x$ -axis is",
     "images": [],
     "options": [
       "$4( \\sqrt{2} )$",
@@ -27439,7 +26238,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_397",
     "number": "397",
     "type": "mcq",
-    "text": "The area of the region $\\left( (x,y):{x}^{2}\\leq y\\leq \\left( {x}^{2}-4 \\right) ,y\\geq 1 \\right)$ is",
+    "text": "The area of the region $\\left{ (x,y):{x}^{2}\\leq y\\leq \\left( {x}^{2}-4 \\right) ,y\\geq 1 \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{4}{3} (4 \\sqrt{2} +1)$",
@@ -27458,7 +26257,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_398",
     "number": "398",
     "type": "mcq",
-    "text": "The area of the region given by $\\left( (x,y):xy\\leq 8,1\\leq y\\leq {x}^{2} \\right)$ is",
+    "text": "The area of the region given by $\\left{ (x,y):xy\\leq 8,1\\leq y\\leq {x}^{2} \\right}$ is",
     "images": [],
     "options": [
       "$16{log}_{e}2- \\frac{14}{3}$",
@@ -27496,7 +26295,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_400",
     "number": "400",
     "type": "mcq",
-    "text": "Let $A= \\left( (x,y)\\in {R}^{2}:y\\geq 0,2x\\leq y\\leq \\sqrt{4-(x-1{)}^{2}} \\right)$ and $B= \\left( (x,y)\\in R\\times R:0\\leq y\\leq min \\left( 2x, \\sqrt{4-(x-1{)}^{2}} \\right) \\right)$ . Then the ratio of the area of $A$ to the area of $B$ is",
+    "text": "Let $A= \\left{ (x,y)\\in {R}^{2}:y\\geq 0,2x\\leq y\\leq \\sqrt{4-(x-1{)}^{2}} \\right}$ and $B= \\left{ (x,y)\\in R\\times R:0\\leq y\\leq min \\left{ 2x, \\sqrt{4-(x-1{)}^{2}} \\right} \\right}$ . Then the ratio of the area of $A$ to the area of $B$ is",
     "images": [],
     "options": [
       "$\\frac{\\pi }{\\pi +1}$",
@@ -27515,7 +26314,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_401",
     "number": "401",
     "type": "mcq",
-    "text": "Let $\\Delta$ be the area of the region $\\left( (x,y)\\in {R}^{2}:{x}^{2}+{y}^{2}\\leq 21 \\right)$ , $\\left( {y}^{2}\\leq 4x,x\\geq 1 \\right)$ . Then $\\frac{1}{2} \\left( \\Delta -21{sin}^{-1} \\frac{2}{\\sqrt{7}} \\right)$ is equal to",
+    "text": "Let $\\Delta$ be the area of the region $\\left{ (x,y)\\in {R}^{2}:{x}^{2}+{y}^{2}\\leq 21 $ , $ {y}^{2}\\leq 4x,x\\geq 1 \\right}$ . Then $\\frac{1}{2} \\left( \\Delta -21{sin}^{-1} \\frac{2}{\\sqrt{7}} \\right)$ is equal to",
     "images": [],
     "options": [
       "$\\sqrt{3} - \\frac{2}{3}$",
@@ -27534,7 +26333,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_402",
     "number": "402",
     "type": "mcq",
-    "text": "The area of the region $A= \\left( (x,y):|cosx-sinx|\\leq y\\leq sinx,0\\leq x\\leq \\frac{\\pi }{2} \\right)$ is",
+    "text": "The area of the region $A= \\left{ (x,y):|cosx-sinx|\\leq y\\leq sinx,0\\leq x\\leq \\frac{\\pi }{2} \\right}$ is",
     "images": [],
     "options": [
       "$\\sqrt{5} -2 \\sqrt{2} +1$",
@@ -27572,7 +26371,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_404",
     "number": "404",
     "type": "mcq",
-    "text": "The area of the region given by $A= \\left( (x,y):{x}^{2}\\leq y\\leq min{x+2,4-3x} \\right)$ is :",
+    "text": "The area of the region given by $A= \\left{ (x,y):{x}^{2}\\leq y\\leq min{\\left x+2,4-3x \\right} \\right}$ is :",
     "images": [],
     "options": [
       "$\\frac{31}{8}$",
@@ -27629,7 +26428,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_407",
     "number": "407",
     "type": "mcq",
-    "text": "The area bounded by the curves $y= \\left( {x}^{2}-1 \\right)$ and $y=1$ is",
+    "text": "The area bounded by the curves $y= \\left| {x}^{2}-1 \\right|$ and $y=1$ is",
     "images": [],
     "options": [
       "$\\frac{2}{3} ( \\sqrt{2} +1)$",
@@ -27705,7 +26504,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_411",
     "number": "411",
     "type": "mcq",
-    "text": "The area of the region $\\left( (x,y):|x-1|\\leq y\\leq \\sqrt{5-{x}^{2}} \\right)$ is equal to",
+    "text": "The area of the region $\\left{ (x,y):|x-1|\\leq y\\leq \\sqrt{5-{x}^{2}} \\right}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{5}{2} {sin}^{-1} \\left( \\frac{3}{5} \\right) - \\frac{1}{2}$",
@@ -27743,7 +26542,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_413",
     "number": "413",
     "type": "mcq",
-    "text": "The area bounded by the curve $y= \\left( {x}^{2}-9 \\right)$ and the line $y=3$ is",
+    "text": "The area bounded by the curve $y= \\left| {x}^{2}-9 \\right|$ and the line $y=3$ is",
     "images": [],
     "options": [
       "$4(2 \\sqrt{3} + \\sqrt{6} -4)$",
@@ -27781,7 +26580,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_415",
     "number": "415",
     "type": "mcq",
-    "text": "The area of the region $S= \\left( (x,y):{y}^{2}\\leq 8x,y\\geq \\sqrt{2} x \\right)$ , $x\\geq 1}$ is",
+    "text": "The area of the region $S= \\left{ (x,y):{y}^{2}\\leq 8x,y\\geq \\sqrt{2} x $ , $x\\geq 1 \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{13 \\sqrt{2}}{6}$",
@@ -27800,7 +26599,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_416",
     "number": "416",
     "type": "mcq",
-    "text": "The area of the bounded region enclosed by the curve $y=3- \\left( x- \\frac{1}{2} \\right) -|x+1|$ and the $x$ -axis is",
+    "text": "The area of the bounded region enclosed by the curve $y=3- \\left| x- \\frac{1}{2} \\right| -|x+1|$ and the $x$ -axis is",
     "images": [],
     "options": [
       "$\\frac{9}{4}$",
@@ -27876,7 +26675,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_420",
     "number": "420",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region, given by the set $\\left( (x,y)\\in R\\times R∣x\\geq 0,2{x}^{2}\\leq y\\leq 4-2x \\right)$ is",
+    "text": "The area (in sq. units) of the region, given by the set $\\left{ (x,y)\\in R\\times R∣x\\geq 0,2{x}^{2}\\leq y\\leq 4-2x \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{8}{3}$",
@@ -27895,7 +26694,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_421",
     "number": "421",
     "type": "mcq",
-    "text": "If the area of the bounded region $R= \\left( (x,y):max \\left( 0,{log}_{e}x \\right) \\leq y\\leq {2}^{x}, \\frac{1}{2} \\leq x\\leq 2 \\right)$ is, $\\alpha {\\left( {log}_{e}2 \\right)}^{-1}+\\beta \\left( {log}_{e}2 \\right) +\\gamma$ , then the value of $(\\alpha +\\beta -2\\gamma {)}^{2}$ is equal to",
+    "text": "If the area of the bounded region $R= \\left{ (x,y):max \\left{ 0,{log}_{e}x \\right} \\leq y\\leq {2}^{x}, \\frac{1}{2} \\leq x\\leq 2 \\right}$ is, $\\alpha {\\left( {log}_{e}2 \\right)}^{-1}+\\beta \\left( {log}_{e}2 \\right) +\\gamma$ , then the value of $(\\alpha +\\beta -2\\gamma {)}^{2}$ is equal to",
     "images": [],
     "options": [
       "2",
@@ -27971,7 +26770,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_425",
     "number": "425",
     "type": "mcq",
-    "text": "The area of the region : $R= \\left( (x,y):5{x}^{2}\\leq y\\leq 2{x}^{2}+9 \\right)$ is",
+    "text": "The area of the region : $R= \\left{ (x,y):5{x}^{2}\\leq y\\leq 2{x}^{2}+9 \\right}$ is",
     "images": [],
     "options": [
       "$9 \\sqrt{3}$ square units",
@@ -28047,7 +26846,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_429",
     "number": "429",
     "type": "mcq",
-    "text": "Consider a region $R= \\left( (x,y)\\in {R}^{2}:{x}^{2}\\leq y\\leq 2x \\right)$ . If a line $y=\\alpha$ divides the area of region $R$ into two equal parts, then which of the following is true?",
+    "text": "Consider a region $R= \\left{ (x,y)\\in {R}^{2}:{x}^{2}\\leq y\\leq 2x \\right}$ . If a line $y=\\alpha$ divides the area of region $R$ into two equal parts, then which of the following is true?",
     "images": [],
     "options": [
       "${\\alpha }^{3}-6{\\alpha }^{2}+16=0$",
@@ -28066,7 +26865,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_430",
     "number": "430",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region ${(x,y):0\\leq y$ $\\left( \\leq {x}^{2}+1,0\\leq y\\leq x+1, \\frac{1}{2} \\leq x\\leq 2 \\right)$ is",
+    "text": "The area (in sq. units) of the region ${(x,y):0\\leq y$ $\\left( \\leq {x}^{2}+1,0\\leq y\\leq x+1, \\frac{1}{2} \\leq x\\leq 2 \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{23}{16}$",
@@ -28085,7 +26884,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_431",
     "number": "431",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region $A={(x,y):(x-1)[x]\\leq y\\leq 2 \\sqrt{x} ,0\\leq x\\leq 2},$ where $[t]$ denotes the greatest integer function, is",
+    "text": "The area (in sq. units) of the region $A=\\left{ (x,y):(x-1)[x]\\leq y\\leq 2 \\sqrt{x} ,0\\leq x\\leq 2 \\right},$ where $[t]$ denotes the greatest integer function, is",
     "images": [],
     "options": [
       "$\\frac{8}{3} \\sqrt{2} - \\frac{1}{2}$",
@@ -28104,7 +26903,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_432",
     "number": "432",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region $A= \\left( (x,y):|x|+|y|\\leq 1,2{y}^{2}\\geq |x| \\right)$ is",
+    "text": "The area (in sq. units) of the region $A= \\left{ (x,y):|x|+|y|\\leq 1,2{y}^{2}\\geq |x| \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{1}{3}$",
@@ -28147,7 +26946,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "options": [
       "$\\frac{1}{3} (12\\pi -1)$",
       "$\\frac{1}{6} (12\\pi -1)$",
-      "$\\frac{1}{3} \\left( \\begin{bmatrix} 6\\pi & 1 \\end{bmatrix} \\right)$",
+      "$\\frac{1}{3} ( 6\\pi & 1$",
       "$\\frac{1}{6} (24\\pi -1)$"
     ],
     "correct": "b",
@@ -28161,7 +26960,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_435",
     "number": "435",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region $\\left( (x,y)\\in {R}^{2}∣4{x}^{2} \\right)$ $\\leq y\\leq 8x+12}$ is",
+    "text": "The area (in sq. units) of the region $\\left{ (x,y)\\in {R}^{2}∣4{x}^{2}$ $\\leq y\\leq 8x+12 \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{125}{3}$",
@@ -28199,7 +26998,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_437",
     "number": "437",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region $\\left( (x,y)\\in {R}^{2} \\right)$ : $\\left( {x}^{2}\\leq y\\leq 3-2x \\right)$ , is",
+    "text": "The area (in sq. units) of the region $\\left{ (x,y)\\in {R}^{2}$ : ${x}^{2}\\leq y\\leq 3-2x \\right}$ , is",
     "images": [],
     "options": [
       "$\\frac{31}{3}$",
@@ -28218,7 +27017,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_438",
     "number": "438",
     "type": "mcq",
-    "text": "Given: $f(x)= \\left( \\begin{bmatrix} x & ,0\\leq x< \\frac{1}{2} \\\\ \\frac{1}{2} & ,x= \\frac{1}{2} \\\\ 1-x & , \\frac{1}{2} <x\\leq 1 \\end{bmatrix} \\right)$ and $g(x)={\\left( x- \\frac{1}{2} \\right)}^{2}$ , $x\\in R$ . Then the area (in sq. units) of the region bounded by the curves, $y=f(x)$ and $y=g(x)$ between the lines, $2x=1$ and $2x= \\sqrt{3}$ , is",
+    "text": "Given: $f(x)= \\left{ x & ,0\\leq x< \\frac{1}{2} \\\\ \\frac{1}{2} & ,x= \\frac{1}{2} \\\\ 1-x & , \\frac{1}{2} <x\\leq 1$ and $g(x)={\\left( x- \\frac{1}{2} \\right)}^{2}$ , $x\\in R$ . Then the area (in sq. units) of the region bounded by the curves, $y=f(x)$ and $y=g(x)$ between the lines, $2x=1$ and $2x= \\sqrt{3}$ , is",
     "images": [],
     "options": [
       "$\\frac{\\sqrt{3}}{4} - \\frac{1}{3}$",
@@ -28237,7 +27036,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_439",
     "number": "439",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region $A= \\left( (x,y)\\in R\\times R∣0\\leq x\\leq 3,0\\leq y\\leq 4,y\\leq {x}^{2}+3x \\right)$ is",
+    "text": "The area (in sq. units) of the region $A= \\left{ (x,y)\\in R\\times R\\left ∣ 0\\leq x\\leq 3,0\\leq y\\leq 4,y\\leq {x}^{2}+3x \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{53}{6}$",
@@ -28256,7 +27055,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_440",
     "number": "440",
     "type": "mcq",
-    "text": "Let $S(\\alpha )= \\left( (x,y):{y}^{2}\\leq x,0\\leq x\\leq \\alpha \\right)$ and $A(\\alpha )$ is area of the region $S(\\alpha )$ . If for a $\\lambda ,0<\\lambda <4$ , $A(\\lambda ):A(4)=2:5$ , then $\\lambda$ equals",
+    "text": "Let $S(\\alpha )= \\left{ (x,y):{y}^{2}\\leq x,0\\leq x\\leq \\alpha \\right)$ and $A(\\alpha )$ is area of the region $S(\\alpha )$ . If for a $\\lambda ,0<\\lambda <4$ , $A(\\lambda ):A(4)=2:5$ , then $\\lambda$ equals",
     "images": [],
     "options": [
       "$2{\\left( \\frac{2}{5} \\right)}^{1/3}$",
@@ -28275,7 +27074,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_441",
     "number": "441",
     "type": "mcq",
-    "text": "The area (in sq . units) of the region $A= \\left( (x,y):{x}^{2}\\leq y<x+2 \\right)$ is",
+    "text": "The area (in sq . units) of the region $A= \\left{ (x,y):{x}^{2}\\leq y<x+2 \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{31}{6}$",
@@ -28294,7 +27093,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_442",
     "number": "442",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region $A= \\left( (x,y): \\frac{{y}^{2}}{2} \\leq x\\leq y+4 \\right)$ is",
+    "text": "The area (in sq. units) of the region $A= \\left{ (x,y): \\frac{{y}^{2}}{2} \\leq x\\leq y+4 \\right}$ is",
     "images": [],
     "options": [
       "18",
@@ -28332,7 +27131,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_444",
     "number": "444",
     "type": "mcq",
-    "text": "If the area (in sq. units) of the region $\\left( (x,y):{y}^{2}\\leq 4x,x+y\\leq 1,x\\geq 0,y\\geq 0 \\right)$ is $a \\sqrt{2} +b$ , then $a-b$ is equal to",
+    "text": "If the area (in sq. units) of the region $\\left{ (x,y):{y}^{2}\\leq 4x,x+y\\leq 1,x\\geq 0,y\\geq 0 \\right}$ is $a \\sqrt{2} +b$ , then $a-b$ is equal to",
     "images": [],
     "options": [
       "$\\frac{8}{3}$",
@@ -28357,7 +27156,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "24",
       "48",
       "$4 \\sqrt{3}$",
-      "$2 \\sqrt{6}$ (12 ${}^{th}$ April ${2}^{nd}$ Shift 2019"
+      "$2 \\sqrt{6}$"
     ],
     "correct": "a",
     "chapter": "Integral Calculus",
@@ -28389,7 +27188,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_447",
     "number": "447",
     "type": "mcq",
-    "text": "The area of the region $A={(x,y):0\\leq y\\leq x|x|+1$ and $-1\\leq x\\leq 1}$ in sq. units, is",
+    "text": "The area of the region $A=\\left{ (x,y):0\\leq y\\leq x|x|+1$ and $-1\\leq x\\leq 1 \\right}$ in sq. units, is",
     "images": [],
     "options": [
       "2",
@@ -28503,7 +27302,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_453",
     "number": "453",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region ${x\\in R:x\\geq 0,y\\geq 0,y\\geq x-2$ and $y\\leq \\sqrt{x} }$ , is",
+    "text": "The area (in sq. units) of the region $\\left{ x\\in R:x\\geq 0,y\\geq 0,y\\geq x-2$ and $y\\leq \\sqrt{x} \\right}$ , is",
     "images": [],
     "options": [
       "$\\frac{10}{3}$",
@@ -28541,7 +27340,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_455",
     "number": "455",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region ${(x,y):x\\geq 0$ , $x+y\\leq 3,{x}^{2}\\leq 4y$ and $\\left( y\\leq 1+ \\sqrt{x} \\right)$ is",
+    "text": "The area (in sq. units) of the region $\\left{ (x,y):x\\geq 0$ , $x+y\\leq 3,{x}^{2}\\leq 4y$ and $y\\leq 1+ \\sqrt{x} \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{3}{2}$",
@@ -28579,7 +27378,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_457",
     "number": "457",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region $\\left( (x,y):{y}^{2}\\geq 2x \\right)$ and $\\left( {x}^{2}+{y}^{2}\\leq 4x,x\\geq 0,y\\geq 0 \\right)$ is",
+    "text": "The area (in sq. units) of the region $\\left{ (x,y):{y}^{2}\\geq 2x \\right)$ and $\\left( {x}^{2}+{y}^{2}\\leq 4x,x\\geq 0,y\\geq 0 \\right}$ is",
     "images": [],
     "options": [
       "$\\pi - \\frac{4}{3}$",
@@ -28598,7 +27397,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_458",
     "number": "458",
     "type": "mcq",
-    "text": "The area (in sq. units) of the region described by $A= \\left( (x,y)∣y\\geq {x}^{2}-5x+4,x+y\\geq 1,y\\leq 0 \\right)$ is",
+    "text": "The area (in sq. units) of the region described by $A= \\left{ (x,y) \\left ∣ y\\geq {x}^{2}-5x+4,x+y\\geq 1,y\\leq 0 \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{19}{6}$",
@@ -28655,7 +27454,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_461",
     "number": "461",
     "type": "mcq",
-    "text": "The area of the region described by $A= \\left( (x,y):{x}^{2}+{y}^{2}\\leq 1 \\right)$ and $\\left( {y}^{2}\\leq 1-x \\right)$ is",
+    "text": "The area of the region described by $A= \\left{ (x,y):{x}^{2}+{y}^{2}\\leq 1$ and ${y}^{2}\\leq 1-x \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{\\pi }{2} - \\frac{4}{3}$",
@@ -28959,7 +27758,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_477",
     "number": "477",
     "type": "numerical",
-    "text": "If the area of the region $\\left( (x,y): \\left( 4-{x}^{2} \\right) \\leq y\\leq {x}^{2},y\\leq 4 \\right)$ , $x\\geq 0}$ is $\\left( \\frac{80 \\sqrt{2}}{\\alpha } -\\beta \\right) ,\\alpha ,\\beta \\in N$ , then $\\alpha +\\beta$ is equal to_______________ .",
+    "text": "If the area of the region $\\left{ (x,y): \\left| 4-{x}^{2} \\right| \\leq y\\leq {x}^{2},y\\leq 4 \\right)$ , $x\\geq 0 \\right}$ is $\\left( \\frac{80 \\sqrt{2}}{\\alpha } -\\beta \\right) ,\\alpha ,\\beta \\in N$ , then $\\alpha +\\beta$ is equal to_______________ .",
     "images": [],
     "options": [],
     "correct": "22",
@@ -28973,7 +27772,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_478",
     "number": "478",
     "type": "numerical",
-    "text": "The area of the region bounded by the curve $=max$ ${|x|,x|x-2|}$ , the $x$ -axis and the lines $x=-2$ and $x=4$ is equal to ____________ .",
+    "text": "The area of the region bounded by the curve $=max$ $\\left{ |x|,x|x-2| \\right}$ , the $x$ -axis and the lines $x=-2$ and $x=4$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "12",
@@ -28987,7 +27786,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_479",
     "number": "479",
     "type": "numerical",
-    "text": "If the area of the region ${(x,y):|x-5|\\leq y\\leq 4 \\sqrt{x} }$ is $A$ , then $3A$ is equal to _____________ .",
+    "text": "If the area of the region $\\left{ (x,y):|x-5|\\leq y\\leq 4 \\sqrt{x} \\right}$ is $A$ , then $3A$ is equal to _____________ .",
     "images": [],
     "options": [],
     "correct": "368",
@@ -29001,7 +27800,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_480",
     "number": "480",
     "type": "numerical",
-    "text": "Let the area of the bounded region $\\left( (x,y):0\\leq 9x\\leq {y}^{2} \\right)$ , $y\\geq 3x-6}$ be $A$ . Then $6A$ is equal to _________________",
+    "text": "Let the area of the bounded region $\\left{ (x,y):0\\leq 9x\\leq {y}^{2} \\right)$ , $y\\geq 3x-6 \\right}$ be $A$ . Then $6A$ is equal to _________________",
     "images": [],
     "options": [],
     "correct": "15",
@@ -29015,7 +27814,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_481",
     "number": "481",
     "type": "numerical",
-    "text": "Let the function, $f(x)= \\left( \\begin{bmatrix} -3a{x}^{2}-2, & x<1 \\\\ {a}^{2}+bx, & x\\geq 1 \\end{bmatrix} \\right)$ be differentiable for all $x\\in R$ , wehe $a>1,b\\in R$ . If the area of the region enclosed by $y=f(x)$ and the line $y=-20$ is $\\alpha +\\beta \\sqrt{3} ,\\alpha ,\\beta \\in Z$ , then the value of $\\alpha +$ $\\beta$ is ____________ .",
+    "text": "Let the function, $f(x)= \\left{ -3a{x}^{2}-2, & x<1 \\\\ {a}^{2}+bx, & x\\geq 1$ be differentiable for all $x\\in R$ , wehe $a>1,b\\in R$ . If the area of the region enclosed by $y=f(x)$ and the line $y=-20$ is $\\alpha +\\beta \\sqrt{3} ,\\alpha ,\\beta \\in Z$ , then the value of $\\alpha +$ $\\beta$ is ____________ .",
     "images": [],
     "options": [],
     "correct": "34",
@@ -29057,7 +27856,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_484",
     "number": "484",
     "type": "numerical",
-    "text": "Let the area of the region enclosed by the curve $y=min{sinx,cosx}$ and the $x$ -axis between $x=-\\pi$ to $x=\\pi$ be $A$ . Then ${A}^{2}$ is equal to _____________ .",
+    "text": "Let the area of the region enclosed by the curve $y=min{\\left {sinx,cosx} \\right$ and the $x$ -axis between $x=-\\pi$ to $x=\\pi$ be $A$ . Then ${A}^{2}$ is equal to _____________ .",
     "images": [],
     "options": [],
     "correct": "16",
@@ -29099,7 +27898,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_487",
     "number": "487",
     "type": "numerical",
-    "text": "Let the area of the region $\\left( (x,y):x-2y+4\\geq 0,x+2{y}^{2}\\geq 0,x+4{y}^{2}\\leq 8,y\\geq 0 \\right)$ be $\\frac{m}{n}$ , where $m$ and $n$ are coprime numbers. Then $m+n$ is equal to ________________ .",
+    "text": "Let the area of the region $\\left{ (x,y):x-2y+4\\geq 0,x+2{y}^{2}\\geq 0,x+4{y}^{2}\\leq 8,y\\geq 0 \\right}$ be $\\frac{m}{n}$ , where $m$ and $n$ are coprime numbers. Then $m+n$ is equal to ________________ .",
     "images": [],
     "options": [],
     "correct": "119",
@@ -29113,7 +27912,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_488",
     "number": "488",
     "type": "numerical",
-    "text": "If the area of the region ${(x,y):0\\leq y\\leq min$ $\\left( \\left( 2x,6x-{x}^{2} \\right) \\right)$ is $A$ , then $12A$ is equal to _____________ .",
+    "text": "If the area of the region ${\\left (x,y):0\\leq y\\leq min$ $\\left( 2x,6x-{x}^{2} \\right} \\right}$ is $A$ , then $12A$ is equal to _____________ .",
     "images": [],
     "options": [],
     "correct": "304",
@@ -29141,7 +27940,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_490",
     "number": "490",
     "type": "numerical",
-    "text": "Let the area of the region ${(x,y):0\\leq x\\leq 3,0\\leq y$ $\\left( \\leq min \\left( {x}^{2}+2,2x+2 \\right) \\right)$ be $A$ . Then $12A$ is equal to________________ .",
+    "text": "Let the area of the region $\\left{ (x,y):0\\leq x\\leq 3,0\\leq y\\leq min \\left{ {x}^{2}+2,2x+2 \\right} \\right}$ be $A$ . Then $12A$ is equal to________________ .",
     "images": [],
     "options": [],
     "correct": "164",
@@ -29155,7 +27954,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_491",
     "number": "491",
     "type": "numerical",
-    "text": "The area of the region enclosed by the parabola $(y-2{)}^{2}=x-1$ , the line $x-2y+4=0$ and the positive coordinate axes is _______________ . $\\left( {30}^{th} \\right)$ Jan ${2}^{nd}$ Shift 2024)",
+    "text": "The area of the region enclosed by the parabola $(y-2{)}^{2}=x-1$ , the line $x-2y+4=0$ and the positive coordinate axes is _______________ . ",
     "images": [],
     "options": [],
     "correct": "5",
@@ -29169,7 +27968,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_492",
     "number": "492",
     "type": "numerical",
-    "text": "If the area of region $S= \\left( (x,y):2y-{y}^{2}\\leq {x}^{2}\\leq 2y,x\\geq \\right)$ $y}$ is equal to $\\frac{n+2}{n+1} - \\frac{\\pi }{n-1}$ , then the natural number $n$ is equal to _____________",
+    "text": "If the area of region $S= \\left{ (x,y):2y-{y}^{2}\\leq {x}^{2}\\leq 2y,x\\geq \\right)$ $y \\right}$ is equal to $\\frac{n+2}{n+1} - \\frac{\\pi }{n-1}$ , then the natural number $n$ is equal to _____________",
     "images": [],
     "options": [],
     "correct": "5",
@@ -29183,7 +27982,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_493",
     "number": "493",
     "type": "numerical",
-    "text": "Let the area enclosed by the lines $x+y=2,y=0$ , $x=0$ and the curve $f(x)=min \\left( {x}^{2}+ \\frac{3}{4} ,1+[x] \\right)$ , where $[x]$ denotes the greatest integer $\\leq x$ , be $A$ . Then the value of $12A$ is __________ -",
+    "text": "Let the area enclosed by the lines $x+y=2,y=0$ , $x=0$ and the curve $f(x)=min \\left{ {x}^{2}+ \\frac{3}{4} ,1+[x] \\right)$ , where $[x]$ denotes the greatest integer $\\leq x$ , be $A$ . Then the value of $12A$ is __________ -",
     "images": [],
     "options": [],
     "correct": "17",
@@ -29197,7 +27996,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_494",
     "number": "494",
     "type": "numerical",
-    "text": "Let $y=p(x)$ be the parabola passing through the points $(-1,0),(0,1)$ and $(1,0)$ . If the area of the region $\\left( (x,y):(x+1{)}^{2}+(y-1{)}^{2}\\leq 1,y\\leq p(x) \\right)$ is $A$ , then 12( $\\pi -4A$ ) is equal to __________ -",
+    "text": "Let $y=p(x)$ be the parabola passing through the points $(-1,0),(0,1)$ and $(1,0)$ . If the area of the region $\\left{ (x,y):(x+1{)}^{2}+(y-1{)}^{2}\\leq 1,y\\leq p(x) \\right}$ is $A$ , then 12( $\\pi -4A$ ) is equal to __________ -",
     "images": [],
     "options": [],
     "correct": "16",
@@ -29211,7 +28010,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_495",
     "number": "495",
     "type": "numerical",
-    "text": "If the area of the region $\\left( (x,y): \\left( {x}^{2}-2 \\right) \\leq y\\leq x \\right)$ is $A$ , then $6A+16 \\sqrt{2}$ is equal to _________ .",
+    "text": "If the area of the region $\\left{ (x,y): \\left| {x}^{2}-2 \\right| \\leq y\\leq x \\right}$ is $A$ , then $6A+16 \\sqrt{2}$ is equal to _________ .",
     "images": [],
     "options": [],
     "correct": "27",
@@ -29309,7 +28108,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_502",
     "number": "502",
     "type": "numerical",
-    "text": "Let $A$ be the area of the region $\\left( (x,y):y\\geq {x}^{2} \\right)$ , $\\left( y\\geq (1-x{)}^{2},y\\leq 2x(1-x) \\right)$ . Then $540A$ is equal to_______________ .",
+    "text": "Let $A$ be the area of the region $\\left{ (x,y):y\\geq {x}^{2},y\\geq (1-x{)}^{2},y\\leq 2x(1-x) \\right}$ . Then $540A$ is equal to_______________ .",
     "images": [],
     "options": [],
     "correct": "25",
@@ -29323,7 +28122,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_503",
     "number": "503",
     "type": "numerical",
-    "text": "Let for $x\\in R,f(x)= \\frac{x+|x|}{2}$ and $g(x)= \\left( \\begin{bmatrix} x,x<0 \\\\ {x}^{2},x\\geq 0 \\end{bmatrix} \\right)$ . Then area bounded by the curve $y=(f∘g)(x)$ and the lines $y=0,2y-x=15$ is equal to _______________ .",
+    "text": "Let for $x\\in R,f(x)= \\frac{x+|x|}{2}$ and $g(x)= \\left{ x,x<0 \\\\ {x}^{2},x\\geq 0 $ . Then area bounded by the curve $y=(f∘g)(x)$ and the lines $y=0,2y-x=15$ is equal to _______________ .",
     "images": [],
     "options": [],
     "correct": "72",
@@ -29337,7 +28136,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_504",
     "number": "504",
     "type": "numerical",
-    "text": "Let the area of the region ${(x,y):|2x-1|\\leq y\\leq 1$ $\\left( {x}^{2}-x∣,0\\leq x\\leq 1 \\right)$ be $A$ . Then $(6A+11{)}^{2}$ is equal to____________ .",
+    "text": "Let the area of the region $\\left{ (x,y):|2x-1|\\leq y\\leq 1 {x}^{2}-x \\left∣ ,0\\leq x\\leq 1 \\right}$ be $A$ . Then $(6A+11{)}^{2}$ is equal to____________ .",
     "images": [],
     "options": [],
     "correct": "125",
@@ -29351,7 +28150,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_505",
     "number": "505",
     "type": "numerical",
-    "text": "Let $S$ be the region bounded by the curves $y={x}^{3}$ and ${y}^{2}=x$ . The curve $y=2|x|$ divides $S$ into two regions of area ${R}_{1}$ and ${R}_{2}$ . If $max \\left( {R}_{1},{R}_{2} \\right) ={R}_{2}$ , then $\\frac{{R}_{2}}{{R}_{1}}$ is equal to _________ .",
+    "text": "Let $S$ be the region bounded by the curves $y={x}^{3}$ and ${y}^{2}=x$ . The curve $y=2|x|$ divides $S$ into two regions of area ${R}_{1}$ and ${R}_{2}$ . If $max \\left{ {R}_{1},{R}_{2} \\right} ={R}_{2}$ , then $\\frac{{R}_{2}}{{R}_{1}}$ is equal to _________ .",
     "images": [],
     "options": [],
     "correct": "19",
@@ -29379,7 +28178,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_507",
     "number": "507",
     "type": "numerical",
-    "text": "Let ${A}_{1}= \\left( (x,y):|x|\\leq {y}^{2},|x|+2y\\leq 8 \\right)$ and ${A}_{2}={(x,y):|x|+|y|\\leq k}$ . If $27 \\left( Area \\right)$ $\\left( {A}_{1} \\right) =5$ (Area ${A}_{2}$ ), then $k$ is equal to:",
+    "text": "Let ${A}_{1}= \\left{ (x,y):|x|\\leq {y}^{2},|x|+2y\\leq 8 \\right}$ and ${A}_{2}={\\left (x,y):|x|+|y|\\leq k \\right}$ . If $27 \\left( Area \\right)$ $\\left( {A}_{1} \\right) =5$ (Area ${A}_{2}$ ), then $k$ is equal to:",
     "images": [],
     "options": [],
     "correct": "6",
@@ -29393,7 +28192,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_508",
     "number": "508",
     "type": "numerical",
-    "text": "If the area of the region $\\left( (x,y):{x}^{\\frac{2}{3}}+{y}^{\\frac{2}{3}}\\leq 1,x+y\\geq 0,y\\geq 0 \\right)$ is $A$ , then $\\frac{256A}{\\pi }$ is equal to _______________ .",
+    "text": "If the area of the region $\\left{ (x,y):{x}^{\\frac{2}{3}}+{y}^{\\frac{2}{3}}\\leq 1,x+y\\geq 0,y\\geq 0 \\right}$ is $A$ , then $\\frac{256A}{\\pi }$ is equal to _______________ .",
     "images": [],
     "options": [],
     "correct": "36",
@@ -29407,7 +28206,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_509",
     "number": "509",
     "type": "numerical",
-    "text": "For real numbers $a,b(a>b>0)$ , let Area $\\left( (x,y):{x}^{2}+{y}^{2}\\leq {a}^{2} \\right)$ and $\\left( \\frac{{x}^{2}}{{a}^{2}} + \\frac{{y}^{2}}{{b}^{2}} \\geq 1 \\right) =30\\pi$ and Area $\\left( (x,y):{x}^{2}+{y}^{2}\\geq {b}^{2} \\right)$ and $\\left( \\frac{{x}^{2}}{{a}^{2}} + \\frac{{y}^{2}}{{b}^{2}} \\leq 1 \\right) =18\\pi$ . Then the value of $(a-b{)}^{2}$ is equal to ___________ .",
+    "text": "For real numbers $a,b(a>b>0)$ , let Area $\\left{ (x,y):{x}^{2}+{y}^{2}\\leq {a}^{2} and \\frac{{x}^{2}}{{a}^{2}} + \\frac{{y}^{2}}{{b}^{2}} \\geq 1 \\right} =30\\pi$ and Area $\\left{} (x,y):{x}^{2}+{y}^{2}\\geq {b}^{2} and \\frac{{x}^{2}}{{a}^{2}} + \\frac{{y}^{2}}{{b}^{2}} \\leq 1 \\right} =18\\pi$ . Then the value of $(a-b{)}^{2}$ is equal to ___________ .",
     "images": [],
     "options": [],
     "correct": "12",
@@ -29421,7 +28220,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_510",
     "number": "510",
     "type": "numerical",
-    "text": "The area of the region $S= \\left( (x,y):3{x}^{2}\\leq 4y\\leq 6x+24 \\right)$ is ____________ .",
+    "text": "The area of the region $S= \\left{ (x,y):3{x}^{2}\\leq 4y\\leq 6x+24 \\right}$ is ____________ .",
     "images": [],
     "options": [],
     "correct": "27",
@@ -29491,7 +28290,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_integral_calculus_515",
     "number": "515",
     "type": "numerical",
-    "text": "Let $f:[-3,1]\\rightarrow R$ be given as $f(x)= \\left( \\begin{bmatrix} min \\left( (x+6),{x}^{2} \\right) , & -3\\leq x\\leq 0 \\\\ max \\left( \\sqrt{x} ,{x}^{2} \\right) , & 0\\leq x\\leq 1 \\end{bmatrix} \\right)$ . If the area bounded by $y=f(x)$ and $x$ -axis is $A$ , then the value of $6A$ is equal to ____________ .",
+    "text": "Let $f:[-3,1]\\rightarrow R$ be given as $f(x)= \\left{ min \\left( (x+6),{x}^{2} \\right) , & -3\\leq x\\leq 0 \\\\ max \\left( \\sqrt{x} ,{x}^{2} \\right) , & 0\\leq x\\leq 1$ . If the area bounded by $y=f(x)$ and $x$ -axis is $A$ , then the value of $6A$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "41",
@@ -35811,6 +34610,17 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Easy"
   },
+
+
+
+
+
+
+
+
+
+
+  //
   {
     "id": "jee_mains_math_permutations_and_combinations_1",
     "number": "1",
@@ -35948,7 +34758,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_permutations_and_combinations_8",
     "number": "8",
     "type": "mcq",
-    "text": "words can be made using all the letters of the word BHBJO, with or without meaning. If these words are written as in a dictionary, then the ${50}^{th}$ word is",
+    "text": "60 words can be made using all the letters of the word BHBJO, with or without meaning. If these words are written as in a dictionary, then the ${50}^{th}$ word is",
     "images": [],
     "options": [
       "OBBJH",
@@ -36214,7 +35024,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_permutations_and_combinations_22",
     "number": "22",
     "type": "mcq",
-    "text": "The number of square matrices of order 5 with entries from the set ${0,1}$ , such that the sum of all the elements in each row is 1 and the sum of all the elements in each column is also 1 , is",
+    "text": "The number of square matrices of order 5 with entries from the set $\\left { {0,1} \\right}$ , such that the sum of all the elements in each row is 1 and the sum of all the elements in each column is also 1 , is",
     "images": [],
     "options": [
       "225",
@@ -36765,7 +35575,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_permutations_and_combinations_51",
     "number": "51",
     "type": "mcq",
-    "text": "digit numbers are formed using the digits $1,1,2$ , $2,2,3,4,4$ . The number of such numbers in which the odd digits do not occupy odd places, is",
+    "text": "8-digit numbers are formed using the digits $1,1,2$ , $2,2,3,4,4$ . The number of such numbers in which the odd digits do not occupy odd places, is",
     "images": [],
     "options": [
       "160",
@@ -38133,7 +36943,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_permutations_and_combinations_154",
     "number": "154",
     "type": "mcq",
-    "text": "Let $A= \\left( {x}_{1},{x}_{2},……,{x}_{7} \\right)$ and $B= \\left( {y}_{1},{y}_{2},{y}_{3} \\right)$ be two sets containing seven and three distinct elements respectively. Then the total number of functions $f:A\\rightarrow B$ that are onto, if there exist exactly three elements $x$ in $A$ such that $f(x)={y}_{2}$ , is equal to",
+    "text": "Let $A= \\left{ {x}_{1},{x}_{2},……,{x}_{7} \\right}$ and $B= \\left{ {y}_{1},{y}_{2},{y}_{3} \\right}$ be two sets containing seven and three distinct elements respectively. Then the total number of functions $f:A\\rightarrow B$ that are onto, if there exist exactly three elements $x$ in $A$ such that $f(x)={y}_{2}$ , is equal to",
     "images": [],
     "options": [
       "$14⋅{}^{7}{C}_{2}$",
@@ -38247,7 +37057,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_permutations_and_combinations_160",
     "number": "160",
     "type": "mcq",
-    "text": "Statement-1: The number of ways of distributing 10 identical balls in 4 distinct boxes such that no box is empty is ${}^{9}{C}_{3}$ . Statement-2: The number of ways of choosing any 3 places from 9 different places is ${}^{9}{C}_{3}$ .",
+    "text": "Statement-1: The number of ways of distributing 10 identical balls in 4 distinct boxes such that no box is empty is ${}^{9}{C}_{3}$ . \nStatement-2: The number of ways of choosing any 3 places from 9 different places is ${}^{9}{C}_{3}$ .",
     "images": [],
     "options": [
       "Statement-1 is true, Statement-2 is false.",
@@ -38266,7 +37076,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_permutations_and_combinations_161",
     "number": "161",
     "type": "mcq",
-    "text": "Let ${S}_{1}={∑}_{j=1}^{10} j(j-1){}^{10}{C}_{j},{S}_{2}={∑}_{j=1}^{10} j{}^{10}{C}_{j}$ and ${S}_{3}={∑}_{j=1}^{10} {j}^{2}{}^{10}{C}_{j}$ . Statement-1 : ${S}_{3}=55\\times {2}^{9}$ . Statement-2 : ${S}_{1}=90\\times {2}^{8}$ and ${S}_{2}=10\\times {2}^{8}$ .",
+    "text": "Let ${S}_{1}={∑}_{j=1}^{10} j(j-1){}^{10}{C}_{j},{S}_{2}={∑}_{j=1}^{10} j{}^{10}{C}_{j}$ and ${S}_{3}={∑}_{j=1}^{10} {j}^{2}{}^{10}{C}_{j}$ . \nStatement-1 : ${S}_{3}=55\\times {2}^{9}$ . \nStatement-2 : ${S}_{1}=90\\times {2}^{8}$ and ${S}_{2}=10\\times {2}^{8}$ .",
     "images": [],
     "options": [
       "Statement-1 is true, statement-2 is true; statement-2 is a correct explanation of statement-1.",
@@ -38304,7 +37114,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_permutations_and_combinations_163",
     "number": "163",
     "type": "mcq",
-    "text": "In a shop there are five types of ice-creams available. A child buys six ice-creams. Statement-1 : The number of different ways the child can buy the six ice-creams is ${}^{10}{C}_{5}$ . Statement-2 : The number of different ways the child can buy the six ice-creams is equal to the number of different ways of arranging 6 A's and $4B$ 's in a row.",
+    "text": "In a shop there are five types of ice-creams available. A child buys six ice-creams. \nStatement-1 : The number of different ways the child can buy the six ice-creams is ${}^{10}{C}_{5}$ . \nStatement-2 : The number of different ways the child can buy the six ice-creams is equal to the number of different ways of arranging 6 A's and $4B$ 's in a row.",
     "images": [],
     "options": [
       "Statement-1 is true, Statement-2 is false.",
@@ -38531,7 +37341,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_permutations_and_combinations_176",
     "number": "176",
     "type": "numerical",
-    "text": "Let $S= \\left( {p}_{1},{p}_{2}……,{p}_{10} \\right)$ be the set of first ten prime numbers, Let $A=S\\cup P$ , where $P$ is the set of all possible products of distinct elements of $S$ . Then the number of all ordered pairs $(x,y),x\\in S,y\\in A$ , such that $x$ divides $y$ , is  -",
+    "text": "Let $S= \\left{ {p}_{1},{p}_{2}……,{p}_{10} \\right}$ be the set of first ten prime numbers, Let $A=S\\cup P$ , where $P$ is the set of all possible products of distinct elements of $S$ . Then the number of all ordered pairs $(x,y),x\\in S,y\\in A$ , such that $x$ divides $y$ , is  -",
     "images": [],
     "options": [],
     "correct": "5120",
@@ -38755,7 +37565,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_permutations_and_combinations_193",
     "number": "193",
     "type": "numerical",
-    "text": "The number of functions $f$ , from the set $A={x\\in N$ : $\\left( {x}^{2}-10x+9\\leq 0 \\right)$ to the set $B= \\left( x\\leq {n}^{2}:n\\in N \\right)$ such that $f(x)\\leq (x-3{)}^{2}+1$ , for every $x\\in A$ , is ______________ -",
+    "text": "The number of functions $f$ , from the set $A={x\\in N$ : $\\left( {x}^{2}-10x+9\\leq 0 \\right)$ to the set $B= \\left{ x\\leq {n}^{2}:n\\in N \\right}$ such that $f(x)\\leq (x-3{)}^{2}+1$ , for every $x\\in A$ , is ______________ -",
     "images": [],
     "options": [],
     "correct": "1440",
@@ -39003,25 +37813,14 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_probability_1",
-    "number": "1",
-    "type": "mcq",
-    "text": "Given three identical balls each containing 10 balls, whose colours are as follows: RedBlueGreenBag I325Bag II433Bag III514 A person chooses a bag at random and takes out a ball. If the ball is Red, the probability that it is from bag I is $p$ and if the ball is Green, the probability that it is from bag III is $q$ , then the value of $\\left( \\frac{1}{p} + \\frac{1}{q} \\right)$ is :",
-    "images": [],
-    "options": [
-      "6",
-      "9",
-      "7",
-      "8"
-    ],
-    "correct": "c",
-    "chapter": "Probability",
-    "topic": "Addition Theorem, Conditional Probability And Bayes' Theorem",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Probability\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
+
+
+
+
+
+
+
   {
     "id": "jee_mains_math_probability_2",
     "number": "2",
@@ -39180,7 +37979,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_10",
     "number": "10",
     "type": "mcq",
-    "text": "Let $A= \\left( {a}_{ij} \\right)$ be a square matrix of order 2 with entries either 0 or 1 . Let $E$ be the event that $A$ is an invertible matrix. Then the probability $P(E)$ is",
+    "text": "Let $A= \\left[ {a}_{ij} \\right]$ be a square matrix of order 2 with entries either 0 or 1 . Let $E$ be the event that $A$ is an invertible matrix. Then the probability $P(E)$ is",
     "images": [],
     "options": [
       "$\\frac{5}{8}$",
@@ -39465,7 +38264,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_25",
     "number": "25",
     "type": "mcq",
-    "text": "Two integers $x$ and $y$ are chosen with replacement from the set ${0,1,2,3,…,10}$ . Then the probability that $|x-y|>5$ , is",
+    "text": "Two integers $x$ and $y$ are chosen with replacement from the set $\\left{ 0,1,2,3,…,10 \\right}$ . Then the probability that $|x-y|>5$ , is",
     "images": [],
     "options": [
       "$\\frac{60}{121}$",
@@ -39598,7 +38397,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_32",
     "number": "32",
     "type": "mcq",
-    "text": "Let $S= \\left( M= \\left( {a}_{ij} \\right) ,{a}_{ij}\\in {0,1,2},1\\leq i,j\\leq 2 \\right)$ be a sample space and $A={M\\in S:M$ is invertible $}$ be an event. Then $P(A)$ is equal to",
+    "text": "Let $S= \\left{ M= \\left[ {a}_{ij} \\right] ,{a}_{ij}\\in \\left{ 0,1,2 }\\right,1\\leq i,j\\leq 2 \\right}$ be a sample space and $A=\\left{ M\\in S:M$ is invertible$ \\right}$ be an event. Then $P(A)$ is equal to",
     "images": [],
     "options": [
       "$\\frac{50}{81}$",
@@ -39655,7 +38454,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_35",
     "number": "35",
     "type": "mcq",
-    "text": "Let $M$ be the maximum value of the product of two positive integers when their sum is 66. Let the sample space $S= \\left( x\\in Z:x(66-x)\\geq \\frac{5}{9} M \\right)$ and the event $A={x\\in S:x$ is a multiple of 3 $}$ . Then $P(A)$ is equal to",
+    "text": "Let $M$ be the maximum value of the product of two positive integers when their sum is 66. Let the sample space $S= \\left{ x\\in Z:x(66-x)\\geq \\frac{5}{9} M \\right}$ and the event $A=\\left{ x\\in S:x$ is a multiple of 3 $\\right}$ . Then $P(A)$ is equal to",
     "images": [],
     "options": [
       "$\\frac{15}{44}$",
@@ -39693,7 +38492,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_38",
     "number": "38",
     "type": "mcq",
-    "text": "Let $S= \\left( {w}_{1},{w}_{2},…. \\right)$ be the sample space associated to a random experiment. Let $P \\left( {w}_{n} \\right) = \\frac{P \\left( {w}_{n-1} \\right)}{2} ,n\\geq 2$ . Let $A={2k+3l:k,l\\in N}$ and $B= \\left( {w}_{n}:n\\in A \\right)$ . Then $P(B)$ is equal to",
+    "text": "Let $S= \\left{ {w}_{1},{w}_{2},…. \\right}$ be the sample space associated to a random experiment. Let $P \\left( {w}_{n} \\right) = \\frac{P \\left( {w}_{n-1} \\right)}{2} ,n\\geq 2$ . Let $A=\\left{ 2k+3l:k,l\\in N }\\right$ and $B= \\left{ {w}_{n}:n\\in A \\right}$ . Then $P(B)$ is equal to",
     "images": [],
     "options": [
       "$\\frac{1}{16}$",
@@ -39826,7 +38625,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_46",
     "number": "46",
     "type": "mcq",
-    "text": "Let $S={1,2,3,…,2022}$ . Then the probability, that a randomly chosen number $n$ from the set $S$ such that $HCF(n,2022)=1$ , is",
+    "text": "Let $S=\\left{ 1,2,3,…,2022 \\right}$ . Then the probability, that a randomly chosen number $n$ from the set $S$ such that $HCF(n,2022)=1$ , is",
     "images": [],
     "options": [
       "$\\frac{128}{1011}$",
@@ -39889,7 +38688,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$P \\left( {E}_{1}\\cap {E}_{2} \\right) =P \\left( {E}_{1} \\right) ⋅P \\left( {E}_{2} \\right)$",
       "$P \\left( {E}_{1}^{'}\\cap {E}_{2}^{'} \\right) =P \\left( {E}_{1}^{'} \\right) ⋅P \\left( {E}_{2} \\right)$",
       "$P \\left( {E}_{1}\\cap {E}_{2}^{'} \\right) =P \\left( {E}_{1} \\right) ⋅P \\left( {E}_{2} \\right)$",
-      "$P \\left( {E}_{1}^{'}\\cap {E}_{2}^{'} \\right) =P \\left( {E}_{1} \\right) ⋅P \\left( {E}_{2} \\right)$ $\\left( {25}^{th} \\right)$ June ${1}^{st}$ Shift 2022)"
+      "$P \\left( {E}_{1}^{'}\\cap {E}_{2}^{'} \\right) =P \\left( {E}_{1} \\right) ⋅P \\left( {E}_{2} \\right)$"
     ],
     "correct": "c",
     "chapter": "Probability",
@@ -39978,7 +38777,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_54",
     "number": "54",
     "type": "mcq",
-    "text": "The probability that a randomly chosen one-one function from the set ${a,b,c,d}$ to the set ${1,2,3,4,5}$ satisfies $f",
+    "text": "The probability that a randomly chosen one-one function from the set $\\left{ a,b,c,d \\right}$ to the set $\\left{ 1,2,3,4,5 \\right}$ satisfies $f",
     "images": [],
     "options": [
       "$\\frac{1}{24}$",
@@ -40075,7 +38874,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_59",
     "number": "59",
     "type": "mcq",
-    "text": "Two fair dice are thrown. The numbers on them are taken as $\\lambda$ and $\\mu$ , and a system of linear equations $x+y+z=5$ $x+2y+3z=\\mu$ $x+3y+\\lambda z=1$ is constructed. If $p$ is the probability that the system has a unique solution and $q$ is the probability that the system has no solution, then",
+    "text": "Two fair dice are thrown. The numbers on them are taken as $\\lambda$ and $\\mu$ , and a system of linear equations \n$x+y+z=5$ \n$x+2y+3z=\\mu$ \n$x+3y+\\lambda z=1$ is constructed. If $p$ is the probability that the system has a unique solution and $q$ is the probability that the system has no solution, then",
     "images": [],
     "options": [
       "$p= \\frac{1}{6}$ and $q= \\frac{5}{36}$",
@@ -40132,7 +38931,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_62",
     "number": "62",
     "type": "mcq",
-    "text": "Let $S={1,2,3,4,5,6}$ . Then the probability that a randomly chosen onto function $g$ from $S$ to $S$ satisfies $g(3)=2g(1)$ is",
+    "text": "Let $S=\\left{ 1,2,3,4,5,6 \\right}$ . Then the probability that a randomly chosen onto function $g$ from $S$ to $S$ satisfies $g(3)=2g(1)$ is",
     "images": [],
     "options": [
       "$\\frac{1}{15}$",
@@ -40230,10 +39029,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Let 9 distinct balls be distributed among 4 boxes ${B}_{1},{B}_{2},{B}_{3}$ and ${B}_{4}$ . If the probability that ${B}_{3}$ contains exactly 3 balls is $k{\\left( \\frac{3}{4} \\right)}^{9}$ , then $k$ lies in the set",
     "images": [],
     "options": [
-      "${x\\in R:|x-3|<1}$",
-      "${x\\in R:|x-5|\\leq 1}$",
-      "${x\\in R:|x-2|\\leq 1}$",
-      "${x\\in R:|x-1|<1}$"
+      "$\\left{ x\\in R:|x-3|<1 \\right}$",
+      "$\\left{ x\\in R:|x-5|\\leq 1 \\right}$",
+      "$\\left{ x\\in R:|x-2|\\leq 1 \\right}$",
+      "$\\left{ x\\in R:|x-1|<1 \\right}$"
     ],
     "correct": "a",
     "chapter": "Probability",
@@ -40327,7 +39126,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "options": [
       "$1/6$",
       "$1/3$",
-      "",
+      "$1/18$",
       "$1/9$"
     ],
     "correct": "d",
@@ -40778,7 +39577,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_96",
     "number": "96",
     "type": "mcq",
-    "text": "Two integers are selected at random from the set ${1,2,…,11}$ . Given that the sum of selected numbers is even, the conditional probability that both the numbers are even is",
+    "text": "Two integers are selected at random from the set $\\left{ 1,2,…,11 \\right}$ . Given that the sum of selected numbers is even, the conditional probability that both the numbers are even is",
     "images": [],
     "options": [
       "$\\frac{7}{10}$",
@@ -40797,7 +39596,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_97",
     "number": "97",
     "type": "mcq",
-    "text": "Let $S={1,2,…,20}$ . A subset $B$ of $S$ is said to be \"nice\", if the sum of the elements of $B$ is 203. Then the probability that a randomly chosen subset of $S$ is \"nice\" is",
+    "text": "Let $S=\\left{ 1,2,…,20 \\right}$ . A subset $B$ of $S$ is said to be \"nice\", if the sum of the elements of $B$ is 203. Then the probability that a randomly chosen subset of $S$ is \"nice\" is",
     "images": [],
     "options": [
       "$\\frac{5}{{2}^{20}}$",
@@ -40930,7 +39729,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_104",
     "number": "104",
     "type": "mcq",
-    "text": "If two different numbers are taken from the set ${0,1$ , $2,3,……..,10}$ ; then the probability that their sum as well as absolute difference are both multiples of 4 , is",
+    "text": "If two different numbers are taken from the set $\\left{ 0,1$ , $2,3,……..,10 \\right}$ ; then the probability that their sum as well as absolute difference are both multiples of 4 , is",
     "images": [],
     "options": [
       "$\\frac{12}{55}$",
@@ -41120,7 +39919,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_114",
     "number": "114",
     "type": "mcq",
-    "text": "Let $A$ and $E$ be any two events with positive probabilities Statement 1: $P(E/A)\\geq P(A/E)P(E)$ . Statement 2: $P(A/E)\\geq P(A\\cap E)$ .",
+    "text": "Let $A$ and $E$ be any two events with positive probabilities \nStatement 1: $P(E/A)\\geq P(A/E)P(E)$ . \nStatement 2: $P(A/E)\\geq P(A\\cap E)$ .",
     "images": [],
     "options": [
       "Both the statements are true.",
@@ -41145,7 +39944,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "equally likely but not independent",
       "independent but not equally likely",
       "independent and equally likely",
-      "mutually exclusive and independent $(2014,2005)$"
+      "mutually exclusive and independent"
     ],
     "correct": "b",
     "chapter": "Probability",
@@ -41215,7 +40014,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_119",
     "number": "119",
     "type": "mcq",
-    "text": "Three numbers are chosen at random without replacement from ${1,2,3,…..,8}$ . The probability that their minimum is 3 , given that their maximum is 6 , is",
+    "text": "Three numbers are chosen at random without replacement from $\\left{ 1,2,3,…..,8 \\right}$ . The probability that their minimum is 3 , given that their maximum is 6 , is",
     "images": [],
     "options": [
       "$\\frac{1}{4}$",
@@ -41253,7 +40052,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_121",
     "number": "121",
     "type": "mcq",
-    "text": "Four numbers are chosen at random (without replacement) from the set ${1,2,3,…,20}$ . Statement-1 : The probability that the chosen numbers when arranged in some order will form an A.P. is $\\frac{1}{85}$ . Statement-2 : If the four chosen numbers form an A.P., then the set of all possible values of common difference is ${\\pm 1,\\pm 2,\\pm 3,\\pm 4,\\pm 5}$ .",
+    "text": "Four numbers are chosen at random (without replacement) from the set $\\left{ 1,2,3,…,20 \\right}$ . \nStatement-1 : The probability that the chosen numbers when arranged in some order will form an A.P. is $\\frac{1}{85}$ . \nStatement-2 : If the four chosen numbers form an A.P., then the set of all possible values of common difference is $\\left{ \\pm 1,\\pm 2,\\pm 3,\\pm 4,\\pm 5 \\right}$ .",
     "images": [],
     "options": [
       "Statement-1 is true, Statement-2 is true; Statement-2 is a correct explanation of Statement-1.",
@@ -41408,10 +40207,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Events $A,B,C$ are mutually exclusive events such that $P(A)= \\frac{3x+1}{3} , P(B)= \\frac{1-x}{4}$ and $P(C)= \\frac{1-2x}{2}$ . Then set of possible values of $x$ are in the interval",
     "images": [],
     "options": [
-      "$\\left( \\frac{1}{3} , \\frac{2}{3} \\right)$",
-      "$\\left( \\frac{1}{3} , \\frac{13}{3} \\right)$",
+      "$\\left[ \\frac{1}{3} , \\frac{2}{3} \\right]$",
+      "$\\left[ \\frac{1}{3} , \\frac{13}{3} \\right]$",
       "$[0,1]$",
-      "$\\left( \\frac{1}{3} , \\frac{1}{2} \\right)$"
+      "$\\left[ \\frac{1}{3} , \\frac{1}{2} \\right]$"
     ],
     "correct": "d",
     "chapter": "Probability",
@@ -41462,7 +40261,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_132",
     "number": "132",
     "type": "numerical",
-    "text": "Three distinct numbers are selected randomly from the set ${1,2,3,…,40}$ . If the probability, that the selected numbers are in an increasing G.P., is $\\frac{m}{n} ,gcd(m,n)=1$ , then $m+n$ is _____________ .",
+    "text": "Three distinct numbers are selected randomly from the set $\\left{ 1,2,3,…,40 }\\right$ . If the probability, that the selected numbers are in an increasing G.P., is $\\frac{m}{n} ,gcd(m,n)=1$ , then $m+n$ is _____________ .",
     "images": [],
     "options": [],
     "correct": "2477",
@@ -41514,20 +40313,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
-  {
-    "id": "jee_mains_math_probability_136",
-    "number": "136",
-    "type": "numerical",
-    "text": "Let the mean and the standard deviation of the probability distribution <table border=\"1\" style=\"border-collapse:collapse;width:100%;margin:10px 0;\"><tr><td style=\"padding:5px;border:1px solid black;\">$X$</td><td style=\"padding:5px;border:1px solid black;\">$\\alpha$</td><td style=\"padding:5px;border:1px solid black;\">1</td><td style=\"padding:5px;border:1px solid black;\">0</td><td style=\"padding:5px;border:1px solid black;\">-3</td></tr><tr><td style=\"padding:5px;border:1px solid black;\">$P(X)$</td><td style=\"padding:5px;border:1px solid black;\">$\\frac{1}{3}$</td><td style=\"padding:5px;border:1px solid black;\">$K$</td><td style=\"padding:5px;border:1px solid black;\">$\\frac{1}{6}$</td><td style=\"padding:5px;border:1px solid black;\">$\\frac{1}{4}$</td></tr></table> be $\\mu$ and $\\sigma$ , respectively. If $\\sigma -\\mu =2$ , then $\\sigma +\\mu$ is equal to _____ .",
-    "images": [],
-    "options": [],
-    "correct": "5",
-    "chapter": "Probability",
-    "topic": "Addition Theorem, Conditional Probability And Bayes' Theorem",
-    "solution": "<p><strong>Ans: 5</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Probability\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_probability_137",
     "number": "137",
@@ -41574,7 +40360,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_140",
     "number": "140",
     "type": "numerical",
-    "text": "% of the population are smokers. A smoker has 27 times more chances to develop lung cancer than a non smoker. A person is diagnosed with lung cancer and the probability that this person is a smoker is $\\frac{k}{10}$ . Then the value of $k$ is ______________ .",
+    "text": "25% of the population are smokers. A smoker has 27 times more chances to develop lung cancer than a non smoker. A person is diagnosed with lung cancer and the probability that this person is a smoker is $\\frac{k}{10}$ . Then the value of $k$ is ______________ .",
     "images": [],
     "options": [],
     "correct": "9",
@@ -41644,7 +40430,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_145",
     "number": "145",
     "type": "numerical",
-    "text": "Let $S= \\left( {E}_{1},{E}_{2},…,{E}_{8} \\right)$ be a sample space of a random experiment such that $P \\left( {E}_{n} \\right) = \\frac{n}{36}$ for every $n=1$ , $2,….,8$ . Then the number of elements in the set $\\left( A⊇S:P(A)\\geq \\frac{4}{5} \\right)$ is _______________",
+    "text": "Let $S= \\left{ {E}_{1},{E}_{2},…,{E}_{8} \\right}$ be a sample space of a random experiment such that $P \\left( {E}_{n} \\right) = \\frac{n}{36}$ for every $n=1$ , $2,….,8$ . Then the number of elements in the set $\\left{ A⊇S:P(A)\\geq \\frac{4}{5} \\right}$ is _______________",
     "images": [],
     "options": [],
     "correct": "19",
@@ -41738,7 +40524,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_probability_151",
     "number": "151",
     "type": "mcq",
-    "text": "Let $A= \\left( {a}_{ij} \\right)$ be a $2\\times 2$ matrix such that ${a}_{ij}\\in {0,1}$ for all $i$ and $j$ . Let the random variable $X$ denote the possible values of the determinant of the matrix $A$ . Then, the variance of $X$ is :",
+    "text": "Let $A= \\left[ {a}_{ij} \\right]$ be a $2\\times 2$ matrix such that ${a}_{ij}\\in \\left{ 0,1 \\right}$ for all $i$ and $j$ . Let the random variable $X$ denote the possible values of the determinant of the matrix $A$ . Then, the variance of $X$ is :",
     "images": [],
     "options": [
       "$\\frac{5}{8}$",
@@ -41753,25 +40539,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Easy"
   },
-  {
-    "id": "jee_mains_math_probability_152",
-    "number": "152",
-    "type": "mcq",
-    "text": "If the mean of the following probability distribution of a random variable $X$ : $X$02468$P(X)a2aa+b2b3b$ is $\\frac{46}{9}$ , then the variance of the distribution is",
-    "images": [],
-    "options": [
-      "$\\frac{151}{27}$",
-      "$\\frac{173}{27}$",
-      "$\\frac{566}{81}$",
-      "$\\frac{581}{81}$"
-    ],
-    "correct": "c",
-    "chapter": "Probability",
-    "topic": "Probability Distributions Of A Random Variable",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Probability\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_probability_153",
     "number": "153",
@@ -42076,25 +40844,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
-  {
-    "id": "jee_mains_math_probability_169",
-    "number": "169",
-    "type": "mcq",
-    "text": "A random variable $X$ has the following probability distribution $X$01234$P(X)k2k4k6k8k$ The value of $P(1<X<4∣X\\leq 2)$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{4}{7}$",
-      "$\\frac{2}{3}$",
-      "$\\frac{3}{7}$",
-      "$\\frac{4}{5}$"
-    ],
-    "correct": "a",
-    "chapter": "Probability",
-    "topic": "Probability Distributions Of A Random Variable",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Probability\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_probability_170",
     "number": "170",
@@ -42285,25 +41035,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_probability_180",
-    "number": "180",
-    "type": "mcq",
-    "text": "A random variable $X$ has the following probability distribution: $X$12345$P(X){K}^{2}2KK2K5{K}^{2}$ Then $P(X>2)$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{7}{12}$",
-      "$\\frac{23}{36}$",
-      "$\\frac{1}{36}$",
-      "$\\frac{1}{6}$"
-    ],
-    "correct": "b",
-    "chapter": "Probability",
-    "topic": "Probability Distributions Of A Random Variable",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Probability\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_probability_181",
     "number": "181",
@@ -42596,10 +41328,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Consider 5 independent Bernoulli's trials each with probability of success $p$ . If the probability of at least one failure is greater than or equal to $\\frac{31}{32}$ , then $p$ lies in the interval",
     "images": [],
     "options": [
-      "$\\left( 0, \\frac{1}{2} \\right)$",
-      "$\\left( \\frac{11}{12} ,1 \\right)$",
-      "$\\left( \\frac{1}{2} , \\frac{3}{4} \\right)$",
-      "$\\left( \\frac{3}{4} , \\frac{11}{12} \\right)$"
+      "$\\left[ 0, \\frac{1}{2} \\right]$",
+      "$\\left( \\frac{11}{12} ,1 \\right]$",
+      "$\\left( \\frac{1}{2} , \\frac{3}{4} \\right]$",
+      "$\\left( \\frac{3}{4} , \\frac{11}{12} \\right]$"
     ],
     "correct": "a",
     "chapter": "Probability",
@@ -42703,25 +41435,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Easy"
   },
-  {
-    "id": "jee_mains_math_probability_202",
-    "number": "202",
-    "type": "mcq",
-    "text": "A random variable $X$ has the probability distribution $X:$12345678$P(X):$0.150.230.120.100.200.080.070.05 For the events $E={X$ is a prime number $}$ and $F={X<4}$ , the probability $P(E\\cup F)$ is",
-    "images": [],
-    "options": [
-      "0.35",
-      "0.77",
-      "0.87",
-      "0.50"
-    ],
-    "correct": "b",
-    "chapter": "Probability",
-    "topic": "Probability Distributions Of A Random Variable",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Probability\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_probability_203",
     "number": "203",
@@ -42844,34 +41558,8 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_probability_211",
-    "number": "211",
-    "type": "numerical",
-    "text": "Let $X$ be random variable with distribution. <table border=\"1\" style=\"border-collapse:collapse;width:100%;margin:10px 0;\"><tr><td style=\"padding:5px;border:1px solid black;\">$x$</td><td style=\"padding:5px;border:1px solid black;\">-2</td><td style=\"padding:5px;border:1px solid black;\">-1</td><td style=\"padding:5px;border:1px solid black;\">3</td><td style=\"padding:5px;border:1px solid black;\">4</td><td style=\"padding:5px;border:1px solid black;\">6</td></tr><tr><td style=\"padding:5px;border:1px solid black;\">$P(X=x)$</td><td style=\"padding:5px;border:1px solid black;\">$\\frac{1}{5}$</td><td style=\"padding:5px;border:1px solid black;\">$a$</td><td style=\"padding:5px;border:1px solid black;\">$\\frac{1}{3}$</td><td style=\"padding:5px;border:1px solid black;\">$\\frac{1}{5}$</td><td style=\"padding:5px;border:1px solid black;\">$b$</td></tr></table> If the mean of $X$ is 2.3 and variance of $X$ is ${\\sigma }^{2}$ , then $100{\\sigma }^{2}$ is equal to _____________ -",
-    "images": [],
-    "options": [],
-    "correct": "781",
-    "chapter": "Probability",
-    "topic": "Probability Distributions Of A Random Variable",
-    "solution": "<p><strong>Ans: 781</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Probability\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_probability_212",
-    "number": "212",
-    "type": "numerical",
-    "text": "The probability distribution of random variable $X$ is given by <table border=\"1\" style=\"border-collapse:collapse;width:100%;margin:10px 0;\"><tr><td style=\"padding:5px;border:1px solid black;\">$X$</td><td style=\"padding:5px;border:1px solid black;\">1</td><td style=\"padding:5px;border:1px solid black;\">2</td><td style=\"padding:5px;border:1px solid black;\">3</td><td style=\"padding:5px;border:1px solid black;\">4</td><td style=\"padding:5px;border:1px solid black;\">5</td></tr><tr><td style=\"padding:5px;border:1px solid black;\">$P(X)$</td><td style=\"padding:5px;border:1px solid black;\">$K$</td><td style=\"padding:5px;border:1px solid black;\">$2K$</td><td style=\"padding:5px;border:1px solid black;\">$2K$</td><td style=\"padding:5px;border:1px solid black;\">$3K$</td><td style=\"padding:5px;border:1px solid black;\">$K$</td></tr></table> Let $p=P(1<X<4∣X<3)$ . If $5p=\\lambda K$ , then $\\lambda$ is equal to ___________________ .",
-    "images": [],
-    "options": [],
-    "correct": "30",
-    "chapter": "Probability",
-    "topic": "Probability Distributions Of A Random Variable",
-    "solution": "<p><strong>Ans: 30</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Probability\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
+ 
   {
     "id": "jee_mains_math_probability_213",
     "number": "213",
@@ -42928,6 +41616,16 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
+
+
+
+
+
+
+
+
+
+
   {
     "id": "jee_mains_math_quadratic_equations_1",
     "number": "1",
@@ -42951,7 +41649,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_2",
     "number": "2",
     "type": "mcq",
-    "text": "Let $\\alpha$ and $\\beta$ be the roots of ${x}^{2}+ \\sqrt{3} x-16=0$ , and $\\gamma$ and $δ$ be the ronts of ${x}^{2}$ । $3x-1=0$ . If ${P}_{n}-{\\alpha }^{n}+{\\beta }^{n}$ and ${Q}_{n}={\\gamma }^{n}+{δ}^{n}$ , then $\\frac{{P}_{25}+ \\sqrt{3} {P}_{24}}{2{P}_{23}} , \\frac{{Q}_{25}-{Q}_{2.3}}{{Q}_{24}}$ is equal to",
+    "text": "Let $\\alpha$ and $\\beta$ be the roots of ${x}^{2}+ \\sqrt{3} x-16=0$ , and $\\gamma$ and $δ$ be the ronts of ${x}^{2}$ \\left। $3x-1=0$ . If ${P}_{n}-{\\alpha }^{n}+{\\beta }^{n}$ and ${Q}_{n}={\\gamma }^{n}+{δ}^{n}$ , then $\\frac{{P}_{25}+ \\sqrt{3} {P}_{24}}{2{P}_{23}} , \\frac{{Q}_{25}-{Q}_{2.3}}{{Q}_{24}}$ is equal to",
     "images": [],
     "options": [
       "4",
@@ -43046,7 +41744,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_7",
     "number": "7",
     "type": "mcq",
-    "text": "The sum of all the roots of the equation $\\left( {x}^{2}-8x+15 \\right)$ $-2x+7=0$ is",
+    "text": "The sum of all the roots of the equation $\\left| {x}^{2}-8x+15 \\right|$ $-2x+7=0$ is",
     "images": [],
     "options": [
       "$11+ \\sqrt{3}$",
@@ -43160,7 +41858,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_14",
     "number": "14",
     "type": "mcq",
-    "text": "Let $\\alpha$ and $\\beta$ be the roots of the equation ${x}^{2}+(2i-1)$ $=0$ . Then, the value of $\\left( {\\alpha }^{8}+{\\beta }^{8} \\right)$ is equal to :",
+    "text": "Let $\\alpha$ and $\\beta$ be the roots of the equation ${x}^{2}+(2i-1)$ $=0$ . Then, the value of $\\left| {\\alpha }^{8}+{\\beta }^{8} \\right|$ is equal to :",
     "images": [],
     "options": [
       "50",
@@ -43274,7 +41972,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_20",
     "number": "20",
     "type": "mcq",
-    "text": "Let $\\alpha = \\mathop{max}_{x\\in R} \\left( {8}^{2sin3x}⋅{4}^{4cos3x} \\right)$ and $\\beta = \\mathop{min}_{x\\in R} \\left( {8}^{2sin3x}⋅{4}^{4cos3x} \\right)$ If $8{x}^{2}+bx+c=0$ is a quadratic equation whose roots are ${\\alpha }^{\\frac{1}{5}}$ and ${\\beta }^{\\frac{1}{5}}$ , then the value of $c-b$ is equal to",
+    "text": "Let $\\alpha = \\mathop{max}_{x\\in R} \\left{ {8}^{2sin3x}⋅{4}^{4cos3x} \\right}$ and $\\beta = \\mathop{min}_{x\\in R} \\left{ {8}^{2sin3x}⋅{4}^{4cos3x} \\right}$ If $8{x}^{2}+bx+c=0$ is a quadratic equation whose roots are ${\\alpha }^{\\frac{1}{5}}$ and ${\\beta }^{\\frac{1}{5}}$ , then the value of $c-b$ is equal to",
     "images": [],
     "options": [
       "43",
@@ -44067,7 +42765,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_62",
     "number": "62",
     "type": "numerical",
-    "text": "If the equation $a(b-c){x}^{2}+b(c-a)x+c(a-b)=0$ has equal roots, where $a+c=15$ and $b= \\frac{36}{5}$ , then ${a}^{2}+{c}^{2}$ is equal to _______ . $\\left( {23}^{th} \\right)$ Jan ${1}^{st}$ Shift 2025)",
+    "text": "If the equation $a(b-c){x}^{2}+b(c-a)x+c(a-b)=0$ has equal roots, where $a+c=15$ and $b= \\frac{36}{5}$ , then ${a}^{2}+{c}^{2}$ is equal to _______ .",
     "images": [],
     "options": [],
     "correct": "117",
@@ -44123,7 +42821,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_66",
     "number": "66",
     "type": "numerical",
-    "text": "Let ${\\alpha }_{1},{\\alpha }_{2},……..,{\\alpha }_{7}$ be the roots of the equation ${x}^{7}+3{x}^{5}-13{x}^{3}-15x=0$ and $\\left( {\\alpha }_{1} \\right) \\geq \\left( {\\alpha }_{2} \\right) \\geq ……\\geq \\left( {\\alpha }_{7} \\right)$ . Then ${\\alpha }_{1}{\\alpha }_{2}-{\\alpha }_{3}{\\alpha }_{4}+{\\alpha }_{5}{\\alpha }_{6}$ is equal to ____________________ .",
+    "text": "Let ${\\alpha }_{1},{\\alpha }_{2},……..,{\\alpha }_{7}$ be the roots of the equation ${x}^{7}+3{x}^{5}-13{x}^{3}-15x=0$ and $\\left| {\\alpha }_{1} \\right| \\geq \\left| {\\alpha }_{2} \\right| \\geq ……\\geq \\left| {\\alpha }_{7} \\right|$ . Then ${\\alpha }_{1}{\\alpha }_{2}-{\\alpha }_{3}{\\alpha }_{4}+{\\alpha }_{5}{\\alpha }_{6}$ is equal to ____________________ .",
     "images": [],
     "options": [],
     "correct": "9",
@@ -44264,7 +42962,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_75",
     "number": "75",
     "type": "mcq",
-    "text": "The number of real solution(s) of the equation ${x}^{2}+3x+2=min{|x-3|,|x+2|}$ is :",
+    "text": "The number of real solution(s) of the equation ${x}^{2}+3x+2=min\\left{ |x-3|,|x+2| \\right}$ is :",
     "images": [],
     "options": [
       "2",
@@ -44340,7 +43038,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_79",
     "number": "79",
     "type": "mcq",
-    "text": "If the set of all $a\\in R$ , for which the equation $2{x}^{2}+(a-5)x+15=3a$ has no real root, is the interval $(\\alpha ,\\beta )$ , and $X={x\\in Z:\\alpha <x<\\beta }$ , then $\\sum\\limits_{x\\in X}^{} {x}^{2}$ is equal to :",
+    "text": "If the set of all $a\\in R$ , for which the equation $2{x}^{2}+(a-5)x+15=3a$ has no real root, is the interval $(\\alpha ,\\beta )$ , and $X=\\left{ x\\in Z:\\alpha <x<\\beta \\right}$ , then $\\sum\\limits_{x\\in X}^{} {x}^{2}$ is equal to :",
     "images": [],
     "options": [
       "2129",
@@ -44492,7 +43190,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_87",
     "number": "87",
     "type": "mcq",
-    "text": "Let $S= \\left( x:x\\in R( \\sqrt{3} + \\sqrt{2} {)}^{{x}^{2}-4}+( \\sqrt{3} - \\sqrt{2} {)}^{{x}^{2}-4}=10 \\right)$ Then $n(S)$ is equal to",
+    "text": "Let $S= \\left{ x:x\\in R( \\sqrt{3} + \\sqrt{2} {)}^{{x}^{2}-4}+( \\sqrt{3} - \\sqrt{2} {)}^{{x}^{2}-4}=10 \\right}$ Then $n(S)$ is equal to",
     "images": [],
     "options": [
       "2",
@@ -44742,9 +43440,9 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "If ${x}^{2}+9{y}^{2}-4x+3=0,x,y\\in R$ , then $x$ and $y$ respectively lie in the intervals",
     "images": [],
     "options": [
-      "$\\left( - \\frac{1}{3} , \\frac{1}{3} \\right)$ and $\\left( - \\frac{1}{3} , \\frac{1}{3} \\right)$",
-      "$[1,3]$ and $\\left( - \\frac{1}{3} , \\frac{1}{3} \\right)$",
-      "$\\left( - \\frac{1}{3} , \\frac{1}{3} \\right)$ and $[1,3]$",
+      "$\\left[ - \\frac{1}{3} , \\frac{1}{3} \\right]$ and $\\left[ - \\frac{1}{3} , \\frac{1}{3} \\right]$",
+      "$[1,3]$ and $\\left[ - \\frac{1}{3} , \\frac{1}{3} \\right]$",
+      "$\\left[- \\frac{1}{3} , \\frac{1}{3} \\right]$ and $[1,3]$",
       "$[1,3]$ and $[1,3]$"
     ],
     "correct": "b",
@@ -44781,8 +43479,8 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "images": [],
     "options": [
       "$[0,1/e)$",
-      "$\\left( 0,{log}_{e}2 \\right)$",
-      "$\\left( {log}_{e}2,{log}_{e}3 \\right)$",
+      "$\\left[ 0,{log}_{e}2 \\right)$",
+      "$\\left[ {log}_{e}2,{log}_{e}3 \\right)$",
       "$[1,e)$"
     ],
     "correct": "b",
@@ -45043,7 +43741,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_116",
     "number": "116",
     "type": "mcq",
-    "text": "The number of real roots of the equation $5+ \\left( {2}^{x}-1 \\right) ={2}^{x} \\left( {2}^{x}-2 \\right)$ is",
+    "text": "The number of real roots of the equation $5+ \\left| {2}^{x}-1 \\right| ={2}^{x} \\left( {2}^{x}-2 \\right)$ is",
     "images": [],
     "options": [
       "3",
@@ -45119,7 +43817,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_120",
     "number": "120",
     "type": "mcq",
-    "text": "Let $S={x\\in R:x\\geq 0$ and $2| \\sqrt{x} -3|+ \\sqrt{x} ( \\sqrt{x} -6)+6=0}$ . Then $S$",
+    "text": "Let $S=\\left{ x\\in R:x\\geq 0$ and $2| \\sqrt{x} -3|+ \\sqrt{x} ( \\sqrt{x} -6)+6=0 \\right}$ . Then $S$",
     "images": [],
     "options": [
       "contains exactly four elements",
@@ -45468,7 +44166,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_142",
     "number": "142",
     "type": "numerical",
-    "text": "If for some $p,q,r\\in R$ , not all have same sign, one of the roots of the equation $\\left( {p}^{2}+{q}^{2} \\right) {x}^{2}-2q(p+r)x+{q}^{2}+{r}^{2}$ $=0$ is also a root of the equation ${x}^{2}+2x-8=0$ , then $\\frac{{q}^{2}+{r}^{2}}{{p}^{2}}$ is equal to _____________ - $\\left( {26}^{th} \\right)$ July ${1}^{st}$ Shift 2022)",
+    "text": "If for some $p,q,r\\in R$ , not all have same sign, one of the roots of the equation $\\left( {p}^{2}+{q}^{2} \\right) {x}^{2}-2q(p+r)x+{q}^{2}+{r}^{2}$ $=0$ is also a root of the equation ${x}^{2}+2x-8=0$ , then $\\frac{{q}^{2}+{r}^{2}}{{p}^{2}}$ is equal to _____________ -",
     "images": [],
     "options": [],
     "correct": "272",
@@ -45726,7 +44424,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_159",
     "number": "159",
     "type": "mcq",
-    "text": "The coefficients $a,b,c$ in the quadratic equation $a{x}^{2}+bx∣c=0$ are chosen from the sel ${1,2,3,4$ , $5,6,7,8}$ . The probability of this equation having repeated roots is:",
+    "text": "The coefficients $a,b,c$ in the quadratic equation $a{x}^{2}+bx\\left∣c=0$ are chosen from the sel $\\left{ 1,2,3,4,5,6,7,8 \\right}$ . The probability of this equation having repeated roots is:",
     "images": [],
     "options": [
       "$\\frac{3}{256}$",
@@ -45862,9 +44560,9 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The set of all values of $k>-1$ for which the equation ${\\left( 3{x}^{2}+4x+3 \\right)}^{2}-(k+1) \\left( 3{x}^{2}+4x+3 \\right) \\left( 3{x}^{2}+4x+2 \\right)$ $+k{\\left( 3{x}^{2}+4x+2 \\right)}^{2}=0$ has real roots, is",
     "images": [],
     "options": [
-      "$\\left( - \\frac{1}{2} ,1 \\right)$",
-      "$\\left( 1, \\frac{5}{2} \\right)$",
-      "$\\left( \\frac{1}{2} , \\frac{3}{2} \\right) -{1}$",
+      "$\\left[ - \\frac{1}{2} ,1 \\right)$",
+      "$\\left( 1, \\frac{5}{2} \\right]$",
+      "$\\left( \\frac{1}{2} , \\frac{3}{2} \\right] -{1}$",
       "$[2,3)$"
     ],
     "correct": "b",
@@ -45878,7 +44576,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_167",
     "number": "167",
     "type": "mcq",
-    "text": "The number of elements in the set ${x\\in R:(|x|-3)$ $|x+4|=6}$ is equal to",
+    "text": "The number of elements in the set $\\left{ x\\in R:(|x|-3)$ $|x+4|=6 \right}$ is equal to",
     "images": [],
     "options": [
       "1",
@@ -46271,7 +44969,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_quadratic_equations_189",
     "number": "189",
     "type": "numerical",
-    "text": "Let $S= \\left( \\alpha :{log}_{2} \\left( {9}^{2\\alpha -4}+13 \\right) -{log}_{2} \\left( \\frac{5}{3} ⋅{3}^{2\\alpha -4}+1 \\right) =2 \\right)$ . Then the maximum value of $\\beta$ for which the equation ${x}^{2}-2{\\left( \\sum\\limits_{\\alpha \\in S}^{} \\alpha \\right)}^{2}x+ \\sum\\limits_{\\alpha \\in S}^{} (\\alpha +1{)}^{2}\\beta =0$ has real roots, is _________________ .",
+    "text": "Let $S= \\left{ \\alpha :{log}_{2} \\left( {9}^{2\\alpha -4}+13 \\right) -{log}_{2} \\left( \\frac{5}{3} ⋅{3}^{2\\alpha -4}+1 \\right) =2 \\right}$ . Then the maximum value of $\\beta$ for which the equation ${x}^{2}-2{\\left( \\sum\\limits_{\\alpha \\in S}^{} \\alpha \\right)}^{2}x+ \\sum\\limits_{\\alpha \\in S}^{} (\\alpha +1{)}^{2}\\beta =0$ has real roots, is _________________ .",
     "images": [],
     "options": [],
     "correct": "25",
@@ -46323,4940 +45021,49 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_sequences_and_series_1",
-    "number": "1",
-    "type": "mcq",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},…$ . be in an A.P. such that ${∑}_{k=1}^{12} {a}_{2k-1}=- \\frac{72}{5} {a}_{1},{a}_{1}\\neq 0$ . If ${∑}_{k=1}^{n} {a}_{k}=0$ , then $n$ is:",
-    "images": [],
-    "options": [
-      "17",
-      "18",
-      "10",
-      "11"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_2",
-    "number": "2",
-    "type": "mcq",
-    "text": "The number of terms of an A.P. is even; the sum of all the odd terms is 24 , the sum of all the even terms is 30 and the last term exceeds the first by $\\frac{21}{2}$ . Then the number of terms which are integers in the A.P. is :",
-    "images": [],
-    "options": [
-      "10",
-      "8",
-      "4",
-      "6"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_3",
-    "number": "3",
-    "type": "single mcq",
-    "text": "The sum $1+3+11+25+45+71+…$ upto 20 terms, is equal to",
-    "images": [],
-    "options": [
-      "7240",
-      "8124",
-      "7130",
-      "6982"
-    ],
-    "correct": "204",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 204</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_4",
-    "number": "4",
-    "type": "single mcq",
-    "text": "Let $A={1,6,11,16,…$ . $}andB={9,16,23,30,…$ . be the sets consisting of the first 2025 terms of two arithmetic progressions. Then $n(A\\cup B)$ is",
-    "images": [],
-    "options": [
-      "4027",
-      "3761",
-      "4003",
-      "3814"
-    ],
-    "correct": "207",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 207</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_5",
-    "number": "5",
-    "type": "single mcq",
-    "text": "Consider two sets $A$ and $B$ , each containing three numbers in A.P. Let the sum and the product of the elements of $A$ be 36 and $p$ respectively and the sum and the product of the elements of $B$ be 36 and $q$ respectively. Let $d$ and $D$ be the common differences of AP's in $A$ and $B$ respectively such that $D=d+3$ , $d>0$ . If $\\frac{p+q}{p-q} = \\frac{19}{5}$ , then $p-q$ is equal to",
-    "images": [],
-    "options": [
-      "450",
-      "630",
-      "540",
-      "600"
-    ],
-    "correct": "209",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 209</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_6",
-    "number": "6",
-    "type": "single mcq",
-    "text": "Let ${a}_{n}$ be the ${n}^{th}$ term of an A.P. If ${S}_{n}={a}_{1}+{a}_{2}+{a}_{3}+$ $…+{a}_{n}=700,{a}_{6}=7$ and ${S}_{7}=7$ , then ${a}_{n}$ is equal to",
-    "images": [],
-    "options": [
-      "65",
-      "70",
-      "56",
-      "64"
-    ],
-    "correct": "202",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 202</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_7",
-    "number": "7",
-    "type": "single mcq",
-    "text": "Suppose that the number of terms in an A.P. is $2k$ , $k\\in N$ . If the sum of all odd terms of the A.P. is 40 , the sum of all even lerms is 55 and the last term of the A.P. exceeds the first term by 27 , then $k$ is equal to :",
-    "images": [],
-    "options": [
-      "6",
-      "4",
-      "5",
-      "8"
-    ],
-    "correct": "199",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 199</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_8",
-    "number": "8",
-    "type": "mcq",
-    "text": "If the first term of an A.P. is 3 and the sum of its first four terms is equal to one-fifth of the sum of the next four terms, then the sum of the first 20 terms is equal to",
-    "images": [],
-    "options": [
-      "-120",
-      "-1200",
-      "-1020",
-      "-1080"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_9",
-    "number": "9",
-    "type": "single mcq",
-    "text": "In an arithmetic progression, if ${S}_{40}=1030$ and ${S}_{12}=57$ , then ${S}_{30}-{S}_{10}$ is equal to:",
-    "images": [],
-    "options": [
-      "505",
-      "525",
-      "510",
-      "515"
-    ],
-    "correct": "205",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 205</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_10",
-    "number": "10",
-    "type": "single mcq",
-    "text": "Let ${T}_{r}$ be the ${r}^{th}$ term of an A.P. If for some $m$ , ${T}_{m}= \\frac{1}{25} ,{T}_{25}= \\frac{1}{20}$ , and $20{∑}_{r=1}^{25} {T}_{r}=13$ , then $5m{∑}_{r=m}^{2m} {T}_{r}$ is equal to",
-    "images": [],
-    "options": [
-      "112",
-      "126",
-      "142",
-      "98"
-    ],
-    "correct": "206",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 206</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_11",
-    "number": "11",
-    "type": "single mcq",
-    "text": "Consider an A.P. of positive integers, whose sum of the first three terms is 54 and the sum of the first twenty terms lies between 1600 and 1800. Then its ${11}^{th}$ term is :",
-    "images": [],
-    "options": [
-      "84",
-      "90",
-      "108",
-      "122"
-    ],
-    "correct": "32",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 32</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_12",
-    "number": "12",
-    "type": "mcq",
-    "text": "For $x\\geq 0$ , the least value of $K$ , for which ${4}^{1+x}+$ ${4}^{1-x}, \\frac{K}{2} ,{16}^{x}+{16}^{-x}$ are three consecutive terms of an A.P., is equal to :",
-    "images": [],
-    "options": [
-      "4",
-      "10",
-      "8",
-      "16"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_13",
-    "number": "13",
-    "type": "mcq",
-    "text": "A software company sets up $m$ number of computer systems to finish an assignment in 17 days. If 4 computer systems crashed on the start of the second day, 4 more computer systems crashed on the start of the third day and su un, then it took 8 more days to finish the assignment. The value of $m$ is equal to :",
-    "images": [],
-    "options": [
-      "160",
-      "180",
-      "150",
-      "125"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_14",
-    "number": "14",
-    "type": "single mcq",
-    "text": "Let ${S}_{n}$ denote the sum of the first $n$ terms of an arithmetic progression. If ${S}_{10}=390$ and the ratio of the tenth and the fifth terms is $15:7$ , then ${S}_{15}-{S}_{5}$ is equal to :",
-    "images": [],
-    "options": [
-      "800",
-      "890",
-      "790",
-      "690"
-    ],
-    "correct": "203",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 203</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_15",
-    "number": "15",
-    "type": "mcq",
-    "text": "The number of common terms in the progressions $4,9,14,19,……$ , up to ${25}^{th}$ term and $3,6,9,12,.$ . ... ., up to ${37}^{th}$ term is :",
-    "images": [],
-    "options": [
-      "8",
-      "7",
-      "5",
-      "9"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_16",
-    "number": "16",
-    "type": "mcq",
-    "text": "The ${20}^{th}$ term from the end of the progression $20,19 \\frac{1}{4} ,18 \\frac{1}{2} ,17 \\frac{3}{4} ,…,-129 \\frac{1}{4}$ is :",
-    "images": [],
-    "options": [
-      "-118",
-      "-100",
-      "-110",
-      "-115"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_17",
-    "number": "17",
-    "type": "mcq",
-    "text": "In an A.P., the sixth term ${a}_{6}=2$ . If the product ${a}_{1}{a}_{4}{a}_{5}$ is the greatest, then the common difference of the A.P. is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{8}{5}$",
-      "$\\frac{5}{8}$",
-      "$\\frac{3}{2}$",
-      "$\\frac{2}{3}$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_18",
-    "number": "18",
-    "type": "mcq",
-    "text": "If ${log}_{e}a,{log}_{e}b,{log}_{e}c$ are in an A.P. and ${log}_{e}a-{log}_{e}2b$ , ${log}_{e}2b-{log}_{e}3c,{log}_{e}3c-{log}_{e}a$ are also in an A.P., then $a:b:c$ is equal to",
-    "images": [],
-    "options": [
-      "$16:4:1$",
-      "$9:6:4$",
-      "$6:3:2$",
-      "$25:10:4$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_19",
-    "number": "19",
-    "type": "mcq",
-    "text": "Let ${S}_{n}$ denote the sum of first $n$ terms of an arithmetic progression. If ${S}_{20}=790$ and ${S}_{10}=145$ , then ${S}_{15}-{S}_{5}$ is",
-    "images": [],
-    "options": [
-      "390",
-      "405",
-      "410",
-      "395"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_20",
-    "number": "20",
-    "type": "single mcq",
-    "text": "The sum of the first 20 terms of the series $5+11+19$ $+29+41+…$ is",
-    "images": [],
-    "options": [
-      "3450",
-      "3420",
-      "3520",
-      "3250"
-    ],
-    "correct": "73",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 73</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_22",
-    "number": "22",
-    "type": "mcq",
-    "text": "If ${S}_{n}=4+11+21+34+50+…$ to $n$ terms, then $\\frac{1}{60} \\left( {S}_{29}-{S}_{9} \\right)$ is equal to",
-    "images": [],
-    "options": [
-      "223",
-      "220",
-      "226",
-      "227"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_23",
-    "number": "23",
-    "type": "mcq",
-    "text": "Let ${s}_{1},{s}_{2},{s}_{3},……..{s}_{10}$ respectively be the sum to 12 terms of 10 A.P. whose first terms are $1,2,3$ ,  10 and the common difference are $1,3,5$ ,  19 respectively. Then ${∑}_{i=1}^{10} {s}_{i}$ is equal to",
-    "images": [],
-    "options": [
-      "7220",
-      "7380",
-      "7260",
-      "7360"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_24",
-    "number": "24",
-    "type": "mcq",
-    "text": "If ${a}_{n}= \\frac{-2}{4{n}^{2}-16n+15}$ , then ${a}_{1}+{a}_{2}+…+{a}_{25}$ is equal to",
-    "images": [],
-    "options": [
-      "$52/147$",
-      "$50/141$",
-      "$51/144$",
-      "$49/138$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_25",
-    "number": "25",
-    "type": "mcq",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},…$ be an A.P. If ${a}_{7}=3$ , the product ${a}_{1}{a}_{4}$ is minimum and the sum of its first $n$ terms is zero, then $n!-4{a}_{n(n+2)}$ is equal to",
-    "images": [],
-    "options": [
-      "$381/4$",
-      "9",
-      "$33/4$",
-      "24"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_26",
-    "number": "26",
-    "type": "mcq",
-    "text": "Suppose ${a}_{1},{a}_{2},…,{a}_{n},…$ be an arithmetic progression of natural numbers. If the ratio of the sum of first five terms to the sum of first nine terms of the progression is $5:17$ and $110<{a}_{15}<120$ , then the sum of the first ten terms of the progression is equal to",
-    "images": [],
-    "options": [
-      "290",
-      "380",
-      "460",
-      "510"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_27",
-    "number": "27",
-    "type": "mcq",
-    "text": "If ${\\left( {a}_{i} \\right)}_{i=1}^{n}$ , where $n$ is an even integer, is an arithmetic progression with common difference 1, and ${∑}_{i=1}^{n} {a}_{i}=192,{∑}_{i=1}^{n/2} {a}_{2i}=120$ , and then $n$ is equal to",
-    "images": [],
-    "options": [
-      "48",
-      "96",
-      "92",
-      "104"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_28",
-    "number": "28",
-    "type": "mcq",
-    "text": "If ${a}_{1},{a}_{2},{a}_{3}…$ and ${b}_{1},{b}_{2},{b}_{3}…$ are in A.P., and ${a}_{1}=2$ , ${a}_{10}=3,{a}_{1}{b}_{1}=1={a}_{10}{b}_{10}$ , then ${a}_{4}{b}_{4}$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{35}{27}$",
-      "1",
-      "$\\frac{27}{28}$",
-      "$\\frac{28}{27}$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_29",
-    "number": "29",
-    "type": "mcq",
-    "text": "If $n$ arithmetic means are inserted between $a$ and 100 such that the ratio of the first mean to the last mean is $1:7$ and $a+n=33$ , then the value of $n$ is",
-    "images": [],
-    "options": [
-      "21",
-      "22",
-      "23",
-      "24"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_30",
-    "number": "30",
-    "type": "single mcq",
-    "text": "Let ${a}_{1},{a}_{2},…,{a}_{21}$ be an AP such that ${∑}_{n=1}^{20} \\frac{1}{{a}_{n}{a}_{n+1}} = \\frac{4}{9}$ . If the sum of this AP is 189 , then ${a}_{6}{a}_{16}$ is equal to",
-    "images": [],
-    "options": [
-      "57",
-      "48",
-      "36",
-      "72"
-    ],
-    "correct": "31",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 31</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_32",
-    "number": "32",
-    "type": "mcq",
-    "text": "Let ${S}_{n}$ denote the sum of first $n$ -terms of an arithmetic progression. If ${S}_{10}=530,{S}_{5}=140$ , then ${S}_{20}-{S}_{6}$ is equal to",
-    "images": [],
-    "options": [
-      "1862",
-      "1852",
-      "1842",
-      "1872"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_33",
-    "number": "33",
-    "type": "mcq",
-    "text": "Let ${S}_{n}$ be the sum of the first $n$ terms of an arithmetic progression. If ${S}_{3n}=3{S}_{2n}$ , then the value of $\\frac{{S}_{4n}}{{S}_{2n}}$ is ,",
-    "images": [],
-    "options": [
-      "2",
-      "6",
-      "8",
-      "4"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_34",
-    "number": "34",
-    "type": "mcq",
-    "text": "If $tan \\left( \\frac{\\pi }{9} \\right) ,x,tan \\left( \\frac{7\\pi }{18} \\right)$ are in arithmetic progression and $tan \\left( \\frac{\\pi }{9} \\right) ,y,tan \\left( \\frac{5\\pi }{18} \\right)$ are also in arithmetic progression, then $|x-2y|$ is equal to",
-    "images": [],
-    "options": [
-      "1",
-      "3",
-      "4",
-      "0"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_35",
-    "number": "35",
-    "type": "mcq",
-    "text": "Let ${S}_{1}$ be the sum of first $2n$ terms of an arthmetic progression. Let ${S}_{2}$ be the sum of first $4n$ terms of the same arithmetic progression. If $\\left( {S}_{2}-{S}_{1} \\right)$ is 1000 , then the sum of the first $6n$ terms of the arithmetic progression is equal to",
-    "images": [],
-    "options": [
-      "1000",
-      "3000",
-      "5000",
-      "7000"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_36",
-    "number": "36",
-    "type": "mcq",
-    "text": "If the sum of first 11 terms of an A.P., ${a}_{1},{a}_{2},{a}_{3},…$ . is $0 \\left( {a}_{1}\\neq 0 \\right)$ , then the sum of the A.P., ${a}_{1},{a}_{3},{a}_{5},…,{a}_{23}$ is $k{a}_{1}$ , where $k$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{121}{10}$",
-      "$- \\frac{121}{10}$",
-      "$- \\frac{72}{5}$",
-      "$\\frac{72}{5}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_37",
-    "number": "37",
-    "type": "mcq",
-    "text": "If the first term of an A.P. is 3 and the sum of its first 25 terms is equal to the sum of its next 15 terms, then the common difference of this A.P. is",
-    "images": [],
-    "options": [
-      "$1/6$",
-      "$1/5$",
-      "$1/4$",
-      "$1/7$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_38",
-    "number": "38",
-    "type": "mcq",
-    "text": "If the sum of the series $20+19 \\frac{3}{5} +19 \\frac{1}{5} +18 \\frac{4}{5} +…$ up to ${n}^{th}$ term is 488 and the ${n}^{th}$ term is negative, then",
-    "images": [],
-    "options": [
-      "$n=60$",
-      "${n}^{th}$ term is -4",
-      "$n=41$",
-      "${n}^{th}$ term is $-4 \\frac{2}{5}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_39",
-    "number": "39",
-    "type": "single mcq",
-    "text": "Let ${a}_{1},{a}_{2},…,{a}_{n}$ be a given A.P. whose common difference is an integer and ${S}_{n}={a}_{1}+{a}_{2}+…+{a}_{n}$ . If ${a}_{1}=1,{a}_{n}=300$ and $15\\leq n\\leq 50$ , then the ordered pair $\\left( {S}_{n-4},{a}_{n-4} \\right)$ is equal to",
-    "images": [],
-    "options": [
-      "$(2480,248)$",
-      "$(2490,249)$",
-      "$(2490,248)$",
-      "$(2.480,249)$"
-    ],
-    "correct": "208",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 208</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_40",
-    "number": "40",
-    "type": "single mcq",
-    "text": "If ${3}^{2sin2\\alpha -1},14$ and ${3}^{4-2sin2\\alpha }$ are the first three terms of an A.P. for some $\\alpha$ , then the sixth term of this $A.P$ . is",
-    "images": [],
-    "options": [
-      "66",
-      "81",
-      "65",
-      "78"
-    ],
-    "correct": "41",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 41</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_42",
-    "number": "42",
-    "type": "mcq",
-    "text": "The common difference of the A.P. ${b}_{1},{b}_{2},….,{b}_{m}$ is 2 more than the common difference of A.P. ${a}_{1},{a}_{2},….,{a}_{n}$ . If ${a}_{40}=-159,{a}_{100}=-399$ and ${b}_{100}={a}_{70}$ , then ${b}_{1}$ is equal to",
-    "images": [],
-    "options": [
-      "81",
-      "-127",
-      "-81",
-      "127"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_43",
-    "number": "43",
-    "type": "mcq",
-    "text": "Five numbers are in A.P., whose sum is 25 and product is 2520 . If one of these five numbers is $-1/2$ , then the greatest number amongst them is",
-    "images": [],
-    "options": [
-      "16",
-      "27",
-      "7",
-      "$21/2$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_44",
-    "number": "44",
-    "type": "mcq",
-    "text": "If the sum of the first 40 terms of the series, 3 । 4 । $8+9+13+14+18+19+…$ . is $(102)m$ , then $m$ is equal to",
-    "images": [],
-    "options": [
-      "5",
-      "10",
-      "20",
-      "25"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_45",
-    "number": "45",
-    "type": "mcq",
-    "text": "If the ${10}^{th}$ term of an A.P. is $\\frac{1}{20}$ and its ${20}^{th}$ term is $\\frac{1}{10}$ , then the sum of its first 200 terms is",
-    "images": [],
-    "options": [
-      "$50 \\frac{1}{4}$",
-      "100",
-      "50",
-      "$100 \\frac{1}{2}$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_46",
-    "number": "46",
-    "type": "mcq",
-    "text": "The sum of all natural numbers ' $n$ ' such that $1001$ is",
-    "images": [],
-    "options": [
-      "3121",
-      "3203",
-      "3303",
-      "3221"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_47",
-    "number": "47",
-    "type": "mcq",
-    "text": "Let the sum of the first $n$ terms of a non-constant A.P., ${a}_{1},{a}_{2},{a}_{3},…….$ . be $50n+ \\frac{n(n-7)}{2} A$ , where $A$ is a constant. If $d$ is the common difference of this A.P., then the ordered pair ( $d,{a}_{50}$ ) is equal to",
-    "images": [],
-    "options": [
-      "$(A,50+46A)$",
-      "$(A,50+45A)$",
-      "$(50,50+46A)$",
-      "$(50,50+45A)$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_48",
-    "number": "48",
-    "type": "mcq",
-    "text": "If the sum and product of the first three terms in an A.P. are 33 and 1155 , respectively, then a value of its ${11}^{th}$ term is",
-    "images": [],
-    "options": [
-      "-35",
-      "-36",
-      "25",
-      "-25"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_49",
-    "number": "49",
-    "type": "mcq",
-    "text": "If ${a}_{1},{a}_{2},{a}_{3},……,{a}_{n}$ are in A.P. and ${a}_{1}+{a}_{4}+{a}_{7}+……+{a}_{16}$ $=114$ , then ${a}_{1}+{a}_{6}+{a}_{11}+{a}_{16}$ is equal to",
-    "images": [],
-    "options": [
-      "64",
-      "76",
-      "38",
-      "98"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_50",
-    "number": "50",
-    "type": "single mcq",
-    "text": "Let ${S}_{n}$ denote the sum of the first $n$ terms of an A.P. If ${S}_{4}=16$ and ${S}_{6}=-48$ , then ${S}_{10}$ is equal to",
-    "images": [],
-    "options": [
-      "260",
-      "-380",
-      "-320",
-      "-410"
-    ],
-    "correct": "51",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 51</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_52",
-    "number": "52",
-    "type": "mcq",
-    "text": "If ${19}^{th}$ term of a non-zero A.P. is zero, then its ( ${49}^{th}$ term) : ( ${29}^{th}$ term) is",
-    "images": [],
-    "options": [
-      "$1:3$",
-      "$2:1$",
-      "$3:1$",
-      "$4:1$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_53",
-    "number": "53",
-    "type": "mcq",
-    "text": "If ${x}_{1},{x}_{2},….,{x}_{n}$ and $\\frac{1}{{h}_{1}} , \\frac{1}{{h}_{2}} ,….., \\frac{1}{{h}_{n}}$ are two A.P.s such that ${x}_{3}={h}_{2}=8$ and ${x}_{8}={h}_{7}=20$ , then ${x}_{5}⋅{h}_{10}$ equals",
-    "images": [],
-    "options": [
-      "2560",
-      "2650",
-      "3200",
-      "1600"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_54",
-    "number": "54",
-    "type": "mcq",
-    "text": "Let $\\frac{1}{{x}_{1}} , \\frac{1}{{x}_{2}} ,…, \\frac{1}{{x}_{n}} \\left( {x}_{i}\\neq 0 \\right)$ for $\\left( i=1,2,…,n \\right)$ be in A.P. such that ${x}_{1}=4$ and ${x}_{21}=20$ . If $n$ is the least positive integer for which ${x}_{n}>50$ , then ${∑}_{i=1}^{n} \\left( \\frac{1}{{x}_{i}} \\right)$ is equal to",
-    "images": [],
-    "options": [
-      "$1/8$",
-      "3",
-      "$13/8$",
-      "$13/4$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_55",
-    "number": "55",
-    "type": "mcq",
-    "text": "For any three positive real numbers $a,b$ and $c$ , $9 \\left( 25{a}^{2}+{b}^{2} \\right) +25 \\left( {c}^{2}-3ac \\right) =15b(3a+c)$ . Then",
-    "images": [],
-    "options": [
-      "$b,c$ and $a$ are in A.P.",
-      "$a,b$ and $c$ are in A.P.",
-      "$a,b$ and $c$ are in G.P.",
-      "$b,c$ and $a$ are in G.P."
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_56",
-    "number": "56",
-    "type": "mcq",
-    "text": "If the sum of the first $n$ terms of the series $\\sqrt{3} + \\sqrt{75} + \\sqrt{243} + \\sqrt{507} +…$ is $435 \\sqrt{3}$ , then $n$ equals",
-    "images": [],
-    "options": [
-      "29",
-      "18",
-      "15",
-      "13"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_57",
-    "number": "57",
-    "type": "mcq",
-    "text": "If three positive numbers $a,b$ and $c$ are in A.P. such that $abc=8$ , then the minimum possible value of $b$ is",
-    "images": [],
-    "options": [
-      "${4}^{2/3}$",
-      "${4}^{1/3}$",
-      "4",
-      "2"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_58",
-    "number": "58",
-    "type": "mcq",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},…{a}_{n},…$ be in A.P. If ${a}_{3}+{a}_{7}+{a}_{11}$ $+{a}_{15}=72$ , then the sum of its first 17 terms is equal to",
-    "images": [],
-    "options": [
-      "306",
-      "204",
-      "153",
-      "612"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_59",
-    "number": "59",
-    "type": "mcq",
-    "text": "Let the sum of the first three terms of an A.P. be 39 and the sum of its last four terms be 178. If the first term of this A.P. is 10 , then the median of the A.P. is",
-    "images": [],
-    "options": [
-      "26.5",
-      "28",
-      "29.5",
-      "31"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_60",
-    "number": "60",
-    "type": "single mcq",
-    "text": "If ${∑}_{n=1}^{5} \\frac{1}{n(n+1)(n+2)(n+3)} = \\frac{k}{3}$ , then $k$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{55}{336}$",
-      "$\\frac{17}{105}$",
-      "$\\frac{1}{6}$",
-      "$\\frac{19}{112}$"
-    ],
-    "correct": "61",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 61</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_62",
-    "number": "62",
-    "type": "mcq",
-    "text": "Given sum of the first n terms of an A.P. is $2n+3{n}^{2}$ . Another A.P. is formed with the same first term and double of the common difference, the sum of $n$ terms of the new A.P. is",
-    "images": [],
-    "options": [
-      "$n+4{n}^{2}$",
-      "$6{n}^{2}-n$",
-      "${n}^{2}+4n$",
-      "$3n+2{n}^{2}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_63",
-    "number": "63",
-    "type": "mcq",
-    "text": "If 100 times the ${100}^{th}$ term of an A.P. with non-zero common difference equals the 50 times its $50{}^{th}$ term, then the ${150}^{th}$ term of this A.P. is",
-    "images": [],
-    "options": [
-      "150",
-      "zero",
-      "-150",
-      "150 times its ${50}^{th}$ term"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_64",
-    "number": "64",
-    "type": "mcq",
-    "text": "A man saves $₹200$ in each of the first three months of his service. In each of the subsequent months his saving increases by ₹ 40 more than the saving of immediately previous month. His total saving from the start of service will be ₹ 11040 after",
-    "images": [],
-    "options": [
-      "20 months",
-      "21 months",
-      "18 months",
-      "19 months"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_65",
-    "number": "65",
-    "type": "mcq",
-    "text": "A person is to count 4500 currency notes. Let ${a}_{n}$ denote the number of notes he counts in the ${n}^{th}$ minute. If ${a}_{1}={a}_{2}=…={a}_{10}=150$ and ${a}_{10},{a}_{11},…$ are in an A.P. with common difference -2 , then the time taken by him to count all notes is",
-    "images": [],
-    "options": [
-      "24 minutes",
-      "34 minutes",
-      "125 minutes",
-      "135 minutes"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_66",
-    "number": "66",
-    "type": "mcq",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},…$ be terms of an A.P. If $\\frac{{a}_{1}+{a}_{2}+…+{a}_{p}}{{a}_{1}+{a}_{2}+…+{a}_{q}} = \\frac{{p}^{2}}{{q}^{2}} ,p\\neq q$ , then $\\frac{{a}_{6}}{{a}_{21}}$ equals",
-    "images": [],
-    "options": [
-      "$41/11$",
-      "$7/2$",
-      "$2/7$",
-      "$11/41$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_67",
-    "number": "67",
-    "type": "mcq",
-    "text": "If the coefficients of ${r}^{th},(r+1{)}^{th}$ and $(r+2{)}^{th}$ terms in the binomial expansion of $(1+y{)}^{m}$ are in A.P., then $m$ and $r$ satisfy the equation",
-    "images": [],
-    "options": [
-      "${m}^{2}-m(4r-1)+4{r}^{2}+2=0$",
-      "${m}^{2}-m(4r+1)+4{r}^{2}-2=0$",
-      "${m}^{2}-m(4r+1)+4{r}^{2}+2=0$",
-      "${m}^{2}-m(4r-1)+4{r}^{2}-2=0$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_68",
-    "number": "68",
-    "type": "mcq",
-    "text": "Let ${T}_{r}$ be the ${r}^{th}$ term of an A.P. whose first term is $a$ and common difference is $d$ . If for some positive integers $m,n,m\\neq n,{T}_{m}= \\frac{1}{n}$ , and ${T}_{n}= \\frac{1}{m}$ , then $a-d$ equals",
-    "images": [],
-    "options": [
-      "$1/mn$",
-      "1",
-      "0",
-      "$\\frac{1}{m} + \\frac{1}{n}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_69",
-    "number": "69",
-    "type": "mcq",
-    "text": "Let $f(x)$ be a polynomial function of second degree. If $f(1)=f(-1)$ and $a,b,c$ are in A.P., then ${f}^{'}",
-    "images": [],
-    "options": [
-      "G.P.",
-      "H.P.",
-      "Arithmetic-Geometric Progression",
-      "A.P."
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_70",
-    "number": "70",
-    "type": "single mcq",
-    "text": "If $1,{log}_{9} \\left( {3}^{1-x}+2 \\right) ,{log}_{3} \\left( 4⋅{3}^{x}-1 \\right)$ are in A.P., then $x$ equals",
-    "images": [],
-    "options": [
-      "${log}_{3}4$",
-      "$1-{log}_{3}4$",
-      "$1-{log}_{4}3$",
-      "${log}_{4}3$"
-    ],
-    "correct": "71",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 71</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_74",
-    "number": "74",
-    "type": "numerical",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},…$ . be in an arithmetic progression of positive terms. Let ${A}_{k}={a}_{1}^{2}-{a}_{2}^{2}+{a}_{3}^{2}-{a}_{4}^{2}+…..+{a}_{2k-1}^{2}-{a}_{2k}^{2}$ . If ${A}_{3}=-153,{A}_{5}=-435$ and ${a}_{1}^{2}+{a}_{2}^{2}+{a}_{3}^{2}=66$ , then ${a}_{17}-{A}_{7}$ is equal to _____________",
-    "images": [],
-    "options": [],
-    "correct": "910",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 910</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_75",
-    "number": "75",
-    "type": "numerical",
-    "text": "An arithmetic progression is written in the following way The sum of all the terms of the ${10}^{th}$ row is _________ .",
-    "images": [
-      "https://res.cloudinary.com/dqowxwv8k/image/upload/career_xone_questions/math/sequences_and_series/q75_1.png"
-    ],
-    "options": [],
-    "correct": "1505",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 1505</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_76",
-    "number": "76",
-    "type": "numerical",
-    "text": "Let $3,7,11,15,….,403$ and $2,5,8,11,….,404$ be two arithmetic progressions. Then the sum of the common terms in them, is equal to _____________ .",
-    "images": [],
-    "options": [],
-    "correct": "6699",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 6699</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_77",
-    "number": "77",
-    "type": "numerical",
-    "text": "The sum of all those terms, of the arithmetic progression 3, 8, 13,  373, which are not divisible by 3 , is equal to __________ .",
-    "images": [],
-    "options": [],
-    "correct": "9525",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 9525</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_78",
-    "number": "78",
-    "type": "numerical",
-    "text": "Let the digits $a,b,c$ be in A.P. Nine-digit numbers are to be formed using each of these three digits thrice such that three consecutive digits are in A.P. at least once. How many such numbers can be formed?",
-    "images": [],
-    "options": [],
-    "correct": "1260",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 1260</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_79",
-    "number": "79",
-    "type": "numerical",
-    "text": "Let ${a}_{1}=8,{a}_{2},{a}_{3},…,{a}_{n}$ be an A.P. If the sum of its first four terms is 50 and the sum of its last four terms is 170 , then the product of its middle two terms is________________ .",
-    "images": [],
-    "options": [],
-    "correct": "754",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 754</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_80",
-    "number": "80",
-    "type": "numerical",
-    "text": "'The sum of the common terms of the following three arithmetic progressions. $3,7,11,15,….,399$ , $2,5,8,11,…,359$ and $2,7,12,17,…,197$ , is equal to )__________________ .",
-    "images": [],
-    "options": [],
-    "correct": "321",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 321</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_81",
-    "number": "81",
-    "type": "numerical",
-    "text": "Let ${A}_{1},{A}_{2},{A}_{3}$ be the three A.P. with the same common difference $d$ and having their first terms as $A,A+1$ , $A+2$ , respectively. Let $a,b,c$ be the ${7}^{th},{9}^{th}$ , ${17}^{th}$ terms of ${A}_{1},{A}_{2},{A}_{3}$ , respectively such that $\\left( \\begin{bmatrix} a & 7 & 1 \\\\ 2b & 17 & 1 \\\\ c & 17 & 1 \\end{bmatrix} \\right) +70=0$ . If $a=29$ , then the sum of first 20 terms of an A.P. whose first term is $c-a-b$ and common difference is $\\frac{d}{12}$ , is equal to )_________________ -",
-    "images": [],
-    "options": [],
-    "correct": "495",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 495</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_82",
-    "number": "82",
-    "type": "numerical",
-    "text": "The ${8}^{th}$ common term of the series ${S}_{1}=3+7+11+15+19+…..$ , ${S}_{2}=1+6+11+16+21+….$ . , is _____________ .",
-    "images": [],
-    "options": [],
-    "correct": "151",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 151</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_83",
-    "number": "83",
-    "type": "numerical",
-    "text": "Let ${a}_{1},{a}_{2},….,{a}_{n}$ be in A.P. If ${a}_{5}=2{a}_{7}$ and ${a}_{11}=18$ , then $12 \\left( \\frac{1}{\\sqrt{{a}_{10}} + \\sqrt{{a}_{11}}} + \\frac{1}{\\sqrt{{a}_{11}} + \\sqrt{{a}_{12}}} +…..+ \\frac{1}{\\sqrt{{a}_{17}} + \\sqrt{{a}_{18}}} \\right)$ is equal to ____________ .",
-    "images": [],
-    "options": [],
-    "correct": "8",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 8</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_84",
-    "number": "84",
-    "type": "numerical",
-    "text": "Number of 4 -digit numbers that are less than or equal to 2800 and either divisible by 3 or by 11 , is equal to ____________ .",
-    "images": [],
-    "options": [],
-    "correct": "710",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 710</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_85",
-    "number": "85",
-    "type": "numerical",
-    "text": "Let $a,b$ be two non-zero real numbers. If $p$ and $r$ are the roots of the equation ${x}^{2}-8ax+2a=0$ and $q$ and $s$ are the roots of the equation ${x}^{2}+12bx+6b=0$ , such that $\\frac{1}{p} , \\frac{1}{q} , \\frac{1}{r} , \\frac{1}{s}$ are in A.P., then ${a}^{-1}-{b}^{-1}$ is equal t_________________",
-    "images": [],
-    "options": [],
-    "correct": "38",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 38</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_86",
-    "number": "86",
-    "type": "numerical",
-    "text": "'Ihe series of positive multiples of 3 is divided into sets : ${3},{6,9,12},{15,18,21,21,27},……$ . Then the sum of the elements in the ${11}^{th}$ set is equal to________________ .",
-    "images": [],
-    "options": [],
-    "correct": "6993",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 6993</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_87",
-    "number": "87",
-    "type": "numerical",
-    "text": "Different A.P.'s are constructed with the first term 100, the last term 199, and integral common differences. The sum of the common differences of all such A.P.'s having at least 3 terms and at most 33 terms is ______________ .",
-    "images": [],
-    "options": [],
-    "correct": "53",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 53</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_88",
-    "number": "88",
-    "type": "numerical",
-    "text": "For $p,q\\in R$ , consider the real valued function $f(x)=(x-p{)}^{2}-q,x\\in R$ and $q>0$ . Let ${a}_{1},{a}_{2},{a}_{3}$ and ${a}_{4}$ be in an arithmetic progression with mean $p$ and positive common difference. If $\\left( f \\left( {a}_{i} \\right) \\right) =500$ for all $i=1,2,3$ , 4, then the absolute difference between the roots of $f(x)=0$ is ____________ -.",
-    "images": [],
-    "options": [],
-    "correct": "50",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 50</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_89",
-    "number": "89",
-    "type": "numerical",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},…$ be an A.P. If ${∑}_{r=1}^{\\infty } \\frac{{a}_{r}}{{2}^{r}} =4$ , then $4{a}_{2}$ is equal to ___________ -",
-    "images": [],
-    "options": [],
-    "correct": "16",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 16</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_90",
-    "number": "90",
-    "type": "numerical",
-    "text": "Let $A= \\left( 1,{a}_{1},{a}_{2},…,{a}_{18},77 \\right)$ be a set of integers with $1<{a}_{1}<{a}_{2}<…<{a}_{18}<77$ . Let the set $A+A={x+y$ : $x,y\\in A}$ contain exactly 39 elements. Then, the value of ${a}_{1}+{a}_{2}+…+{a}_{18}$ is equal to",
-    "images": [],
-    "options": [],
-    "correct": "702",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 702</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_91",
-    "number": "91",
-    "type": "numerical",
-    "text": "Let $3,6,9,12,…$ . upto 78 terms and $5,9,13,17$ , .... upto 59 terms be two series. Then, the sum of the terms common to both the series is equal to ___________ .",
-    "images": [],
-    "options": [],
-    "correct": "2223",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 2223</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_92",
-    "number": "92",
-    "type": "numerical",
-    "text": "The sum of all 3-digit numbers less than or equal to 500, that are formed without using the digit \" 1 \" and they all are multiple of 11 , is __________ .",
-    "images": [],
-    "options": [],
-    "correct": "7744",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 7744</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_93",
-    "number": "93",
-    "type": "numerical",
-    "text": "The number of 4 -digit numbers which are neither multiple of 7 nor multiple of 3 is ____________ -",
-    "images": [],
-    "options": [],
-    "correct": "5143",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 5143</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_94",
-    "number": "94",
-    "type": "numerical",
-    "text": "If ${log}_{3}2,{log}_{3} \\left( {2}^{x}-5 \\right) ,{log}_{3} \\left( {2}^{x}- \\frac{7}{2} \\right)$ are in an arithmetic progression, then the value of $x$ is equal to _______________ .",
-    "images": [],
-    "options": [],
-    "correct": "3",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 3</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_95",
-    "number": "95",
-    "type": "numerical",
-    "text": "Let $A= \\left( n\\in N∣{n}^{2}\\leq n+10,000 \\right) ,B={3k+1∣k\\in N}$ and $C={2k∣k\\in N}$ , then the sum of all the elements of the set $A\\cap (B-C)$ is equal to _____________________ .",
-    "images": [],
-    "options": [],
-    "correct": "832",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 832</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_96",
-    "number": "96",
-    "type": "numerical",
-    "text": "The number of terms common to the two A.P.'s 3,7 , $11,……,407$ and $2,9,16,…..,709$ is __________ . 7.2 Geometric Progression",
-    "images": [],
-    "options": [],
-    "correct": "14",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 14</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_97",
-    "number": "97",
-    "type": "mcq",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},…$ be a G.P. of increasing positive numbers. If ${a}_{3}{a}_{5}=729$ and ${a}_{2}+{a}_{4}= \\frac{111}{4}$ , then $24 \\left( {a}_{1}+{a}_{2}+{a}_{3} \\right)$ is equal to",
-    "images": [],
-    "options": [
-      "131",
-      "129",
-      "128",
-      "130"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_98",
-    "number": "98",
-    "type": "mcq",
-    "text": "Let ${x}_{1},{x}_{2},{x}_{3},{x}_{4}$ be in a geometric progression. If $2,7,9,5$ are subtracted respectively from ${x}_{1},{x}_{2},{x}_{3}$ , ${x}_{4}$ , then the resulting numbers are in an arithmetic progression. Then the value of $\\frac{1}{24} \\left( {x}_{1}{x}_{2}{x}_{3}{x}_{4} \\right)$ is :",
-    "images": [],
-    "options": [
-      "36",
-      "216",
-      "72",
-      "18"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_99",
-    "number": "99",
-    "type": "mcq",
-    "text": "If the sum of the second, fourth and sixth terms of a G.P. of positive terms is 21 and the sum of its eighth, tenth and twelfth terms is 15309, then the sum of its first nine terms is :",
-    "images": [],
-    "options": [
-      "760",
-      "755",
-      "750",
-      "757"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_100",
-    "number": "100",
-    "type": "mcq",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},….$ . be a G.P. of increasing positive terms. If ${a}_{1}{a}_{5}=28$ and ${a}_{2}+{a}_{4}=29$ , then ${a}_{6}$ is equal to:",
-    "images": [],
-    "options": [
-      "812",
-      "526",
-      "784",
-      "628"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_101",
-    "number": "101",
-    "type": "mcq",
-    "text": "Let  be a sequence such that ${a}_{0}=0,{a}_{1}= \\frac{1}{2}$ and $2{a}_{n+2}=5{a}_{n+1}-3{a}_{n},n=0,1,2,3,…$ . Then ${∑}_{k=1}^{100} {a}_{k}$ is equal to equal to_____________",
-    "images": [],
-    "options": [
-      "$3{a}_{99}-100$",
-      "$3{a}_{100}-100$",
-      "$3{a}_{100}+100$",
-      "$3{a}_{99}+100$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_102",
-    "number": "102",
-    "type": "mcq",
-    "text": "Let the coefficients of three consecutive terms, ${T}_{r}$ , ${T}_{r+1}$ and ${T}_{r+2}$ in the binomial expansion of $(a+b{)}^{12}$ be in a G.P. and let $p$ be the number of all possible values of $r$ . Let $q$ be the sum of all rational terms in the binomial expansion of $( \\sqrt[4]{3} + \\sqrt[3]{4} {)}^{12}$ . Then $p+q$ is equal to :",
-    "images": [],
-    "options": [
-      "299",
-      "287",
-      "295",
-      "283"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_103",
-    "number": "103",
-    "type": "mcq",
-    "text": "Let the first three terms $2,p$ and $q$ , with $q\\neq 2$ , of a G.P. be respectively the ${7}^{th},{8}^{th}$ and ${13}^{th}$ terms of an A.P. If the ${5}^{th}$ term of the G.P. is the ${n}^{th}$ term of the A.P., then $n$ is equal to",
-    "images": [],
-    "options": [
-      "177",
-      "151",
-      "169",
-      "163"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_104",
-    "number": "104",
-    "type": "single mcq",
-    "text": "Let $ABC$ be an equilateral triangle. A new triangle is formed by joining the middle points of all sides of the triangle $ABC$ and the same process is repeated infinitely many times. If $P$ is the sum of perimeters and $Q$ is the sum of areas of all the triangles formed in this process, then :",
-    "images": [],
-    "options": [
-      "${P}^{2}=6 \\sqrt{3} Q$",
-      "${P}^{2}=72 \\sqrt{3} Q$",
-      "${P}^{2}=36 \\sqrt{3} Q$",
-      "$P=36 \\sqrt{3} {Q}^{2}$"
-    ],
-    "correct": "105",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 105</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_106",
-    "number": "106",
-    "type": "mcq",
-    "text": "Let $a,ar,a{r}^{2},…$ be an infinite G.P. If ${∑}_{n=0}^{\\infty } a{r}^{n}=57$ and ${∑}_{n=0}^{\\infty } {a}^{3}{r}^{3n}=9747$ , then $a+18r$ is equal to",
-    "images": [],
-    "options": [
-      "38",
-      "46",
-      "31",
-      "27"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_107",
-    "number": "107",
-    "type": "mcq",
-    "text": "Let $3,a,b,c$ be in A.P. and $3,a-1,b+1,c+9$ be in G.P. Then, the arithmetic mean of $a,b$ and $c$ is",
-    "images": [],
-    "options": [
-      "13",
-      "-4",
-      "-1",
-      "11"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_108",
-    "number": "108",
-    "type": "mcq",
-    "text": "Let $\\alpha$ and $\\beta$ be the roots of the equation $p{x}^{2}+qx$ $-r=0$ , where $p\\neq 0$ . If $p,q$ and $r$ be the consecutive terms of a non constant G.P. and $\\frac{1}{\\alpha } + \\frac{1}{\\beta } = \\frac{3}{4}$ , then the value of $(\\alpha -\\beta {)}^{2}$ is :",
-    "images": [],
-    "options": [
-      "8",
-      "9",
-      "$\\frac{20}{3}$",
-      "$\\frac{80}{9}$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_109",
-    "number": "109",
-    "type": "mcq",
-    "text": "If in a G.P. of 64 terms, the sum of all the terms is 7 times the sum of the odd terms of the G.P., then the common ratio of the G.P. is equal to",
-    "images": [],
-    "options": [
-      "7",
-      "4",
-      "5",
-      "6"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_110",
-    "number": "110",
-    "type": "mcq",
-    "text": "If each term of a geometric progression ${a}_{1},{a}_{2},{a}_{3}$ , ____________with ${a}_{1}= \\frac{1}{8}$ and ${a}_{2}\\neq {a}_{1}$ , is the arithmetic mean of the next two terms and ${S}_{n}={a}_{1}+{a}_{2}+……+{a}_{n}$ , then ${S}_{20}-{S}_{18}$ is equal to",
-    "images": [],
-    "options": [
-      "$-{2}^{15}$",
-      "${2}^{18}$",
-      "${2}^{15}$",
-      "$-{2}^{18}$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_111",
-    "number": "111",
-    "type": "mcq",
-    "text": "Let $a$ and $b$ be two distinct positive real numbers. Let ${11}^{th}$ term of a GP, whose first term is $a$ and third term is $b$ , is equal to ${p}^{th}$ term of another GP, whose first term is $a$ and fifth term is $b$ . Then $p$ is equal to",
-    "images": [],
-    "options": [
-      "21",
-      "24",
-      "20",
-      "25"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_112",
-    "number": "112",
-    "type": "mcq",
-    "text": "For $0<c<b<a$ , let $(a+b-2c){x}^{2}+(b+c-2a)x+$ $(c+a-2b)=0$ and $\\alpha \\neq 1$ be one of its root. Then, among the two statements (I) If $\\alpha \\in (-1,0)$ , then $b$ cannot be the geometric mean of $a$ and $c$ (II) If $\\alpha \\in (0,1)$ , then $b$ may be the geometric mean of $a$ and $c$",
-    "images": [],
-    "options": [
-      "only (II) is true",
-      "Both (I) and (II) are true",
-      "only (I) is true",
-      "Neither (I) nor (II) is true"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_113",
-    "number": "113",
-    "type": "mcq",
-    "text": "Let ${2}^{nd},{8}^{th}$ and ${44}^{th}$ terms of a non-constant A. P. be respectively the ${1}^{st},{2}^{nd}$ and ${3}^{rd}$ terms of a G . P. If the first term of the A. P. is 1 , then the sum of its first 20 terms is equal to",
-    "images": [],
-    "options": [
-      "990",
-      "980",
-      "970",
-      "960"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_114",
-    "number": "114",
-    "type": "single mcq",
-    "text": "Let the first term $a$ and the common ratio $r$ of a geometric progression be positive integers. If the sum of squares of its first three terms is 33033 , then the sum of these three terms is equal to",
-    "images": [],
-    "options": [
-      "231",
-      "241",
-      "210",
-      "220"
-    ],
-    "correct": "115",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 115</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_116",
-    "number": "116",
-    "type": "mcq",
-    "text": "For three positive integers $p,q,r,{x}^{p{q}^{2}}={y}^{qr}={z}^{{p}^{2}r}$ and $r=pq+1$ such that $3,3{log}_{y}x,3{log}_{z}y,7{log}_{x}z$ are in A.P. with common difference $1/2$ . The $r-p-q$ is equal to",
-    "images": [],
-    "options": [
-      "6",
-      "2",
-      "12",
-      "-6"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_117",
-    "number": "117",
-    "type": "mcq",
-    "text": "Let $a,b,c>1,{a}^{3},{b}^{3}$ and ${c}^{3}$ be in A.P., and ${log}_{a}b,{log}_{c}a$ and ${log}_{b}c$ be in G.P. If the sum of first 20 terms of an A.P., whose first term is $\\frac{a+4b+c}{3}$ and the common difference is $\\frac{a-8b+c}{10}$ is -444 , then $abc$ is equal to",
-    "images": [],
-    "options": [
-      "343",
-      "216",
-      "$\\frac{343}{8}$",
-      "$\\frac{125}{8}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_118",
-    "number": "118",
-    "type": "mcq",
-    "text": "If the sum and product of four positive consecutive terms of a G.P., are 126 and 1296, respectively, then the sum of common ratios of all such GPs is",
-    "images": [],
-    "options": [
-      "$\\frac{9}{2}$",
-      "3",
-      "7",
-      "14"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_119",
-    "number": "119",
-    "type": "mcq",
-    "text": "Let $f:N\\rightarrow R$ be a function such that $f(x+y)=$ $2f(x)f(y)$ for natural numbers $x$ and $y$ . If $f(1)=2$ , then the value of $\\alpha$ for which ${∑}_{k=1}^{10} f(\\alpha +k)= \\frac{512}{3} \\left( {2}^{20}-1 \\right)$ holds, is holds, is",
-    "images": [],
-    "options": [
-      "2",
-      "3",
-      "4",
-      "6"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_120",
-    "number": "120",
-    "type": "mcq",
-    "text": "If $\\frac{1}{2⋅{3}^{10}} + \\frac{1}{{2}^{2}⋅{3}^{9}} +…..+ \\frac{1}{{2}^{10}⋅3} = \\frac{K}{{2}^{10}⋅{3}^{10}}$ , then the remainder when $K$ is divided by 6 is",
-    "images": [],
-    "options": [
-      "1",
-      "2",
-      "3",
-      "5"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_121",
-    "number": "121",
-    "type": "mcq",
-    "text": "The coefficient of ${x}^{101}$ in the expression $(5+x{)}^{500}+x(5+x{)}^{499}+{x}^{2}(5+x{)}^{498}+…+{x}^{500},x>0$ is",
-    "images": [],
-    "options": [
-      "${}^{501}{C}_{101}(5{)}^{399}$",
-      "${}^{501}{C}_{101}(5{)}^{400}$",
-      "${}^{501}{C}_{100}(5{)}^{400}$",
-      "${}^{500}{C}_{101}(5{)}^{399}$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_122",
-    "number": "122",
-    "type": "mcq",
-    "text": "The sum $1+2⋅3+3⋅{3}^{2}+……⋅10⋅{3}^{9}$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{2⋅{3}^{12}+10}{4}$",
-      "$\\frac{19⋅{3}^{10}+1}{4}$",
-      "$5⋅{3}^{10}-2$",
-      "$\\frac{9⋅{3}^{10}+1}{2}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_123",
-    "number": "123",
-    "type": "mcq",
-    "text": "If $A={∑}_{n=1}^{\\infty } \\frac{1}{{\\left( 3+(-1{)}^{n} \\right)}^{n}}$ and $B={∑}_{n=1}^{\\infty } \\frac{(-1{)}^{n}}{{\\left( 3+(-1{)}^{n} \\right)}^{n}}$ , then $\\frac{A}{B}$ is equal to :",
-    "images": [],
-    "options": [
-      "$\\frac{11}{9}$",
-      "1",
-      "$- \\frac{11}{9}$",
-      "$- \\frac{11}{3}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_124",
-    "number": "124",
-    "type": "mcq",
-    "text": "If $x={∑}_{n=0}^{\\infty } {a}^{n},y={∑}_{n=0}^{\\infty } {b}^{n},z={∑}_{n=0}^{\\infty } {c}^{n}$ , where, $a,b,c$ are in A.P. and $|a|<1,|b|<1,|c|<1,abc\\neq 0$ , then :",
-    "images": [],
-    "options": [
-      "$x,y,z$ are in A.P.",
-      "$x,y,z$ are in G.P.",
-      "$\\frac{1}{x} , \\frac{1}{y} , \\frac{1}{z}$ are in A.P.",
-      "$\\frac{1}{x} + \\frac{1}{y} + \\frac{1}{z} =1-(a+b+c)$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_125",
-    "number": "125",
-    "type": "mcq",
-    "text": "Let $S=2+ \\frac{6}{7} + \\frac{12}{{7}^{2}} + \\frac{20}{{7}^{3}} + \\frac{30}{{7}^{4}} +…$ . Then $4S$ is equal to",
-    "images": [],
-    "options": [
-      "${\\left( \\frac{7}{3} \\right)}^{2}$",
-      "$\\frac{{7}^{3}}{{3}^{2}}$",
-      "${\\left( \\frac{7}{3} \\right)}^{3}$",
-      "$\\frac{{7}^{2}}{{3}^{3}}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_126",
-    "number": "126",
-    "type": "mcq",
-    "text": "Let ${A}_{1},{A}_{2},{A}_{3},…$ be an increasing geometric progression of positive real numbers. If ${A}_{1}{A}_{3}{A}_{5}{A}_{7}= \\frac{1}{1296}$ and ${A}_{2}+{A}_{4}= \\frac{7}{36}$ , then the value of ${A}_{6}+{A}_{8}+{A}_{10}$ is equal to",
-    "images": [],
-    "options": [
-      "33",
-      "37",
-      "43",
-      "47"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_127",
-    "number": "127",
-    "type": "mcq",
-    "text": "Let ${\\left( {a}_{n} \\right)}_{n=0}^{\\infty }$ be a sequence such that ${a}_{0}={a}_{{1}_{\\infty }}=0$ and ${a}_{n+2}=2{a}_{n+1}-{a}_{n}+1$ for all $n\\geq 0$ . Then, ${∑}_{n=2}^{\\infty } \\frac{{a}_{n}}{{7}^{n}}$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{6}{343}$",
-      "$\\frac{7}{216}$",
-      "$\\frac{8}{343}$",
-      "$\\frac{49}{216}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_128",
-    "number": "128",
-    "type": "mcq",
-    "text": "The sum of the infinite series $1+ \\frac{5}{6} + \\frac{12}{{6}^{2}} + \\frac{22}{{6}^{3}} + \\frac{35}{{6}^{4}} + \\frac{51}{{6}^{5}} + \\frac{70}{{6}^{6}} +….$ . is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{425}{216}$",
-      "$\\frac{429}{216}$",
-      "$\\frac{288}{125}$",
-      "$\\frac{280}{125}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_129",
-    "number": "129",
-    "type": "mcq",
-    "text": "If the sum of an infinite GP $a,ar,a{r}^{2},a{r}^{3},…$ is 15 , and the sum of the squares of its each term is 150 , then the sum of $a{r}^{2},a{r}^{4},a{r}^{6}$ ,  s",
-    "images": [],
-    "options": [
-      "$\\frac{25}{2}$",
-      "$\\frac{9}{2}$",
-      "$\\frac{1}{2}$",
-      "$\\frac{5}{2}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_130",
-    "number": "130",
-    "type": "mcq",
-    "text": "If $0<x<1$ , then $\\frac{3}{2} {x}^{2}+ \\frac{5}{3} {x}^{3}+ \\frac{7}{4} {x}^{4}+…$ , is equal to",
-    "images": [],
-    "options": [
-      "$x \\left( \\frac{1-x}{1+x} \\right) +{log}_{e}(1-x)$",
-      "$x \\left( \\frac{1+x}{1-x} \\right) +{log}_{e}(1-x)$",
-      "$\\frac{1+x}{1-x} +{log}_{e}(1-x)$",
-      "$\\frac{1-x}{1+x} +{log}_{e}(1-x)$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_131",
-    "number": "131",
-    "type": "mcq",
-    "text": "If for $x,y\\in R,x>0,y={log}_{10}x+{log}_{10}{x}^{1/3}+{log}_{10}{x}^{1/9}$ $+…$ upto $\\infty$ terms and $\\frac{2+4+6+…+2y}{3+6+9+…+3y} = \\frac{4}{{log}_{10}x}$ , then the ordered pair $(x,y)$ is equal to",
-    "images": [],
-    "options": [
-      "$\\left( {10}^{6},6 \\right)$",
-      "$\\left( {10}^{6},9 \\right)$",
-      "$\\left( {10}^{2},3 \\right)$",
-      "$\\left( {10}^{4},6 \\right)$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_132",
-    "number": "132",
-    "type": "mcq",
-    "text": "If $0<x<1$ and $y= \\frac{1}{2} {x}^{2}+ \\frac{2}{3} {x}^{3}+ \\frac{3}{4} {x}^{4}+…$ , then the value of ${e}^{1+y}$ at $x= \\frac{1}{2}$ is",
-    "images": [],
-    "options": [
-      "$\\frac{1}{2} {e}^{2}$",
-      "$2e$",
-      "$2{e}^{2}$",
-      "$\\frac{1}{2} \\sqrt{e}$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_133",
-    "number": "133",
-    "type": "mcq",
-    "text": "Three numbers are in an increasing geometric progression with common ratio $r$ . If the middle number is doubled, then the new numbers are in an arithmetic progression with common difference $d$ . If the fourth term of GP is $3{r}^{2}$ , then ${r}^{2}-d$ is equal to",
-    "images": [],
-    "options": [
-      "$7- \\sqrt{3}$",
-      "$7+3 \\sqrt{3}$",
-      "$7-7 \\sqrt{3}$",
-      "$7+ \\sqrt{3}$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_134",
-    "number": "134",
-    "type": "mcq",
-    "text": "If $\\alpha ,\\beta$ are natural numbers such that ${100}^{\\alpha }-199\\beta$ $=(100)(100)+(99)(101)+(98)(102)+…….+(1)$ (199), then the slope of the line passing through ( $\\alpha ,\\beta$ ) and origin is",
-    "images": [],
-    "options": [
-      "530",
-      "510",
-      "550",
-      "540"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_135",
-    "number": "135",
-    "type": "mcq",
-    "text": "If ${e}^{\\left( {cos}^{2}x+{cos}^{4}x+{cos}^{6}x+…\\infty \\right) {log}_{e}2}$ satisfies the equation ${t}^{2}-9t+8=0$ , then the value of $\\frac{2sinx}{sinx+ \\sqrt{3} cosx}$ $\\left( 0<x< \\frac{\\pi }{2} \\right)$ is",
-    "images": [],
-    "options": [
-      "$\\frac{3}{2}$",
-      "$\\frac{1}{2}$",
-      "$\\sqrt{3}$",
-      "$2 \\sqrt{3}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_136",
-    "number": "136",
-    "type": "mcq",
-    "text": "If $0<\\theta ,\\phi<\\pi /2,x={∑}_{n=0}^{\\infty } {cos}^{2n}\\theta ,y={∑}_{n=0}^{\\infty } {sin}^{2n}\\phi$ and $z={∑}_{n=0}^{\\infty } {cos}^{2n}\\theta ⋅{sin}^{2n}\\phi$ , then",
-    "images": [],
-    "options": [
-      "$xy-z=(x+y)z$",
-      "$xy+z=(x+y)z$",
-      "$xyz=4$",
-      "$xy+yz+zx=z$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_137",
-    "number": "137",
-    "type": "mcq",
-    "text": "In an increasing geometric series, the sum of the second and the sixth term is $\\frac{25}{2}$ and the product of the third and fifth term is 25 . Then, the sum of ${4}^{th}$ , ${6}^{th}$ and ${8}^{th}$ terms is equal to",
-    "images": [],
-    "options": [
-      "30",
-      "26",
-      "32",
-      "35"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_138",
-    "number": "138",
-    "type": "mcq",
-    "text": "The sum of the infinite series $1+ \\frac{2}{3} + \\frac{7}{{3}^{2}} + \\frac{12}{{3}^{3}} + \\frac{17}{{3}^{4}} + \\frac{22}{{3}^{5}} +….$ . is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{15}{4}$",
-      "$\\frac{13}{4}$",
-      "$\\frac{11}{4}$",
-      "$\\frac{9}{4}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_139",
-    "number": "139",
-    "type": "mcq",
-    "text": "The sum of the first three terms of a G.P. is $S$ and their product is 27 . Then all such $S$ lie in",
-    "images": [],
-    "options": [
-      "$(-\\infty ,-9]\\cup [3,\\infty )$",
-      "$[-3,\\infty )$",
-      "$(-\\infty ,-3]\\cup [9,\\infty )$",
-      "$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_140",
-    "number": "140",
-    "type": "mcq",
-    "text": "If $|x|<1,|y|<1$ and $x\\neq y$ , then the sum to infinity of the following series $(x+y)+ \\left( {x}^{2}+xy+{y}^{2} \\right) +$ $\\left( {x}^{3}+{x}^{2}y+x{y}^{2}+{y}^{3} \\right) +$  is",
-    "images": [],
-    "options": [
-      "$\\frac{x+y-xy}{(1+x)(1+y)}$",
-      "$\\frac{x+y+xy}{(1+x)(1+y)}$",
-      "$\\frac{x+y-xy}{(1-x)(1-y)}$",
-      "$\\frac{x+y+xy}{(1-x)(1-y)}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_141",
-    "number": "141",
-    "type": "mcq",
-    "text": "Let $S$ be the sum of the first 9 terms of the series: ${x+ka}+ \\left( {x}^{2}+(k+2)a \\right) + \\left( {x}^{3}+(k+4)a \\right) +$ $\\left( {x}^{4}+(k+6)a \\right) +…$ . where $a\\neq 0$ and $x\\neq 1$ . If $S= \\frac{{x}^{10}-x+45a(x-1)}{x-1}$ , then $k$ is equal to",
-    "images": [],
-    "options": [
-      "-5",
-      "1",
-      "-3",
-      "3"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_142",
-    "number": "142",
-    "type": "mcq",
-    "text": "If ${2}^{10}+{2}^{9}⋅{3}^{1}+{2}^{8}⋅{3}^{2}+….+2⋅{3}^{9}+{3}^{10}=S-{2}^{11}$ , then $S$ is equal to",
-    "images": [],
-    "options": [
-      "${3}^{11}-{2}^{12}$",
-      "${3}^{11}$",
-      "$\\frac{{3}^{11}}{2} +{2}^{10}$",
-      "$2⋅{3}^{11}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_143",
-    "number": "143",
-    "type": "mcq",
-    "text": "If the sum of the second, third and fourth terms of a positive term G.P. is 3 and the sum of its sixth, seventh and eighth terms is 243, then the sum of the first 50 terms of this G.P. is",
-    "images": [],
-    "options": [
-      "$\\frac{1}{26} \\left( {3}^{49}-1 \\right)$",
-      "$\\frac{1}{26} \\left( {3}^{50}-1 \\right)$",
-      "$\\frac{2}{13} \\left( {3}^{50}-1 \\right)$",
-      "$\\frac{1}{13} \\left( {3}^{50}-1 \\right)$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_144",
-    "number": "144",
-    "type": "mcq",
-    "text": "Let $a,b,c,d$ and $p$ be any non zero distinct real numbers such that $\\left( {a}^{2}+{b}^{2}+{c}^{2} \\right) {p}^{2}-2(ab+bc+cd)p+$ $\\left( {b}^{2}+{c}^{2}+{d}^{2} \\right) =0$ . Then",
-    "images": [],
-    "options": [
-      "$a,c,p$ are in A.P.",
-      "$a,c,p$ are in G.P.",
-      "$a,b,c,d$ are in G.P.",
-      "$a,b,c,d$ are in A.P."
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_145",
-    "number": "145",
-    "type": "mcq",
-    "text": "The greatest positive integer $k$ , for which ${49}^{k}+1$ is a factor of the sum ${49}^{125}+{49}^{124}+….+{49}^{2}+49+1$ , is",
-    "images": [],
-    "options": [
-      "32",
-      "60",
-      "65",
-      "63"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_146",
-    "number": "146",
-    "type": "mcq",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},…$ be a G.P. such that ${a}_{1}<0,{a}_{1}+{a}_{2}=4$ and ${a}_{3}+{a}_{4}=16$ . If ${∑}_{i=1}^{9} {a}_{i}=4\\lambda$ , then $\\lambda$ is equal to",
-    "images": [],
-    "options": [
-      "-171",
-      "-513",
-      "$\\frac{511}{3}$",
-      "171"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_147",
-    "number": "147",
-    "type": "mcq",
-    "text": "The product ${2}^{\\frac{1}{4}}⋅{4}^{\\frac{1}{16}}⋅{8}^{\\frac{1}{48}}⋅{16}^{\\frac{1}{128}}⋅….$ . to $\\infty$ is equal to",
-    "images": [],
-    "options": [
-      "${2}^{\\frac{1}{4}}$",
-      "2",
-      "${2}^{\\frac{1}{2}}$",
-      "1"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_148",
-    "number": "148",
-    "type": "mcq",
-    "text": "Let ${a}_{n}$ be the ${n}^{th}$ term of a G.P. of positive terms. If ${∑}_{n=1}^{100} {a}_{2n+1}=200$ and ${∑}_{n=1}^{100} {a}_{2n}=100$ , then ${∑}_{n=1}^{200} {a}_{n}$ is equal to",
-    "images": [],
-    "options": [
-      "300",
-      "175",
-      "225",
-      "150"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_149",
-    "number": "149",
-    "type": "mcq",
-    "text": "If $x={∑}_{n=0}^{\\infty } (-1{)}^{n}{tan}^{2n}\\theta$ and $y={∑}_{n=0}^{\\infty } {cos}^{2n}\\theta$ , for $0<\\theta < \\frac{\\pi }{4}$ , then",
-    "images": [],
-    "options": [
-      "$y(1+x)=1$",
-      "$x(1-y)=1$",
-      "$y(1-x)=1$",
-      "$x(1+y)=1$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_150",
-    "number": "150",
-    "type": "mcq",
-    "text": "If three distinct numbers $a,b,c$ are in G.P. and the equations $a{x}^{2}+2bx+c=0$ and $d{x}^{2}+2ex+f=0$ have a common root, then which one of the following statements is correct?",
-    "images": [],
-    "options": [
-      "$d,e,f$ are in A.P.",
-      "$\\frac{d}{a} , \\frac{e}{b} , \\frac{f}{c}$ are in G.P.",
-      "$d,e,f$ are in G.P.",
-      "$\\frac{d}{a} , \\frac{e}{b} , \\frac{f}{c}$ are in A.P."
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_151",
-    "number": "151",
-    "type": "mcq",
-    "text": "The sum ${∑}_{k=1}^{20} k \\frac{1}{{2}^{k}}$ is equal to",
-    "images": [],
-    "options": [
-      "$1- \\frac{11}{{2}^{20}}$",
-      "$2- \\frac{21}{{2}^{20}}$",
-      "$2- \\frac{11}{{2}^{19}}$",
-      "$2- \\frac{3}{{2}^{17}}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_152",
-    "number": "152",
-    "type": "mcq",
-    "text": "Let $a,b$ and $c$ be in G.P. with common ratio $r$ , where $a\\neq 0$ and $0<r\\leq \\frac{1}{2}$ . If $3a,7b$ and $15c$ are the first three terms of an A.P., then the ${4}^{th}$ term of this A.P. is",
-    "images": [],
-    "options": [
-      "$\\frac{7}{3} a$",
-      "$a$",
-      "$5a$",
-      "$\\frac{2}{3} a$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_153",
-    "number": "153",
-    "type": "mcq",
-    "text": "Let $a,b$ and $c$ be the ${7}^{th},{11}^{th}$ and ${13}^{th}$ terms respectively of a non-constant A.P. If these are also the three consecutive terms of a G.P., then $a/c$ is equal to",
-    "images": [],
-    "options": [
-      "2",
-      "$1/2$",
-      "4",
-      "$7/13$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_154",
-    "number": "154",
-    "type": "mcq",
-    "text": "Let ${a}_{1},{a}_{2},…,{a}_{10}$ be a G.P. If $\\frac{{a}_{3}}{{a}_{1}} =25$ , then $\\frac{{a}_{9}}{{a}_{5}}$ equals",
-    "images": [],
-    "options": [
-      "$2 \\left( {5}^{2} \\right)$",
-      "$4 \\left( {5}^{2} \\right)$",
-      "${5}^{4}$",
-      "${5}^{3}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_155",
-    "number": "155",
-    "type": "mcq",
-    "text": "The sum of an infinite geometric series with positive terms is 3 and the sum of the cubes of its terms is $\\frac{27}{19}$ . Then the common ratio of this series is",
-    "images": [],
-    "options": [
-      "$1/3$",
-      "$4/9$",
-      "$2/3$",
-      "$2/9$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_156",
-    "number": "156",
-    "type": "mcq",
-    "text": "Set ${S}_{n}=1+q+{q}^{2}+…+{q}^{n}$ and ${T}_{n}=1+ \\left( \\frac{q+1}{2} \\right) +{\\left( \\frac{q+1}{2} \\right)}^{2}+…+{\\left( \\frac{q+1}{2} \\right)}^{n}$ where $q$ is a real number and $q\\neq 1$ . If ${}^{101}{C}_{1}+{}^{101}{C}_{2}{S}_{1}+…+{}^{101}{C}_{101}{S}_{100}=\\alpha {T}_{100}$ , then $\\alpha$ is equal to",
-    "images": [],
-    "options": [
-      "${2}^{100}$",
-      "${2}^{99}$",
-      "202",
-      "200"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_157",
-    "number": "157",
-    "type": "mcq",
-    "text": "The product of three consecutive terms of a G.P. is 512. If 4 is added to each of the first and the second of these terms, the three terms now form an A.P. Then the sum of the original three terms of the given G.P. is",
-    "images": [],
-    "options": [
-      "36",
-      "24",
-      "28",
-      "32"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_158",
-    "number": "158",
-    "type": "mcq",
-    "text": "If $b$ is the first term of an infinite G.P. whose sum is five, then $b$ lies in the interval",
-    "images": [],
-    "options": [
-      "$(-\\infty ,-10]$",
-      "$(-10,0)$",
-      "$(0,10)$",
-      "$[10,\\infty )$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_159",
-    "number": "159",
-    "type": "mcq",
-    "text": "Let ${A}_{n}= \\left( \\frac{3}{4} \\right) -{\\left( \\frac{3}{4} \\right)}^{2}+{\\left( \\frac{3}{4} \\right)}^{3}….+(-1{)}^{n-1}{\\left( \\frac{3}{4} \\right)}^{n}$ and ${B}_{n}=1-{A}_{n}$ . Then, the least odd natural number $p$ , so that ${B}_{n}>{A}_{n}$ , for all $n\\geq p$ , is",
-    "images": [],
-    "options": [
-      "11",
-      "9",
-      "5",
-      "7"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_160",
-    "number": "160",
-    "type": "mcq",
-    "text": "If $a,b,c$ are in A.P. and ${a}^{2},{b}^{2},{c}^{2}$ are in G.P. such that $a<b<c$ and $a+b+c= \\frac{3}{4}$ , then the value of $a$ is",
-    "images": [],
-    "options": [
-      "$\\frac{1}{4} - \\frac{1}{\\sqrt{2}}$",
-      "$\\frac{1}{4} - \\frac{1}{3 \\sqrt{2}}$",
-      "$\\frac{1}{4} - \\frac{1}{4 \\sqrt{2}}$",
-      "$\\frac{1}{4} - \\frac{1}{2 \\sqrt{2}}$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_161",
-    "number": "161",
-    "type": "mcq",
-    "text": "The sum of the first 20 terms of the series $1+ \\frac{3}{2} + \\frac{7}{4} + \\frac{15}{8} + \\frac{31}{16} +….$ , is",
-    "images": [],
-    "options": [
-      "$39+ \\frac{1}{{2}^{19}}$",
-      "$39+ \\frac{1}{{2}^{20}}$",
-      "$38+ \\frac{1}{{2}^{20}}$",
-      "$38+ \\frac{1}{{2}^{19}}$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_162",
-    "number": "162",
-    "type": "mcq",
-    "text": "If the arithmetic mean of two numbers $a$ and $b$ , $a>b>0$ , is five times their geometric mean, then $\\frac{a+b}{a-b}$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{\\sqrt{6}}{2}$",
-      "$\\frac{3 \\sqrt{2}}{4}$",
-      "$\\frac{5 \\sqrt{6}}{12}$",
-      "$\\frac{7 \\sqrt{3}}{12}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_163",
-    "number": "163",
-    "type": "mcq",
-    "text": "If the ${2}^{nd},{5}^{th}$ and ${9}^{th}$ terms of a non-constant A.P. are in G.P., then the common ratio of this G.P. is",
-    "images": [],
-    "options": [
-      "$8/5$",
-      "$4/3$",
-      "1",
-      "7/4"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_164",
-    "number": "164",
-    "type": "mcq",
-    "text": "If $m$ is A. M. of two distinct real numbers $l$ and $n$ $(l,n>1)$ and ${G}_{1},{G}_{2}$ and ${G}_{3}$ are three geometric means between $l$ and $n$ , then ${G}_{1}^{4}+2{G}_{2}^{4}+{G}_{3}^{4}$ equals",
-    "images": [],
-    "options": [
-      "$4lm{n}^{2}$",
-      "$4{l}^{2}{m}^{2}{n}^{2}$",
-      "$4{l}^{2}mn$",
-      "$4l{m}^{2}n$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_165",
-    "number": "165",
-    "type": "mcq",
-    "text": "The sum of the ${3}^{rd}$ and the ${4}^{th}$ terms of a G.P. is 60 and the product of its first three terms is 1000 . If the first term of this G.P. is positive, then its $7{}^{th}$ term is",
-    "images": [],
-    "options": [
-      "7290",
-      "320",
-      "640",
-      "2430"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_166",
-    "number": "166",
-    "type": "mcq",
-    "text": "Three positive numbers form an increasing G.P. If the middle term in this G.P. is doubled, the new numbers are in A.P. Then the common ratio of the G.P. is",
-    "images": [],
-    "options": [
-      "$3+ \\sqrt{2}$",
-      "$2- \\sqrt{3}$",
-      "$2+ \\sqrt{3}$",
-      "$\\sqrt{2} + \\sqrt{3}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_167",
-    "number": "167",
-    "type": "mcq",
-    "text": "If $(10{)}^{9}+2(11{)}^{1}(10{)}^{8}+3(11{)}^{2}(10{)}^{7}+…+10(11{)}^{9}$ $=k(10{)}^{9}$ , then $k$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{441}{100}$",
-      "100",
-      "110",
-      "$\\frac{121}{100}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_168",
-    "number": "168",
-    "type": "mcq",
-    "text": "The sum of first 20 terms of the sequence $0.7,0.77$ , $0.777,…$ , is",
-    "images": [],
-    "options": [
-      "$\\frac{7}{9} \\left( 99-{10}^{-20} \\right)$",
-      "$\\frac{7}{81} \\left( 179+{10}^{-20} \\right)$",
-      "$\\frac{7}{9} \\left( 99+{10}^{-20} \\right)$",
-      "$\\frac{7}{81} \\left( 179-{10}^{-20} \\right)$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_169",
-    "number": "169",
-    "type": "mcq",
-    "text": "The difference between the fourth term and the first term of a Geometric Progression is 52. If the sum of its first three terms is 26, then the sum of the first six terms of the progression is",
-    "images": [],
-    "options": [
-      "63",
-      "189",
-      "728",
-      "364 (Online 2012)"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_170",
-    "number": "170",
-    "type": "mcq",
-    "text": "The sum to infinity of the series $1+ \\frac{2}{3} + \\frac{6}{{3}^{2}} + \\frac{10}{{3}^{3}} + \\frac{14}{{3}^{4}} +……$ . is",
-    "images": [],
-    "options": [
-      "3",
-      "4",
-      "6",
-      "2"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_171",
-    "number": "171",
-    "type": "mcq",
-    "text": "The first two terms of a geometric progression add up to 12 . The sum of the third and the fourth terms is 48 . If the terms of the geometric progression are alternately positive and negative, then the first term is",
-    "images": [],
-    "options": [
-      "4",
-      "-4",
-      "-12",
-      "12"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_172",
-    "number": "172",
-    "type": "mcq",
-    "text": "The sum of the series $\\frac{1}{2!} - \\frac{1}{3!} + \\frac{1}{4!} -…$ . upto infinity is",
-    "images": [],
-    "options": [
-      "${e}^{- \\frac{1}{2}}$",
-      "${e}^{+ \\frac{1}{2}}$",
-      "${e}^{-2}$",
-      "${e}^{-1}$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_173",
-    "number": "173",
-    "type": "mcq",
-    "text": "In a geometric progression consisting of positive terms, each term equals the sum of the next two terms. Then the common ratio of this progression is equals",
-    "images": [],
-    "options": [
-      "$\\sqrt{5}$",
-      "$\\frac{1}{2} ( \\sqrt{5} -1)$",
-      "$\\frac{1}{2} (1- \\sqrt{5} )$",
-      "$\\frac{1}{2} \\sqrt{5}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_174",
-    "number": "174",
-    "type": "mcq",
-    "text": "If ${a}_{1},{a}_{2},{a}_{3},…,{a}_{n},…$ are in G.P., then the determinant $\\Delta = \\left( \\begin{bmatrix} log{a}_{n} & log{a}_{n+1} & log{a}_{n+2} \\\\ log{a}_{n+3} & log{a}_{n+4} & log{a}_{n+5} \\\\ log{a}_{n+6} & log{a}_{n+7} & log{a}_{n+8} \\end{bmatrix} \\right)$ is equal to",
-    "images": [],
-    "options": [
-      "0",
-      "1",
-      "2",
-      "4"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_175",
-    "number": "175",
-    "type": "mcq",
-    "text": "If ${x}_{1},{x}_{2},{x}_{3}$ and ${y}_{1},{y}_{2},{y}_{3}$ are both in G.P. with the same common ratio, then the points $\\left( {x}_{1},{y}_{1} \\right) , \\left( {x}_{2},{y}_{2} \\right)$ and ( ${x}_{3},{y}_{3}$ )",
-    "images": [],
-    "options": [
-      "lie on an ellipse",
-      "lie on a circle",
-      "are vertices of a triangle",
-      "lie on a straight line"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_176",
-    "number": "176",
-    "type": "mcq",
-    "text": "Sum of infinite number of terms in GP is 20 and sum of their square is 100 . The common ratio of GP is",
-    "images": [],
-    "options": [
-      "5",
-      "$3/5$",
-      "$8/5$",
-      "$1/5$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_177",
-    "number": "177",
-    "type": "mcq",
-    "text": "Fifth term of a G.P. is 2 , then the product of its 9 terms is",
-    "images": [],
-    "options": [
-      "256",
-      "512",
-      "1024",
-      "none of these"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_178",
-    "number": "178",
-    "type": "mcq",
-    "text": "The value of ${2}^{1/4}⋅{4}^{1/8}⋅{8}^{1/16}…\\infty$ is",
-    "images": [],
-    "options": [
-      "1",
-      "2",
-      "$3/2$",
-      "4"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_179",
-    "number": "179",
-    "type": "numerical",
-    "text": "If the range of $f(\\theta )= \\frac{{sin}^{4}\\theta +3{cos}^{2}\\theta }{{sin}^{4}\\theta +{cos}^{2}\\theta } ,\\theta \\in R$ is $[\\alpha ,\\beta ]$ , then the sum of the infinite G.P., whose first term is 64 and the common ratio is $\\frac{\\alpha }{\\beta }$ , is equal to ______________ .",
-    "images": [],
-    "options": [],
-    "correct": "96",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 96</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_180",
-    "number": "180",
-    "type": "numerical",
-    "text": "If three successive terms of a G.P. with common ratio $r(r>1)$ are the lengths of the sides of a triangle and $[r]$ denotes the greatest integer less than or equal to $r$ , then $3[r]+[-r]$ is equal to _____________ .",
-    "images": [],
-    "options": [],
-    "correct": "1",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 1</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_181",
-    "number": "181",
-    "type": "numerical",
-    "text": "If $8=3+ \\frac{1}{4} (3+p)+ \\frac{1}{{4}^{2}} (3+2p)+ \\frac{1}{{4}^{3}} (3+3p)+⋯\\infty$ , then the value of $p$ is ___________ .",
-    "images": [],
-    "options": [],
-    "correct": "9",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 9</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_182",
-    "number": "182",
-    "type": "numerical",
-    "text": "Let the coefficient of ${x}^{r}$ in the expansion of $(x+3{)}^{n-1}+(x+3{)}^{n-2}(x+2)+(x+3{)}^{n-3}(x+2{)}^{2}+….+(x+2{)}^{n-1}$ be ${\\alpha }_{r}$ . If ${∑}_{r=0}^{n} {\\alpha }_{r}={\\beta }^{n}-{\\gamma }^{n},\\beta ,\\gamma \\in N$ , then the value of ${\\beta }^{2}+{\\gamma }^{2}$ equals _______________",
-    "images": [],
-    "options": [],
-    "correct": "25",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 25</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_183",
-    "number": "183",
-    "type": "numerical",
-    "text": "Let $0<z<y<x$ be three real numbers such that $\\frac{1}{x} , \\frac{1}{y} , \\frac{1}{z}$ are in an arithmetic progression and $x, \\sqrt{2} y,z$ are in a geometric progression. If $xy+yz+zx= \\frac{3}{\\sqrt{2}} xyz$ , then $3(x+y+z{)}^{2}$ is equal to_____________ .",
-    "images": [],
-    "options": [],
-    "correct": "150",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 150</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_184",
-    "number": "184",
-    "type": "numerical",
-    "text": "Suppose ${a}_{1},{a}_{2},2,{a}_{3},{a}_{4}$ be in an arithmeticgeometric progression. If the common ratio of the corresponding geometric progression is 2 and the sum of all 5 terms of the arithmetico-geometric progression is $\\frac{49}{2}$ , then ${a}_{4}$ is equal to ___________________ .",
-    "images": [],
-    "options": [],
-    "correct": "16",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 16</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_185",
-    "number": "185",
-    "type": "numerical",
-    "text": "Let $S=109+ \\frac{108}{5} + \\frac{107}{{5}^{2}} +….+ \\frac{2}{{5}^{107}} + \\frac{1}{{5}^{108}}$ . Then the value of $\\left( 16S-(25{)}^{-54} \\right)$ is equal to __________ .",
-    "images": [],
-    "options": [],
-    "correct": "2175",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 2175</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_186",
-    "number": "186",
-    "type": "numerical",
-    "text": "For $k\\in N$ , if the sum of the series $1+ \\frac{4}{k} + \\frac{8}{{k}^{2}} + \\frac{13}{{k}^{3}} + \\frac{19}{{k}^{4}} +…$ is 10 , then the value of $k$ is_________ .",
-    "images": [],
-    "options": [],
-    "correct": "2",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 2</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_187",
-    "number": "187",
-    "type": "numerical",
-    "text": "The ${4}^{th}$ term of GP is 500 and its common ratio is $1/m,m\\in N$ . Let ${S}_{n}$ denote the sum of the first $n$ terms of this GP. If ${S}_{6}>{S}_{5}+1$ and ${S}_{7}<{S}_{6}+ \\frac{1}{2}$ , then the number of possible values of $m$ is _________ .",
-    "images": [],
-    "options": [],
-    "correct": "12",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 12</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_188",
-    "number": "188",
-    "type": "numerical",
-    "text": "For the two positive numbers $a,b$ , if $a,b$ and $\\frac{1}{18}$ are in a geometric progression, while $\\frac{1}{a} ,10$ and $\\frac{1}{b}$ are in an arithmetic progression, then $16a+12b$ is equal to _______________________ .",
-    "images": [],
-    "options": [],
-    "correct": "3",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 3</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_189",
-    "number": "189",
-    "type": "numerical",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},…$ . be a GP of increasing positive numbers. If the product of fourth and sixth terms is 9 and the sum of fifth and seventh terms is 24 , then ${a}_{1}{a}_{9}+{a}_{2}{a}_{4}{a}_{9}+{a}_{5}+{a}_{7}$ is equal to______.",
-    "images": [],
-    "options": [],
-    "correct": "60",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 60</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_190",
-    "number": "190",
-    "type": "numerical",
-    "text": "Let $\\left( {a}_{k} \\right)$ and $\\left( {b}_{k} \\right) k\\in N$ , be two G.P.s with common ratios ${r}_{1}$ and ${r}_{2}$ respectively such that ${a}_{1}={b}_{1}=4$ and ${r}_{1}<{r}_{2}$ . Let ${c}_{k}={a}_{k}+{b}_{k},k\\in N$ . If ${c}_{2}=5$ and ${c}_{3}= \\frac{13}{4}$ then ${∑}_{k=1}^{\\infty } {c}_{k}- \\left( 12{a}_{6}+8{b}_{4} \\right)$ is equal to __________________ .",
-    "images": [],
-    "options": [],
-    "correct": "9",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 9</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_191",
-    "number": "191",
-    "type": "numerical",
-    "text": "Let ${x}_{1},{x}_{2},{x}_{3},…,{x}_{20}$ be geometric progression with ${x}_{1}=3$ and the common ratio $\\frac{1}{2}$ . A new data is constructed replacing each ${x}_{i}$ by ${\\left( {x}_{i}-i \\right)}^{2}$ . If $\\vec{x}$ is the mean of new data, then the greatest integer less than or equal to $\\vec{x}$ is _____________ .",
-    "images": [],
-    "options": [],
-    "correct": "142",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 142</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_192",
-    "number": "192",
-    "type": "numerical",
-    "text": "If $\\frac{6}{{3}^{12}} + \\frac{10}{{3}^{11}} + \\frac{20}{{3}^{10}} + \\frac{40}{{3}^{9}} +…+ \\frac{10240}{3} ={2}^{n}⋅m$ , where $m$ is odd, then $m⋅n$ is equal to _______ -",
-    "images": [],
-    "options": [],
-    "correct": "12",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 12</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_193",
-    "number": "193",
-    "type": "numerical",
-    "text": "The greatest integer less than or equal to the sum of first 100 terms of the sequence $\\frac{1}{3} , \\frac{5}{9} , \\frac{19}{27} , \\frac{65}{81} ,……….$ . is equal to ____________ - $\\left( {25}^{th} \\right)$ June ${1}^{st}$ Shift 2022)",
-    "images": [],
-    "options": [],
-    "correct": "98",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 98</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_194",
-    "number": "194",
-    "type": "numerical",
-    "text": "If ${a}_{1}(>0),{a}_{2},{a}_{3},{a}_{4},{a}_{5}$ are in a G.P., ${a}_{2}+{a}_{4}=2{a}_{3}+1$ and $3{a}_{2}+{a}_{3}=2{a}_{4}$ , then ${a}_{2}+{a}_{4}+2{a}_{5}$ is equal to  .",
-    "images": [],
-    "options": [],
-    "correct": "40",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 40</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_195",
-    "number": "195",
-    "type": "numerical",
-    "text": "Let for $n=1,2,……..,50,{S}_{n}$ be the sum of the infinite geometric progression whose first term is ${n}^{2}$ and whose common ratio is $\\frac{1}{(n+1{)}^{2}}$ . Then the value of $\\frac{1}{26} +{∑}_{n=1}^{50} \\left( {S}_{n}+ \\frac{2}{n+1} -n-1 \\right)$ is equal to ________________ .",
-    "images": [],
-    "options": [],
-    "correct": "41",
-    "chapter": "Sequences And Series",
-    "topic": "Arithmetic Progression",
-    "solution": "<p><strong>Ans: 41</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_210",
-    "number": "210",
-    "type": "mcq",
-    "text": "If $x={∑}_{n=0}^{\\infty } {a}^{n},y={∑}_{n=0}^{\\infty } {b}^{n},z={∑}_{n=0}^{\\infty } {c}^{n}$ where $a,b,c$ are in A.P. and $|a|<1,|b|<1,|c|<1$ , then $x,y,z$ are in",
-    "images": [],
-    "options": [
-      "H.P.",
-      "Arithmetic-Geometric progression",
-      "A.P.",
-      "G.P."
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Harmonic Progression",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_211",
-    "number": "211",
-    "type": "mcq",
-    "text": "If the system of linear equations $x+2ay+az=0$ , $x+3by+bz=0,x+4cy+cz=0$ has a non-zero solution, then $a,b,c$",
-    "images": [],
-    "options": [
-      "are in G.P.",
-      "are in H.P.",
-      "satisfy $a+2b+3c=0$",
-      "are in A.P."
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Harmonic Progression",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_212",
-    "number": "212",
-    "type": "mcq",
-    "text": "Let ${R}_{1}$ and ${R}_{2}$ respectively be the maximum ranges up and down on an inclined plane and $R$ be the maximum range on the horizontal plane. Then, ${R}_{1},R,{R}_{2}$ are in",
-    "images": [],
-    "options": [
-      "A.P.",
-      "G.P.",
-      "H.P.",
-      "Arithmetic-Geometric Progression (A.G.P.)"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Harmonic Progression",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_213",
-    "number": "213",
-    "type": "mcq",
-    "text": "Let three real numbers $a,b,c$ be in arithmetic progression and $a+1,b,c+3$ be in geometric progression. If $a>10$ and the arithmetic mean of $a$ , $b$ and $c$ is 8 , then the cube of the geometric mean of $a,b$ and $c$ is",
-    "images": [],
-    "options": [
-      "316",
-      "128",
-      "120",
-      "312"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_214",
-    "number": "214",
-    "type": "mcq",
-    "text": "Let the range of the function $f(x)= \\frac{1}{2+sin3x+cos3x}$ , $x\\in R$ be $[a,b]$ . If $\\alpha$ and $\\beta$ are respectively the A.M. and the G.M. of $a$ and $b$ , then $\\frac{\\alpha }{\\beta }$ is equal to",
-    "images": [],
-    "options": [
-      "$\\pi$",
-      "2",
-      "$\\sqrt{\\pi }$",
-      "$\\sqrt{2}$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_215",
-    "number": "215",
-    "type": "mcq",
-    "text": "Let $a,b,c$ and $d$ be positive real numbers such that $a+b+c+d=11$ . If the maximum value of ${a}^{5}{b}^{3}{c}^{2}d$ is $3750\\beta$ , then the value of $\\beta$ is",
-    "images": [],
-    "options": [
-      "55",
-      "108",
-      "90",
-      "110"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_216",
-    "number": "216",
-    "type": "mcq",
-    "text": "Let ${A}_{1}$ and ${A}_{2}$ be two arithmetic means and ${G}_{1},{G}_{2},{G}_{3}$ be three geometric means of two distinct positive numbers. Then ${G}_{1}^{4}+{G}_{2}^{4}+{G}_{3}^{4}+{G}_{1}^{2}{G}_{3}^{2}$ is equal to",
-    "images": [],
-    "options": [
-      "$2 \\left( {A}_{1}+{A}_{2} \\right) {G}_{1}^{2}{G}_{3}^{2}$",
-      "${\\left( {A}_{1}+{A}_{2} \\right)}^{2}{G}_{1}{G}_{3}$",
-      "$\\left( {A}_{1}+{A}_{2} \\right) {G}_{1}^{2}{G}_{3}^{2}$",
-      "$2 \\left( {A}_{1}+{A}_{2} \\right) {G}_{1}{G}_{3}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_217",
-    "number": "217",
-    "type": "mcq",
-    "text": "If the minimum value of $f(x)= \\frac{5{x}^{2}}{2} + \\frac{\\alpha }{{x}^{5}} ,x>0$ , is 14 , then the value of $\\alpha$ is equal to:",
-    "images": [],
-    "options": [
-      "32",
-      "64",
-      "128",
-      "256"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_218",
-    "number": "218",
-    "type": "mcq",
-    "text": "The number of elements in the set $S= \\left( x\\in R:2cos \\left( \\frac{{x}^{2}+x}{6} \\right) ={4}^{x}+{4}^{-x} \\right)$ is:",
-    "images": [],
-    "options": [
-      "1",
-      "3",
-      "0",
-      "infinite"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_219",
-    "number": "219",
-    "type": "mcq",
-    "text": "Let $x,y>0$ . If ${x}^{3}{y}^{2}={2}^{15}$ , then the least value of $3x+2y$ is",
-    "images": [],
-    "options": [
-      "30",
-      "32",
-      "36",
-      "40"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_220",
-    "number": "220",
-    "type": "mcq",
-    "text": "The minimum value of $f(x)={a}^{{a}^{x}}+{a}^{1-{a}^{x}}$ , where $a,x\\in R$ and $a>0$ , is equal to",
-    "images": [],
-    "options": [
-      "$2a$",
-      "$2 \\sqrt{a}$",
-      "$a+ \\frac{1}{a}$",
-      "$a+1$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_221",
-    "number": "221",
-    "type": "mcq",
-    "text": "Let $f:R\\rightarrow R$ be such that for all $x\\in R, \\left( {2}^{1+x}+{2}^{1-x} \\right)$ , $f(x)$ and $\\left( {3}^{x}+{3}^{-x} \\right)$ are in A.P., then the minimum value of $f(x)$ is",
-    "images": [],
-    "options": [
-      "0",
-      "4",
-      "3",
-      "2"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_222",
-    "number": "222",
-    "type": "mcq",
-    "text": "If $a,b$ and $c$ be three distinct and real numbers in G.P. and $a+b+c=xb$ , then $x$ cannot be",
-    "images": [],
-    "options": [
-      "4",
-      "-3",
-      "-2",
-      "2"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_223",
-    "number": "223",
-    "type": "mcq",
-    "text": "Let $x,y$ be positive real numbers and $m,n$ positive integers. The maximum value of the expression $\\frac{{x}^{m}{y}^{n}}{\\left( 1+{x}^{2m} \\right) \\left( 1+{y}^{2n} \\right)}$ is",
-    "images": [],
-    "options": [
-      "$\\frac{m+n}{6mn}$",
-      "1",
-      "$1/2$",
-      "$1/4$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_224",
-    "number": "224",
-    "type": "mcq",
-    "text": "Let $x,y,z$ be positive real numbers such that $x+y+z=12$ and ${x}^{3}{y}^{4}{z}^{5}=(0.1)(600{)}^{3}$ . Then ${x}^{3}+{y}^{3}+{z}^{3}$ is equal to",
-    "images": [],
-    "options": [
-      "342",
-      "216",
-      "258",
-      "270"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Relationship Between Arithmetic Mean, Geometric Mean, Harmonic Mean",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_225",
-    "number": "225",
-    "type": "mcq",
-    "text": "The sum $1+ \\frac{1+3}{2!} + \\frac{1+3+5}{3!} + \\frac{1+3+5+7}{4!} +…$ upto $\\infty$ terms, is equal to",
-    "images": [],
-    "options": [
-      "$6e$",
-      "$3e$",
-      "$2e$",
-      "$4e$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_226",
-    "number": "226",
-    "type": "mcq",
-    "text": "$1+3+{5}^{2}+7+{9}^{2}+…$ upto 40 terms is equal to",
-    "images": [],
-    "options": [
-      "41880",
-      "33980",
-      "40870",
-      "43890"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_227",
-    "number": "227",
-    "type": "mcq",
-    "text": "If the sum of the first 20 terms of the series $\\frac{4⋅1}{4+3⋅{1}^{2}+{1}^{4}} + \\frac{4⋅2}{4+3⋅{2}^{2}+{2}^{4}} + \\frac{4⋅3}{4+3⋅{3}^{2}+{3}^{4}} + \\frac{4⋅4}{4+3⋅{4}^{2}+{4}^{4}} +…$ is $\\frac{m}{n}$ , where $m$ and $n$ are coprime, then $m+n$ is equal to:",
-    "images": [],
-    "options": [
-      "423",
-      "421",
-      "420",
-      "422"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_228",
-    "number": "228",
-    "type": "mcq",
-    "text": "If $\\frac{1}{{1}^{4}} + \\frac{1}{{2}^{4}} + \\frac{1}{{3}^{4}} +…\\infty = \\frac{{\\pi }^{4}}{90} , \\frac{1}{{1}^{4}} + \\frac{1}{{3}^{4}} + \\frac{1}{{5}^{4}} +…\\infty =\\alpha$ , $\\frac{1}{{2}^{4}} + \\frac{1}{{4}^{4}} + \\frac{1}{{6}^{4}} +…\\infty =\\beta$ , then $\\frac{\\alpha }{\\beta }$ is equal to",
-    "images": [],
-    "options": [
-      "14",
-      "23",
-      "15",
-      "18"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_229",
-    "number": "229",
-    "type": "mcq",
-    "text": "If ${∑}_{r=1}^{n} {T}_{r}= \\frac{(2n-1)(2n+1)(2n+3)(2n+5)}{64}$ , then ${lim}_{n\\rightarrow \\infty } {∑}_{r=1}^{n} \\left( \\frac{1}{{T}_{r}} \\right)$ is equal to:",
-    "images": [],
-    "options": [
-      "0",
-      "$\\frac{2}{3}$",
-      "$\\frac{1}{3}$",
-      "1"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_230",
-    "number": "230",
-    "type": "mcq",
-    "text": "Let ${S}_{n}= \\frac{1}{2} + \\frac{1}{6} + \\frac{1}{12} + \\frac{1}{20} +…$ upto $n$ terms. If the sum of the first six terms of an A.P. with first term $-p$ and common difference $p$ is $\\sqrt{2026{S}_{2025}}$ , then the absolute difference between ${20}^{th}$ and ${15}^{th}$ terms of the A.P. is",
-    "images": [],
-    "options": [
-      "20",
-      "45",
-      "25",
-      "90"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_231",
-    "number": "231",
-    "type": "mcq",
-    "text": "If $7=5+ \\frac{1}{7} (5+\\alpha )+ \\frac{1}{{7}^{2}} (5+2\\alpha )+ \\frac{1}{{7}^{3}} (5+3\\alpha )+……\\infty$ , then the value of $\\alpha$ is :",
-    "images": [],
-    "options": [
-      "$\\frac{6}{7}$",
-      "$\\frac{1}{7}$",
-      "6",
-      "1"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_232",
-    "number": "232",
-    "type": "mcq",
-    "text": "For positive integers $n$ , if $4{a}_{n}= \\left( {n}^{2}+5n+6 \\right)$ and ${S}_{n}={∑}_{k=1}^{n} \\left( \\frac{1}{{a}_{k}} \\right)$ , then the value of $507{S}_{2025}$ is :",
-    "images": [],
-    "options": [
-      "675",
-      "1350",
-      "540",
-      "135"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_233",
-    "number": "233",
-    "type": "mcq",
-    "text": "The value of $\\frac{1\\times {2}^{2}+2\\times {3}^{2}+…+100\\times (101{)}^{2}}{{1}^{2}\\times 2+{2}^{2}\\times 3+…+{100}^{2}\\times 101}$ is",
-    "images": [],
-    "options": [
-      "$\\frac{305}{301}$",
-      "$\\frac{306}{305}$",
-      "$\\frac{31}{30}$",
-      "$\\frac{32}{31}$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_234",
-    "number": "234",
-    "type": "mcq",
-    "text": "If $\\frac{1}{\\sqrt{1} + \\sqrt{2}} + \\frac{1}{\\sqrt{2} + \\sqrt{3}} +….+ \\frac{1}{\\sqrt{99} + \\sqrt{100}} =m$ and $\\frac{1}{1⋅2} + \\frac{1}{2⋅3} +….+ \\frac{1}{99.100} =n$ , then the point ( $m,n$ ) lies on the line",
-    "images": [],
-    "options": [
-      "$11(x-1)-100(y-2)=0$",
-      "$11(x-2)-100(y-1)=0$",
-      "$11x-100y=0$",
-      "$11(x-1)-100y=0$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_235",
-    "number": "235",
-    "type": "mcq",
-    "text": ". If the sum of the series $\\frac{1}{1⋅(1+d)} + \\frac{1}{(1+d)(1+2d)} +…+$ $\\frac{1}{(1+9d)(1+10d)}$ is equal to 5 , then $50d$ is equal to :",
-    "images": [],
-    "options": [
-      "5",
-      "15",
-      "10",
-      "20"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_236",
-    "number": "236",
-    "type": "mcq",
-    "text": "The sum of the series $\\frac{1}{1-{3.1}^{2}+{1}^{4}} + \\frac{2}{1-{3.2}^{2}+{2}^{4}}$ $+ \\frac{3}{1-{3.3}^{2}+{3}^{4}} +…$ up to 10 -terms is",
-    "images": [],
-    "options": [
-      "$- \\frac{45}{109}$",
-      "$\\frac{55}{109}$",
-      "$- \\frac{55}{109}$",
-      "$\\frac{45}{109}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_237",
-    "number": "237",
-    "type": "mcq",
-    "text": "Let ${S}_{k}= \\frac{1+2+…+k}{k}$ and ${∑}_{j=1}^{n} {S}_{j}^{2}= \\frac{n}{A} \\left( B{n}^{2}+Cn+D \\right)$ , where $A,B,C,D\\in N$ and $A$ has least value. Then",
-    "images": [],
-    "options": [
-      "$A+B$ is divisible by $D$",
-      "$A+B+C+D$ is divisible by 5",
-      "$A+C+D$ is not divisible by $B$",
-      "$A+B=5(D-C)$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_238",
-    "number": "238",
-    "type": "mcq",
-    "text": "Let ${a}_{n}$ be the ${n}^{th}$ term of the series $5+8+14+23+$ $35+50+…$ and ${S}_{n}={∑}_{k=1}^{n} {a}_{k}$ . Then ${S}_{30}-{a}_{40}$ is equal to",
-    "images": [],
-    "options": [
-      "11280",
-      "11290",
-      "11310",
-      "11260"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_239",
-    "number": "239",
-    "type": "mcq",
-    "text": "Let $\\left( {a}_{n} \\right)$ be a sequence such that ${a}_{1}+{a}_{2}+…+{a}_{n}$ $= \\frac{{n}^{2}+3n}{(n+1)(n+2)}$ . If $28{∑}_{k=1}^{10} \\frac{1}{{a}_{k}} ={p}_{1}{p}_{2}{p}_{3}….{p}_{m}$ , where ${p}_{1}$ , ${p}_{2},…,{p}_{m}$ are the first $m$ prime numbers, then $m$ is equal to",
-    "images": [],
-    "options": [
-      "5",
-      "6",
-      "7",
-      "8"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_240",
-    "number": "240",
-    "type": "mcq",
-    "text": "The sum to 10 terms of the series $\\frac{1}{1+{1}^{2}+{1}^{4}} + \\frac{2}{1+{2}^{2}+{2}^{4}} + \\frac{3}{1+{3}^{2}+{3}^{4}} +…$ is",
-    "images": [],
-    "options": [
-      "$\\frac{56}{111}$",
-      "$\\frac{58}{111}$",
-      "$\\frac{55}{111}$",
-      "$\\frac{59}{111}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_241",
-    "number": "241",
-    "type": "mcq",
-    "text": "The sum ${∑}_{n=1}^{\\infty } \\frac{2{n}^{2}+3n+4}{(2n)!}$ is cqual to",
-    "images": [],
-    "options": [
-      "$\\frac{11e}{2} + \\frac{7}{2e} -4$",
-      "$\\frac{11e}{2} + \\frac{7}{2e}$",
-      "$\\frac{13e}{4} + \\frac{5}{4e} -4$",
-      "$\\frac{13e}{4} + \\frac{5}{4e}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_242",
-    "number": "242",
-    "type": "mcq",
-    "text": "The sum ${∑}_{n=1}^{21} \\frac{3}{(4n-1)(4n+3)}$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{7}{87}$",
-      "$\\frac{7}{29}$",
-      "$\\frac{14}{87}$",
-      "$\\frac{21}{29}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_243",
-    "number": "243",
-    "type": "mcq",
-    "text": "Consider two G.P.'s $2,{2}^{2},{2}^{3}$ ,  and $4,{4}^{2},{4}^{3},…$ of 60 and $n$ terms respectively. If the geometric mean of all the $60+n$ terms is $(2{)}^{\\frac{225}{8}}$ , then ${∑}_{k=1}^{n} k(n-k)$ is equal to",
-    "images": [],
-    "options": [
-      "560",
-      "1540",
-      "1330",
-      "2600"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_244",
-    "number": "244",
-    "type": "mcq",
-    "text": "If $\\frac{1}{(20-a)(40-a)} + \\frac{1}{(40-a)(60-a)} +…$ $+ \\frac{1}{(180-a)(200-a)} = \\frac{1}{256}$ , then the maximum value of $a$ is :",
-    "images": [],
-    "options": [
-      "198",
-      "202",
-      "212",
-      "218"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_245",
-    "number": "245",
-    "type": "mcq",
-    "text": "${∑}_{r=1}^{20} \\left( {r}^{2}+1 \\right) (r!)$ is equal to",
-    "images": [],
-    "options": [
-      "$22!-21$ !",
-      "$22!-2(21!)$",
-      "$21!-2(20!)$",
-      "$21!-20$ !"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_246",
-    "number": "246",
-    "type": "mcq",
-    "text": ". Let ${S}_{n}=1⋅(n-1)+2⋅(n-2)+3⋅(n-3)+…+$ $(n-1)⋅1,n\\geq 4$ . The sum ${∑}_{n=4}^{\\infty } \\left( \\frac{2{S}_{n}}{n!} - \\frac{1}{(n-2)!} \\right)$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{e-2}{6}$",
-      "$\\frac{e-1}{3}$",
-      "$\\frac{e}{6}$",
-      "$\\frac{e}{3}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_248",
-    "number": "248",
-    "type": "mcq",
-    "text": "${lim}_{x\\rightarrow 2} \\left( {∑}_{n=1}^{9} \\frac{x}{n(n+1){x}^{2}+2(2n+1)x+4} \\right)$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{5}{24}$",
-      "$\\frac{7}{36}$",
-      "$\\frac{1}{5}$",
-      "$\\frac{9}{44}$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_249",
-    "number": "249",
-    "type": "mcq",
-    "text": "The sum of 10 terms of the series $\\frac{3}{{1}^{2}\\times {2}^{2}} + \\frac{5}{{2}^{2}\\times {3}^{2}} + \\frac{7}{{3}^{2}\\times {4}^{2}} +…$ is",
-    "images": [],
-    "options": [
-      "$\\frac{143}{144}$",
-      "$\\frac{99}{100}$",
-      "1",
-      "$\\frac{120}{121}$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_250",
-    "number": "250",
-    "type": "mcq",
-    "text": "If sum of the first 21 terms of the series ${log}_{9}1/2x+$ ${log}_{91/3}x+{log}_{91/4}x+…$ , where $x>0$ is 504 , then $x$ is equal to",
-    "images": [],
-    "options": [
-      "9",
-      "243",
-      "7",
-      "81"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_251",
-    "number": "251",
-    "type": "mcq",
-    "text": "$\\frac{1}{{3}^{2}-1} + \\frac{1}{{5}^{2}-1} + \\frac{1}{{7}^{2}-1} +…..+ \\frac{1}{(201{)}^{2}-1}$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{101}{404}$",
-      "$\\frac{25}{101}$",
-      "$\\frac{101}{408}$",
-      "$\\frac{99}{400}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_252",
-    "number": "252",
-    "type": "mcq",
-    "text": "The sum of the series ${∑}_{n=1}^{\\infty } \\frac{{n}^{2}+6n+10}{(2n+1)!}$ is equal to",
-    "images": [],
-    "options": [
-      "$\\frac{41}{8} e+ \\frac{19}{8} {e}^{-1}-10$",
-      "$- \\frac{41}{8} e+ \\frac{19}{8} {e}^{-1}-10$",
-      "$\\frac{41}{8} e+ \\frac{19}{8} {e}^{-1}+10$",
-      "$\\frac{41}{8} e- \\frac{19}{8} {e}^{-1}-10$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_253",
-    "number": "253",
-    "type": "mcq",
-    "text": "If $1+ \\left( 1-{2}^{2}⋅1 \\right) + \\left( 1-{4}^{2}⋅3 \\right) + \\left( 1-{6}^{2}⋅5 \\right) +….+$ $\\left( 1-{20}^{2}⋅19 \\right) =\\alpha -220\\beta$ , then an ordered pair $(\\alpha ,\\beta )$ is equal to",
-    "images": [],
-    "options": [
-      "$(11,97)$",
-      "$(10,97)$",
-      "$(10,103)$",
-      "$(11,103)$"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_254",
-    "number": "254",
-    "type": "mcq",
-    "text": "The sum of the series $2⋅{}^{20}{C}_{0}+5⋅{}^{20}{C}_{1}+8⋅{}^{20}{C}_{2}+$ $11⋅{}^{20}{C}_{3}+…+62⋅{}^{20}{C}_{20}$ is equal to",
-    "images": [],
-    "options": [
-      "${2}^{25}$",
-      "${2}^{24}$",
-      "${2}^{26}$",
-      "${2}^{23}$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_255",
-    "number": "255",
-    "type": "mcq",
-    "text": "The sum of the series $1+2\\times 3+3\\times 5+4\\times 7+…$ upto ${11}^{th}$ term is",
-    "images": [],
-    "options": [
-      "945",
-      "916",
-      "915",
-      "946"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_256",
-    "number": "256",
-    "type": "mcq",
-    "text": "The sum $\\frac{3\\times {1}^{3}}{{1}^{2}} + \\frac{5\\times \\left( {1}^{3}+{2}^{3} \\right)}{{1}^{2}+{2}^{2}} + \\frac{7\\times \\left( {1}^{3}+{2}^{3}+{3}^{3} \\right)}{{1}^{2}+{2}^{2}+{3}^{2}} +……$ upto ${10}^{th}$ term, is",
-    "images": [],
-    "options": [
-      "600",
-      "660",
-      "680",
-      "620"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_257",
-    "number": "257",
-    "type": "mcq",
-    "text": "The sum $1+ \\frac{{1}^{3}+{2}^{3}}{1+2} + \\frac{{1}^{3}+{2}^{3}+{3}^{3}}{1+2+3} +…$ $+ \\frac{{1}^{3}+{2}^{3}+{3}^{3}+…+{15}^{3}}{1+2+3+…+15} - \\frac{1}{2} (1+2+3+…+15)$ is equal to",
-    "images": [],
-    "options": [
-      "660",
-      "1240",
-      "1860",
-      "620"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_258",
-    "number": "258",
-    "type": "mcq",
-    "text": "For $x\\in R$ , let $[x]$ denote the greatest integer $\\leq x$ , then the sum of the series $\\left( - \\frac{1}{3} \\right) + \\left( - \\frac{1}{3} - \\frac{1}{100} \\right) + \\left( - \\frac{1}{3} - \\frac{2}{100} \\right) +…..+ \\left( - \\frac{1}{3} - \\frac{99}{100} \\right)$ is",
-    "images": [],
-    "options": [
-      "-135",
-      "-153",
-      "-131",
-      "-133"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_259",
-    "number": "259",
-    "type": "mcq",
-    "text": "The sum of the following series $1+6+ \\frac{9 \\left( {1}^{2}+{2}^{2}+{3}^{2} \\right)}{7} + \\frac{12 \\left( {1}^{2}+{2}^{2}+{3}^{2}+{4}^{2} \\right)}{9} + \\frac{15 \\left( {1}^{2}+{2}^{2}+…+{5}^{2} \\right)}{11} +…$ upto 15 terms, is",
-    "images": [],
-    "options": [
-      "7510",
-      "7820",
-      "7830",
-      "7520"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_260",
-    "number": "260",
-    "type": "mcq",
-    "text": "If ${∑}_{i=1}^{20} {\\left( \\frac{{}^{20}{C}_{i-1}}{{}^{20}{C}_{i}+{}^{20}{C}_{i-1}} \\right)}^{3}= \\frac{k}{21}$ , then $k$ equals",
-    "images": [],
-    "options": [
-      "50",
-      "200",
-      "100",
-      "400"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_261",
-    "number": "261",
-    "type": "mcq",
-    "text": "The sum of all two digit positive numbers which when divided by 7 yield 2 or 5 as remainder is",
-    "images": [],
-    "options": [
-      "1256",
-      "1356",
-      "1365",
-      "1465"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_262",
-    "number": "262",
-    "type": "mcq",
-    "text": "Let ${S}_{k}= \\frac{1+2+3+…+k}{k}$ . If ${S}_{1}^{2}+{S}_{2}^{2}+…+{S}_{10}^{2}= \\frac{5}{12} A$ , then $A$ is equal to",
-    "images": [],
-    "options": [
-      "303",
-      "283",
-      "301",
-      "156"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_263",
-    "number": "263",
-    "type": "mcq",
-    "text": "If the sum of the first 15 terms of the series ${\\left( \\frac{3}{4} \\right)}^{3}+{\\left( 1 \\frac{1}{2} \\right)}^{3}+{\\left( 2 \\frac{1}{4} \\right)}^{3}+{3}^{3}+{\\left( 3 \\frac{3}{4} \\right)}^{3}+….$ . is equal to $225k$ , then $k$ is equal to",
-    "images": [],
-    "options": [
-      "27",
-      "9",
-      "108",
-      "54"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_264",
-    "number": "264",
-    "type": "mcq",
-    "text": "Let $A$ be the sum of the first 20 terms and $B$ be the sum of the first 40 terms of the series ${1}^{2}+2⋅{2}^{2}+{3}^{2}+$ $2⋅{4}^{2}+{5}^{2}+2⋅{6}^{2}+….$ . If $B-2A=100\\lambda$ , then $\\lambda$ is equal to",
-    "images": [],
-    "options": [
-      "496",
-      "232",
-      "248",
-      "464"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_265",
-    "number": "265",
-    "type": "mcq",
-    "text": "Let ${a}_{1},{a}_{2},{a}_{3},……………..…..,{a}_{49}$ be in A.P. such that ${∑}_{k=0}^{12} {a}_{4k+1}=416$ and ${a}_{9}+{a}_{43}=66$ . ${a}_{1}^{2}+{a}_{2}^{2}+…………+{a}_{17}^{2}=140m$ , then $m$ is equal to",
-    "images": [],
-    "options": [
-      "33",
-      "66",
-      "68",
-      "34"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_266",
-    "number": "266",
-    "type": "mcq",
-    "text": "Let $a,b,c\\in R$ . If $f(x)=a{x}^{2}+bx+c$ is such that $a+b+c=3$ and $f(x+y)=f(x)+f(y)+xy,∀x,y\\in R$ , then ${∑}_{n=1}^{10} f(n)$ is equal to",
-    "images": [],
-    "options": [
-      "165",
-      "190",
-      "255",
-      "330"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_267",
-    "number": "267",
-    "type": "mcq",
-    "text": "Let ${S}_{n}= \\frac{1}{{1}^{3}} + \\frac{1+2}{{1}^{3}+{2}^{3}} + \\frac{1+2+3}{{1}^{3}+{2}^{3}+{3}^{3}} +$ $…+ \\frac{1+2+…+n}{{1}^{3}+{2}^{3}+…+{n}^{3}}$ If $100{S}_{n}=n$ , then $n$ is equal to",
-    "images": [],
-    "options": [
-      "99",
-      "19",
-      "200",
-      "199"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_268",
-    "number": "268",
-    "type": "mcq",
-    "text": "If the sum of the first ten terms of the series ${\\left( 1 \\frac{3}{5} \\right)}^{2}+{\\left( 2 \\frac{2}{5} \\right)}^{2}+{\\left( 3 \\frac{1}{5} \\right)}^{2}+{4}^{2}+{\\left( 4 \\frac{4}{5} \\right)}^{2}+…$ . is $\\frac{16}{5} m$ , then $m$ is equal to",
-    "images": [],
-    "options": [
-      "102",
-      "101",
-      "100",
-      "99"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_269",
-    "number": "269",
-    "type": "mcq",
-    "text": "The sum of first 9 terms of the series $\\frac{{1}^{3}}{1} + \\frac{{1}^{3}+{2}^{3}}{1+3} + \\frac{{1}^{3}+{2}^{3}+{3}^{3}}{1+3+5} +….$ . is",
-    "images": [],
-    "options": [
-      "142",
-      "192",
-      "71",
-      "96"
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_270",
-    "number": "270",
-    "type": "mcq",
-    "text": "The value of $\\sum\\limits_{r=16}^{30} (r+2)(r-3)$ is equal to",
-    "images": [],
-    "options": [
-      "7785",
-      "7780",
-      "7775",
-      "7770"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_271",
-    "number": "271",
-    "type": "mcq",
-    "text": "Statement 1: The sum of the series $1+(1+2+4)+$ $(4+6+9)+(9+12+16)+…+(361+380+400)$ is 8000 . Statement $2: \\sum\\limits_{k=1}^{n} \\left( {k}^{3}-(k-1{)}^{3} \\right) ={n}^{3}$ for any natural number $n$ .",
-    "images": [],
-    "options": [
-      "Statement 1 is true, Statement 2 is true; Statement 2 is not a correct explanation for Statement 1.",
-      "Statement 1 is true, Statement 2 is false.",
-      "Statement 1 is false, Statement 2 is true.",
-      "Statement 1 is true, Statement 2 is true; Statement 2 is a correct explanation for Statement 1."
-    ],
-    "correct": "d",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_272",
-    "number": "272",
-    "type": "mcq",
-    "text": "The sum of the series $1+ \\frac{1}{4⋅2!} + \\frac{1}{16⋅4!} + \\frac{1}{64⋅6!} +…\\infty$ is",
-    "images": [],
-    "options": [
-      "$\\frac{e+1}{\\sqrt{e}}$",
-      "$\\frac{e-1}{\\sqrt{e}}$",
-      "$\\frac{e+1}{2 \\sqrt{e}}$",
-      "$\\frac{e-1}{2 \\sqrt{e}}$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_273",
-    "number": "273",
-    "type": "mcq",
-    "text": "The sum of first $n$ terms of the series ${1}^{2}+2⋅{2}^{2}+{3}^{2}+2⋅{4}^{2}+{5}^{2}+2⋅{6}^{2}+…$ . is $\\frac{n(n+1{)}^{2}}{2}$ when $n$ is even. When $n$ is odd, the sum is",
-    "images": [],
-    "options": [
-      "$\\frac{n(n+1{)}^{2}}{4}$",
-      "$\\begin{bmatrix} {n}^{2}(n+1) \\\\ 2 \\end{bmatrix}$",
-      "$\\frac{3n(n+1)}{2}$",
-      "${\\left( \\frac{n(n+1)}{2} \\right)}^{2}$"
-    ],
-    "correct": "b",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_274",
-    "number": "274",
-    "type": "mcq",
-    "text": "The sum of series $\\frac{1}{2!} + \\frac{1}{4!} + \\frac{1}{6!} +…$ is",
-    "images": [],
-    "options": [
-      "$\\frac{(e-1{)}^{2}}{2e}$",
-      "$\\frac{\\left( {e}^{2}-1 \\right)}{2e}$",
-      "$\\frac{\\left( {e}^{2}-1 \\right)}{2}$",
-      "$\\frac{\\left( {e}^{2}-2 \\right)}{e}$"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_275",
-    "number": "275",
-    "type": "mcq",
-    "text": "The sum of the series $\\frac{1}{1⋅2} - \\frac{1}{2⋅3} + \\frac{1}{3⋅4} -…$ upto $\\infty$ is equal to equal to",
-    "images": [],
-    "options": [
-      "${log}_{e}2-1$",
-      "${log}_{e}2$",
-      "${log}_{e}(4/e)$",
-      "$2{log}_{e}2$"
-    ],
-    "correct": "c",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_276",
-    "number": "276",
-    "type": "mcq",
-    "text": "${1}^{3}-{2}^{3}+{3}^{3}-{4}^{3}+…+{9}^{3}=$",
-    "images": [],
-    "options": [
-      "425",
-      "-425",
-      "475",
-      "-475"
-    ],
-    "correct": "a",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_277",
-    "number": "277",
-    "type": "numerical",
-    "text": "If the sum of the first 10 terms of the series $\\frac{4⋅1}{1+4⋅{1}^{4}} + \\frac{4⋅2}{1+4⋅{2}^{4}} + \\frac{4⋅3}{1+4⋅{3}^{4}} +…$ is $\\frac{m}{n}$ , where $gcd(m,n)=1$ , then $m$ । $n$ is equal to___________",
-    "images": [],
-    "options": [],
-    "correct": "441",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 441</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_278",
-    "number": "278",
-    "type": "numerical",
-    "text": "If $1+ \\frac{\\sqrt{3} - \\sqrt{2}}{2 \\sqrt{3}} + \\frac{5-2 \\sqrt{6}}{18} + \\frac{9 \\sqrt{3} -11 \\sqrt{2}}{36 \\sqrt{3}} + \\frac{49-20 \\sqrt{6}}{180}$ $+…$ upto $\\infty =2+ \\left( \\sqrt{\\frac{b}{a}} +1 \\right) {log}_{e} \\left( \\frac{a}{b} \\right)$ , where $a$ and $b$ are integers with $gcd(a,b)=1$ , then $11a+18b$ is equal to _______________ .",
-    "images": [],
-    "options": [],
-    "correct": "76",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 76</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_279",
-    "number": "279",
-    "type": "numerical",
-    "text": "Let the first term of a series be ${T}_{1}=6$ and its ${r}^{th}$ term ${T}_{r}=3{T}_{r-1}+{6}^{r},r=2,3,……..,n$ . If the sum of the first $n$ terms of this series is $\\frac{1}{5} \\left( {n}^{2}-12n+39 \\right) \\left( 4⋅{6}^{n}-5⋅{3}^{n}+1 \\right)$ , then $n$ is equal to _____ .",
-    "images": [],
-    "options": [],
-    "correct": "6",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 6</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_280",
-    "number": "280",
-    "type": "numerical",
-    "text": "If $S(x)=(1+x)+2(1+x{)}^{2}+3(1+x{)}^{3}+….+60$ $(1+x{)}^{60},x\\neq 0$ and $(60{)}^{2}S(60)=a(b{)}^{b}+b$ , where $a,b\\in N$ , then $(a+b)$ is equal to ______________ .",
-    "images": [],
-    "options": [],
-    "correct": "3660",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 3660</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_281",
-    "number": "281",
-    "type": "numerical",
-    "text": "Let the positive integers be written in the form: If the ${k}^{th}$ row contains exactly $k$ numbers for every natural number $k$ , then the row in which the number 5310 will be, is ____________ .",
-    "images": [
-      "https://res.cloudinary.com/dqowxwv8k/image/upload/career_xone_questions/math/sequences_and_series/q281_2.png"
-    ],
-    "options": [],
-    "correct": "103",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 103</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_282",
-    "number": "282",
-    "type": "numerical",
-    "text": "If $\\left( \\frac{1}{\\alpha +1} + \\frac{1}{\\alpha +2} +……+ \\frac{1}{\\alpha +1012} \\right)$ $- \\left( \\frac{1}{2⋅1} + \\frac{1}{4⋅3} + \\frac{1}{6⋅5} +……+ \\frac{1}{2024⋅2023} \\right) = \\frac{1}{2024}$ Then $\\alpha$ is equal to ___________________ .",
-    "images": [],
-    "options": [],
-    "correct": "1011",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 1011</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_283",
-    "number": "283",
-    "type": "numerical",
-    "text": "Let $\\alpha ={1}^{2}+{4}^{2}+{8}^{2}+{13}^{2}+{19}^{2}+{26}^{2}+…$ upto 10 terms and $\\beta = \\sum\\limits_{n=1}^{10} {n}^{4}$ . If $4\\alpha -\\beta =55k+40$ , then $k$ is equal to ___________ .",
-    "images": [],
-    "options": [],
-    "correct": "353",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 353</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_284",
-    "number": "284",
-    "type": "numerical",
-    "text": "Let ${S}_{n}$ be the sum to $n$ -terms of an arithmetic progression $3,7,11,……$ . If $40< \\left( \\frac{6}{n(n+1)} \\sum\\limits_{k=1}^{n} {S}_{k} \\right) <42$ , then $n$ equals _________________ - $\\left( {30}^{th} \\right)$ Jan ${2}^{nd}$ Shift 2024)",
-    "images": [],
-    "options": [],
-    "correct": "9",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 9</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_285",
-    "number": "285",
-    "type": "numerical",
-    "text": "If $(20{)}^{19}+2(21)(20{)}^{18}+3(21{)}^{2}(20{)}^{17}+….+20(21{)}^{19}$ $=k(20{)}^{19}$ , then $k$ is equal to ________ .",
-    "images": [],
-    "options": [],
-    "correct": "400",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 400</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_286",
-    "number": "286",
-    "type": "numerical",
-    "text": "The sum to 20 terms of the series $2⋅{2}^{2}-{3}^{2}+2⋅{4}^{2}-{5}^{2}$ $+2⋅{6}^{2}-$  is equal to ________ .",
-    "images": [],
-    "options": [],
-    "correct": "1310",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 1310</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_287",
-    "number": "287",
-    "type": "numerical",
-    "text": "If the sum of the series $\\left( \\frac{1}{2} - \\frac{1}{3} \\right) + \\left( \\frac{1}{{2}^{2}} - \\frac{1}{2⋅3} + \\frac{1}{{3}^{2}} \\right) + \\left( \\frac{1}{{2}^{3}} - \\frac{1}{{2}^{2}⋅3} + \\frac{1}{2⋅{3}^{2}} - \\frac{1}{{3}^{3}} \\right) +$ $\\left( \\frac{1}{{2}^{4}} - \\frac{1}{{2}^{3}⋅3} + \\frac{1}{{2}^{2}⋅{3}^{2}} - \\frac{1}{2⋅{3}^{3}} + \\frac{1}{{3}^{4}} \\right) +…$ is $\\frac{\\alpha }{\\beta }$ , where $\\alpha$ and $\\beta$ are co-prime, then $\\alpha +3\\beta$ is equal to___________________ -",
-    "images": [],
-    "options": [],
-    "correct": "7",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 7</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_288",
-    "number": "288",
-    "type": "numerical",
-    "text": "If $\\frac{{1}^{3}+{2}^{3}+{3}^{3}+… upto n terms}{1⋅3+2⋅5+3⋅7+… upto n terms} = \\frac{9}{5}$ , then the value of $n$ is __________ .",
-    "images": [],
-    "options": [],
-    "correct": "5",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 5</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_289",
-    "number": "289",
-    "type": "numerical",
-    "text": "Let ${a}_{1}={b}_{1}=1$ and ${a}_{n}={a}_{n-1}+(n-1),{b}_{n}={b}_{n-1}+{a}_{n-1}$ , $∀n\\geq 2$ .If $S= \\sum\\limits_{n=1}^{10} \\frac{{b}_{n}}{{2}^{n}}$ and $T= \\sum\\limits_{n=1}^{8} \\frac{n}{{2}^{n-1}}$ , then ${2}^{7}(2S-T)$ is equal to ________",
-    "images": [],
-    "options": [],
-    "correct": "461",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 461</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_290",
-    "number": "290",
-    "type": "numerical",
-    "text": "The sum ${1}^{2}-2⋅{3}^{2}+3⋅{5}^{2}-4⋅{7}^{2}+5⋅{9}^{2}-……+15⋅{29}^{2}$ is _____________ .",
-    "images": [],
-    "options": [],
-    "correct": "6952",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 6952</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_291",
-    "number": "291",
-    "type": "numerical",
-    "text": "Let ${a}_{1}={b}_{1}=1,{a}_{n}={a}_{n-1}+2$ and ${b}_{n}={a}_{n}+{b}_{n-1}$ for every natural number $n\\geq 2$ . Then $\\sum\\limits_{n=1}^{15} {a}_{n}⋅{b}_{n}$ is equal to ______________ .",
-    "images": [],
-    "options": [],
-    "correct": "27560",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 27560</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_292",
-    "number": "292",
-    "type": "numerical",
-    "text": "If $\\sum\\limits_{k=1}^{10} \\frac{k}{{k}^{4}+{k}^{2}+1} = \\frac{m}{n}$ , where $m$ and $n$ are co-prime, then $m+n$ is equal to ____________ .",
-    "images": [],
-    "options": [],
-    "correct": "166",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 166</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_293",
-    "number": "293",
-    "type": "numerical",
-    "text": "Let $f(x)=2{x}^{2}-x-1$ and $S={n\\in Z:|f(n)|\\leq 800}$ . Then, the value of $\\sum\\limits_{n\\in S}^{} f(n)$ is equal to _________ .",
-    "images": [],
-    "options": [],
-    "correct": "10620",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 10620</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_294",
-    "number": "294",
-    "type": "numerical",
-    "text": "$\\frac{{2}^{3}-{1}^{3}}{1\\times 7} + \\frac{{4}^{3}-{3}^{3}+{2}^{3}-{1}^{3}}{2\\times 11} + \\frac{{6}^{3}-{5}^{3}+{4}^{3}-{3}^{3}+{2}^{3}-{1}^{3}}{3\\times 15} +…+$ $\\frac{{30}^{3}-{29}^{3}+{28}^{3}-{27}^{3}+….+{2}^{3}-{1}^{3}}{15\\times 63}$ is equal to ____________ .",
-    "images": [],
-    "options": [],
-    "correct": "120",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 120</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_295",
-    "number": "295",
-    "type": "numerical",
-    "text": "If $\\frac{1}{2\\times 3\\times 4} + \\frac{1}{3\\times 4\\times 5} + \\frac{1}{4\\times 5\\times 6} +…+ \\frac{1}{100\\times 101\\times 102}$ $= \\frac{k}{101}$ , then $34k$ is equal to______________.",
-    "images": [],
-    "options": [],
-    "correct": "286",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 286</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_296",
-    "number": "296",
-    "type": "numerical",
-    "text": "Let $A= \\sum\\limits_{i=1}^{10} \\sum\\limits_{j=1}^{10} min{i,j}$ and $B= \\sum\\limits_{i=1}^{10} \\sum\\limits_{j=1}^{10} max* {i,j}$ . Then $A+B$ is equal to _______________ .",
-    "images": [],
-    "options": [],
-    "correct": "1100",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 1100</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_297",
-    "number": "297",
-    "type": "numerical",
-    "text": "If the sum of the first ten terms of the series $\\frac{1}{5} + \\frac{2}{65} + \\frac{3}{325} + \\frac{4}{1025} + \\frac{5}{2501} +…$ is $\\frac{m}{n}$ , where $m$ and $n$ are co-prime numbers, then $m+n$ is equal to ______________ .",
-    "images": [],
-    "options": [],
-    "correct": "276",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 276</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_298",
-    "number": "298",
-    "type": "numerical",
-    "text": "For $k\\in N$ , let $\\frac{1}{\\alpha (\\alpha +1)(\\alpha +2)…(\\alpha +20)} ={∑}_{k=0}^{20} \\frac{{A}_{k}}{\\alpha +k}$ , where $\\alpha >0$ . Then the value of $100{\\left( \\frac{{A}_{14}+{A}_{15}}{{A}_{13}} \\right)}^{2}$ is equal to ________________ .",
-    "images": [],
-    "options": [],
-    "correct": "9",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 9</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_299",
-    "number": "299",
-    "type": "numerical",
-    "text": "Let ${S}_{n}(x)={log}_{{a}^{\\frac{1}{2}}}x+{log}_{{a}^{\\frac{1}{3}}}x+{log}_{{a}^{\\frac{1}{6}}}x+{log}_{{a}^{\\frac{1}{11}}}x$ $+{log}_{{a}^{\\frac{1}{18}}}x+{log}_{{a}^{\\frac{1}{27}}}x+…$ . upto $n$ -terms, where $a>1$ . If ${S}_{24}(x)=1093$ and ${S}_{12}(2x)=265$ , then value of $a$ is equal to ________________ .",
-    "images": [],
-    "options": [],
-    "correct": "16",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 16</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_300",
-    "number": "300",
-    "type": "numerical",
-    "text": "The sum ${∑}_{k=1}^{20} (1+2+3+….+k)$ is ___________",
-    "images": [],
-    "options": [],
-    "correct": "1540",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 1540</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_sequences_and_series_301",
-    "number": "301",
-    "type": "numerical",
-    "text": "The sum, ${∑}_{n=1}^{7} \\frac{n(n+1)(2n+1)}{4}$ is equal to ___________",
-    "images": [],
-    "options": [],
-    "correct": "504",
-    "chapter": "Sequences And Series",
-    "topic": "Sum To  $N$  Terms Of Special Series*",
-    "solution": "<p><strong>Ans: 504</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sequences And Series\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
   {
     "id": "jee_mains_math_sets_relations_and_functions_1",
     "number": "1",
     "type": "mcq",
-    "text": "Let $A={(\\alpha ,\\beta )\\in R\\times R:|\\alpha -1|\\leq 4$ and $|\\beta -5|\\leq 6}$ and $B= \\left( (\\alpha ,\\beta )\\in R\\times R:16(\\alpha -2{)}^{2}+9(\\beta -6{)}^{2}\\leq \\right)$ 144}. Then",
+    "text": "Let $A=\\left{ (\\alpha ,\\beta )\\in R\\times R:|\\alpha -1|\\leq 4$ and $|\\beta -5|\\leq 6 \\right}$ and $B= \\left{ (\\alpha ,\\beta )\\in R\\times R:16(\\alpha -2{)}^{2}+9(\\beta -6{)}^{2}\\leq \\right)$ 144}. Then",
     "images": [],
     "options": [
       "$A\\subset B$",
       "neither $A\\subset B$ nor $B\\subset A$",
       "$B\\subset A$",
-      "$A\\cup B={(x,y):-4\\leq x\\leq 4,-1\\leq y\\leq 11}$"
+      "$A\\cup B=\\left{ (x,y):-4\\leq x\\leq 4,-1\\leq y\\leq 11 \\right}$"
     ],
     "correct": "c",
     "chapter": "Sets, Relations And Functions",
@@ -51269,7 +45076,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_2",
     "number": "2",
     "type": "mcq",
-    "text": "Let $A={1,2,3,…,10}$ and $B= \\left( \\frac{m}{n} :m,n\\in A,m<n \\right)$ and $\\left( gcd(m,n)=1 \\right)$ . Then $n(B)$ is equal to :",
+    "text": "Let $A=\\left{ 1,2,3,…,10 \\right}$ and $B= \\left{ \\frac{m}{n} :m,n\\in A,m<n \\right)$ and $gcd(m,n)=1 \\right}$ . Then $n(B)$ is equal to :",
     "images": [],
     "options": [
       "36",
@@ -51307,7 +45114,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_4",
     "number": "4",
     "type": "mcq",
-    "text": "Let $S= \\left( x\\in R:( \\sqrt{3} + \\sqrt{2} {)}^{x}+( \\sqrt{3} - \\sqrt{2} {)}^{x}=10 \\right)$ . Then the number of elements in $S$ is",
+    "text": "Let $S= \\left{ x\\in R:( \\sqrt{3} + \\sqrt{2} {)}^{x}+( \\sqrt{3} - \\sqrt{2} {)}^{x}=10 \\right}$ . Then the number of elements in $S$ is",
     "images": [],
     "options": [
       "4",
@@ -51364,7 +45171,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_7",
     "number": "7",
     "type": "mcq",
-    "text": "Let $\\Omega$ be the sample space and $A\\subseteq \\Omega$ be an event. Given below are two statements (S1) : If $P(A)=0$ , then $A=\\phi$ (S2): If $P(A)=1$ , then $A=\\Omega$ Then",
+    "text": "Let $\\Omega$ be the sample space and $A\\subseteq \\Omega$ be an event. Given below are two statements \n(S1) : If $P(A)=0$ , then $A=\\phi$ \n(S2): If $P(A)=1$ , then $A=\\Omega$ Then",
     "images": [],
     "options": [
       "both (S1) and (S2) are true",
@@ -51383,7 +45190,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_8",
     "number": "8",
     "type": "mcq",
-    "text": "Let $S= \\left( x\\in [-6,3]-{-2,2}: \\frac{|x+3|-1}{|x|-2} \\geq 0 \\right)$ and $T= \\left( x\\in Z:{x}^{2}-7|x|+9\\leq 0 \\right)$ . Then the number of elements in $S\\cap T$ is :",
+    "text": "Let $S= \\left{ x\\in [-6,3]-{-2,2}: \\frac{|x+3|-1}{|x|-2} \\geq 0 \\right}$ and $T= \\left{ x\\in Z:{x}^{2}-7|x|+9\\leq 0 \\right}$ . Then the number of elements in $S\\cap T$ is :",
     "images": [],
     "options": [
       "7",
@@ -51402,7 +45209,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_9",
     "number": "9",
     "type": "mcq",
-    "text": "Let $A={x\\in R:|x+1|<2}$ and $B={x\\in R:|x-1|\\geq 2}$ . Then which one of the following statements is not true?",
+    "text": "Let $A=\\left{ x\\in R:|x+1|<2 \\right}$ and $B=\\left{ x\\in R:|x-1|\\geq 2 \\right}$ . Then which one of the following statements is not true?",
     "images": [],
     "options": [
       "$A-B=(-1,1)$",
@@ -51424,10 +45231,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Out of all the patients in a hospital $89%$ are found to be suffering from heart ailment and $98%$ are suffering from lungs infection. If $K%$ of them are suffering from both ailments, then $K$ can not belong to the set",
     "images": [],
     "options": [
-      "${79,81,83,85}$",
-      "${84,87,90,93}$",
-      "${80,83,86,89}$",
-      "${84,86,88,90}$"
+      "$\\left{ 79,81,83,85 \\right}$",
+      "$\\left{ 84,87,90,93 \\right}$",
+      "$\\left{ 80,83,86,89 \\right}$",
+      "$\\left{ 84,86,88,90 \\right}$"
     ],
     "correct": "a",
     "chapter": "Sets, Relations And Functions",
@@ -51440,7 +45247,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_11",
     "number": "11",
     "type": "mcq",
-    "text": "Let $A= \\left( (x,y)\\in R\\times R∣2{x}^{2}+2{y}^{2}-2x-2y=1 \\right)$ , $B= \\left( (x,y)\\in R\\times R∣4{x}^{2}+4{y}^{2}-16y+7=0 \\right)$ and $C= \\left( (x,y)\\in R\\times R∣{x}^{2}+{y}^{2}-4x-2y+5\\leq {r}^{2} \\right)$ . Then the minimum value of $|r|$ such that $A\\cup B\\subseteq C$ is equal to",
+    "text": "Let $A= \\left{ (x,y)\\in R\\times R∣2{x}^{2}+2{y}^{2}-2x-2y=1 \\right}$ , $B= \\left{ (x,y)\\in R\\times R∣4{x}^{2}+4{y}^{2}-16y+7=0 \\right}$ and $C= \\left{ (x,y)\\in R\\times R∣{x}^{2}+{y}^{2}-4x-2y+5\\leq {r}^{2} \\right}$ . Then the minimum value of $|r|$ such that $A\\cup B\\subseteq C$ is equal to",
     "images": [],
     "options": [
       "$1+ \\sqrt{5}$",
@@ -51480,7 +45287,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_13",
     "number": "13",
     "type": "mcq",
-    "text": "Let ${S}_{1},{S}_{2}$ and ${S}_{3}$ be three sets defined as ${S}_{1}={z\\in C:|z-1|\\leq \\sqrt{2} }$ ${S}_{2}={z\\in C:Re((1-i)z)\\geq 1}$ ${S}_{3}={z\\in C:Im(z)\\leq 1}$ Then the set ${S}_{1}\\cap {S}_{2}\\cap {S}_{3}$",
+    "text": "Let ${S}_{1},{S}_{2}$ and ${S}_{3}$ be three sets defined as \n${S}_{1}=\\left{ z\\in C:|z-1|\\leq \\sqrt{2} \\right}$ \n${S}_{2}=\\left{ z\\in C:Re((1-i)z)\\geq 1 \\right}$ \n${S}_{3}=\\left{ z\\in C:Im(z)\\leq 1 \\right}$ Then the set ${S}_{1}\\cap {S}_{2}\\cap {S}_{3}$",
     "images": [],
     "options": [
       "has exactly two elements",
@@ -51499,12 +45306,12 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_14",
     "number": "14",
     "type": "mcq",
-    "text": "Consider the two sets : $A={m\\in R$ : both the roots of ${x}^{2}-(m+1)x+m+4=0$ are real} and $B=[-3,5)$ . Which of the following is not true?",
+    "text": "Consider the two sets : $A=\\left{ m\\in R$ : both the roots of ${x}^{2}-(m+1)x+m+4=0$ are real} and $B=[-3,5)$ . Which of the following is not true?",
     "images": [],
     "options": [
       "$A-B=(-\\infty ,-3)\\cup (5,\\infty )$",
       "$A\\cap B={-3}$",
-      "$B-A=(-3,5)$",
+      "$B-A={-3,5}$",
       "$A\\cup B=R$"
     ],
     "correct": "a",
@@ -51575,7 +45382,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_18",
     "number": "18",
     "type": "mcq",
-    "text": "If $A={x\\in R:|x|<2}$ and $B={x\\in R:|x-2|\\geq 3}$ ; then",
+    "text": "If $A=\\left{ x\\in R:|x|<2 \\right}$ and $B=\\left{ x\\in R:|x-2|\\geq 3 \\right}$ ; then",
     "images": [],
     "options": [
       "$A-B=[-1,2)$",
@@ -51651,7 +45458,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_22",
     "number": "22",
     "type": "mcq",
-    "text": "Let $S={1,2,3,…,100}$ . The number of non-empty subsets $A$ of $S$ such that the product of elements in $A$ is even is",
+    "text": "Let $S=\\left{ 1,2,3,…,100 \\right}$ . The number of non-empty subsets $A$ of $S$ such that the product of elements in $A$ is even is",
     "images": [],
     "options": [
       "${2}^{50} \\left( {2}^{50}-1 \\right)$",
@@ -51670,7 +45477,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_23",
     "number": "23",
     "type": "mcq",
-    "text": "Two sets $A$ and $B$ as under : $A={(a,b)\\in R\\times R:|a-5|<1$ and $|b-5|<1}$ ; $B= \\left( (a,b)\\in R\\times R:4(a-6{)}^{2}+9(b-5{)}^{2}\\leq 36 \\right)$ . Then",
+    "text": "Two sets $A$ and $B$ as under : $A=\\left{ (a,b)\\in R\\times R:|a-5|<1$ and $|b-5|<1 \\right}$ ; \n$B= \\left{ (a,b)\\in R\\times R:4(a-6{)}^{2}+9(b-5{)}^{2}\\leq 36 \\right}$ . Then",
     "images": [],
     "options": [
       "neither $A\\subset B$ nor $B\\subset A$",
@@ -51727,7 +45534,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_26",
     "number": "26",
     "type": "mcq",
-    "text": "The set $S={1,2,3,….,12}$ is to be partitioned into three sets $A,B,C$ of equal size. Thus $A\\cup B\\cup C=S$ , $A\\cap B=B\\cap C=A\\cap C=\\phi$ . The number of ways to partition $S$ is",
+    "text": "The set $S=\\left{ 1,2,3,….,12 \\right}$ is to be partitioned into three sets $A,B,C$ of equal size. Thus $A\\cup B\\cup C=S$ , $A\\cap B=B\\cap C=A\\cap C=\\phi$ . The number of ways to partition $S$ is",
     "images": [],
     "options": [
       "$\\frac{12!}{(4!{)}^{3}}$",
@@ -52012,7 +45819,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_46",
     "number": "46",
     "type": "mcq",
-    "text": "Let $A$ be the set of all functions $f:Z\\rightarrow Z$ and $R$ be a relation on $A$ such that $R={(f,g):f(0)=g(1)$ and $f(1)=g(0)}$ . Then $R$ is :",
+    "text": "Let $A$ be the set of all functions $f:Z\\rightarrow Z$ and $R$ be a relation on $A$ such that $R=\\left{ (f,g):f(0)=g(1)$ and $f(1)=g(0) \\right}$ . Then $R$ is :",
     "images": [],
     "options": [
       "Transitive but neither reflexive nor symmetric",
@@ -52031,7 +45838,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_47",
     "number": "47",
     "type": "mcq",
-    "text": "Let $A={1,2,3,….,100}$ and $R$ be a relation on $A$ such that $R={(a,b):a=2b+1}$ . Let $\\left( {a}_{1},{a}_{2} \\right) , \\left( {a}_{2},{a}_{3} \\right)$ , $\\left( {a}_{3},{a}_{4} \\right) ,…., \\left( {a}_{k},{a}_{k+1} \\right)$ be a sequence of $k$ elements of $R$ such that the second entry of an ordered pair is equal to the first entry of the next ordered pair. Then the largest integer $k$ , for which such a sequence exists, is equal to :",
+    "text": "Let $A=\\left{ 1,2,3,….,100 \\right}$ and $R$ be a relation on $A$ such that $R=\\left{ (a,b):a=2b+1 \\right}$ . Let $\\left( {a}_{1},{a}_{2} \\right) , \\left( {a}_{2},{a}_{3} \\right)$ , $\\left( {a}_{3},{a}_{4} \\right) ,…., \\left( {a}_{k},{a}_{k+1} \\right)$ be a sequence of $k$ elements of $R$ such that the second entry of an ordered pair is equal to the first entry of the next ordered pair. Then the largest integer $k$ , for which such a sequence exists, is equal to :",
     "images": [],
     "options": [
       "8",
@@ -52050,7 +45857,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_48",
     "number": "48",
     "type": "mcq",
-    "text": "Let $A={-3,-2,-1,0,1,2,3}$ . Let $R$ be a relation on A defined by $xRy$ if and only if $0<{x}^{2}+2y\\leq 4$ . Let $l$ be the number of elements in $K$ and $m$ be the minimum number of elements required to be added in $R$ to make it a reflexive relation. Then $l+m$ is equal to",
+    "text": "Let $A=\\left{ -3,-2,-1,0,1,2,3 \\right}$ . Let $R$ be a relation on A defined by $xRy$ if and only if $0<{x}^{2}+2y\\leq 4$ . Let $l$ be the number of elements in $K$ and $m$ be the minimum number of elements required to be added in $R$ to make it a reflexive relation. Then $l+m$ is equal to",
     "images": [],
     "options": [
       "18",
@@ -52069,7 +45876,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_49",
     "number": "49",
     "type": "mcq",
-    "text": "Let $A={-2,-1,0,1,2,3}$ . Let $R$ be a relation on $A$ defined by $xRy$ if and only if $y=max{x,1}$ . Let $l$ be the number of elements in $R$ . Let $m$ and $n$ be the minimum number of elements required to be added in $R$ to make it reflexive and symmetric relations, respectively. Then $l+m+n$ is equal to",
+    "text": "Let $A=\\left{ -2,-1,0,1,2,3 \\right}$ . Let $R$ be a relation on $A$ defined by $xRy$ if and only if $y=max {x,1}$ . Let $l$ be the number of elements in $R$ . Let $m$ and $n$ be the minimum number of elements required to be added in $R$ to make it reflexive and symmetric relations, respectively. Then $l+m+n$ is equal to",
     "images": [],
     "options": [
       "13",
@@ -52088,7 +45895,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_50",
     "number": "50",
     "type": "mcq",
-    "text": "Let $A={-3,-2,-1,0,1,2,3}$ and $R$ be a relation on A defined by $xRy$ if and only if $2x-y\\in {0,1}$ . Let $l$ be the number of elements in $R$ . Let $m$ and $n$ be the minimum number of elements required to be added in $R$ to make it reflexive and symmetric relations, respectively. Then $l+m+n$ is equal to",
+    "text": "Let $A=\\left{ -3,-2,-1,0,1,2,3 \\right}$ and $R$ be a relation on A defined by $xRy$ if and only if $2x-y\\in {0,1}$ . Let $l$ be the number of elements in $R$ . Let $m$ and $n$ be the minimum number of elements required to be added in $R$ to make it reflexive and symmetric relations, respectively. Then $l+m+n$ is equal to",
     "images": [],
     "options": [
       "17",
@@ -52107,7 +45914,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_51",
     "number": "51",
     "type": "mcq",
-    "text": "Let $A={0,1,2,3,4,5}$ . Let $R$ be a relation on $A$ defined by $(x,y)\\in R$ if and only if $max{x,y}\\in {3$ , $4}$ . Then among the statements $\\left( {S}_{1} \\right)$ : The number of elements in $R$ is 18 , and $\\left( {S}_{2} \\right)$ : The relation $R$ is symmetric but neither reflexive nor transitive.",
+    "text": "Let $A=\\left{ 0,1,2,3,4,5 \\right}$ . Let $R$ be a relation on $A$ defined by $(x,y)\\in R$ if and only if $max {x,y}\\in {3$ , $4}$ . Then among the statements $\\left( {S}_{1} \\right)$ : The number of elements in $R$ is 18 , and $\\left( {S}_{2} \\right)$ : The relation $R$ is symmetric but neither reflexive nor transitive.",
     "images": [],
     "options": [
       "both are true",
@@ -52126,7 +45933,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_52",
     "number": "52",
     "type": "mcq",
-    "text": "The number of non-empty equivalence relations on the set ${1,2,3}$ is:",
+    "text": "The number of non-empty equivalence relations on the set $\\left{ 1,2,3 \\right}$ is:",
     "images": [],
     "options": [
       "5",
@@ -52145,7 +45952,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_53",
     "number": "53",
     "type": "mcq",
-    "text": "Let $R={(1,2),(2,3),(3,3)}$ be a relation defined on the set ${1,2,3,4}$ . Then the minimum number of elements, needed to be added in $R$ so that $R$ becomes an equivalence relation, is:",
+    "text": "Let $R=\\left{ (1,2),(2,3),(3,3) \\right}$ be a relation defined on the set $\\left{ 1,2,3,4 \\right}$ . Then the minimum number of elements, needed to be added in $R$ so that $R$ becomes an equivalence relation, is:",
     "images": [],
     "options": [
       "7",
@@ -52164,7 +45971,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_54",
     "number": "54",
     "type": "mcq",
-    "text": "Let $A={(x,y)\\in R\\times R:|x+y|\\geq 3}$ and $={(x,y)\\in$ $R\\times R:|x|+|y|\\leq 3}$ . If $C={(x,y)\\in A\\cap B:x=0$ or $y=0}$ , then ${∑}_{(x,y)\\in C} |x+y|$ is:",
+    "text": "Let $A=\\left{ (x,y)\\in R\\times R:|x+y|\\geq 3 \\right}$ and $=\\left{ (x,y)\\in$ $R\\times R:|x|+|y|\\leq 3 \\right}$ . If $C=\\left{ (x,y)\\in A\\cap B:x=0$ or $y=0 \\right}$ , then ${∑}_{(x,y)\\in C} |x+y|$ is:",
     "images": [],
     "options": [
       "18",
@@ -52183,7 +45990,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_55",
     "number": "55",
     "type": "mcq",
-    "text": "Let $X=R\\times R$ . Define a relation $R$ on $X$ as: $\\left( {a}_{1},{b}_{1} \\right) R \\left( {a}_{2},{b}_{2} \\right) ⇔{b}_{1}={b}_{2}$ . Statement I: $R$ is an equivalence relation. Statement II : For some $(a,b)\\in X$ , the set $S={(x,y)\\in X:(x,y)R(a,b)}$ represents a line parallel to $y=x$ . In the light of the above statements, choose the correct answer from the options given below:",
+    "text": "Let $X=R\\times R$ . Define a relation $R$ on $X$ as: $\\left( {a}_{1},{b}_{1} \\right) R \\left( {a}_{2},{b}_{2} \\right) ⇔{b}_{1}={b}_{2}$ . \nStatement I: $R$ is an equivalence relation. \nStatement II : For some $(a,b)\\in X$ , the set $S=\\left{ (x,y)\\in X:(x,y)R(a,b) \\right}$ represents a line parallel to $y=x$ . In the light of the above statements, choose the correct answer from the options given below:",
     "images": [],
     "options": [
       "Statement I is true but Statement II is false",
@@ -52202,7 +46009,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_56",
     "number": "56",
     "type": "mcq",
-    "text": "The relation $R={(x,y):x,y\\in Z$ and $x+y$ is even $}$ is :",
+    "text": "The relation $R=\\left{ (x,y):x,y\\in Z$ and $x+y$ is even $\\right}$ is :",
     "images": [],
     "options": [
       "reflexive and transitive but not symmetric",
@@ -52221,7 +46028,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_57",
     "number": "57",
     "type": "mcq",
-    "text": "Define a relation $R$ on the interval $\\left( 0, \\frac{\\pi }{2} \\right)$ by $xRy$ if and only if ${sec}^{2}x-{tan}^{2}y=1$ . Then $R$ is :",
+    "text": "Define a relation $R$ on the interval $\\left[ 0, \\frac{\\pi }{2} \\right)$ by $xRy$ if and only if ${sec}^{2}x-{tan}^{2}y=1$ . Then $R$ is :",
     "images": [],
     "options": [
       "an equivalence relation",
@@ -52240,7 +46047,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_58",
     "number": "58",
     "type": "mcq",
-    "text": "Let $S=N\\cup {0}$ . Define a relation $R$ from $S$ to $R$ by : $R= \\left( (x,y):{log}_{e}y=x{log}_{e} \\left( \\frac{2}{5} \\right) ,x\\in S,y\\in R \\right)$ . Then, the sum of all the elements in the range of $R$ is equal to :",
+    "text": "Let $S=N\\cup {0}$ . Define a relation $R$ from $S$ to $R$ by : $R= \\left{ (x,y):{log}_{e}y=x{log}_{e} \\left( \\frac{2}{5} \\right) ,x\\in S,y\\in R \\right}$ . Then, the sum of all the elements in the range of $R$ is equal to :",
     "images": [],
     "options": [
       "$\\frac{5}{2}$",
@@ -52259,7 +46066,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_59",
     "number": "59",
     "type": "mcq",
-    "text": "Let a relation $R$ on $N\\times N$ be defined as : $\\left( {x}_{1},{y}_{1} \\right) R \\left( {x}_{2},{y}_{2} \\right)$ if and only if ${x}_{1}\\leq {x}_{2}$ or ${y}_{1}\\leq {y}_{2}$ . Consider the two statements : (I) $R$ is reflexive but not symmetric. (II) $R$ is transitive Then which one of the following is true?",
+    "text": "Let a relation $R$ on $N\\times N$ be defined as : $\\left( {x}_{1},{y}_{1} \\right) R \\left( {x}_{2},{y}_{2} \\right)$ if and only if ${x}_{1}\\leq {x}_{2}$ or ${y}_{1}\\leq {y}_{2}$ . Consider the two statements : \n(I) $R$ is reflexive but not symmetric. \n(II) $R$ is transitive Then which one of the following is true?",
     "images": [],
     "options": [
       "Both (I) and (II) are correct.",
@@ -52278,7 +46085,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_60",
     "number": "60",
     "type": "mcq",
-    "text": "Let the relations ${R}_{1}$ and ${R}_{2}$ on the set $X={1,2,3,…,20}$ be given by ${R}_{1}={(x,y):2x-3y=2}$ and ${R}_{2}={(x,y)$ : $-5x+4y=0}$ . If $M$ and $N$ be the minimum number of elements required to be added in ${R}_{1}$ and ${R}_{2}$ , respectively, in order to make the relations symmetric, then $M+N$ equals",
+    "text": "Let the relations ${R}_{1}$ and ${R}_{2}$ on the set $X=\\left{ 1,2,3,…,20 \\right}$ be given by ${R}_{1}=\\left{ (x,y):2x-3y=2 \\right}$ and ${R}_{2}=\\left{ (x,y)$ : $-5x+4y=0 \\right}$ . If $M$ and $N$ be the minimum number of elements required to be added in ${R}_{1}$ and ${R}_{2}$ , respectively, in order to make the relations symmetric, then $M+N$ equals",
     "images": [],
     "options": [
       "10",
@@ -52297,7 +46104,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_61",
     "number": "61",
     "type": "mcq",
-    "text": "Let $A={1,2,3,4,5}$ . Let $R$ be a relation on $A$ defined by $xRy$ if and only if $4x\\leq 5y$ . Let $m$ be the number of elements in $R$ and $n$ be the minimum number of elements from $A\\times A$ that are required to be added to $R$ to make it a symmetric relation. Then $m+n$ is equal to :",
+    "text": "Let $A=\\left{ 1,2,3,4,5 \\right}$ . Let $R$ be a relation on $A$ defined by $xRy$ if and only if $4x\\leq 5y$ . Let $m$ be the number of elements in $R$ and $n$ be the minimum number of elements from $A\\times A$ that are required to be added to $R$ to make it a symmetric relation. Then $m+n$ is equal to :",
     "images": [],
     "options": [
       "24",
@@ -52316,7 +46123,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_62",
     "number": "62",
     "type": "mcq",
-    "text": "Let $A={2,3,6,8,9,11}$ and $B={1,4,5,10,15}$ . Let $R$ be a relation on $A\\times B$ defined by $(a,b)R(c,d)$ if and only if $3ad-7bc$ is an even integer. Then the relation $R$ is",
+    "text": "Let $A=\\left{ 2,3,6,8,9,11 \\right}$ and $B=\\left{ 1,4,5,10,15 \\right}$ . Let $R$ be a relation on $A\\times B$ defined by $(a,b)R(c,d)$ if and only if $3ad-7bc$ is an even integer. Then the relation $R$ is",
     "images": [],
     "options": [
       "an cquivalence relation.",
@@ -52354,7 +46161,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_64",
     "number": "64",
     "type": "mcq",
-    "text": "Let $S={1,2,3,…,10}$ . Suppose $M$ is the set of all the subsets of $S$ , then the relation $R={(A,B)$ : $A\\cap B\\neq \\phi;A,B\\in M}$ is:",
+    "text": "Let $S=\\left{ 1,2,3,…,10 \\right}$ . Suppose $M$ is the set of all the subsets of $S$ , then the relation $R=\\left{ (A,B)$ : $A\\cap B\\neq \\phi;A,B\\in M \\right}$ is:",
     "images": [],
     "options": [
       "symmetric and transitive only",
@@ -52392,7 +46199,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_66",
     "number": "66",
     "type": "mcq",
-    "text": "If $R$ is the smallest equivalence relation on the set ${1,2,3,4}$ such that ${(1,2),(1,3)}\\subset R$ , then the number of elements in $R$ is ____________ .",
+    "text": "If $R$ is the smallest equivalence relation on the set $\\left{ 1,2,3,4 \\right}$ such that $\\left{ (1,2),(1,3) \\right}\\subset R$ , then the number of elements in $R$ is ____________ .",
     "images": [],
     "options": [
       "12",
@@ -52411,7 +46218,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_67",
     "number": "67",
     "type": "mcq",
-    "text": "Let $A={1,2,3,4,5,6,7}$ . Then the relation $R={(x,y)\\in A\\times A:x+y=7}$ is",
+    "text": "Let $A=\\left{ 1,2,3,4,5,6,7 \\right}$ . Then the relation $R=\\left{ (x,y)\\in A\\times A:x+y=7 \\right}$ is",
     "images": [],
     "options": [
       "an equivalence relation",
@@ -52430,7 +46237,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_68",
     "number": "68",
     "type": "mcq",
-    "text": "Let $A={2,3,4}$ and $B={8,9,12}$ . Then the number of elements in the relation $R= \\left( \\left( \\left( {a}_{1},{b}_{1} \\right) , \\left( {a}_{2},{b}_{2} \\right) \\right) \\in (A\\times B,A\\times B):{a}_{1} \\right)$ divides ${b}_{2}$ and ${a}_{2}$ divides $\\left( {b}_{1} \\right)$ is",
+    "text": "Let $A=\\left{ 2,3,4 \\right}$ and $B=\\left{ 8,9,12 \\right}$ . Then the number of elements in the relation $R= \\left{ \\left( \\left( {a}_{1},{b}_{1} \\right) , \\left( {a}_{2},{b}_{2} \\right) \\right) \\in (A\\times B,A\\times B):{a}_{1} \\right)$ divides ${b}_{2}$ and ${a}_{2}$ divides $\\left( {b}_{1} \\right}$ is",
     "images": [],
     "options": [
       "24",
@@ -52449,7 +46256,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_69",
     "number": "69",
     "type": "mcq",
-    "text": "Let $A={1,3,4,6,9}$ and $B={2,4,5,8,10}$ . Let $R$ be a relation defined on $A\\times B$ such that $R= \\left( \\left( \\left( {a}_{1},{b}_{1} \\right) \\right) \\right)$ , $\\left( \\left( {a}_{2},{b}_{2} \\right) \\right) :{a}_{1}\\leq {b}_{2}$ and $\\left( {b}_{1}\\leq {a}_{2} \\right)$ . Then the number of elements in the set $R$ is",
+    "text": "Let $A=\\left{ 1,3,4,6,9 \\right}$ and $B=\\left{ 2,4,5,8,10 \\right}$ . Let $R$ be a relation defined on $A\\times B$ such that $R= \\left{ \\left( \\left( {a}_{1},{b}_{1} \\right)$ , $\\left( {a}_{2},{b}_{2} \\right) \\right) :{a}_{1}\\leq {b}_{2}$ and $ {b}_{1}\\leq {a}_{2} \\right}$ . Then the number of elements in the set $R$ is",
     "images": [],
     "options": [
       "52",
@@ -52487,7 +46294,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_71",
     "number": "71",
     "type": "mcq",
-    "text": "Let $P(S)$ denote the power set of $S={1,2,3,…,10}$ . Define the relations ${R}_{1}$ and ${R}_{2}$ on $P(S)$ as $A{R}_{1}B$ if $\\left( A\\cap {B}^{C} \\right) \\cup \\left( B\\cap {A}^{C} \\right) =\\phi$ and $A{R}_{2}B$ if $\\cup {B}^{C}=B\\cup$ ${A}^{C},∀A,B\\in P(S)$ . Then",
+    "text": "Let $P(S)$ denote the power set of $S=\\left{ 1,2,3,…,10 \\right}$ . Define the relations ${R}_{1}$ and ${R}_{2}$ on $P(S)$ as $A{R}_{1}B$ if $\\left( A\\cap {B}^{C} \\right) \\cup \\left( B\\cap {A}^{C} \\right) =\\phi$ and $A{R}_{2}B$ if $\\cup {B}^{C}=B\\cup$ ${A}^{C},∀A,B\\in P(S)$ . Then",
     "images": [],
     "options": [
       "both ${R}_{1}$ and ${R}_{2}$ are not equivalence relations",
@@ -52506,7 +46313,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_72",
     "number": "72",
     "type": "mcq",
-    "text": "The relation $R={(a,b):gcd(a,b)=1,2a\\neq b$ , $a,b,\\in Z}$ is",
+    "text": "The relation $R=\\left{ (a,b):gcd(a,b)=1,2a\\neq b$ , $a,b,\\in Z \\right}$ is",
     "images": [],
     "options": [
       "reflexive but not symmetric",
@@ -52544,7 +46351,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_74",
     "number": "74",
     "type": "mcq",
-    "text": "The minimum number of elements that must be added to the relation $R={(a,b),(b,c)}$ on the set ${a$ , $b,c}$ so that it becomes symmetric and transitive is",
+    "text": "The minimum number of elements that must be added to the relation $R=\\left{ (a,b),(b,c) \\right}$ on the set $\\left{ a$ , $b,c \\right}$ so that it becomes symmetric and transitive is",
     "images": [],
     "options": [
       "3",
@@ -52582,7 +46389,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_76",
     "number": "76",
     "type": "mcq",
-    "text": "Among the relations $S= \\left( (a,b):a,b\\in R-{0},2+ \\frac{a}{b} >0 \\right)$ and $T= \\left( (a,b):a,b\\in R,{a}^{2}-{b}^{2}\\in Z \\right)$",
+    "text": "Among the relations $S= \\left{ (a,b):a,b\\in R-{0},2+ \\frac{a}{b} >0 \\right}$ and $T= \\left{ (a,b):a,b\\in R,{a}^{2}-{b}^{2}\\in Z \\right}$",
     "images": [],
     "options": [
       "$S$ is transitive but $T$ is not",
@@ -52620,7 +46427,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_78",
     "number": "78",
     "type": "mcq",
-    "text": "For $\\alpha \\in N$ , consider a relation $R$ on $N$ given by $R={(x,y):3x+\\alpha y$ is a multiple of 7 $}$ . The relation $R$ is an equivalence relation if and only if:",
+    "text": "For $\\alpha \\in N$ , consider a relation $R$ on $N$ given by $R=\\left{ (x,y):3x+\\alpha y$ is a multiple of 7 $ \\right}$ . The relation $R$ is an equivalence relation if and only if:",
     "images": [],
     "options": [
       "$\\alpha =14$",
@@ -52658,7 +46465,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_80",
     "number": "80",
     "type": "mcq",
-    "text": "Let ${R}_{1}={(a,b)\\in N\\times N:|a-b|\\leq 13}$ and ${R}_{2}={(a,b)\\in N\\times N:|a-b|\\neq 13}$ . Then on $N:$",
+    "text": "Let ${R}_{1}=\\left{ (a,b)\\in N\\times N:|a-b|\\leq 13 \\right}$ and ${R}_{2}=\\left{ (a,b)\\in N\\times N:|a-b|\\neq 13 \\right}$ . Then on $N:$",
     "images": [],
     "options": [
       "Both ${R}_{1}$ and ${R}_{2}$ are equivalence relations",
@@ -52677,7 +46484,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_81",
     "number": "81",
     "type": "mcq",
-    "text": "Let a set $A={A}_{1}\\cup {A}_{2}\\cup ……\\cup {A}_{k}$ , where ${A}_{i}\\cap {A}_{j}=\\phi$ for $i\\neq j,1\\leq i,j\\leq k$ . Define the relation $R$ from $A$ to $A$ by $R= \\left( (x,y):y\\in {A}_{i} \\right)$ if and only if $\\left( x\\in {A}_{i},1\\leq i\\leq k \\right)$ . Then $R$ is",
+    "text": "Let a set $A={A}_{1}\\cup {A}_{2}\\cup ……\\cup {A}_{k}$ , where ${A}_{i}\\cap {A}_{j}=\\phi$ for $i\\neq j,1\\leq i,j\\leq k$ . Define the relation $R$ from $A$ to $A$ by $R= \\left{ (x,y):y\\in {A}_{i} \\right)$ if and only if $\\left( x\\in {A}_{i},1\\leq i\\leq k \\right}$ . Then $R$ is",
     "images": [],
     "options": [
       "reflexive, symmetric but not transitive",
@@ -52696,7 +46503,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_82",
     "number": "82",
     "type": "mcq",
-    "text": "Let $Z$ be the set of all integers, $A= \\left( (x,y)\\in Z\\times Z:(x-2{)}^{2}+{y}^{2}\\leq 4 \\right) B= \\left( (x,y)\\in Z\\times Z:{x}^{2}+{y}^{2}\\leq 4 \\right)$ and $C= \\left( (x,y)\\in Z\\times Z:(x-2{)}^{2}+(y-2{)}^{2}\\leq 4 \\right)$ If the total number of relations from $A\\cap B$ to $A\\cap C$ is ${2}^{p}$ , then the value of $p$ is",
+    "text": "Let $Z$ be the set of all integers, \n$A= \\left{ (x,y)\\in Z\\times Z:(x-2{)}^{2}+{y}^{2}\\leq 4 \\right} B= \\left{ (x,y)\\in Z\\times Z:{x}^{2}+{y}^{2}\\leq 4 \\right}$ and $C= \\left{ (x,y)\\in Z\\times Z:(x-2{)}^{2}+(y-2{)}^{2}\\leq 4 \\right}$ If the total number of relations from $A\\cap B$ to $A\\cap C$ is ${2}^{p}$ , then the value of $p$ is",
     "images": [],
     "options": [
       "25",
@@ -52734,7 +46541,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_84",
     "number": "84",
     "type": "mcq",
-    "text": "Let $N$ be the set of natural numbers and a relation $R$ on $N$ be defined by $= \\left( (x,y)\\in N\\times N:{x}^{3}-3{x}^{2}y- \\right)$ $\\left( x{y}^{2}+3{y}^{3}=0 \\right)$ . Then the relation $R$ is",
+    "text": "Let $N$ be the set of natural numbers and a relation $R$ on $N$ be defined by $= \\left{ (x,y)\\in N\\times N:{x}^{3}-3{x}^{2}y- \\right)$ $\\left( x{y}^{2}+3{y}^{3}=0 \\right}$ . Then the relation $R$ is",
     "images": [],
     "options": [
       "reflexive but neither symmetric nor transitive",
@@ -52753,7 +46560,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_85",
     "number": "85",
     "type": "mcq",
-    "text": "Let $A={2,3,4,5,…,30}$ and ' $≃$ ' be an equivalence relation on $A\\times A$ , defined by $(a,b)≃(c,d)$ if and only if $ad=bc$ . Then the number of ordered pairs which satisfy this cquivalence relation with ordered pair $(4,3)$ is equal to",
+    "text": "Let $A=\\left{ 2,3,4,5,…,30 \\right}$ and ' $≃$ ' be an equivalence relation on $A\\times A$ , defined by $(a,b)≃(c,d)$ if and only if $ad=bc$ . Then the number of ordered pairs which satisfy this cquivalence relation with ordered pair $(4,3)$ is equal to",
     "images": [],
     "options": [
       "5",
@@ -52772,13 +46579,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_86",
     "number": "86",
     "type": "mcq",
-    "text": "Let $R={(P,Q)∣P$ and $Q$ are at the same distance from the origin} be a relation, then the equivalence class of $(1,-1)$ is the set",
+    "text": "Let $R={ \\left{ (P,Q)∣P$ and $Q$ are at the same distance from the origin} be a relation, then the equivalence class of $(1,-1)$ is the set",
     "images": [],
     "options": [
-      "$S= \\left( (x,y)∣{x}^{2}+{y}^{2}=1 \\right)$",
-      "$S= \\left( (x,y)∣{x}^{2}+{y}^{2}=2 \\right)$",
-      "$S= \\left( (x,y)∣{x}^{2}+{y}^{2}=4 \\right)$",
-      "$S= \\left( (x,y)∣{x}^{2}+{y}^{2}= \\sqrt{2} \\right)$"
+      "$S= \\left{ (x,y)∣{x}^{2}+{y}^{2}=1 \\right}$",
+      "$S= \\left{ (x,y)∣{x}^{2}+{y}^{2}=2 \\right}$",
+      "$S= \\left{ (x,y)∣{x}^{2}+{y}^{2}=4 \\right}$",
+      "$S= \\left{ (x,y)∣{x}^{2}+{y}^{2}= \\sqrt{2} \\right}$"
     ],
     "correct": "b",
     "chapter": "Sets, Relations And Functions",
@@ -52791,13 +46598,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_87",
     "number": "87",
     "type": "mcq",
-    "text": "If $R= \\left( (x,y):x,y\\in Z,{x}^{2}+3{y}^{2}\\leq 8 \\right)$ is a relation on the set of integers $Z$ , then the domain of ${R}^{-1}$ is",
+    "text": "If $R= \\left{ (x,y):x,y\\in Z,{x}^{2}+3{y}^{2}\\leq 8 \\right}$ is a relation on the set of integers $Z$ , then the domain of ${R}^{-1}$ is",
     "images": [],
     "options": [
-      "${-2,-1,1,2}$",
-      "${0,1}$",
-      "${-2,-1,0,1,2}$",
-      "${-1,0,1}$"
+      "$\\left{ -2,-1,1,2 \\right}$",
+      "$\\left{ 0,1 \\right}$",
+      "$\\left{ -2,-1,0,1,2 \\right}$",
+      "$\\left{ -1,0,1 \\right}$"
     ],
     "correct": "d",
     "chapter": "Sets, Relations And Functions",
@@ -52810,7 +46617,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_88",
     "number": "88",
     "type": "mcq",
-    "text": "Let ${R}_{1}$ and ${R}_{2}$ be two relations defined as follows: ${R}_{1}= \\left( (a,b)\\in {R}^{2}:{a}^{2}+{b}^{2}\\in Q \\right)$ and ${R}_{2}= \\left( (a,b)\\in {R}^{2}:{a}^{2}+{b}^{2}\\notin Q \\right)$ , where $Q$ is the set of all rational numbers. Then",
+    "text": "Let ${R}_{1}$ and ${R}_{2}$ be two relations defined as follows: ${R}_{1}= \\left{ (a,b)\\in {R}^{2}:{a}^{2}+{b}^{2}\\in Q \\right}$ and ${R}_{2}= \\left{ (a,b)\\in {R}^{2}:{a}^{2}+{b}^{2}\\notin Q \\right}$ , where $Q$ is the set of all rational numbers. Then",
     "images": [],
     "options": [
       "Neither ${R}_{1}$ nor ${R}_{2}$ is transitive.",
@@ -52829,7 +46636,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_89",
     "number": "89",
     "type": "mcq",
-    "text": "Let $Z$ be the set of integers. If $A= \\left( x\\in Z:{2}^{(x+2) \\left( {x}^{2}-5x+6 \\right)}=1 \\right)$ and $={x\\in Z$ : $-3<2x-1<9}$ , then the number of subsets of the set $A\\times B$ is",
+    "text": "Let $Z$ be the set of integers. If $A= \\left{ x\\in Z:{2}^{(x+2) \\left( {x}^{2}-5x+6 \\right)}=1 \\right}$ and $=\\left{ x\\in Z$ : $-3<2x-1<9 \\right}$ , then the number of subsets of the set $A\\times B$ is",
     "images": [],
     "options": [
       "${2}^{18}$",
@@ -52848,7 +46655,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_90",
     "number": "90",
     "type": "mcq",
-    "text": "Consider the following two binary relations on the set $={a,b,c}$ : ${R}_{1}={(c,a),(b,b),(a,c),(c,c),(b,c),(a,a)}$ and ${R}_{2}={(a,b),(b,a),(c,c),(c,a),(a,a),(b,b),(a,c)}$ . Then",
+    "text": "Consider the following two binary relations on the set $=\\left{ a,b,c \\right}$ : \n${R}_{1}=\\left{ (c,a),(b,b),(a,c),(c,c),(b,c),(a,a) \\right}$ and ${R}_{2}=\\left{ (a,b),(b,a),(c,c),(c,a),(a,a),(b,b),(a,c) \\right}$ . Then",
     "images": [],
     "options": [
       "${R}_{1}$ is not symmetric but it is transitive",
@@ -52867,7 +46674,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_91",
     "number": "91",
     "type": "mcq",
-    "text": "Let $N$ denote the set of all natural numbers. Define two binary relations on $N$ as ${R}_{1}={(x,y)\\in N\\times N:2x+y=10}$ and ${R}_{2}={(x,y)\\in N\\times N:x+2y=10}$ . Then :",
+    "text": "Let $N$ denote the set of all natural numbers. Define two binary relations on $N$ as ${R}_{1}=\\left{ (x,y)\\in N\\times N:2x+y=10 \\right}$ and ${R}_{2}=\\left{ (x,y)\\in N\\times N:x+2y=10 \\right}$ . Then :",
     "images": [],
     "options": [
       "Both ${R}_{1}$ and ${R}_{2}$ are symmetric relations",
@@ -52886,7 +46693,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_92",
     "number": "92",
     "type": "mcq",
-    "text": "Let $P$ be the relation defined on the set of all real numbers such that $P= \\left( (a,b):{sec}^{2}a-{tan}^{2}b=1 \\right)$ . Then $P$ is",
+    "text": "Let $P$ be the relation defined on the set of all real numbers such that $P= \\left{ (a,b):{sec}^{2}a-{tan}^{2}b=1 \\right}$ . Then $P$ is",
     "images": [],
     "options": [
       "reflexive and symmetric but not transitive",
@@ -52905,13 +46712,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_93",
     "number": "93",
     "type": "mcq",
-    "text": "Let $R={(3,3),(5,5),(9,9),(12,12),(5,12),(3,9)$ , $(3,12),(3,5)}$ be a relation on the set $A={3,5,9,12}$ . Then, $R$ is",
+    "text": "Let $R=\\left{ (3,3),(5,5),(9,9),(12,12),(5,12),(3,9)$ , $(3,12),(3,5) \\right}$ be a relation on the set $A=\\left{ 3,5,9,12 \\right}$ . Then, $R$ is",
     "images": [],
     "options": [
       "reflexive, symmetric but not transitive",
       "symmetric, transitive but not reflexive",
       "an equivalence relation",
-      "reflexive, transitive but not symmetric (Online 2013)"
+      "reflexive, transitive but not symmetric"
     ],
     "correct": "d",
     "chapter": "Sets, Relations And Functions",
@@ -52943,7 +46750,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_95",
     "number": "95",
     "type": "mcq",
-    "text": "Let $X={1,2,3,4,5}$ . The number of different ordered pairs ( $Y,Z$ ) that can be formed such that $Y\\subseteq X,Z\\subseteq X$ and $Y\\cap Z$ is empty is",
+    "text": "Let $X=\\left{ 1,2,3,4,5 \\right}$ . The number of different ordered pairs ( $Y,Z$ ) that can be formed such that $Y\\subseteq X,Z\\subseteq X$ and $Y\\cap Z$ is empty is",
     "images": [],
     "options": [
       "${2}^{5}$",
@@ -52962,7 +46769,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_96",
     "number": "96",
     "type": "mcq",
-    "text": "Let $R$ be the set of real numbers. Statement-1: $A={(x,y)\\in R\\times R:y-x$ is an integer $}$ is an equivalence relation on $R$ . Statement-2: $B={(x,y)\\in R\\times R:x=\\alpha y$ for some rational number $\\alpha }$ is an equivalence relation on $R$ .",
+    "text": "Let $R$ be the set of real numbers. \nStatement-1: $A=\\left{ (x,y)\\in R\\times R:y-x$ is an integer $ \\right}$ is an equivalence relation on $R$ . Statement-2: $B={(x,y)\\in R\\times R:x=\\alpha y$ for some rational number $\\alpha }$ is an equivalence relation on $R$ .",
     "images": [],
     "options": [
       "Statement-1 is true, Statement-2 is false.",
@@ -52981,7 +46788,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_97",
     "number": "97",
     "type": "mcq",
-    "text": "Consider the following relations: $R={(x,y)∣x,y$ are real numbers and $x=wy$ for some rational number $w}$ ; $S= \\left( \\left( \\left( \\frac{m}{n} , \\frac{p}{q} \\right) \\right) m,n,p \\right)$ and $q$ are integers such that $n,q\\neq 0$ and $qm=pn}$ . Then",
+    "text": "Consider the following relations: $R=\\left{ (x,y)∣x,y$ are real numbers and $x=wy$ for some rational number $w \\right}$ ; $S= \\left{ \\left( \\frac{m}{n} , \\frac{p}{q} \\right) \\right| m,n,p$ and $q$ are integers such that $n,q\\neq 0$ and $qm=pn}$ . Then",
     "images": [],
     "options": [
       "$R$ is an equivalence relation but $S$ is not an equivalence relation",
@@ -53000,7 +46807,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_98",
     "number": "98",
     "type": "mcq",
-    "text": "Let $R$ be the real line. Consider the following subsets of the plane $\\times R$ : $S={(x,y):y=x+1$ and $0<x<2}$ $T={(x,y):x-y$ is an integer $}$ . Which one of the following is true?",
+    "text": "Let $R$ be the real line. Consider the following subsets of the plane $\\times R$ : $S=\\left{ (x,y):y=x+1$ and $0<x<2 \\right}$ $T=\\left{ (x,y):x-y$ is an integer $ \\right}$ . Which one of the following is true?",
     "images": [],
     "options": [
       "$T$ is an equivalence relation on $R$ but $S$ is not",
@@ -53019,7 +46826,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_99",
     "number": "99",
     "type": "mcq",
-    "text": "Let $W$ denote the words in the English dictionary. Define the relation $R$ by : $R={(x,y)\\in W\\times W∣$ the words $x$ and $y$ have at least one letter in common}. Then $R$ is",
+    "text": "Let $W$ denote the words in the English dictionary. Define the relation $R$ by : $R=\\right{ (x,y)\\in W\\times W∣$ the words $x$ and $y$ have at least one letter in common}. Then $R$ is",
     "images": [],
     "options": [
       "not reflexive, symmetric and transitive",
@@ -53038,7 +46845,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_100",
     "number": "100",
     "type": "mcq",
-    "text": "Let $R={(3,3),(6,6),(9,9),(12,12),(6,12),(3,9)$ , $(3,12),(3,6)}$ be a relation on the set $A={3,6,9,12}$ . The relation is",
+    "text": "Let $R=\\right{ (3,3),(6,6),(9,9),(12,12),(6,12),(3,9)$ , $(3,12),(3,6) \\right}$ be a relation on the set $A=\\left{ 3,6,9,12 \\right}$ . The relation is",
     "images": [],
     "options": [
       "reflexive and symmetric only",
@@ -53057,7 +46864,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_101",
     "number": "101",
     "type": "mcq",
-    "text": "Let $R={(1,3),(4,2),(2,4),(2,3),(3,1)}$ be a relation on the set $A={1,2,3,4}$ . The relation $R$ is",
+    "text": "Let $R=\\right{ (1,3),(4,2),(2,4),(2,3),(3,1) \\right}$ be a relation on the set $A=\\left{ 1,2,3,4 \\right}$ . The relation $R$ is",
     "images": [],
     "options": [
       "not symmetric",
@@ -53310,7 +47117,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_118",
     "number": "118",
     "type": "mcq",
-    "text": "If the domain of the function $f(x)={log}_{7} \\left( 1-{log}_{4} \\right)$ $\\left( \\left( {x}^{2}-9x+18 \\right) \\right)$ is $(\\alpha ,\\beta )\\cup (\\gamma ,δ)$ , then $\\alpha +\\beta +\\gamma +δ$ is equal to",
+    "text": "If the domain of the function $f(x)={log}_{7} \\left( 1-{log}_{4}$ $\\left( {x}^{2}-9x+18 \\right) \\right)$ is $(\\alpha ,\\beta )\\cup (\\gamma ,δ)$ , then $\\alpha +\\beta +\\gamma +δ$ is equal to",
     "images": [],
     "options": [
       "18",
@@ -53367,7 +47174,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_121",
     "number": "121",
     "type": "mcq",
-    "text": "Consider the sets $A= \\left( (x,y)\\in R\\times R:{x}^{2}+{y}^{2}=25 \\right)$ $B= \\left( (x,y)\\in R\\times R:{x}^{2}+9{y}^{2}=144 \\right) ,C={(x,y)\\in Z$ $\\left( \\times Z:{x}^{2}+{y}^{2}\\leq 4 \\right)$ and $D=A\\cap B$ . The total number of one -one functions from the set $D$ to the set $C$ is:",
+    "text": "Consider the sets $A= \\left{ (x,y)\\in R\\times R:{x}^{2}+{y}^{2}=25 \\right}$ $B= \\left( (x,y)\\in R\\times R:{x}^{2}+9{y}^{2}=144 \\right} ,C=\\left{ (x,y)\\in Z\\times Z:{x}^{2}+{y}^{2}\\leq 4 \\right}$ and $D=A\\cap B$ . The total number of one -one functions from the set $D$ to the set $C$ is:",
     "images": [],
     "options": [
       "18290",
@@ -53405,7 +47212,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_123",
     "number": "123",
     "type": "mcq",
-    "text": "Let $A={1,2,3,4}$ and $B={1,4,9,16}$ . Then the number of many-one functions $f:A\\rightarrow B$ such that $I$ $\\in f(A)$ is equal to:",
+    "text": "Let $A=\\left{ 1,2,3,4 \\right}$ and $B=\\left{ 1,4,9,16 \\right}$ . Then the number of many-one functions $f:A\\rightarrow B$ such that $I$ $\\in f(A)$ is equal to:",
     "images": [],
     "options": [
       "163",
@@ -53496,25 +47303,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_sets_relations_and_functions_128",
-    "number": "128",
-    "type": "mcq",
-    "text": "The sum of all local minimum values of the function $f(x)= \\left( \\begin{bmatrix} 1-2x, & x2, \\end{bmatrix} \\right)$ is",
-    "images": [],
-    "options": [
-      "$\\frac{131}{72}$",
-      "$\\frac{171}{72}$",
-      "$\\frac{167}{72}$",
-      "$\\frac{157}{72}$"
-    ],
-    "correct": "d",
-    "chapter": "Sets, Relations And Functions",
-    "topic": "Functions",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Sets, Relations And Functions\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
   {
     "id": "jee_mains_math_sets_relations_and_functions_129",
     "number": "129",
@@ -53538,7 +47327,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_130",
     "number": "130",
     "type": "mcq",
-    "text": "Let $f:[0,3]\\rightarrow A$ be defined by $f(x)=2{x}^{3}-15{x}^{2}+36x+$ 7 and $g:[0,\\infty )\\rightarrow B$ be defined by $g(x)= \\frac{{x}^{2025}}{{x}^{2025}+1}$ . If both the functions are onto and $S={x\\in Z:x\\in A$ or $x\\in B}$ , then $n(S)$ is equal to :",
+    "text": "Let $f:[0,3]\\rightarrow A$ be defined by $f(x)=2{x}^{3}-15{x}^{2}+36x+$ 7 and $g:[0,\\infty )\\rightarrow B$ be defined by $g(x)= \\frac{{x}^{2025}}{{x}^{2025}+1}$ . If both the functions are onto and $S=\\left{ x\\in Z:x\\in A$ or $x\\in B \\right}$ , then $n(S)$ is equal to :",
     "images": [],
     "options": [
       "36",
@@ -53595,7 +47384,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_133",
     "number": "133",
     "type": "mcq",
-    "text": "Let $A={1,3,7,9,11}$ and $B={2,4,5,7,8,10,12}$ . Then the total number of one-one maps $f:A\\rightarrow B$ , such that $f(1)+f(3)=14$ , is :",
+    "text": "Let $A=\\left{ 1,3,7,9,11 \\right}$ and $B=\\left{ 2,4,5,7,8,10,12 \\right}$ . Then the total number of one-one maps $f:A\\rightarrow B$ , such that $f(1)+f(3)=14$ , is :",
     "images": [],
     "options": [
       "180",
@@ -53614,7 +47403,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_134",
     "number": "134",
     "type": "mcq",
-    "text": "Let $f,g:R\\rightarrow R$ be defined as: $f(x)=|x-1|$ and $g(x)= \\left( \\begin{bmatrix} {e}^{x}, & x\\geq 0 \\\\ x+1, & x\\leq 0 \\end{bmatrix} \\right)$ . Then the function $f(g(x))$ is",
+    "text": "Let $f,g:R\\rightarrow R$ be defined as: $f(x)=|x-1|$ and $g(x)= \\left{ {e}^{x}, & x\\geq 0 \\\\ x+1, & x\\leq 0$ . Then the function $f(g(x))$ is",
     "images": [],
     "options": [
       "onto but not one-one.",
@@ -53655,10 +47444,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Let $f(x)= \\frac{1}{7-sin5x}$ be a function defined on $R$ . Then the range of the function $f(x)$ is equal to:",
     "images": [],
     "options": [
-      "$\\left( \\frac{1}{7} , \\frac{1}{5} \\right)$",
-      "$\\left( \\frac{1}{7} , \\frac{1}{6} \\right)$",
-      "$\\left( \\frac{1}{8} , \\frac{1}{6} \\right)$",
-      "$\\left( \\frac{1}{8} , \\frac{1}{5} \\right)$"
+      "$\\left[ \\frac{1}{7} , \\frac{1}{5} \\right]$",
+      "$\\left[ \\frac{1}{7} , \\frac{1}{6} \\right]$",
+      "$\\left[ \\frac{1}{8} , \\frac{1}{6} \\right]$",
+      "$\\left[ \\frac{1}{8} , \\frac{1}{5} \\right]$"
     ],
     "correct": "c",
     "chapter": "Sets, Relations And Functions",
@@ -53671,7 +47460,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_sets_relations_and_functions_137",
     "number": "137",
     "type": "mcq",
-    "text": "Let $[t]$ be the greatest integer less than or equal to $t$ . Let $A$ be the set of all prime factors of 2310 and $f:A\\rightarrow Z$ be the function $f(x)= \\left( {log}_{2} \\left( {x}^{2}+ \\left( \\frac{{x}^{3}}{5} \\right) \\right) \\right)$ . The number of one-to-one functions from $A$ to the range of $f$ is",
+    "text": "Let $[t]$ be the greatest integer less than or equal to $t$ . Let $A$ be the set of all prime factors of 2310 and $f:A\\rightarrow Z$ be the function $f(x)= \\left[ {log}_{2} \\left( {x}^{2}+ \\left[ \\frac{{x}^{3}}{5} \\right] \\right) \\right]$ . The number of one-to-one functions from $A$ to the range of $f$ is",
     "images": [],
     "options": [
       "25",
@@ -55215,6 +49004,14 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
+
+
+
+
+
+
+
+
   {
     "id": "jee_mains_math_statistics_1",
     "number": "1",
@@ -55234,25 +49031,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_statistics_2",
-    "number": "2",
-    "type": "mcq",
-    "text": "Let $M$ denote the median of the following frequency distribution Class$0-44-88-1212-1616-20$Frequency391086 Then 20 M is equal to",
-    "images": [],
-    "options": [
-      "416",
-      "52",
-      "208",
-      "104"
-    ],
-    "correct": "c",
-    "chapter": "Statistics",
-    "topic": "Measures Of Central Tendency",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Statistics\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
+  
   {
     "id": "jee_mains_math_statistics_3",
     "number": "3",
@@ -55310,25 +49089,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_statistics_6",
-    "number": "6",
-    "type": "mcq",
-    "text": "If for some $x\\in R$ , the frequency distribution of the marks obtained by 20 students in a test is : Marks2357Frequency$(x+1{)}^{2}2x-5{x}^{2}-3xx$ then the mean of the marks is",
-    "images": [],
-    "options": [
-      "3.0",
-      "2.5",
-      "2.8",
-      "3.2"
-    ],
-    "correct": "c",
-    "chapter": "Statistics",
-    "topic": "Measures Of Central Tendency",
-    "solution": "<p><strong>Ans: c</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Statistics\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
+  
   {
     "id": "jee_mains_math_statistics_7",
     "number": "7",
@@ -55807,44 +49568,8 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
-  {
-    "id": "jee_mains_math_statistics_34",
-    "number": "34",
-    "type": "mcq",
-    "text": "The frequency distribution of the age of students in a class of 40 students is given below. Age151617181920No. of students58512$xy$ If the mean deviation about the median is 1.25 , then $4x+5y$ is equal to :",
-    "images": [],
-    "options": [
-      "43",
-      "44",
-      "46",
-      "47"
-    ],
-    "correct": "b",
-    "chapter": "Statistics",
-    "topic": "Measures Of Dispersion",
-    "solution": "<p><strong>Ans: b</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Statistics\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
-  {
-    "id": "jee_mains_math_statistics_35",
-    "number": "35",
-    "type": "mcq",
-    "text": "If the variance of the frequency distribution $xc2c3c4c5c6cf$211111 is 160 , then the value of $c\\in N$ is",
-    "images": [],
-    "options": [
-      "6",
-      "8",
-      "5",
-      "7"
-    ],
-    "correct": "d",
-    "chapter": "Statistics",
-    "topic": "Measures Of Dispersion",
-    "solution": "<p><strong>Ans: d</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Statistics\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Medium"
-  },
+  
+  
   {
     "id": "jee_mains_math_statistics_36",
     "number": "36",
@@ -55978,25 +49703,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Easy"
   },
-  {
-    "id": "jee_mains_math_statistics_43",
-    "number": "43",
-    "type": "mcq",
-    "text": "Let $\\mu$ be the mean and $\\sigma$ be the standard deviation of the distribution ${x}_{i}$012345${f}_{i}k+22k{k}^{2}-1{k}^{2}-1{k}^{2}+1k-3$ where $∑{f}_{i}=62$ . If $[x]$ denotes the greatest integer $\\leq x$ , then $\\left( {\\mu }^{2}+{\\sigma }^{2} \\right)$ is equal to",
-    "images": [],
-    "options": [
-      "8",
-      "6",
-      "9",
-      "7"
-    ],
-    "correct": "a",
-    "chapter": "Statistics",
-    "topic": "Measures Of Dispersion",
-    "solution": "<p><strong>Ans: a</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Statistics\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  },
+  
   {
     "id": "jee_mains_math_statistics_44",
     "number": "44",
@@ -56457,7 +50164,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_statistics_68",
     "number": "68",
     "type": "mcq",
-    "text": "Let $X={x\\in N:1\\leq x\\leq 17}$ and $Y={ax+b:x\\in X$ and $a,b\\in R,a>0}$ . If mean and variance of elements of $Y$ are 17 and 216 respectively then $a+b$ is equal to",
+    "text": "Let $X=\\left{ x\\in N:1\\leq x\\leq 17 \\right}$ and $Y=\\left{ ax+b:x\\in X$ and $a,b\\in R,a>0 \\right}$ . If mean and variance of elements of $Y$ are 17 and 216 respectively then $a+b$ is equal to",
     "images": [],
     "options": [
       "7",
@@ -56476,7 +50183,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_statistics_69",
     "number": "69",
     "type": "mcq",
-    "text": "For the frequency distribution : Variate $(x):{x}_{1} {x}_{2} {x}_{3}…..{x}_{15}$ Frequency $(f): \\begin{bmatrix} {f}_{1} & {f}_{2} & {f}_{3}…..{f}_{15} \\end{bmatrix}$ where $00$ , the standard deviation cannot be the standard deviation cannot be",
+    "text": "For the frequency distribution : Variate $(x):{x}_{1} {x}_{2} {x}_{3}…..{x}_{15}$ Frequency $(f): {f}_{1} & {f}_{2} & {f}_{3}…..{f}_{15}$ where $00$ , the standard deviation cannot be the standard deviation cannot be",
     "images": [],
     "options": [
       "4",
@@ -56742,7 +50449,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_statistics_83",
     "number": "83",
     "type": "mcq",
-    "text": "students of a class have an average height 150 cm and variance $18{cm}^{2}$ . A new student, whose height is 156 cm , joined them. The variance (in ${cm}^{2}$ ) of the height of these six students is",
+    "text": "5 students of a class have an average height 150 cm and variance $18{cm}^{2}$ . A new student, whose height is 156 cm , joined them. The variance (in ${cm}^{2}$ ) of the height of these six students is",
     "images": [],
     "options": [
       "22",
@@ -57008,7 +50715,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_statistics_98",
     "number": "98",
     "type": "mcq",
-    "text": "Let $\\vec{x} ,M$ and ${\\sigma }^{2}$ be respectively the mean, mode and variance of $n$ observations ${x}_{1},{x}_{2},…,{x}_{n}$ and ${d}_{i}=-{x}_{i}-a,i=1,2,…,n$ , where $a$ is any number. Statement 1 : Variance of ${d}_{1},{d}_{2},….,{d}_{n}$ is ${\\sigma }^{2}$ . Statement 2 : Mean and mode of ${d}_{1},{d}_{2},…,{d}_{n}$ are $- \\vec{x} -a$ and $-M-a$ , respectively",
+    "text": "Let $\\vec{x} ,M$ and ${\\sigma }^{2}$ be respectively the mean, mode and variance of $n$ observations ${x}_{1},{x}_{2},…,{x}_{n}$ and ${d}_{i}=-{x}_{i}-a,i=1,2,…,n$ , where $a$ is any number. \nStatement 1 : Variance of ${d}_{1},{d}_{2},….,{d}_{n}$ is ${\\sigma }^{2}$ . \nStatement 2 : Mean and mode of ${d}_{1},{d}_{2},…,{d}_{n}$ are $- \\vec{x} -a$ and $-M-a$ , respectively",
     "images": [],
     "options": [
       "Statement 1 and Statement 2 are both false",
@@ -57046,7 +50753,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_statistics_100",
     "number": "100",
     "type": "mcq",
-    "text": "Let ${x}_{1},{x}_{2},…,{x}_{n}$ be $n$ observations, and let $\\vec{x}$ be their arithmetic mean and ${\\sigma }^{2}$ be their variance. Statement 1: Variance of $2{x}_{1},2{x}_{2},….,2{x}_{n}$ is $4{\\sigma }^{2}$ . Statement 2 : Arithmetic mean of $2{x}_{1},2{x}_{2},….,2{x}_{n}$ is $4x$ .",
+    "text": "Let ${x}_{1},{x}_{2},…,{x}_{n}$ be $n$ observations, and let $\\vec{x}$ be their arithmetic mean and ${\\sigma }^{2}$ be their variance. \nStatement 1: Variance of $2{x}_{1},2{x}_{2},….,2{x}_{n}$ is $4{\\sigma }^{2}$ . \nStatement 2 : Arithmetic mean of $2{x}_{1},2{x}_{2},….,2{x}_{n}$ is $4x$ .",
     "images": [],
     "options": [
       "Statement 1 is true, Statement 2 is true; Statement 2 is not a correct explanation for Statement 1.",
@@ -57084,7 +50791,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_statistics_102",
     "number": "102",
     "type": "mcq",
-    "text": "Statement 1 : The variance of first $n$ odd natural numbers is $\\frac{{n}^{2}-1}{3}$ . Statement 2: The sum of first $n$ odd natural numbers is ${n}^{2}$ and the sum of squares of first $n$ odd natural numbers is $\\frac{n \\left( 4{n}^{2}+1 \\right)}{3}$ .",
+    "text": "Statement 1 : The variance of first $n$ odd natural numbers is $\\frac{{n}^{2}-1}{3}$ . \nStatement 2: The sum of first $n$ odd natural numbers is ${n}^{2}$ and the sum of squares of first $n$ odd natural numbers is $\\frac{n \\left( 4{n}^{2}+1 \\right)}{3}$ .",
     "images": [],
     "options": [
       "Statement 1 is true, Statement 2 is false.",
@@ -57141,7 +50848,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_statistics_105",
     "number": "105",
     "type": "mcq",
-    "text": "Statement-1: The variance of first $n$ even natural numbers is $\\frac{{n}^{2}-1}{4}$ . Statement-2 : The sum of first $n$ natural numbers is $\\frac{n(n+1)}{2}$ and the sum of squares of first $n$ natural numbers is $\\frac{n(n+1)(2n+1)}{6}$ .",
+    "text": "Statement-1: The variance of first $n$ even natural numbers is $\\frac{{n}^{2}-1}{4}$ . \nStatement-2 : The sum of first $n$ natural numbers is $\\frac{n(n+1)}{2}$ and the sum of squares of first $n$ natural numbers is $\\frac{n(n+1)(2n+1)}{6}$ .",
     "images": [],
     "options": [
       "Statement 1 is true, Statement 2 is true; Statement 2 is not a correct explanation for Statement 1.",
@@ -57606,6 +51313,14 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
+
+
+
+
+
+
+
+  ///
   {
     "id": "jee_mains_math_three_dimensional_geometry_1",
     "number": "1",
@@ -57629,7 +51344,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_2",
     "number": "2",
     "type": "mcq",
-    "text": "Let $A(x,y,z)$ be a point in $xy$ -plane, which is equidistant from three points $(0,3,2),(2,0,3)$ and $(0,0,1)$ . Let $B=(1,4,-1)$ and $C=(2,0,-2)$ . Then among the statements $(S1):△ABC$ is an isosceles right angled triangle, and (S2) : the area of $△ABC$ is $\\frac{9 \\sqrt{2}}{2}$ .",
+    "text": "Let $A(x,y,z)$ be a point in $xy$ -plane, which is equidistant from three points $(0,3,2),(2,0,3)$ and $(0,0,1)$ . Let $B=(1,4,-1)$ and $C=(2,0,-2)$ . Then among the statements \n$(S1):△ABC$ is an isosceles right angled triangle, and \n(S2) : the area of $△ABC$ is $\\frac{9 \\sqrt{2}}{2}$ .",
     "images": [],
     "options": [
       "only (S1) is true",
@@ -57847,7 +51562,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_14",
     "number": "14",
     "type": "mcq",
-    "text": "The line ${L}_{1}$ is parallel to the vector $\\vec{a} =-3 \\vec{i} +2 \\vec{j} +4 \\vec{k}$ and passes through the point ( $7,6,2$ ) and the line ${L}_{2}$ is parallel to the vector $\\vec{b} =2 \\vec{i} + \\vec{j} +3 \\vec{k}$ and passes through the point ( $5,3,4$ ). The shortest distance between the lines ${L}_{1}$ and ${L}_{2}$ is :",
+    "text": "The line ${L}_{1}$ is parallel to the vector $\\vec{a} =-3 \\hat{i} +2 \\hat{j} +4 \\hat{k}$ and passes through the point ( $7,6,2$ ) and the line ${L}_{2}$ is parallel to the vector $\\vec{b} =2 \\hat{i} + \\hat{j} +3 \\hat{k}$ and passes through the point ( $5,3,4$ ). The shortest distance between the lines ${L}_{1}$ and ${L}_{2}$ is :",
     "images": [],
     "options": [
       "$\\frac{23}{\\sqrt{38}}$",
@@ -57904,7 +51619,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_17",
     "number": "17",
     "type": "mcq",
-    "text": "Let a line passing through the point $(4,1,0)$ intersect the line ${L}_{1}: \\frac{x-1}{2} = \\frac{y-2}{3} = \\frac{z-3}{4}$ at the point $A(\\alpha ,\\beta ,\\gamma )$ and the line ${L}_{2}:x-6={y}^{'}=-z+4$ at the point $B(a,b,c)$ . Then $\\left( \\begin{bmatrix} 1 & 0 & 1 \\\\ \\alpha & \\beta & \\gamma \\\\ a & b & c \\end{bmatrix} \\right)$ is equal to",
+    "text": "Let a line passing through the point $(4,1,0)$ intersect the line ${L}_{1}: \\frac{x-1}{2} = \\frac{y-2}{3} = \\frac{z-3}{4}$ at the point $A(\\alpha ,\\beta ,\\gamma )$ and the line ${L}_{2}:x-6={y}^{'}=-z+4$ at the point $B(a,b,c)$ . Then $\\left| 1 & 0 & 1 \\\\ \\alpha & \\beta & \\gamma \\\\ a & b & c \\right|$ is equal to",
     "images": [],
     "options": [
       "12",
@@ -57961,7 +51676,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_20",
     "number": "20",
     "type": "mcq",
-    "text": "Let $A$ and $B$ be two distinct points on the line $L: \\frac{x-6}{3} = \\frac{y-7}{2} = \\frac{z-7}{-2}$ . Both $A$ and $B$ are at a distance $2 \\sqrt{17}$ from the foot of perpendicular drawn from the point $(1,2,3)$ on the line $L$ . If $O$ is the origin, then $\\vec{OA} ⋅ \\vec{OB}$ is equal to",
+    "text": "Let $A$ and $B$ be two distinct points on the line $L: \\frac{x-6}{3} = \\frac{y-7}{2} = \\frac{z-7}{-2}$ . Both $A$ and $B$ are at a distance $2 \\sqrt{17}$ from the foot of perpendicular drawn from the point $(1,2,3)$ on the line $L$ . If $O$ is the origin, then $\\overright{OA} ⋅ \\overright{OB}$ is equal to",
     "images": [],
     "options": [
       "49",
@@ -57999,7 +51714,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_22",
     "number": "22",
     "type": "mcq",
-    "text": "Let the values of $p$ , for which the shortest distance between the lines $\\frac{x+1}{3} = \\frac{y}{4} = \\frac{z}{5}$ and $\\vec{r} =(p \\vec{i} +2 \\vec{j} + \\vec{k} )+\\lambda (2 \\vec{i} +3 \\vec{j} +4 \\vec{k} )$ is $\\frac{1}{\\sqrt{6}}$ , be $a$ , $b$ , $(a<b)$ . Then the length of the latus rectum of the ellipse $\\frac{{x}^{2}}{{a}^{2}} + \\frac{{y}^{2}}{{b}^{2}} =1$ is :",
+    "text": "Let the values of $p$ , for which the shortest distance between the lines $\\frac{x+1}{3} = \\frac{y}{4} = \\frac{z}{5}$ and $\\vec{r} =(p \\hat{i} +2 \\hat{j} + \\hat{k} )+\\lambda (2 \\hat{i} +3 \\hat{j} +4 \\hat{k} )$ is $\\frac{1}{\\sqrt{6}}$ , be $a$ , $b$ , $(a<b)$ . Then the length of the latus rectum of the ellipse $\\frac{{x}^{2}}{{a}^{2}} + \\frac{{y}^{2}}{{b}^{2}} =1$ is :",
     "images": [],
     "options": [
       "9",
@@ -58056,7 +51771,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_25",
     "number": "25",
     "type": "mcq",
-    "text": "If the equation of the line passing through the point $\\left( 0,- \\frac{1}{2} ,0 \\right)$ and perpendicular to the lines $\\vec{r} =\\lambda ( \\vec{i} +a \\vec{j} +b \\vec{k} )$ and $\\vec{r} =( \\vec{i} - \\vec{j} -6 \\vec{k} )+\\mu (-b \\vec{i} +a \\vec{j} +5 \\vec{k} )$ is $\\frac{x-1}{-2} = \\frac{y+4}{d} = \\frac{z-c}{-4}$ , then $a+b+c+d$ is equal to :",
+    "text": "If the equation of the line passing through the point $\\left( 0,- \\frac{1}{2} ,0 \\right)$ and perpendicular to the lines $\\vec{r} =\\lambda ( \\hat{i} +a \\hat{j} +b \\hat{k} )$ and $\\vec{r} =( \\hat{i} - \\hat{j} -6 \\hat{k} )+\\mu (-b \\hat{i} +a \\hat{j} +5 \\hat{k} )$ is $\\frac{x-1}{-2} = \\frac{y+4}{d} = \\frac{z-c}{-4}$ , then $a+b+c+d$ is equal to :",
     "images": [],
     "options": [
       "12",
@@ -58119,7 +51834,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$\\left( - \\frac{5}{3} ,-7,1 \\right)$",
       "$\\left( 2,3, \\frac{1}{3} \\right)$",
       "$\\left( \\frac{14}{3} ,-3, \\frac{22}{3} \\right)$",
-      "$\\left( \\begin{bmatrix} 8 & 1, \\\\ 3 & 1 \\end{bmatrix} \\right)$"
+      "$\\left( 8 & 1, \\\\ 3 & 1 \\right)$"
     ],
     "correct": "c",
     "chapter": "Three Dimensional Geometry",
@@ -58151,7 +51866,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_30",
     "number": "30",
     "type": "mcq",
-    "text": "Let a line pass through two distinct points $P(-2,-1,3)$ and $Q$ , and be parallel to the vector $3 \\vec{i} +2 \\vec{j} +2 \\vec{k}$ . If the distance of the point $Q$ from the point $R(1,3,3)$ is 5 , then the square of the area of $△PQR$ is equal to:",
+    "text": "Let a line pass through two distinct points $P(-2,-1,3)$ and $Q$ , and be parallel to the vector $3 \\hat{i} +2 \\hat{j} +2 \\hat{k}$ . If the distance of the point $Q$ from the point $R(1,3,3)$ is 5 , then the square of the area of $△PQR$ is equal to:",
     "images": [],
     "options": [
       "136",
@@ -58284,7 +51999,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_37",
     "number": "37",
     "type": "mcq",
-    "text": "The square of the distance of the point $\\left( \\frac{15}{7} , \\frac{32}{7} ,7 \\right)$ from the line $\\frac{x+1}{3} = \\frac{y+3}{5} = \\frac{z+5}{7}$ in the direction of the vector $\\vec{i} +4 \\vec{j} +7 \\vec{k}$ is :",
+    "text": "The square of the distance of the point $\\left( \\frac{15}{7} , \\frac{32}{7} ,7 \\right)$ from the line $\\frac{x+1}{3} = \\frac{y+3}{5} = \\frac{z+5}{7}$ in the direction of the vector $\\hat{i} +4 \\hat{j} +7 \\hat{k}$ is :",
     "images": [],
     "options": [
       "66",
@@ -58303,7 +52018,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_38",
     "number": "38",
     "type": "mcq",
-    "text": "Let $A,B,C$ be three points in $xy$ -plane, whose position vector are given by $\\sqrt{3} \\vec{i} + \\vec{j} , \\vec{i} + \\sqrt{3} \\vec{j}$ and $a \\vec{i} +(1-a) \\vec{j}$ respectively with respect to the origin $O$ . If the distance of the point $C$ from the line bisecting the angle between the vectors $\\vec{OA}$ and $\\vec{OB}$ is $\\frac{9}{\\sqrt{2}}$ , then the sum of all the possible values of $a$ is :",
+    "text": "Let $A,B,C$ be three points in $xy$ -plane, whose position vector are given by $\\sqrt{3} \\hat{i} + \\hat{j} , \\hat{i} + \\sqrt{3} \\hat{j}$ and $a \\hat{i} +(1-a) \\hat{j}$ respectively with respect to the origin $O$ . If the distance of the point $C$ from the line bisecting the angle between the vectors $\\overright{OA}$ and $\\overright{OB}$ is $\\frac{9}{\\sqrt{2}}$ , then the sum of all the possible values of $a$ is :",
     "images": [],
     "options": [
       "1",
@@ -58322,7 +52037,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_39",
     "number": "39",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} + \\vec{k}$ and $\\vec{b} =2 \\vec{i} +7 \\vec{j} +3 \\vec{k}$ . Let ${L}_{1}: \\vec{r} =(- \\vec{i} +2 \\vec{j} + \\vec{k} )+\\lambda \\vec{a} ,\\lambda \\in R$ and ${L}_{2}: \\vec{r} =( \\vec{j} + \\vec{k} )+\\mu \\vec{b} ,\\mu \\in R$ be two lines. If the line ${L}_{3}$ passes through the point of intersection of ${L}_{1}$ and ${L}_{2}$ , and is parallel to $\\vec{a} + \\vec{b}$ , then ${L}_{3}$ passes through the point:",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} + \\hat{k}$ and $\\vec{b} =2 \\hat{i} +7 \\hat{j} +3 \\hat{k}$ . Let ${L}_{1}: \\vec{r} =(- \\hat{i} +2 \\hat{j} + \\hat{k} )+\\lambda \\vec{a} ,\\lambda \\in R$ and ${L}_{2}: \\vec{r} =( \\hat{j} + \\hat{k} )+\\mu \\vec{b} ,\\mu \\in R$ be two lines. If the line ${L}_{3}$ passes through the point of intersection of ${L}_{1}$ and ${L}_{2}$ , and is parallel to $\\vec{a} + \\vec{b}$ , then ${L}_{3}$ passes through the point:",
     "images": [],
     "options": [
       "$(2,8,5)$",
@@ -58379,7 +52094,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_42",
     "number": "42",
     "type": "mcq",
-    "text": "Let $P$ be the foot of the perpendicular from the point $(1,2,2)$ on the line $L: \\frac{x-1}{1} = \\frac{y+1}{-1} = \\frac{z-2}{2}$ . Let the line $\\vec{r} =(- \\vec{i} + \\vec{j} -2 \\vec{k} )+\\lambda ( \\vec{i} - \\vec{j} + \\vec{k} ),\\lambda \\in R,$ intersect the line $L$ at $Q$ . Then $2(PQ{)}^{2}$ is equal to :",
+    "text": "Let $P$ be the foot of the perpendicular from the point $(1,2,2)$ on the line $L: \\frac{x-1}{1} = \\frac{y+1}{-1} = \\frac{z-2}{2}$ . Let the line $\\vec{r} =(- \\hat{i} + \\hat{j} -2 \\hat{k} )+\\lambda ( \\hat{i} - \\hat{j} + \\hat{k} ),\\lambda \\in R,$ intersect the line $L$ at $Q$ . Then $2(PQ{)}^{2}$ is equal to :",
     "images": [],
     "options": [
       "25",
@@ -58550,7 +52265,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_51",
     "number": "51",
     "type": "mcq",
-    "text": "If the shortest distance between the lines ${L}_{1}: \\vec{r} =(2+\\lambda ) \\vec{i} +(1-3\\lambda ) \\vec{j} +(3+4\\lambda ) \\vec{k} ,\\lambda \\in R$ ${L}_{2}: \\vec{r} =2(1+\\mu ) \\vec{i} +3(1+\\mu ) \\vec{j} +(5+\\mu ) \\vec{k} ,\\mu \\in R$ is $\\frac{m}{\\sqrt{n}}$ , where $gcd(m,n)=1$ , then the value of $m+n$ equals",
+    "text": "If the shortest distance between the lines ${L}_{1}: \\vec{r} =(2+\\lambda ) \\hat{i} +(1-3\\lambda ) \\hat{j} +(3+4\\lambda ) \\hat{k} ,\\lambda \\in R$ ${L}_{2}: \\vec{r} =2(1+\\mu ) \\hat{i} +3(1+\\mu ) \\hat{j} +(5+\\mu ) \\hat{k} ,\\mu \\in R$ is $\\frac{m}{\\sqrt{n}}$ , where $gcd(m,n)=1$ , then the value of $m+n$ equals",
     "images": [],
     "options": [
       "384",
@@ -58816,7 +52531,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_65",
     "number": "65",
     "type": "mcq",
-    "text": "Let ${L}_{1}: \\vec{r} =( \\vec{i} - \\vec{j} +2 \\vec{k} )+\\lambda ( \\vec{i} - \\vec{j} +2 \\vec{k} ),\\lambda \\in R$ . ${L}_{2}: \\vec{r} =( \\vec{j} - \\vec{k} )+\\mu (3 \\vec{i} + \\vec{j} +p \\vec{k} ),\\mu \\in R$ , and ${L}_{3}: \\vec{r} =δ(l \\vec{i} +m \\vec{j} +n \\vec{k} ),δ\\in R$ . be three lines such that ${L}_{1}$ is perpendicular to ${L}_{2}$ and ${L}_{3}$ is perpendicular to both ${L}_{1}$ and ${L}_{2}$ . Then, the point which lies on ${L}_{3}$ is",
+    "text": "Let ${L}_{1}: \\vec{r} =( \\hat{i} - \\hat{j} +2 \\hat{k} )+\\lambda ( \\hat{i} - \\hat{j} +2 \\hat{k} ),\\lambda \\in R$ . ${L}_{2}: \\vec{r} =( \\hat{j} - \\hat{k} )+\\mu (3 \\hat{i} + \\hat{j} +p \\hat{k} ),\\mu \\in R$ , and ${L}_{3}: \\vec{r} =δ(l \\hat{i} +m \\hat{j} +n \\hat{k} ),δ\\in R$ . be three lines such that ${L}_{1}$ is perpendicular to ${L}_{2}$ and ${L}_{3}$ is perpendicular to both ${L}_{1}$ and ${L}_{2}$ . Then, the point which lies on ${L}_{3}$ is",
     "images": [],
     "options": [
       "$(1,-7,4)$",
@@ -58835,7 +52550,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_66",
     "number": "66",
     "type": "mcq",
-    "text": "The distance of the point $Q(0,2,-2)$ from the line passing through the point $P(5,-4,3)$ and perpendicular to the lines $\\vec{r} =(-3 \\vec{i} +2 \\vec{k} )+\\lambda (2 \\vec{i} +3 \\vec{j} +5 \\vec{k} ),\\lambda \\in R$ and $\\vec{r} =( \\vec{i} -2 \\vec{j} + \\vec{k} )+\\mu (- \\vec{i} +3 \\vec{j} +2 \\vec{k} ),\\mu \\in R$ is :",
+    "text": "The distance of the point $Q(0,2,-2)$ from the line passing through the point $P(5,-4,3)$ and perpendicular to the lines $\\vec{r} =(-3 \\hat{i} +2 \\hat{k} )+\\lambda (2 \\hat{i} +3 \\hat{j} +5 \\hat{k} ),\\lambda \\in R$ and $\\vec{r} =( \\hat{i} -2 \\hat{j} + \\hat{k} )+\\mu (- \\hat{i} +3 \\hat{j} +2 \\hat{k} ),\\mu \\in R$ is :",
     "images": [],
     "options": [
       "$\\sqrt{74}$",
@@ -58930,7 +52645,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_71",
     "number": "71",
     "type": "mcq",
-    "text": "Let $S$ be the set of all values of $\\lambda$ , for which the shortest distance between the lines $\\frac{x-\\lambda }{0} = \\frac{y-3}{4} = \\frac{z+6}{1}$ and $\\frac{x+\\lambda }{3} = \\frac{y}{-4} = \\frac{z-6}{0}$ is 13 . Then $8 \\left( {∑}_{\\lambda \\in S} \\lambda \\right)$ is equal to",
+    "text": "Let $S$ be the set of all values of $\\lambda$ , for which the shortest distance between the lines $\\frac{x-\\lambda }{0} = \\frac{y-3}{4} = \\frac{z+6}{1}$ and $\\frac{x+\\lambda }{3} = \\frac{y}{-4} = \\frac{z-6}{0}$ is 13 . Then $8 \\left| {∑}_{\\lambda \\in S} \\lambda \\right|$ is equal to",
     "images": [],
     "options": [
       "302",
@@ -59272,7 +52987,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_89",
     "number": "89",
     "type": "mcq",
-    "text": "Let the position vectors of two points $P$ and $Q$ be $3 \\vec{i} - \\vec{j} +2 \\vec{k}$ and $\\vec{i} +2 \\vec{j} -4 \\vec{k}$ , respectively. Let $R$ and $S$ be two points such that the direction ratios of lines $PR$ and $QS$ are $(4,-1,2)$ and $(-2,1,-2)$ , respectively. Let lines $PR$ and $QS$ intersect at $T$ . If the vector $\\vec{TA}$ is perpendicular to both $\\vec{PR}$ and $\\vec{QS}$ and the length of vector $\\vec{TA}$ is $\\sqrt{5}$ units, then the modulus of a position vector of $A$ is",
+    "text": "Let the position vectors of two points $P$ and $Q$ be $3 \\hat{i} - \\hat{j} +2 \\hat{k}$ and $\\vec{i} +2 \\vec{j} -4 \\vec{k}$ , respectively. Let $R$ and $S$ be two points such that the direction ratios of lines $PR$ and $QS$ are $(4,-1,2)$ and $(-2,1,-2)$ , respectively. Let lines $PR$ and $QS$ intersect at $T$ . If the vector $\\overright{TA}$ is perpendicular to both $\\overright{PR}$ and $\\overright{QS}$ and the length of vector $\\overright{TA}$ is $\\sqrt{5}$ units, then the modulus of a position vector of $A$ is",
     "images": [],
     "options": [
       "$\\sqrt{227}$",
@@ -59291,7 +53006,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_90",
     "number": "90",
     "type": "mcq",
-    "text": "If the foot of the perpendicular from point $(4,3,8)$ on the line ${L}_{1}: \\frac{x-a}{l} = \\begin{bmatrix} y-2 \\\\ 3 \\end{bmatrix} = \\frac{z-b}{4} ,l\\neq 0$ is $(3,5,7)$ , then the shortest distance between the line ${L}_{1}$ and line ${L}_{2}: \\frac{x-2}{3} = \\frac{y-4}{4} = \\frac{z-5}{5}$ is equal to",
+    "text": "If the foot of the perpendicular from point $(4,3,8)$ on the line ${L}_{1}: \\frac{x-a}{l} = y-2 \\\\ 3 = \\frac{z-b}{4} ,l\\neq 0$ is $(3,5,7)$ , then the shortest distance between the line ${L}_{1}$ and line ${L}_{2}: \\frac{x-2}{3} = \\frac{y-4}{4} = \\frac{z-5}{5}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{1}{\\sqrt{3}}$",
@@ -59367,7 +53082,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_94",
     "number": "94",
     "type": "mcq",
-    "text": "The lines $\\vec{r} =( \\vec{i} - \\vec{j} )+l(2 \\vec{i} + \\vec{k} )$ and $\\vec{r} =(2 \\vec{i} - \\vec{j} )+m( \\vec{i} + \\vec{j} - \\vec{k} )$",
+    "text": "The lines $\\vec{r} =( \\hat{i} - \\hat{j} )+l(2 \\hat{i} + \\hat{k} )$ and $\\vec{r} =(2 \\hat{i} - \\hat{j} )+m( \\hat{i} + \\hat{j} - \\hat{k} )$",
     "images": [],
     "options": [
       "do not intersect for any values of $l$ and $m$",
@@ -59598,10 +53313,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "A line in the 3 -dimensional space makes an angle $\\theta \\left( 0<\\theta \\leq \\frac{\\pi }{2} \\right)$ with both the $x$ and $y$ axes. Then the set of all values of $\\theta$ is the interval",
     "images": [],
     "options": [
-      "$\\left( 0, \\frac{\\pi }{4} \\right)$",
-      "$\\left( \\frac{\\pi }{6} , \\frac{\\pi }{3} \\right)$",
-      "$\\left( \\frac{\\pi }{4} , \\frac{\\pi }{2} \\right)$",
-      "$\\left( \\frac{\\pi }{3} , \\frac{\\pi }{2} \\right)$"
+      "$\\left( 0, \\frac{\\pi }{4} \\right]$",
+      "$\\left[ \\frac{\\pi }{6} , \\frac{\\pi }{3} \\right]$",
+      "$\\left[ \\frac{\\pi }{4} , \\frac{\\pi }{2} \\right]$",
+      "$\\left[ \\frac{\\pi }{3} , \\frac{\\pi }{2} \\right]$"
     ],
     "correct": "c",
     "chapter": "Three Dimensional Geometry",
@@ -59709,7 +53424,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_112",
     "number": "112",
     "type": "mcq",
-    "text": "Statement-1: The point $A(1,0,7)$ is the mirror image of the point $B(1,6,3)$ in the line $\\frac{x}{1} = \\frac{y-1}{2} = \\frac{z-2}{3}$ Statement-2 : The line : $\\frac{x}{1} = \\frac{y-1}{2} = \\frac{z-2}{3}$ bisects the line segment joining $A(1,0,7)$ and $B(1,6,3)$ .",
+    "text": "Statement-1: The point $A(1,0,7)$ is the mirror image of the point $B(1,6,3)$ in the line $\\frac{x}{1} = \\frac{y-1}{2} = \\frac{z-2}{3}$ \nStatement-2 : The line : $\\frac{x}{1} = \\frac{y-1}{2} = \\frac{z-2}{3}$ bisects the line segment joining $A(1,0,7)$ and $B(1,6,3)$ .",
     "images": [],
     "options": [
       "Statement-1 is true, Statement-2 is false.",
@@ -59865,7 +53580,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_121",
     "number": "121",
     "type": "numerical",
-    "text": "If the shortest distance between the lines $\\frac{x+2}{2} = \\frac{y+3}{3} = \\frac{z-5}{4}$ and $\\frac{x-3}{1} = \\frac{y-2}{-3} = \\frac{z+4}{2}$ is $\\frac{38}{3 \\sqrt{5}} k$ , and ${∫}_{0} \\left( {x}^{2} \\right) dx=\\alpha - \\sqrt{\\alpha }$ , where $[x]$ denotes the greatest integer function, then $6{\\alpha }^{3}$ is equal to _______________ -",
+    "text": "If the shortest distance between the lines $\\frac{x+2}{2} = \\frac{y+3}{3} = \\frac{z-5}{4}$ and $\\frac{x-3}{1} = \\frac{y-2}{-3} = \\frac{z+4}{2}$ is $\\frac{38}{3 \\sqrt{5}} k$ , and ${∫}_{0} \\left[ {x}^{2} \\right] dx=\\alpha - \\sqrt{\\alpha }$ , where $[x]$ denotes the greatest integer function, then $6{\\alpha }^{3}$ is equal to _______________ -",
     "images": [],
     "options": [],
     "correct": "48",
@@ -59963,7 +53678,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_128",
     "number": "128",
     "type": "numerical",
-    "text": "Let the line of the shortest distance between the lines ${L}_{1}: \\vec{r} =( \\vec{i} +2 \\vec{j} +3 \\vec{k} )+\\lambda ( \\vec{i} - \\vec{j} + \\vec{k} )$ and ${L}_{2}: \\vec{r} =(4 \\vec{i} +5 \\vec{j} +6 \\vec{k} )+\\mu ( \\vec{i} + \\vec{j} - \\vec{k} )$ intersect ${L}_{1}$ and ${L}_{2}$ at $P$ and $Q$ respectively. If $(\\alpha ,\\beta ,\\gamma )$ is the midpoint of the line segment $PQ$ , then $2(\\alpha +\\beta +\\gamma )$ is equal to ____________ .",
+    "text": "Let the line of the shortest distance between the lines ${L}_{1}: \\vec{r} =( \\hat{i} +2 \\hat{j} +3 \\hat{k} )+\\lambda ( \\hat{i} - \\hat{j} + \\hat{k} )$ and ${L}_{2}: \\vec{r} =(4 \\hat{i} +5 \\hat{j} +6 \\hat{k} )+\\mu ( \\hat{i} + \\hat{j} - \\vec{k} )$ intersect ${L}_{1}$ and ${L}_{2}$ at $P$ and $Q$ respectively. If $(\\alpha ,\\beta ,\\gamma )$ is the midpoint of the line segment $PQ$ , then $2(\\alpha +\\beta +\\gamma )$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "21",
@@ -60005,7 +53720,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_131",
     "number": "131",
     "type": "numerical",
-    "text": "Let $O$ be the origin, and $M$ and $N$ be the points on the lines $\\frac{x-5}{4} = \\frac{y-4}{1} = \\frac{z-5}{3}$ and $\\frac{x+8}{12} = \\frac{y+2}{5} = \\frac{z+11}{9}$ respectively such that $MN$ is the shortest distance between the given lines. Then $\\vec{OM} ⋅ \\vec{ON}$ is equal to ______________ -",
+    "text": "Let $O$ be the origin, and $M$ and $N$ be the points on the lines $\\frac{x-5}{4} = \\frac{y-4}{1} = \\frac{z-5}{3}$ and $\\frac{x+8}{12} = \\frac{y+2}{5} = \\frac{z+11}{9}$ respectively such that $MN$ is the shortest distance between the given lines. Then $\\overright{OM} ⋅ \\overright{ON}$ is equal to ______________ -",
     "images": [],
     "options": [],
     "correct": "9",
@@ -60089,7 +53804,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_137",
     "number": "137",
     "type": "numerical",
-    "text": "Let a line $l$ pass through the origin and be perpendicular to the lines, ${l}_{1}: \\vec{r} =( \\vec{i} -11 \\vec{j} -7 \\vec{k} )+\\lambda ( \\vec{i} +2 \\vec{j} +3 \\vec{k} ),\\lambda \\in R$ and ${l}_{2}: \\vec{r} =(- \\vec{i} + \\vec{k} )+\\mu (2 \\vec{i} +2 \\vec{j} + \\vec{k} ),\\mu \\in R$ . If $P$ is the point of intersection of $l$ and ${l}_{1}$ , and $Q(\\alpha ,\\beta ,\\gamma )$ is the foot of perpendicular from $P$ on ${l}_{2}$ , then $9(\\alpha +\\beta +\\gamma )$ is equal to ______________ .",
+    "text": "Let a line $l$ pass through the origin and be perpendicular to the lines, ${l}_{1}: \\vec{r} =( \\hat{i} -11 \\hat{j} -7 \\hat{k} )+\\lambda ( \\hat{i} +2 \\hat{j} +3 \\hat{k} ),\\lambda \\in R$ and ${l}_{2}: \\vec{r} =(- \\hat{i} + \\hat{k} )+\\mu (2 \\hat{i} +2 \\hat{j} + \\hat{k} ),\\mu \\in R$ . If $P$ is the point of intersection of $l$ and ${l}_{1}$ , and $Q(\\alpha ,\\beta ,\\gamma )$ is the foot of perpendicular from $P$ on ${l}_{2}$ , then $9(\\alpha +\\beta +\\gamma )$ is equal to ______________ .",
     "images": [],
     "options": [],
     "correct": "5",
@@ -60229,7 +53944,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_147",
     "number": "147",
     "type": "numerical",
-    "text": "If the shortest distance between the lines $\\vec{r} =(- \\vec{i} +3 \\vec{k} )+\\lambda ( \\vec{i} -a \\vec{j} )$ and $\\vec{r} =(- \\vec{j} +2 \\vec{k} )+\\mu ( \\vec{i} - \\vec{j} + \\vec{k} )$ is $\\sqrt{\\frac{2}{3}}$ , then the integral value of $a$ is equal to ______________ .",
+    "text": "If the shortest distance between the lines $\\vec{r} =(- \\hat{i} +3 \\hat{k} )+\\lambda ( \\hat{i} -a \\hat{j} )$ and $\\vec{r} =(- \\hat{j} +2 \\hat{k} )+\\mu ( \\hat{i} - \\hat{j} + \\hat{k} )$ is $\\sqrt{\\frac{2}{3}}$ , then the integral value of $a$ is equal to ______________ .",
     "images": [],
     "options": [],
     "correct": "2",
@@ -60285,7 +54000,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_three_dimensional_geometry_152",
     "number": "152",
     "type": "numerical",
-    "text": "A line ' $l$ ' passing through origin is perpendicular to the lines ${l}_{1}: \\vec{r} =(3+t) \\vec{i} +(-1+2t) \\vec{j} +(4+2t) \\vec{k}$ ${l}_{2}: \\vec{r} =(3+2s) \\vec{i} +(3+2s) \\vec{j} +(2+s) \\vec{k}$ If the co-ordinates of the point in the first octant on ' ${l}_{2}$ ' at a distance of $\\sqrt{17}$ from the point of intersection of ' $l$ ' and ' ${l}_{1}$ ' are ( $a,b,c$ ), then $18(a+b+c)$ is equal to___________ .",
+    "text": "A line ' $l$ ' passing through origin is perpendicular to the lines ${l}_{1}: \\vec{r} =(3+t) \\hat{i} +(-1+2t) \\hat{j} +(4+2t) \\hat{k}$ ${l}_{2}: \\vec{r} =(3+2s) \\hat{i} +(3+2s) \\hat{j} +(2+s) \\hat{k}$ If the co-ordinates of the point in the first octant on ' ${l}_{2}$ ' at a distance of $\\sqrt{17}$ from the point of intersection of ' $l$ ' and ' ${l}_{1}$ ' are ( $a,b,c$ ), then $18(a+b+c)$ is equal to___________ .",
     "images": [],
     "options": [],
     "correct": "44",
@@ -60437,11 +54152,19 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
+
+
+
+
+
+
+
+  ////
   {
     "id": "jee_mains_math_trigonometry_1",
     "number": "1",
     "type": "mcq",
-    "text": "Let $A= \\left( \\theta \\in [0,2\\pi ]:1+10Re \\left( \\frac{2cos\\theta +isin\\theta }{cos\\theta -3isin\\theta } \\right) =0 \\right)$ . Then ${∑}_{\\theta \\in A} {\\theta }^{2}$ is equal to",
+    "text": "Let $A= \\left{ \\theta \\in [0,2\\pi ]:1+10Re \\left( \\frac{2cos\\theta +isin\\theta }{cos\\theta -3isin\\theta } \\right) =0 \\right}$ . Then ${∑}_{\\theta \\in A} {\\theta }^{2}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{27}{4} {\\pi }^{2}$",
@@ -60479,7 +54202,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_3",
     "number": "3",
     "type": "mcq",
-    "text": "If ${∑}_{r=1}^{13} \\left( \\frac{1}{sin \\left( \\frac{\\pi }{4} +(r-1) \\frac{\\pi }{6} \\right) sin \\left( \\frac{\\pi }{4} + \\frac{r\\pi }{6} \\right)} \\right)$ $=a \\sqrt{3} +b,b\\in Z$ , then ${a}^{2}+{b}^{2}$ is equal to:",
+    "text": "If ${∑}_{r=1}^{13} \\left{ \\frac{1}{sin \\left( \\frac{\\pi }{4} +(r-1) \\frac{\\pi }{6} \\right) sin \\left( \\frac{\\pi }{4} + \\frac{r\\pi }{6} \\right)} \\right}$ $=a \\sqrt{3} +b,b\\in Z$ , then ${a}^{2}+{b}^{2}$ is equal to:",
     "images": [],
     "options": [
       "2",
@@ -60745,10 +54468,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_17",
     "number": "17",
     "type": "mcq",
-    "text": "The range of the function $\\begin{bmatrix} & f(x)={log}_{\\sqrt{5}} \\left( 3+cos \\left( \\frac{3\\pi }{4} +x \\right) +cos \\left( \\frac{\\pi }{4} +x \\right) \\right) \\\\ & \\left( +cos \\left( \\frac{\\pi }{4} -x \\right) -cos \\left( \\frac{3\\pi }{4} -x \\right) \\right) is \\end{bmatrix}$",
+    "text": "The range of the function $ f(x)={log}_{\\sqrt{5}} \\left( 3+cos \\left( \\frac{3\\pi }{4} +x \\right) +cos \\left( \\frac{\\pi }{4} +x \\right) +cos \\left( \\frac{\\pi }{4} -x \\right) -cos \\left( \\frac{3\\pi }{4} -x \\right) \\right) is \\end{bmatrix}$",
     "images": [],
     "options": [
-      "$\\left( \\frac{1}{\\sqrt{5}} , \\sqrt{5} \\right)$",
+      "$\\left[ \\frac{1}{\\sqrt{5}} , \\sqrt{5} \\right]$",
       "$[0,2]$",
       "$(0, \\sqrt{5} )$",
       "$[-2,2]$"
@@ -61087,7 +54810,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_35",
     "number": "35",
     "type": "mcq",
-    "text": "Consider the following two statements: Statement  : The value of $sin{120}^{∘}$ can be derived by taking $\\theta ={240}^{∘}$ in the equation $2sin \\frac{\\theta }{2} = \\sqrt{1+sin\\theta } - \\sqrt{1-sin\\theta }$ Statement  : The angles $A,B,C$ and $D$ of any quadrilateral $ABCD$ satisfy the equation $cos \\left( \\frac{1}{2} (A+C) \\right) +cos \\left( \\frac{1}{2} (B+D) \\right) =0$ Then the truth value of $p$ and $q$ are respectively",
+    "text": "Consider the following two statements: \nStatement  : The value of $sin{120}^{∘}$ can be derived by taking $\\theta ={240}^{∘}$ in the equation $2sin \\frac{\\theta }{2} = \\sqrt{1+sin\\theta } - \\sqrt{1-sin\\theta }$ \nStatement  : The angles $A,B,C$ and $D$ of any quadrilateral $ABCD$ satisfy the equation $cos \\left( \\frac{1}{2} (A+C) \\right) +cos \\left( \\frac{1}{2} (B+D) \\right) =0$ Then the truth value of $p$ and $q$ are respectively",
     "images": [],
     "options": [
       "$T,T$",
@@ -61428,7 +55151,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_54",
     "number": "54",
     "type": "mcq",
-    "text": "If $\\theta \\in \\left( - \\frac{7\\pi }{6} , \\frac{4\\pi }{3} \\right)$ , then the number of solutions of $\\sqrt{3} {cosec}^{2}\\theta -2( \\sqrt{3} -1)cosec\\theta -4=0$ , is equal to :",
+    "text": "If $\\theta \\in \\left[ - \\frac{7\\pi }{6} , \\frac{4\\pi }{3} \\right]$ , then the number of solutions of $\\sqrt{3} {cosec}^{2}\\theta -2( \\sqrt{3} -1)cosec\\theta -4=0$ , is equal to :",
     "images": [],
     "options": [
       "7",
@@ -61447,7 +55170,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_55",
     "number": "55",
     "type": "mcq",
-    "text": "The number of solutions of the equation $2x+3tanx=\\pi ,x\\in [-2\\pi ,2\\pi ]- \\left( \\pm \\frac{\\pi }{2} ,\\pm \\frac{3\\pi }{2} \\right)$ is",
+    "text": "The number of solutions of the equation $2x+3tanx=\\pi ,x\\in [-2\\pi ,2\\pi ]- \\left{ \\pm \\frac{\\pi }{2} ,\\pm \\frac{3\\pi }{2} \\right}$ is",
     "images": [],
     "options": [
       "4",
@@ -61466,7 +55189,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_56",
     "number": "56",
     "type": "mcq",
-    "text": "The number of solutions of the equation $(4- \\sqrt{3} )sinx-2 \\sqrt{3} {cos}^{2}x=- \\frac{4}{1+ \\sqrt{3}} ,x\\in \\left( -2\\pi , \\frac{5\\pi }{2} \\right)$ is",
+    "text": "The number of solutions of the equation $(4- \\sqrt{3} )sinx-2 \\sqrt{3} {cos}^{2}x=- \\frac{4}{1+ \\sqrt{3}} ,x\\in \\left[ -2\\pi , \\frac{5\\pi }{2} \\right]$ is",
     "images": [],
     "options": [
       "5",
@@ -61580,7 +55303,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_62",
     "number": "62",
     "type": "mcq",
-    "text": "Let $A= \\left( x\\in (0,\\pi )- \\left( \\frac{\\pi }{2} \\right) :{log}_{(2/\\pi )}|sinx|+{log}_{(2/\\pi )}|cosx|=2 \\right)$ and $B={x\\geq 0: \\sqrt{x} ( \\sqrt{x} -4)-3| \\sqrt{x} -2|+6=0}$ . Then $n(A\\cup B)$ is equal to:",
+    "text": "Let $A= \\left{ x\\in (0,\\pi )- \\left{ \\frac{\\pi }{2} \\right} :{log}_{(2/\\pi )}|sinx|+{log}_{(2/\\pi )}|cosx|=2 \\right}$ and $B=\\left{ x\\geq 0: \\sqrt{x} ( \\sqrt{x} -4)-3| \\sqrt{x} -2|+6=0 \right}$ . Then $n(A\\cup B)$ is equal to:",
     "images": [],
     "options": [
       "4",
@@ -61599,7 +55322,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_63",
     "number": "63",
     "type": "mcq",
-    "text": "Suppose $\\theta \\in \\left( 0, \\frac{\\pi }{4} \\right)$ is a solution of $4cos\\theta -3sin\\theta =1$ . Then $cos\\theta$ is equal to :",
+    "text": "Suppose $\\theta \\in \\left[ 0, \\frac{\\pi }{4} \\right]$ is a solution of $4cos\\theta -3sin\\theta =1$ . Then $cos\\theta$ is equal to :",
     "images": [],
     "options": [
       "$\\frac{6- \\sqrt{6}}{(3 \\sqrt{6} -2)}$",
@@ -61713,7 +55436,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_69",
     "number": "69",
     "type": "mcq",
-    "text": "If $2{sin}^{3}x+sin2xcosx+4sinx-4=0$ has exactly 3 solutions in the interval $\\left( 0, \\frac{n\\pi }{2} \\right) ,n\\in N$ , then the roots of the equation ${x}^{2}+nx+(n-3)=0$ belong to",
+    "text": "If $2{sin}^{3}x+sin2xcosx+4sinx-4=0$ has exactly 3 solutions in the interval $\\left[ 0, \\frac{n\\pi }{2} \\right] ,n\\in N$ , then the roots of the equation ${x}^{2}+nx+(n-3)=0$ belong to",
     "images": [],
     "options": [
       "$(0,\\infty )$",
@@ -61770,7 +55493,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_72",
     "number": "72",
     "type": "mcq",
-    "text": "Let $S= \\left( x\\in \\left( - \\frac{\\pi }{2} , \\frac{\\pi }{2} \\right) :{9}^{1-{tan}^{2}x}+{9}^{{tan}^{2}x}=10 \\right)$ and $\\beta ={∑}_{x\\in s} {tan}^{2} \\left( \\frac{x}{3} \\right)$ , then $\\frac{1}{6} (\\beta -14{)}^{2}$ is equal to",
+    "text": "Let $S= \\left{ x\\in \\left( - \\frac{\\pi }{2} , \\frac{\\pi }{2} \\right) :{9}^{1-{tan}^{2}x}+{9}^{{tan}^{2}x}=10 \\right}$ and $\\beta ={∑}_{x\\in s} {tan}^{2} \\left( \\frac{x}{3} \\right)$ , then $\\frac{1}{6} (\\beta -14{)}^{2}$ is equal to",
     "images": [],
     "options": [
       "16",
@@ -61789,7 +55512,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_73",
     "number": "73",
     "type": "mcq",
-    "text": "The number of elements in the set $S= \\left( \\theta \\in [0,2\\pi ]:3{cos}^{4}\\theta -5{cos}^{2}\\theta -2{sin}^{6}\\theta +2=0 \\right)$ is",
+    "text": "The number of elements in the set $S= \\left{ \\theta \\in [0,2\\pi ]:3{cos}^{4}\\theta -5{cos}^{2}\\theta -2{sin}^{6}\\theta +2=0 \\right}$ is",
     "images": [],
     "options": [
       "10",
@@ -61808,7 +55531,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_74",
     "number": "74",
     "type": "mcq",
-    "text": "Let $f(\\theta )=3 \\left( {sin}^{4} \\left( \\frac{3\\pi }{2} -\\theta \\right) +{sin}^{4}(3\\pi +\\theta ) \\right) -2 \\left( 1-{sin}^{2}2\\theta \\right)$ and $S= \\left( \\theta \\in [0,\\pi ]:{f}^{'}(\\theta )=- \\frac{\\sqrt{3}}{2} \\right)$ . If $4\\beta ={∑}_{\\theta \\in S} \\theta$ , then $f(\\beta )$ is equal to",
+    "text": "Let $f(\\theta )=3 \\left( {sin}^{4} \\left( \\frac{3\\pi }{2} -\\theta \\right) +{sin}^{4}(3\\pi +\\theta ) \\right) -2 \\left( 1-{sin}^{2}2\\theta \\right)$ and $S= \\left{ \\theta \\in [0,\\pi ]:{f}^{'}(\\theta )=- \\frac{\\sqrt{3}}{2} \\right}$ . If $4\\beta ={∑}_{\\theta \\in S} \\theta$ , then $f(\\beta )$ is equal to",
     "images": [],
     "options": [
       "$\\frac{11}{8}$",
@@ -61831,9 +55554,9 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "images": [],
     "options": [
       "$[-2,-1]$",
-      "$\\left( -2,- \\frac{3}{2} \\right)$",
-      "$\\left( -1,- \\frac{1}{2} \\right)$",
-      "$\\left( - \\frac{3}{2} ,-1 \\right)$"
+      "$\\left[ -2,- \\frac{3}{2} \\right]$",
+      "$\\left[ -1,- \\frac{1}{2} \\right]$",
+      "$\\left[ - \\frac{3}{2} ,-1 \\righ])$"
     ],
     "correct": "d",
     "chapter": "Trigonometry",
@@ -61903,7 +55626,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_79",
     "number": "79",
     "type": "mcq",
-    "text": ". Let $S= \\left( \\theta \\in [0,2\\pi ]:{8}^{2{sin}^{2}\\theta }+{8}^{2{cos}^{2}\\theta }=16 \\right)$ . Then $n(S)+{∑}_{\\theta \\in S} \\left( sec \\left( \\frac{\\pi }{4} +2\\theta \\right) cosec \\left( \\frac{\\pi }{4} +2\\theta \\right) \\right)$ is equal to",
+    "text": ". Let $S= \\left{ \\theta \\in [0,2\\pi ]:{8}^{2{sin}^{2}\\theta }+{8}^{2{cos}^{2}\\theta }=16 \\right}$ . Then $n(S)+{∑}_{\\theta \\in S} \\left( sec \\left( \\frac{\\pi }{4} +2\\theta \\right) cosec \\left( \\frac{\\pi }{4} +2\\theta \\right) \\right)$ is equal to",
     "images": [],
     "options": [
       "0",
@@ -61922,11 +55645,11 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_80",
     "number": "80",
     "type": "mcq",
-    "text": "Let $S= \\left( \\theta \\in \\left( 0, \\frac{\\pi }{2} \\right) :{∑}_{m=1}^{9} sec \\left( \\theta +(m-1) \\frac{\\pi }{6} \\right) sec \\left( \\theta + \\frac{m\\pi }{6} \\right) =- \\frac{8}{\\sqrt{3}} \\right)$ Then",
+    "text": "Let $S= \\left{ \\theta \\in \\left( 0, \\frac{\\pi }{2} \\right) :{∑}_{m=1}^{9} sec \\left( \\theta +(m-1) \\frac{\\pi }{6} \\right) sec \\left( \\theta + \\frac{m\\pi }{6} \\right) =- \\frac{8}{\\sqrt{3}} \\right}$ Then",
     "images": [],
     "options": [
-      "$S= \\left( \\frac{\\pi }{12} \\right)$",
-      "$S= \\left( \\frac{2\\pi }{3} \\right)$",
+      "$S= \\left{ \\frac{\\pi }{12} \\right}$",
+      "$S= \\left{ \\frac{2\\pi }{3} \\right}$",
       "${∑}_{\\theta \\in S} \\theta = \\frac{\\pi }{2}$ .",
       "${∑}_{\\theta \\in S} \\theta = \\frac{3\\pi }{4}$"
     ],
@@ -61941,7 +55664,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_81",
     "number": "81",
     "type": "mcq",
-    "text": "L et $S= \\left( \\theta \\in [-\\pi ,\\pi ]- \\left( \\pm \\frac{\\pi }{2} \\right) :sin\\theta tan\\theta +tan\\theta =sin2\\theta \\right)$ . If $T={∑}_{\\theta \\in S} cos2\\theta$ , then $T+n(S)$ is equal to",
+    "text": "L et $S= \\left{ \\theta \\in [-\\pi ,\\pi ]- \\left( \\pm \\frac{\\pi }{2} \\right) :sin\\theta tan\\theta +tan\\theta =sin2\\theta \\right}$ . If $T={∑}_{\\theta \\in S} cos2\\theta$ , then $T+n(S)$ is equal to",
     "images": [],
     "options": [
       "$7+ \\sqrt{3}$",
@@ -61998,7 +55721,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_84",
     "number": "84",
     "type": "mcq",
-    "text": "The sum of solutions of the equation $\\frac{cosx}{1+sinx} =|tan2x|,x\\in \\left( - \\frac{\\pi }{2} , \\frac{\\pi }{2} \\right) - \\left( \\frac{\\pi }{4} ,- \\frac{\\pi }{4} \\right)$ is",
+    "text": "The sum of solutions of the equation $\\frac{cosx}{1+sinx} =|tan2x|,x\\in \\left( - \\frac{\\pi }{2} , \\frac{\\pi }{2} \\right) - \\left{ \\frac{\\pi }{4} ,- \\frac{\\pi }{4} \\right}$ is",
     "images": [],
     "options": [
       "$\\frac{\\pi }{10}$",
@@ -62150,7 +55873,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_92",
     "number": "92",
     "type": "mcq",
-    "text": "All possible values of $\\theta \\in \\left( 0,2\\pi \\right)$ for which $\\sin 2\\theta + \\tan 2\\theta >0$ lie in",
+    "text": "All possible values of $\\theta \\in \\left[ 0,2\\pi \\right]$ for which $\\sin 2\\theta + \\tan 2\\theta >0$ lie in",
     "images": [],
     "options": [
       "$\\left( 0, \\frac{\\pi }{2} \\right) \\cup \\left( \\frac{\\pi }{2} , \\frac{3\\pi }{4} \\right) \\cup \\left( \\pi , \\frac{7\\pi }{6} \\right)$",
@@ -62226,7 +55949,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_96",
     "number": "96",
     "type": "mcq",
-    "text": "Let $S= \\left( \\theta \\in [-2\\pi ,2\\pi ]:2{cos}^{2}\\theta +3sin\\theta =0 \\right)$ . Then the sum of the elements of $S$ is",
+    "text": "Let $S= \\left{ \\theta \\in [-2\\pi ,2\\pi ]:2{cos}^{2}\\theta +3sin\\theta =0 \\right}$ . Then the sum of the elements of $S$ is",
     "images": [],
     "options": [
       "$2\\pi$",
@@ -62264,7 +55987,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_98",
     "number": "98",
     "type": "mcq",
-    "text": "The number of solutions of the equation $1+{sin}^{4}x={cos}^{2}3x,x\\in \\left( - \\frac{5\\pi }{2} , \\frac{5\\pi }{2} \\right)$ is",
+    "text": "The number of solutions of the equation $1+{sin}^{4}x={cos}^{2}3x,x\\in \\left[ - \\frac{5\\pi }{2} , \\frac{5\\pi }{2} \\right]$ is",
     "images": [],
     "options": [
       "3",
@@ -62416,7 +56139,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_106",
     "number": "106",
     "type": "mcq",
-    "text": "Let $P={\\theta :sin\\theta -cos\\theta = \\sqrt{2} cos\\theta }$ and $Q={\\theta :sin\\theta +cos\\theta = \\sqrt{2} sin\\theta }$ be two sets. Then",
+    "text": "Let $P=\\left{ \\theta :sin\\theta -cos\\theta = \\sqrt{2} cos\\theta \\right}$ and $Q={ \\left \\theta :sin\\theta +cos\\theta = \\sqrt{2} sin\\theta \\right}$ be two sets. Then",
     "images": [],
     "options": [
       "$P\\subset Q$ and $Q-P\\neq \\phi$",
@@ -62511,7 +56234,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_111",
     "number": "111",
     "type": "numerical",
-    "text": "Let $S= \\left( {sin}^{2}2\\theta : \\left( {sin}^{4}\\theta +{cos}^{4}\\theta \\right) {x}^{2}+(sin2\\theta )x+ \\left( {sin}^{6}\\theta \\right) \\right)$ $\\left( +{cos}^{6}\\theta \\right) =0$ has real roots $}$ . If $\\alpha$ and $\\beta$ be the smallest and largest elements of the set $S$ , respectively, then $3 \\left( (\\alpha -2{)}^{2}+(\\beta -1{)}^{2} \\right)$ equals ______________ .",
+    "text": "Let $S= \\left{ {sin}^{2}2\\theta : \\left( {sin}^{4}\\theta +{cos}^{4}\\theta \\right) {x}^{2}+(sin2\\theta )x+ \\left( {sin}^{6}\\theta +{cos}^{6}\\theta \\right) =0$ has real roots $ \\right}$ . If $\\alpha$ and $\\beta$ be the smallest and largest elements of the set $S$ , respectively, then $3 \\left( (\\alpha -2{)}^{2}+(\\beta -1{)}^{2} \\right)$ equals ______________ .",
     "images": [],
     "options": [],
     "correct": "4",
@@ -62525,7 +56248,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_112",
     "number": "112",
     "type": "numerical",
-    "text": "The number of solutions of ${sin}^{2}x+ \\left( 2+2x-{x}^{2} \\right)$ $sinx-3(x-1{)}^{2}=0$ , where $-\\pi \\leq x\\leq \\pi$ , is ____________ .",
+    "text": "The number of solutions of ${sin}^{2}x+ \\left( 2+2x-{x}^{2} \\right)$ $sin x-3(x-1{)}^{2}=0$ , where $-\\pi \\leq x\\leq \\pi$ , is ____________ .",
     "images": [],
     "options": [],
     "correct": "2",
@@ -62595,7 +56318,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_117",
     "number": "117",
     "type": "numerical",
-    "text": "Let $S= \\left( -\\pi , \\frac{\\pi }{2} \\right) - \\left( - \\frac{\\pi }{2} ,- \\frac{\\pi }{4} ,- \\frac{3\\pi }{4} , \\frac{\\pi }{4} \\right)$ . Then the number of elements in the set $={\\theta \\in S$ : $tan\\theta (1+ \\sqrt{5} tan(2\\theta ))= \\sqrt{5} -tan(2\\theta )}$ is ________ .",
+    "text": "Let $S= \\left[ -\\pi , \\frac{\\pi }{2} \\right) - \\left{ - \\frac{\\pi }{2} ,- \\frac{\\pi }{4} ,- \\frac{3\\pi }{4} , \\frac{\\pi }{4} \\right}$ . Then the number of elements in the set $=\\left{ \\theta \\in S$ : $tan\\theta (1+ \\sqrt{5} tan(2\\theta ))= \\sqrt{5} -tan(2\\theta ) \\right}$ is ________ .",
     "images": [],
     "options": [],
     "correct": "5",
@@ -62609,7 +56332,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_118",
     "number": "118",
     "type": "numerical",
-    "text": "Let $= \\left( \\theta \\in (0,2\\pi ):7{cos}^{2}\\theta -3{sin}^{2}\\theta -2{cos}^{2}2\\theta \\right)$ $=2}$ . Then, the sum of roots of all the equations ${x}^{2}-2 \\left( {tan}^{2}\\theta +{cot}^{2}\\theta \\right) x+6{sin}^{2}\\theta =0,\\theta \\in S$ , is_______________ .",
+    "text": "Let $= \\left{ \\theta \\in (0,2\\pi ):7{cos}^{2}\\theta -3{sin}^{2}\\theta -2{cos}^{2}2\\theta =2 \\left}$ . Then, the sum of roots of all the equations ${x}^{2}-2 \\left( {tan}^{2}\\theta +{cot}^{2}\\theta \\right) x+6{sin}^{2}\\theta =0,\\theta \\in S$ , is_______________ .",
     "images": [],
     "options": [],
     "correct": "16",
@@ -62637,7 +56360,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_120",
     "number": "120",
     "type": "numerical",
-    "text": "The number of elements in the set $S={\\theta \\in [-4\\pi ,4\\pi ]$ $\\left( :3{cos}^{2}2\\theta +6cos2\\theta -10{cos}^{2}\\theta +5=0 \\right)$ is ______ .",
+    "text": "The number of elements in the set $S=\\left{ \\theta \\in [-4\\pi ,4\\pi ]$ $:3{cos}^{2}2\\theta +6cos2\\theta -10{cos}^{2}\\theta +5=0 \\right}$ is ______ .",
     "images": [],
     "options": [],
     "correct": "32",
@@ -62721,7 +56444,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_126",
     "number": "126",
     "type": "numerical",
-    "text": "If $\\sqrt{3} \\left( {cos}^{2}x \\right) =( \\sqrt{3} -1)cosx+1$ , the number of solutions of the given equation when $x\\in \\left( 0, \\frac{\\pi }{2} \\right)$ is________________ .",
+    "text": "If $\\sqrt{3} \\left( {cos}^{2}x \\right) =( \\sqrt{3} -1)cosx+1$ , the number of solutions of the given equation when $x\\in \\left[ 0, \\frac{\\pi }{2} \\right]$ is________________ .",
     "images": [],
     "options": [],
     "correct": "1",
@@ -62825,7 +56548,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_132",
     "number": "132",
     "type": "mcq",
-    "text": "Using the principal values of the inverse trigonometric functions, the sum of the maximum and the minimum values of $16 \\left( {\\left( {sec}^{-1}x \\right)}^{2}+ \\right)$ $\\left( {\\left( {cosec}^{-1}x \\right)}^{2} \\right)$ is :",
+    "text": "Using the principal values of the inverse trigonometric functions, the sum of the maximum and the minimum values of $16 \\left( {\\left( {sec}^{-1}x \\right)}^{2}+$ ${\\left( {cosec}^{-1}x \\right)}^{2} \\right)$ is :",
     "images": [],
     "options": [
       "$22{\\pi }^{2}$",
@@ -62863,7 +56586,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_134",
     "number": "134",
     "type": "mcq",
-    "text": "If $\\alpha >\\beta >\\gamma >0$ , then the expression ${cot}^{-1} \\left( \\beta + \\frac{\\left( 1+{\\beta }^{2} \\right)}{(\\alpha -\\beta )} \\right)$ $+{cot}^{-1} \\left( \\gamma + \\frac{\\left( 1+{\\gamma }^{2} \\right)}{(\\beta -\\gamma )} \\right) +{cot}^{-1} \\left( \\alpha + \\frac{\\left( 1+{\\alpha }^{2} \\right)}{(\\gamma -\\alpha )} \\right)$ is equal to:",
+    "text": "If $\\alpha >\\beta >\\gamma >0$ , then the expression ${cot}^{-1} \\left{ \\beta + \\frac{\\left( 1+{\\beta }^{2} \\right)}{(\\alpha -\\beta )} \\right}$ $+{cot}^{-1} \\left{ \\gamma + \\frac{\\left( 1+{\\gamma }^{2} \\right)}{(\\beta -\\gamma )} \\right} +{cot}^{-1} \\left{ \\alpha + \\frac{\\left( 1+{\\alpha }^{2} \\right)}{(\\gamma -\\alpha )} \\right}$ is equal to:",
     "images": [],
     "options": [
       "$3\\pi$",
@@ -63015,7 +56738,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_142",
     "number": "142",
     "type": "mcq",
-    "text": "If the domain of the function $f(x)={cos}^{-1} \\left( \\frac{2-|x|}{4} \\right) +{\\left( {log}_{e}(3-x) \\right)}^{-1}$ is $[-\\alpha ,\\beta )-$ ${\\gamma }$ , then $\\alpha +\\beta +\\gamma$ is equal to",
+    "text": "If the domain of the function $f(x)={cos}^{-1} \\left( \\frac{2-|x|}{4} \\right) +{\\left{ {log}_{e}(3-x) \\right}}^{-1}$ is $[-\\alpha ,\\beta )-$ ${\\gamma }$ , then $\\alpha +\\beta +\\gamma$ is equal to",
     "images": [],
     "options": [
       "9",
@@ -63129,7 +56852,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_149",
     "number": "149",
     "type": "mcq",
-    "text": "Let $S$ be the set of all solutions of the equation ${cos}^{-1}(2x)-2{cos}^{-1} \\left( \\sqrt{1-{x}^{2}} \\right) =\\pi$ , $x\\in \\left( - \\frac{1}{2} , \\frac{1}{2} \\right)$ . Then ${∑}_{x\\in S} 2{sin}^{-1} \\left( {x}^{2}-1 \\right)$ is equal to",
+    "text": "Let $S$ be the set of all solutions of the equation ${cos}^{-1}(2x)-2{cos}^{-1} \\left( \\sqrt{1-{x}^{2}} \\right) =\\pi$ , $x\\in \\left[ - \\frac{1}{2} , \\frac{1}{2} \\right]$ . Then ${∑}_{x\\in S} 2{sin}^{-1} \\left( {x}^{2}-1 \\right)$ is equal to",
     "images": [],
     "options": [
       "0",
@@ -63148,7 +56871,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_150",
     "number": "150",
     "type": "mcq",
-    "text": "Let $S= \\left( x\\in R:0<x<1 \\right)$ and $\\left( 2{tan}^{-1} \\left( \\frac{1-x}{1+x} \\right) ={cos}^{-1} \\left( \\frac{1-{x}^{2}}{1+{x}^{2}} \\right) \\right)$ . If $n(S)$ denotes the number of elements in $S$ then",
+    "text": "Let $S= \\left{ x\\in R:0<x<1$ and $2{tan}^{-1} \\left( \\frac{1-x}{1+x} \\right) ={cos}^{-1} \\left( \\frac{1-{x}^{2}}{1+{x}^{2}} \\right) \\right}$ . If $n(S)$ denotes the number of elements in $S$ then",
     "images": [],
     "options": [
       "$n(S)=2$ and only one element in $S$ is less than $\\frac{1}{2}$ .",
@@ -63284,10 +57007,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Considering only the principal values of the inverse trigonometric functions, the domain of the function $f(x)={cos}^{-1} \\left( \\frac{{x}^{2}-4x+2}{{x}^{2}+3} \\right)$ is",
     "images": [],
     "options": [
-      "$\\left( -\\infty , \\frac{1}{4} \\right)$",
-      "$\\left( - \\frac{1}{4} ,\\infty \\right)$",
+      "$\\left( -\\infty , \\frac{1}{4} \\right]$",
+      "$\\left[ - \\frac{1}{4} ,\\infty \\right)$",
       "$\\left( - \\frac{1}{3} ,\\infty \\right)$",
-      "$\\left( -\\infty , \\frac{1}{3} \\right)$"
+      "$\\left( -\\infty , \\frac{1}{3} \\right]$"
     ],
     "correct": "b",
     "chapter": "Trigonometry",
@@ -63325,7 +57048,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$[1,\\infty )$",
       "$[-1,2]$",
       "$[-1,\\infty )$",
-      "$"
+      "$( -\\infty,2]$"
     ],
     "correct": "c",
     "chapter": "Trigonometry",
@@ -63341,10 +57064,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The set of all values of $k$ for which ${\\left( {tan}^{-1}x \\right)}^{3}+{\\left( {cot}^{-1}x \\right)}^{3}=k{\\pi }^{3},x\\in R$ , is the interval",
     "images": [],
     "options": [
-      "$\\left( \\frac{1}{32} , \\frac{7}{8} \\right)$",
+      "$\\left[ \\frac{1}{32} , \\frac{7}{8} \\right)$",
       "$\\left( \\frac{1}{24} , \\frac{13}{16} \\right)$",
-      "$\\left( \\frac{1}{48} , \\frac{13}{16} \\right)$",
-      "$\\left( \\frac{1}{32} , \\frac{9}{8} \\right)$"
+      "$\\left[ \\frac{1}{48} , \\frac{13}{16} \\right]$",
+      "$\\left[ \\frac{1}{32} , \\frac{9}{8} \\right)$"
     ],
     "correct": "a",
     "chapter": "Trigonometry",
@@ -63455,10 +57178,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The domain of the function ${cos}^{-1} \\left( \\frac{2{sin}^{-1} \\left( \\frac{1}{4{x}^{2}-1} \\right)}{\\pi } \\right)$ is",
     "images": [],
     "options": [
-      "$R- \\left( - \\frac{1}{2} , \\frac{1}{2} \\right)$",
+      "$R- \\left{ - \\frac{1}{2} , \\frac{1}{2} \\right}$",
       "$(-\\infty ,-1]\\cup [1,\\infty )\\cup {0}$",
       "$\\left( -\\infty , \\frac{-1}{2} \\right) \\cup \\left( \\frac{1}{2} ,\\infty \\right) \\cup {0}$",
-      "$\\left( -\\infty , \\frac{-1}{\\sqrt{2}} \\right) \\cup \\left( \\frac{1}{\\sqrt{2}} ,\\infty \\right) \\cup {0}$"
+      "$\\left( -\\infty , \\frac{-1}{\\sqrt{2}} \\right] \\cup \\left[ \\frac{1}{\\sqrt{2}} ,\\infty \\right) \\cup {0}$"
     ],
     "correct": "d",
     "chapter": "Trigonometry",
@@ -63533,9 +57256,9 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "' Ihe domain of the function ${cosec}^{-1} \\left( \\frac{1+x}{x} \\right)$ is",
     "images": [],
     "options": [
-      "$\\left( - \\frac{1}{2} ,\\infty \\right) -{0}$",
-      "$\\left( -1,- \\frac{1}{2} \\right) \\cup (0,\\infty )$",
-      "$\\left( - \\frac{1}{2} ,0 \\right) \\cup [1,\\infty )$",
+      "$\\left[ - \\frac{1}{2} ,\\infty \\right) -{0}$",
+      "$\\left( -1,- \\frac{1}{2} \\right] \\cup (0,\\infty )$",
+      "$\\left[ - \\frac{1}{2} ,0 \\right) \\cup [1,\\infty )$",
       "$\\left( - \\frac{1}{2} ,\\infty \\right) -{0}$"
     ],
     "correct": "a",
@@ -63590,10 +57313,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The domain of the function $f(x)={sin}^{-1} \\left( \\frac{3{x}^{2}+x-1}{(x-1{)}^{2}} \\right) +{cos}^{-1} \\left( \\frac{x-1}{x+1} \\right)$ is",
     "images": [],
     "options": [
-      "$\\left( 0, \\frac{1}{2} \\right)$",
-      "$\\left( 0, \\frac{1}{4} \\right)$",
-      "$\\left( \\frac{1}{4} , \\frac{1}{2} \\right) \\cup {0}$",
-      "$[-2,0]\\cup \\left( \\frac{1}{4} , \\frac{1}{2} \\right)$"
+      "$\\left[ 0, \\frac{1}{2} \\right]$",
+      "$\\left[ 0, \\frac{1}{4} \\right]$",
+      "$\\left[ \\frac{1}{4} , \\frac{1}{2} \\right] \\cup {0}$",
+      "$[-2,0]\\cup \\left[ \\frac{1}{4} , \\frac{1}{2} \\right]$"
     ],
     "correct": "c",
     "chapter": "Trigonometry",
@@ -63739,7 +57462,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_181",
     "number": "181",
     "type": "mcq",
-    "text": "The number of solutions of the equation ${sin}^{-1} \\left( {x}^{2}+ \\frac{1}{3} \\right) +{cos}^{-1} \\left( {x}^{2}- \\frac{2}{3} \\right) ={x}^{2}$ , for $x\\in [-1,1]$ and $[x]$ denotes the greatest integer less than or equal to $x$ , is",
+    "text": "The number of solutions of the equation ${sin}^{-1} \\left[ {x}^{2}+ \\frac{1}{3} \\right] +{cos}^{-1} \\left[ {x}^{2}- \\frac{2}{3} \\right] ={x}^{2}$ , for $x\\in [-1,1]$ and $[x]$ denotes the greatest integer less than or equal to $x$ , is",
     "images": [],
     "options": [
       "2",
@@ -63796,7 +57519,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_184",
     "number": "184",
     "type": "mcq",
-    "text": "$cosec \\left( 2{cot}^{-1}(5)+{cos}^{-1} \\left( \\frac{4}{5} \\right) \\right)$ is equal to",
+    "text": "$cosec \\left[ 2{cot}^{-1}(5)+{cos}^{-1} \\left( \\frac{4}{5} \\right) \\right]$ is equal to",
     "images": [],
     "options": [
       "$\\frac{56}{33}$",
@@ -64043,7 +57766,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_197",
     "number": "197",
     "type": "mcq",
-    "text": "Considering only the principal values of inverse functions, the set $A= \\left( x\\geq 0:{tan}^{-1}(2x)+{tan}^{-1}(3x)= \\frac{\\pi }{4} \\right)$",
+    "text": "Considering only the principal values of inverse functions, the set $A= \\left{ x\\geq 0:{tan}^{-1}(2x)+{tan}^{-1}(3x)= \\frac{\\pi }{4} \\right}$",
     "images": [],
     "options": [
       "contains two elements",
@@ -64062,7 +57785,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_198",
     "number": "198",
     "type": "mcq",
-    "text": "The value of ${tan}^{-1} \\left( \\begin{bmatrix} \\sqrt{1+{x}^{2}} + \\sqrt{1-{x}^{2}} \\\\ \\sqrt{1+{x}^{2}} - \\sqrt{1-{x}^{2}} \\end{bmatrix} \\right)$ , $|x|< \\frac{1}{2} ,x\\neq 0$ , is equal to",
+    "text": "The value of ${tan}^{-1} \\left[ \\sqrt{1+{x}^{2}} + \\sqrt{1-{x}^{2}} \\\\ \\sqrt{1+{x}^{2}} - \\sqrt{1-{x}^{2}} \\right]$ , $|x|< \\frac{1}{2} ,x\\neq 0$ , is equal to",
     "images": [],
     "options": [
       "$\\frac{\\pi }{4} - \\frac{1}{2} {cos}^{-1}{x}^{2}$",
@@ -64081,7 +57804,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_199",
     "number": "199",
     "type": "mcq",
-    "text": "A value of $x$ satisfying the equation $sin \\left( {cot}^{-1}(1+x) \\right) =cos \\left( {tan}^{-1}x \\right)$ , is",
+    "text": "A value of $x$ satisfying the equation $sin \\left[ {cot}^{-1}(1+x) \\right] =cos \\left[ {tan}^{-1}x \\right]$ , is",
     "images": [],
     "options": [
       "$\\frac{1}{2}$",
@@ -64255,8 +57978,8 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "The largest interval lying in $\\left( \\frac{-\\pi }{2} , \\frac{\\pi }{2} \\right)$ for which the function, $f(x)={4}^{-{x}^{2}}+{cos}^{-1} \\left( \\frac{x}{2} -1 \\right) +log(cosx)$ is defined, is",
     "images": [],
     "options": [
-      "$\\left( - \\frac{\\pi }{4} , \\frac{\\pi }{2} \\right)$",
-      "$\\left( 0, \\frac{\\pi }{2} \\right)$",
+      "$\\left[ - \\frac{\\pi }{4} , \\frac{\\pi }{2} \\right)$",
+      "$\\left[ 0, \\frac{\\pi }{2} \\right)$",
       "$[0,\\pi ]$",
       "$\\left( - \\frac{\\pi }{2} , \\frac{\\pi }{2} \\right)$"
     ],
@@ -64309,7 +58032,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_211",
     "number": "211",
     "type": "mcq",
-    "text": "If ${cot}^{-1} \\left( (cos\\alpha {)}^{\\frac{1}{2}} \\right) +{tan}^{-1} \\left( (cos\\alpha {)}^{\\frac{1}{2}} \\right) =x$ , then $sinx=$",
+    "text": "If ${cot}^{-1} \\left[ (cos\\alpha {)}^{\\frac{1}{2}} \\right] +{tan}^{-1} \\left[ (cos\\alpha {)}^{\\frac{1}{2}} \\right] =x$ , then $sinx=$",
     "images": [],
     "options": [
       "1",
@@ -64342,7 +58065,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_213",
     "number": "213",
     "type": "numerical",
-    "text": "Let the domain of the function $f(x)={cos}^{-1} \\left( \\frac{4x+5}{3x-7} \\right)$ be $[\\alpha ,\\beta ]$ and the domain of $g(x)={log}_{2} \\left( 2-6{log}_{27}(2x \\right)$ $+5)$ ) be ( $\\gamma ,δ$ ). Then $|7(\\alpha +\\beta )+4(\\gamma +δ)|$ is equal to __________________",
+    "text": "Let the domain of the function $f(x)={cos}^{-1} \\left( \\frac{4x+5}{3x-7} \\right)$ be $[\\alpha ,\\beta ]$ and the domain of $g(x)={log}_{2} \\left( 2-6{log}_{27} \\left( 2x+5 \\right)$ ) be ( $\\gamma ,δ$ ). Then $|7(\\alpha +\\beta )+4(\\gamma +δ)|$ is equal to __________________",
     "images": [],
     "options": [],
     "correct": "96",
@@ -64370,7 +58093,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_215",
     "number": "215",
     "type": "numerical",
-    "text": "Let $S= \\left( x:{cos}^{-1}x=\\pi +{sin}^{-1}x+{sin}^{-1}(2x+1) \\right)$ . Then ${∑}_{x\\in S} (2x-1{)}^{2}$ is equal to_________",
+    "text": "Let $S= \\left{ x:{cos}^{-1}x=\\pi +{sin}^{-1}x+{sin}^{-1}(2x+1) \\right}$ . Then ${∑}_{x\\in S} (2x-1{)}^{2}$ is equal to_________",
     "images": [],
     "options": [],
     "correct": "5",
@@ -64426,7 +58149,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_219",
     "number": "219",
     "type": "numerical",
-    "text": "If $S= \\left( x\\in R:{sin}^{-1} \\left( \\frac{x+1}{\\sqrt{{x}^{2}+2x+2}} \\right) -{sin}^{-1} \\left( \\frac{x}{\\sqrt{{x}^{2}+1}} \\right) = \\frac{\\pi }{4} \\right)$ , then ${∑}_{x\\in S} \\left( sin \\left( \\left( {x}^{2}+x+5 \\right) \\frac{\\pi }{2} \\right) -cos \\left( \\left( {x}^{2}+x+5 \\right) \\pi \\right) \\right)$ is equal to )_________ .",
+    "text": "If $S= \\left{ x\\in R:{sin}^{-1} \\left( \\frac{x+1}{\\sqrt{{x}^{2}+2x+2}} \\right) -{sin}^{-1} \\left( \\frac{x}{\\sqrt{{x}^{2}+1}} \\right) = \\frac{\\pi }{4} \\right}$ , then ${∑}_{x\\in S} \\left( sin \\left( \\left( {x}^{2}+x+5 \\right) \\frac{\\pi }{2} \\right) -cos \\left( \\left( {x}^{2}+x+5 \\right) \\pi \\right) \\right)$ is equal to )_________ .",
     "images": [],
     "options": [],
     "correct": "4",
@@ -64436,20 +58159,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_trigonometry_220",
-    "number": "220",
-    "type": "numerical",
-    "text": "For $x\\in",
-    "images": [],
-    "options": [],
-    "correct": "2",
-    "chapter": "Trigonometry",
-    "topic": "Inverse Trigonometric Functions",
-    "solution": "<p><strong>Ans: 2</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Trigonometry\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
+  
   {
     "id": "jee_mains_math_trigonometry_221",
     "number": "221",
@@ -64468,7 +58178,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_222",
     "number": "222",
     "type": "numerical",
-    "text": "Let $x=sin \\left( 2{tan}^{-1}\\alpha \\right)$ and $y=sin \\left( \\frac{1}{2} {tan}^{-1} \\frac{4}{3} \\right)$ . If $S= \\left( \\alpha \\in R:{y}^{2}=1-x \\right)$ , then ${∑}_{\\alpha \\in S} 16{\\alpha }^{3}$ is equal to _______________ .",
+    "text": "Let $x=sin \\left( 2{tan}^{-1}\\alpha \\right)$ and $y=sin \\left( \\frac{1}{2} {tan}^{-1} \\frac{4}{3} \\right)$ . If $S= \\left{ \\alpha \\in R:{y}^{2}=1-x \\right)$ , then ${∑}_{\\alpha \\in S} 16{\\alpha }^{3}$ is equal to _______________ .",
     "images": [],
     "options": [],
     "correct": "130",
@@ -64510,7 +58220,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_225",
     "number": "225",
     "type": "numerical",
-    "text": "${lim}_{n\\rightarrow \\infty } tan \\left( {∑}_{r=1}^{n} {tan}^{-1} \\left( \\frac{1}{1+r+{r}^{2}} \\right) \\right)$ is equal to ______________",
+    "text": "${lim}_{n\\rightarrow \\infty } tan \\left{ {∑}_{r=1}^{n} {tan}^{-1} \\left( \\frac{1}{1+r+{r}^{2}} \\right) \\right}$ is equal to ______________",
     "images": [],
     "options": [],
     "correct": "1",
@@ -64638,7 +58348,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_trigonometry_232",
     "number": "232",
     "type": "mcq",
-    "text": "Let $a,b$ and $c$ be the length of sides of a triangle $ARC$ , such that $\\frac{a+b}{7} = \\begin{bmatrix} b+c \\\\ 8 \\end{bmatrix} = \\begin{bmatrix} c+a \\\\ 9 \\end{bmatrix}$ . If $r$ and $R$ arc the radius of incircle and radius of circumcircle of the triangle $ABC$ respectively, then the value of $\\frac{R}{r}$ is equal to",
+    "text": "Let $a,b$ and $c$ be the length of sides of a triangle $ARC$ , such that $\\frac{a+b}{7} = b+c \\\\ 8 = c+a \\\\ 9$ . If $r$ and $R$ arc the radius of incircle and radius of circumcircle of the triangle $ABC$ respectively, then the value of $\\frac{R}{r}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{5}{2}$",
@@ -64872,7 +58582,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$\\frac{{p}^{2}+{q}^{2}cos\\theta }{pcos\\theta +qsin\\theta }$",
       "$\\frac{{p}^{2}+{q}^{2}}{{p}^{2}cos\\theta +{q}^{2}sin\\theta }$",
       "$\\frac{\\left( {p}^{2}+{q}^{2} \\right) sin\\theta }{(pcos\\theta +qsin\\theta {)}^{2}}$",
-      "$\\frac{\\left( {p}^{2}+{q}^{2} \\right) sin\\theta }{pcos\\theta +qsin\\theta }$ ( 2013)"
+      "$\\frac{\\left( {p}^{2}+{q}^{2} \\right) sin\\theta }{pcos\\theta +qsin\\theta }$"
     ],
     "correct": "d",
     "chapter": "Trigonometry",
@@ -65041,7 +58751,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "images": [],
     "options": [
       "$a>b>c$",
-      "$ab$ and $bc$",
+      "$a<b<c$",
       "",
       ""
     ],
@@ -65124,6 +58834,14 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Hard"
   },
+
+
+
+
+
+
+
+  /////
   {
     "id": "jee_mains_math_two_dimensional_geometry_1",
     "number": "1",
@@ -65906,7 +59624,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_43",
     "number": "43",
     "type": "mcq",
-    "text": "If for $\\theta \\in \\left( - \\frac{\\pi }{3} ,0 \\right)$ , the points $(x,y)= \\left( 3tan \\left( \\theta + \\frac{\\pi }{3} \\right) ,2tan \\left( \\theta + \\frac{\\pi }{6} \\right) \\right)$ lie on $xy+\\alpha x+$ $\\beta y+\\gamma =0$ , then ${\\alpha }^{2}+{\\beta }^{2}+{\\gamma }^{2}$ is equal to",
+    "text": "If for $\\theta \\in \\left[ - \\frac{\\pi }{3} ,0 \\right]$ , the points $(x,y)= \\left( 3tan \\left( \\theta + \\frac{\\pi }{3} \\right) ,2tan \\left( \\theta + \\frac{\\pi }{6} \\right) \\right)$ lie on $xy+\\alpha x+$ $\\beta y+\\gamma =0$ , then ${\\alpha }^{2}+{\\beta }^{2}+{\\gamma }^{2}$ is equal to",
     "images": [],
     "options": [
       "72",
@@ -66501,7 +60219,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$(AC{)}^{2}=9p$",
       "$(AC{)}^{2}+{p}^{2}=136$",
       "$32<area \\left( △ABC \\right) <36$",
-      "$34<$ area $\\left( △ABC \\right) <38$ $\\left( {27}^{th} \\right)$ July ${2}^{nd}$ Shift 2022)"
+      "$34<$ area $\\left( △ABC \\right) <38$ $"
     ],
     "correct": "d",
     "chapter": "Two Dimensional Geometry",
@@ -66742,7 +60460,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_87",
     "number": "87",
     "type": "mcq",
-    "text": "The point $P(a,b)$ undergoes the following three transformations successively : (A) reflection about the line $y=x$ . (B) translation through 2 units along the positive direction of $x$ -axis. (C) rotation through angle $\\frac{\\pi }{4}$ about the origin in the anti-clockwise direction. If the co-ordinates of the final position of the point $P$ are $\\left( - \\frac{1}{\\sqrt{2}} , \\frac{7}{\\sqrt{2}} \\right)$ , then the value of $2a+b$ is equal to",
+    "text": "The point $P(a,b)$ undergoes the following three transformations successively : \n(A) reflection about the line $y=x$ . \n(B) translation through 2 units along the positive direction of $x$ -axis. \n(C) rotation through angle $\\frac{\\pi }{4}$ about the origin in the anti-clockwise direction. If the co-ordinates of the final position of the point $P$ are $\\left( - \\frac{1}{\\sqrt{2}} , \\frac{7}{\\sqrt{2}} \\right)$ , then the value of $2a+b$ is equal to",
     "images": [],
     "options": [
       "5",
@@ -67654,7 +61372,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_135",
     "number": "135",
     "type": "mcq",
-    "text": "The lines ${L}_{1}:y-x=0$ and ${L}_{2}:2x+y=0$ intersect the line ${L}_{3}:y+2=0$ at $P$ and $Q$ respectively. The bisector of the acute angle between ${L}_{1}$ and ${L}_{2}$ intersects ${L}_{3}$ at $R$ . Statement-1: The ratio $PR:RQ$ equals $2 \\sqrt{2} : \\sqrt{5}$ . Statement-2 : In any triangle, bisector of an angle divides the triangle into two similar triangles.",
+    "text": "The lines ${L}_{1}:y-x=0$ and ${L}_{2}:2x+y=0$ intersect the line ${L}_{3}:y+2=0$ at $P$ and $Q$ respectively. The bisector of the acute angle between ${L}_{1}$ and ${L}_{2}$ intersects ${L}_{3}$ at $R$ . \nStatement-1: The ratio $PR:RQ$ equals $2 \\sqrt{2} : \\sqrt{5}$ . \nStatement-2 : In any triangle, bisector of an angle divides the triangle into two similar triangles.",
     "images": [],
     "options": [
       "Statement-1 is true, Statement-2 is false.",
@@ -68188,7 +61906,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_166",
     "number": "166",
     "type": "numerical",
-    "text": "A triangle is formed by the tangents at the point $(2,2)$ on the curves ${y}^{2}=2x$ and ${x}^{2}+{y}^{2}=4x$ , and the line $x+y+2=0$ . If $r$ is the radius of its circumcircle, then ${r}^{2}$ is equal to _____________ . $\\left( {29}^{th} \\right)$ Jan ${2}^{nd}$ Shift 2023)",
+    "text": "A triangle is formed by the tangents at the point $(2,2)$ on the curves ${y}^{2}=2x$ and ${x}^{2}+{y}^{2}=4x$ , and the line $x+y+2=0$ . If $r$ is the radius of its circumcircle, then ${r}^{2}$ is equal to _____________ . $",
     "images": [],
     "options": [],
     "correct": "10",
@@ -68202,7 +61920,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_167",
     "number": "167",
     "type": "numerical",
-    "text": "The equations of the sides $AB,BC$ and $CA$ of a triangle $ABC$ are $2x+y=0,x+py=15a$ and $x-y=3$ respectively. If its orthocentre is $(2,a),- \\frac{1}{2} <a<2$ , then $p$ is equal to _______________ $\\left( {26}^{th} \\right)$ July ${1}^{st}$ Shift 2022)",
+    "text": "The equations of the sides $AB,BC$ and $CA$ of a triangle $ABC$ are $2x+y=0,x+py=15a$ and $x-y=3$ respectively. If its orthocentre is $(2,a),- \\frac{1}{2} <a<2$ , then $p$ is equal to _______________ $",
     "images": [],
     "options": [],
     "correct": "3",
@@ -68748,7 +62466,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$\\frac{2 \\sqrt{5}}{5}$",
       "$\\frac{3 \\sqrt{5}}{5}$",
       "$\\frac{6 \\sqrt{5}}{5}$",
-      "$\\frac{4 \\sqrt{5}}{5}$ (10 ${}^{th}$ April ${2}^{nd}$ Shift 2023"
+      "$\\frac{4 \\sqrt{5}}{5}$"
     ],
     "correct": "b",
     "chapter": "Two Dimensional Geometry",
@@ -68919,7 +62637,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$(8,\\infty )$",
       "$(0,4]$",
       "$(4,\\infty )$",
-      "$"
+      "$(2,12]$"
     ],
     "correct": "a",
     "chapter": "Two Dimensional Geometry",
@@ -69065,7 +62783,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_214",
     "number": "214",
     "type": "mcq",
-    "text": "Let a line $L$ pass through the point of intersection of the lines $bx+10y-8=0$ and $2x-3y=0,b\\in$ $R- \\left( \\frac{4}{3} \\right)$ . If the line $L$ also passes through the point $(1,1)$ and touches the circle $17 \\left( {x}^{2}+{y}^{2} \\right) =16$ , then the eccentricity of the ellipse $\\frac{{x}^{2}}{5} + \\frac{{y}^{2}}{{b}^{2}} =1$ is :",
+    "text": "Let a line $L$ pass through the point of intersection of the lines $bx+10y-8=0$ and $2x-3y=0,b\\in$ $R- \\left{ \\frac{4}{3} \\right}$ . If the line $L$ also passes through the point $(1,1)$ and touches the circle $17 \\left( {x}^{2}+{y}^{2} \\right) =16$ , then the eccentricity of the ellipse $\\frac{{x}^{2}}{5} + \\frac{{y}^{2}}{{b}^{2}} =1$ is :",
     "images": [],
     "options": [
       "$\\frac{2}{\\sqrt{5}}$",
@@ -69164,9 +62882,9 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "images": [],
     "options": [
       "an empty set",
-      "$\\left( 6, \\frac{65}{9} \\right)$",
-      "$\\left( \\frac{80}{9} ,10 \\right)$",
-      "$\\left( 9, \\frac{92}{9} \\right)$"
+      "$\\left( 6, \\frac{65}{9} \\right]$",
+      "$\\left[ \\frac{80}{9} ,10 \\right)$",
+      "$\\left( 9, \\frac{92}{9} \\right]$"
     ],
     "correct": "d",
     "chapter": "Two Dimensional Geometry",
@@ -69296,10 +63014,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "Let $P$ and $Q$ be two distinct points on a circle which has center at $C(2,3)$ and which passes through origin $O$ . If $OC$ is perpendicular to both the line segments $CP$ and $CQ$ , then the set ${P,Q}$ is equal to",
     "images": [],
     "options": [
-      "${(-1,5),(5,1)}$",
-      "${(2+2 \\sqrt{2} ,3- \\sqrt{5} ),(2-2 \\sqrt{2} ,3+ \\sqrt{5} )}$",
-      "${(2+2 \\sqrt{2} ,3+ \\sqrt{5} ),(2-2 \\sqrt{2} ,3- \\sqrt{5} )}$",
-      "${(4,0),(0,6)}$"
+      "$\\left{ (-1,5),(5,1) \\right}$",
+      "$\\left{ (2+2 \\sqrt{2} ,3- \\sqrt{5} ),(2-2 \\sqrt{2} ,3+ \\sqrt{5}) \\right}$",
+      "$\\left{ (2+2 \\sqrt{2} ,3+ \\sqrt{5} ),(2-2 \\sqrt{2} ,3- \\sqrt{5}) \\right}$",
+      "$\\left{ (4,0),(0,6) \\right}$"
     ],
     "correct": "a",
     "chapter": "Two Dimensional Geometry",
@@ -70685,10 +64403,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "If the two circles $(x-1{)}^{2}+(y-3{)}^{2}={r}^{2}$ and ${x}^{2}+{y}^{2}-8x+2y+8=0$ intersect in two distinct points, then (a) $r<2$ (b) $r=2$ (c) $r>2$ (d) $2<r<8$",
     "images": [],
     "options": [
-      "",
-      "",
-      "",
-      ""
+      " $r<2$",
+      "$r=2$",
+      "$r>2$",
+      "$2<r<8$"
     ],
     "correct": "d",
     "chapter": "Two Dimensional Geometry",
@@ -70875,7 +64593,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_314",
     "number": "314",
     "type": "numerical",
-    "text": "Let the point ( $p,p+1$ ) lie inside the region $E= \\left( (x,y):3-x\\leq y\\leq \\sqrt{9-{x}^{2}} ,0\\leq x\\leq 3 \\right)$ . If the set of all values of $p$ is the interval $(a,b)$ , then ${b}^{2}+b-{a}^{2}$ is equal to ____________ .",
+    "text": "Let the point ( $p,p+1$ ) lie inside the region $E= \\left{ (x,y):3-x\\leq y\\leq \\sqrt{9-{x}^{2}} ,0\\leq x\\leq 3 \\right}$ . If the set of all values of $p$ is the interval $(a,b)$ , then ${b}^{2}+b-{a}^{2}$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "3",
@@ -71015,7 +64733,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_324",
     "number": "324",
     "type": "numerical",
-    "text": "Let a circle $C:(x-h{)}^{2}+(y-k{)}^{2}={r}^{2},k>0$ , touch the $x$ -axis at $(1,0)$ . If the line $x+y=0$ intersects the circle $C$ at $P$ and $Q$ such that the length of the chord $PQ$ is 2 , then the value of $h+k+r$ is equal to_______________ . (24 ${}^{th}$ June ${2}^{nd}$ Shifl 2022)",
+    "text": "Let a circle $C:(x-h{)}^{2}+(y-k{)}^{2}={r}^{2},k>0$ , touch the $x$ -axis at $(1,0)$ . If the line $x+y=0$ intersects the circle $C$ at $P$ and $Q$ such that the length of the chord $PQ$ is 2 , then the value of $h+k+r$ is equal to_______________ .",
     "images": [],
     "options": [],
     "correct": "7",
@@ -71751,7 +65469,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_369",
     "number": "369",
     "type": "mcq",
-    "text": "Let $y=f(x)$ represent a parabola with focus $\\left( - \\frac{1}{2} ,0 \\right)$ and directrix $y=- \\frac{1}{2}$ . Then $S= \\left( x\\in R:{tan}^{-1}( \\sqrt{f(x)} )+{sin}^{-1}( \\sqrt{f(x)+1} )= \\frac{\\pi }{2} \\right) :$",
+    "text": "Let $y=f(x)$ represent a parabola with focus $\\left( - \\frac{1}{2} ,0 \\right)$ and directrix $y=- \\frac{1}{2}$ . Then $S= \\left{ x\\in R:{tan}^{-1}( \\sqrt{f(x)} )+{sin}^{-1}( \\sqrt{f(x)+1} )= \\frac{\\pi }{2} \\right} :$",
     "images": [],
     "options": [
       "is an empty set",
@@ -72967,7 +66685,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_433",
     "number": "433",
     "type": "mcq",
-    "text": "Given : A circle, $2{x}^{2}+2{y}^{2}=5$ and a parabola ${y}^{2}=4 \\sqrt{5} x$ . Statement-1 : An equation of a common tangent to these curves is $y=x+ \\sqrt{5}$ . Statement-2: If the line, $y=mx+ \\frac{\\sqrt{5}}{m} (m\\neq 0)$ is their common tangent, then $m$ satisfies ${m}^{4}-3{m}^{2}$ $+2=0$ .",
+    "text": "Given : A circle, $2{x}^{2}+2{y}^{2}=5$ and a parabola ${y}^{2}=4 \\sqrt{5} x$ . \nStatement-1 : An equation of a common tangent to these curves is $y=x+ \\sqrt{5}$ . \nStatement-2: If the line, $y=mx+ \\frac{\\sqrt{5}}{m} (m\\neq 0)$ is their common tangent, then $m$ satisfies ${m}^{4}-3{m}^{2}$ $+2=0$ .",
     "images": [],
     "options": [
       "Statement-1 is true, Statement-2 is true, Statement-2 is not a correct explanation for Statement-1.",
@@ -75136,7 +68854,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_554",
     "number": "554",
     "type": "mcq",
-    "text": "Statement 1 : An equation of a common tangent to the parabola ${y}^{2}=16 \\sqrt{3} x$ and the ellipse $2{x}^{2}+{y}^{2}=4$ is $y=2x+2 \\sqrt{3}$ Statement 2: If the line $y=mx+ \\frac{4 \\sqrt{3}}{m} ,(m\\neq 0)$ is a common tangent to the parabola ${y}^{2}=16 \\sqrt{3} x$ and the ellipse $2{x}^{2}+{y}^{2}=4$ , then $m$ satisfies ${m}^{4}+2{m}^{2}=24$ .",
+    "text": "Statement 1 : An equation of a common tangent to the parabola ${y}^{2}=16 \\sqrt{3} x$ and the ellipse $2{x}^{2}+{y}^{2}=4$ is $y=2x+2 \\sqrt{3}$ \nStatement 2: If the line $y=mx+ \\frac{4 \\sqrt{3}}{m} ,(m\\neq 0)$ is a common tangent to the parabola ${y}^{2}=16 \\sqrt{3} x$ and the ellipse $2{x}^{2}+{y}^{2}=4$ , then $m$ satisfies ${m}^{4}+2{m}^{2}=24$ .",
     "images": [],
     "options": [
       "Statement 1 is true, Statement 2 is true; Statement 2 is not a correct explanation for Statement 1.",
@@ -76326,7 +70044,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$(3/2,2]$",
       "$(2,3]$",
       "$(3,\\infty )$",
-      "$"
+      "$(1,3/2]$"
     ],
     "correct": "c",
     "chapter": "Two Dimensional Geometry",
@@ -76938,7 +70656,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_660",
     "number": "660",
     "type": "numerical",
-    "text": "A common tangent $T$ to the curves ${C}_{1}: \\frac{{x}^{2}}{4} + \\frac{{y}^{2}}{9} =1$ and ${C}_{2}: \\frac{{x}^{2}}{42} - \\frac{{y}^{2}}{143} =1$ does not pass through the fourth quadrant. If $T$ touches ${C}_{1}$ at $\\left( {x}_{1},{y}_{1} \\right)$ and ${C}_{2}$ at $\\left( {x}_{2},{y}_{2} \\right)$ , then $\\left( 2{x}_{1}+{x}_{2} \\right)$ is equal to __________ .",
+    "text": "A common tangent $T$ to the curves ${C}_{1}: \\frac{{x}^{2}}{4} + \\frac{{y}^{2}}{9} =1$ and ${C}_{2}: \\frac{{x}^{2}}{42} - \\frac{{y}^{2}}{143} =1$ does not pass through the fourth quadrant. If $T$ touches ${C}_{1}$ at $\\left( {x}_{1},{y}_{1} \\right)$ and ${C}_{2}$ at $\\left( {x}_{2},{y}_{2} \\right)$ , then $\\left| 2{x}_{1}+{x}_{2} \\right|$ is equal to __________ .",
     "images": [],
     "options": [],
     "correct": "20",
@@ -76952,7 +70670,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_two_dimensional_geometry_661",
     "number": "661",
     "type": "numerical",
-    "text": "For the hyperbola $H:{x}^{2}-{y}^{2}=1$ and the ellipse $E: \\frac{{x}^{2}}{{a}^{2}} + \\frac{{y}^{2}}{{b}^{2}} =1,a>b>0$ , let the (i) eccentricity of $E$ be reciprocal of the eccentricity of $H$ , and (ii) the line $y= \\sqrt{\\frac{5}{2}} x+K$ be a common tangent of $E$ and $H$ . Then $4 \\left( {a}^{2}+{b}^{2} \\right)$ is equal to ________ .",
+    "text": "For the hyperbola $H:{x}^{2}-{y}^{2}=1$ and the ellipse $E: \\frac{{x}^{2}}{{a}^{2}} + \\frac{{y}^{2}}{{b}^{2}} =1,a>b>0$ , let the \n(i) eccentricity of $E$ be reciprocal of the eccentricity of $H$ , and \n(ii) the line $y= \\sqrt{\\frac{5}{2}} x+K$ be a common tangent of $E$ and $H$ . Then $4 \\left( {a}^{2}+{b}^{2} \\right)$ is equal to ________ .",
     "images": [],
     "options": [],
     "correct": "3",
@@ -77032,6 +70750,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Easy"
   },
+
+
+
+
+
+
+
   {
     "id": "jee_mains_math_vector_algebra_1",
     "number": "1",
@@ -77055,7 +70780,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_2",
     "number": "2",
     "type": "mcq",
-    "text": "If the components of $\\vec{a} =\\alpha \\vec{i} +\\beta \\vec{j} +\\gamma \\vec{k}$ along and perpendicular to $\\vec{b} =3 \\vec{i} + \\vec{j} - \\vec{k}$ respectively, are $\\frac{16}{11} (3 \\vec{i} + \\vec{j} - \\vec{k} )$ and $\\frac{1}{11} (-4 \\vec{i} -5 \\vec{j} -17 \\vec{k} )$ , then ${\\alpha }^{2}+{\\beta }^{2}+{\\gamma }^{2}$ is equal to:",
+    "text": "If the components of $\\vec{a} =\\alpha \\hat{i} +\\beta \\hat{j} +\\gamma \\hat{k}$ along and perpendicular to $\\vec{b} =3 \\hat{i} + \\hat{j} - \\hat{k}$ respectively, are $\\frac{16}{11} (3 \\hat{i} + \\hat{j} - \\hat{k} )$ and $\\frac{1}{11} (-4 \\hat{i} -5 \\hat{j} -17 \\hat{k} )$ , then ${\\alpha }^{2}+{\\beta }^{2}+{\\gamma }^{2}$ is equal to:",
     "images": [],
     "options": [
       "26",
@@ -77074,7 +70799,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_3",
     "number": "3",
     "type": "mcq",
-    "text": "Let the position vectors of the vertices $A,B$ and $C$ of a triangle be $2 \\vec{i} +2 \\vec{j} + \\vec{k} , \\vec{i} +2 \\vec{j} +2 \\vec{k}$ and $2 \\vec{i} + \\vec{j} +2 \\vec{k}$ respectively. Let ${l}_{1},{l}_{2}$ and ${l}_{3}$ be the lengths of perpendiculars drawn from the orthocenter of the triangle on the sides $AB,BC$ and $CA$ respectively, then ${l}_{1}^{2}+{l}_{2}^{2}+{l}_{3}^{2}$ equals:",
+    "text": "Let the position vectors of the vertices $A,B$ and $C$ of a triangle be $2 \\hat{i} +2 \\hat{j} + \\hat{k} , \\hat{i} +2 \\hat{j} +2 \\hat{k}$ and $2 \\hat{i} + \\hat{j} +2 \\hat{k}$ respectively. Let ${l}_{1},{l}_{2}$ and ${l}_{3}$ be the lengths of perpendiculars drawn from the orthocenter of the triangle on the sides $AB,BC$ and $CA$ respectively, then ${l}_{1}^{2}+{l}_{2}^{2}+{l}_{3}^{2}$ equals:",
     "images": [],
     "options": [
       "$\\frac{1}{5}$",
@@ -77093,7 +70818,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_4",
     "number": "4",
     "type": "mcq",
-    "text": "The position vectors of the vertices $A,B$ and $C$ of a triangle are $2 \\vec{i} -3 \\vec{j} +3 \\vec{k} ,2 \\vec{i} +2 \\vec{j} +3 \\vec{k}$ and $- \\vec{i} + \\vec{j} +3 \\vec{k}$ respectively. Let $l$ denotes the length of the angle bisector $AD$ of $∠BAC$ where $D$ is on the line segment $BC$ , then $2{l}^{2}$ equals :",
+    "text": "The position vectors of the vertices $A,B$ and $C$ of a triangle are $2 \\hat{i} -3 \\hat{j} +3 \\hat{k} ,2 \\hat{i} +2 \\hat{j} +3 \\hat{k}$ and $- \\hat{i} + \\hat{j} +3 \\hat{k}$ respectively. Let $l$ denotes the length of the angle bisector $AD$ of $∠BAC$ where $D$ is on the line segment $BC$ , then $2{l}^{2}$ equals :",
     "images": [],
     "options": [
       "50",
@@ -77112,7 +70837,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_5",
     "number": "5",
     "type": "mcq",
-    "text": "Let $O$ be the origin and the position vectors of $A$ and $B$ be $2 \\vec{i} +2 \\vec{j} + \\vec{k}$ and $2 \\vec{i} +4 \\vec{j} +4 \\vec{k}$ respectively. If the internal bisector of $∠AOB$ meets the line $AB$ at $C$ , then the length of $OC$ is",
+    "text": "Let $O$ be the origin and the position vectors of $A$ and $B$ be $2 \\hat{i} +2 \\hat{j} + \\hat{k}$ and $2 \\hat{i} +4 \\hat{j} +4 \\hat{k}$ respectively. If the internal bisector of $∠AOB$ meets the line $AB$ at $C$ , then the length of $OC$ is",
     "images": [],
     "options": [
       "$\\frac{2}{3} \\sqrt{31}$",
@@ -77150,13 +70875,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_7",
     "number": "7",
     "type": "mcq",
-    "text": "If the points $P$ and $Q$ are respectively the circumcenter and the orthocentre of a $△ABC$ , then $\\vec{PA} + \\vec{PB} + \\vec{PC}$ is",
+    "text": "If the points $P$ and $Q$ are respectively the circumcenter and the orthocentre of a $△ABC$ , then $\\overrightarrow{PA} + \\overrightarrow{PB} + \\overrightarrow{PC}$ is",
     "images": [],
     "options": [
-      "$2 \\vec{PQ}$",
-      "$\\vec{QP}$",
-      "$2 \\vec{QP}$",
-      "$\\vec{PQ}$"
+      "$2 \\overrightarrow{PQ}$",
+      "$\\overrightarrow{QP}$",
+      "$2 \\overrightarrow{QP}$",
+      "$\\overrightarrow{PQ}$"
     ],
     "correct": "d",
     "chapter": "Vector Algebra",
@@ -77169,7 +70894,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_8",
     "number": "8",
     "type": "mcq",
-    "text": "For any vector $\\vec{a} ={a}_{1} \\vec{i} +{a}_{2} \\vec{j} +{a}_{3} \\vec{k}$ , with $10 \\left( {a}_{i} \\right) <1$ , $i=1,2,3$ , consider the following statements : (A): $max \\left( \\left( {a}_{1} \\right) , \\left( {a}_{2} \\right) , \\left( {a}_{3} \\right) \\right) \\leq | \\vec{a} |$ (B) : $| \\vec{a} |\\leq 3max \\left( \\left( {a}_{1} \\right) , \\left( {a}_{2} \\right) , \\left( {a}_{3} \\right) \\right)$",
+    "text": "For any vector $\\vec{a} ={a}_{1} \\hat{i} +{a}_{2} \\hat{j} +{a}_{3} \\hat{k}$ , with $10 \\left| {a}_{i} \\right| <1$ , $i=1,2,3$ , consider the following statements : \n(A): $max \\left{ \\left| {a}_{1} \\right| , \\left| {a}_{2} \\right| , \\left| {a}_{3} \\right| \\right} \\leq | \\vec{a} |$ \n(B) : $| \\vec{a} |\\leq 3max \\left{ \\left| {a}_{1} \\right| , \\left| {a}_{2} \\right| , \\left| {a}_{3} \\right| \\right}$",
     "images": [],
     "options": [
       "Only (B) is true",
@@ -77188,7 +70913,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_9",
     "number": "9",
     "type": "mcq",
-    "text": "Let $ABCD$ be a quadrilateral. If $E$ and $F$ are the mid points of the diagonals $AC$ and $BD$ respectively and $( \\vec{AB} - \\vec{BC} )+( \\vec{AD} - \\vec{DC} )=k \\vec{FE}$ , then $k$ is equal to",
+    "text": "Let $ABCD$ be a quadrilateral. If $E$ and $F$ are the mid points of the diagonals $AC$ and $BD$ respectively and $( \\overrightarrow{AB} - \\overrightarrow{BC} )+( \\overrightarrow{AD} - \\overrightarrow{DC} )=k \\overrightarrow{FE}$ , then $k$ is equal to",
     "images": [],
     "options": [
       "-4",
@@ -77207,7 +70932,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_10",
     "number": "10",
     "type": "mcq",
-    "text": "Let a vector $\\alpha \\vec{i} +\\beta \\vec{j}$ be obtained by rotating the vector $\\sqrt{3} \\vec{i} + \\vec{j}$ by an angle ${45}^{∘}$ about the origin in counterclockwise direction in the first quadrant. Then the area of triangle having vertices ( $\\alpha ,\\beta$ ), $(0,\\beta )$ and $(0,0)$ is equal to",
+    "text": "Let a vector $\\alpha \\hat{i} +\\beta \\hat{j}$ be obtained by rotating the vector $\\sqrt{3} \\hat{i} + \\hat{j}$ by an angle ${45}^{∘}$ about the origin in counterclockwise direction in the first quadrant. Then the area of triangle having vertices ( $\\alpha ,\\beta$ ), $(0,\\beta )$ and $(0,0)$ is equal to",
     "images": [],
     "options": [
       "1",
@@ -77245,13 +70970,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_12",
     "number": "12",
     "type": "mcq",
-    "text": "If vectors ${\\vec{a}}_{1}=x \\vec{i} - \\vec{j} + \\vec{k}$ and ${\\vec{a}}_{2}= \\vec{i} +y \\vec{j} +z \\vec{k}$ are collinear, then a possible unit vector parallel to the vector $x \\vec{i} +y \\vec{j} +z \\vec{k}$ is",
+    "text": "If vectors ${\\vec{a}}_{1}=x \\hat{i} - \\hat{j} + \\hat{k}$ and ${\\vec{a}}_{2}= \\hat{i} +y \\hat{j} +z \\hat{k}$ are collinear, then a possible unit vector parallel to the vector $x \\hat{i} +y \\hat{j} +z \\hat{k}$ is",
     "images": [],
     "options": [
-      "$\\frac{1}{\\sqrt{3}} ( \\vec{i} + \\vec{j} - \\vec{k} )$",
-      "$\\frac{1}{\\sqrt{2}} (- \\vec{j} + \\vec{k} )$",
-      "$\\frac{1}{\\sqrt{3}} ( \\vec{i} - \\vec{j} + \\vec{k} )$",
-      "$\\frac{1}{\\sqrt{2}} ( \\vec{i} - \\vec{j} )$"
+      "$\\frac{1}{\\sqrt{3}} ( \\hat{i} + \\hat{j} - \\hat{k} )$",
+      "$\\frac{1}{\\sqrt{2}} (- \\hat{j} + \\hat{k} )$",
+      "$\\frac{1}{\\sqrt{3}} ( \\hat{i} - \\hat{j} + \\hat{k} )$",
+      "$\\frac{1}{\\sqrt{2}} ( \\hat{i} - \\hat{j} )$"
     ],
     "correct": "c",
     "chapter": "Vector Algebra",
@@ -77264,7 +70989,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_13",
     "number": "13",
     "type": "mcq",
-    "text": "If a unit vector $\\vec{a}$ makes angles $\\pi /3$ with $\\vec{i} ,\\pi /4$ with $\\vec{j}$ and $\\theta \\in (0,\\pi )$ with $\\vec{k}$ , then a value of $\\theta$ is",
+    "text": "If a unit vector $\\vec{a}$ makes angles $\\pi /3$ with $\\hat{i} ,\\pi /4$ with $\\hat{j}$ and $\\theta \\in (0,\\pi )$ with $\\vec{k}$ , then a value of $\\theta$ is",
     "images": [],
     "options": [
       "$\\frac{5\\pi }{6}$",
@@ -77302,7 +71027,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_15",
     "number": "15",
     "type": "mcq",
-    "text": "Let $\\sqrt{3} \\vec{i} + \\vec{j} , \\vec{i} + \\sqrt{3} \\vec{j}$ and $\\beta \\vec{i} +(1-\\beta ) \\vec{j}$ respectively be the position vectors of the points $A,B$ and $C$ ' with respect to the origin $O$ . If the distance of $C$ from the bisector of the acute angle between $OA$ and $OB$ is $\\frac{3}{\\sqrt{2}}$ , then the sum of all possible values of $\\beta$ is",
+    "text": "Let $\\sqrt{3} \\hat{i} + \\hat{j} , \\hat{i} + \\sqrt{3} \\hat{j}$ and $\\beta \\hat{i} +(1-\\beta ) \\hat{j}$ respectively be the position vectors of the points $A,B$ and $C$ ' with respect to the origin $O$ . If the distance of $C$ from the bisector of the acute angle between $OA$ and $OB$ is $\\frac{3}{\\sqrt{2}}$ , then the sum of all possible values of $\\beta$ is",
     "images": [],
     "options": [
       "1",
@@ -77321,13 +71046,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_16",
     "number": "16",
     "type": "mcq",
-    "text": "If the position vectors of the vertices $A,B$ and $C$ of a $△ABC$ are respectively $4 \\vec{i} +7 \\vec{j} +8 \\vec{k} ,2 \\vec{i} +3 \\vec{j} +4 \\vec{k}$ and $2 \\vec{i} +5 \\vec{j} +7 \\vec{k}$ , then the position vector of the point, where the bisector of $∠A$ meets $BC$ is",
+    "text": "If the position vectors of the vertices $A,B$ and $C$ of a $△ABC$ are respectively $4 \\hat{i} +7 \\hat{j} +8 \\hat{k} ,2 \\hat{i} +3 \\vec{j} +4 \\hat{k}$ and $2 \\hat{i} +5 \\hat{j} +7 \\hat{k}$ , then the position vector of the point, where the bisector of $∠A$ meets $BC$ is",
     "images": [],
     "options": [
-      "$\\frac{1}{2} (4 \\vec{i} +8 \\vec{j} +11 \\vec{k} )$",
-      "$\\frac{1}{3} (6 \\vec{i} +13 \\vec{j} +18 \\vec{k} )$",
-      "$\\frac{1}{4} (8 \\vec{i} +14 \\vec{j} +19 \\vec{k} )$",
-      "$\\frac{1}{3} (6 \\vec{i} +11 \\vec{j} +15 \\vec{k} )$"
+      "$\\frac{1}{2} (4 \\hat{i} +8 \\hat{j} +11 \\hat{k} )$",
+      "$\\frac{1}{3} (6 \\hat{i} +13 \\hat{j} +18 \\hat{k} )$",
+      "$\\frac{1}{4} (8 \\hat{i} +14 \\hat{j} +19 \\hat{k} )$",
+      "$\\frac{1}{3} (6 \\hat{i} +11 \\hat{j} +15 \\hat{k} )$"
     ],
     "correct": "b",
     "chapter": "Vector Algebra",
@@ -77359,13 +71084,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_18",
     "number": "18",
     "type": "mcq",
-    "text": "If the vectors $\\vec{AB} =3 \\vec{i} +4 \\vec{k}$ and $\\vec{AC} =5 \\vec{i} -2 \\vec{j} +4 \\vec{k}$ are the sides of a triangle $ABC$ , then the length of the median through $A$ is",
+    "text": "If the vectors $\\overrightarrow{AB} =3 \\hat{i} +4 \\hat{k}$ and $\\overrightarrow{AC} =5 \\hat{i} -2 \\hat{j} +4 \\hat{k}$ are the sides of a triangle $ABC$ , then the length of the median through $A$ is",
     "images": [],
     "options": [
       "$\\sqrt{45}$",
       "$\\sqrt{18}$",
       "$\\sqrt{72}$",
-      "$\\sqrt{33}$ $(2013,2003)$"
+      "$\\sqrt{33}$"
     ],
     "correct": "d",
     "chapter": "Vector Algebra",
@@ -77378,7 +71103,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_19",
     "number": "19",
     "type": "mcq",
-    "text": "The vector $\\vec{a} =\\alpha \\vec{i} +2 \\vec{j} +\\beta \\vec{k}$ lies in the plane of the vectors $\\vec{b} = \\vec{i} + \\vec{j}$ and $\\vec{c} = \\vec{j} + \\vec{k}$ and bisects the angle between $\\vec{b}$ and $\\vec{c}$ . Then which one of the following gives possible values of $\\alpha$ and $\\beta$ ?",
+    "text": "The vector $\\vec{a} =\\alpha \\hat{i} +2 \\hat{j} +\\beta \\hat{k}$ lies in the plane of the vectors $\\vec{b} = \\hat{i} + \\hat{j}$ and $\\vec{c} = \\hat{j} + \\hat{k}$ and bisects the angle between $\\vec{b}$ and $\\vec{c}$ . Then which one of the following gives possible values of $\\alpha$ and $\\beta$ ?",
     "images": [],
     "options": [
       "$\\alpha =1,\\beta =1$",
@@ -77400,10 +71125,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "If $C$ is the midd point of $AB$ and $P$ is any point outside $AB$ , then",
     "images": [],
     "options": [
-      "$\\vec{PA} + \\vec{PB} + \\vec{PC} =0$",
-      "$\\vec{PA} + \\vec{PB} +2 \\vec{PC} = \\vec{0}$",
-      "$\\vec{PA} + \\vec{PB} = \\vec{PC}$",
-      "$\\vec{PA} + \\vec{PB} =2 \\vec{PC}$"
+      "$\\overrightarrow{PA} + \\overrightarrow{PB} + \\overrightarrow{PC} =0$",
+      "$\\overrightarrow{PA} + \\overrightarrow{PB} +2 \\overrightarrow{PC} = \\overright{0}$",
+      "$\\overrightarrow{PA} + \\overrightarrow{PB} = \\overrightarrow{PC}$",
+      "$\\overrightarrow{PA} + \\overrightarrow{PB} =2 \\overrightarrow{PC}$"
     ],
     "correct": "d",
     "chapter": "Vector Algebra",
@@ -77435,7 +71160,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_22",
     "number": "22",
     "type": "mcq",
-    "text": "Consider $Λ,B,C$ and $D$ with position vectors $7 \\vec{i} -1 \\vec{j} +7 \\vec{k} , \\vec{i} 6 \\vec{j} ∣10 \\vec{k} ,- \\vec{i} -3 \\vec{j} +4 \\vec{k}$ and $5 \\vec{i} - \\vec{j} +5 \\vec{k}$ respectively. Then $ABCD$ is a",
+    "text": "Consider $Λ,B,C$ and $D$ with position vectors $7 \\hat{i} -1 \\hat{j} +7 \\hat{k} , \\hat{i} 6 \\hat{j} ∣10 \\hat{k} ,- \\hat{i} -3 \\hat{j} +4 \\hat{k}$ and $5 \\hat{i} - \\hat{j} +5 \\hat{k}$ respectively. Then $ABCD$ is a",
     "images": [],
     "options": [
       "rhombus",
@@ -77454,7 +71179,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_23",
     "number": "23",
     "type": "numerical",
-    "text": "Let the three sides of a triangle $ABC$ be given by the vectors $2 \\vec{i} - \\vec{j} + \\vec{k} , \\vec{i} -3 \\vec{j} -5 \\vec{k}$ and $3 \\vec{i} -4 \\vec{j} -4 \\vec{k}$ . Let $G$ be the centroid of the triangle $ABC$ . Then $6 \\left( | \\vec{AG} {|}^{2}+| \\vec{BG} {|}^{2}+| \\vec{CG} {|}^{2} \\right)$ is equal to ______________.",
+    "text": "Let the three sides of a triangle $ABC$ be given by the vectors $2 \\hat{i} - \\hat{j} + \\hat{k} , \\{i} -3 \\hat{j} -5 \\hat{k}$ and $3 \\hat{i} -4 \\hat{j} -4 \\hat{k}$ . Let $G$ be the centroid of the triangle $ABC$ . Then $6 \\left( | \\overrightarrow{AG} {|}^{2}+| \\overrightarrow{BG} {|}^{2}+| \\overrightarrow{CG} {|}^{2} \\right)$ is equal to ______________.",
     "images": [],
     "options": [],
     "correct": "164",
@@ -77468,13 +71193,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_24",
     "number": "24",
     "type": "mcq",
-    "text": "If $\\vec{a}$ is a nonzero vector such that its projections on the vectors $2 \\vec{i} - \\vec{j} +2 \\vec{k} , \\vec{i} +2 \\vec{j} -2 \\vec{k}$ and $\\vec{k}$ are equal, then a unit vector along $\\vec{a}$ is :",
+    "text": "If $\\vec{a}$ is a nonzero vector such that its projections on the vectors $2 \\hat{i} - \\hat{j} +2 \\hat{k} , \\hat{i} +2 \\hat{j} -2 \\hat{k}$ and $\\hat{k}$ are equal, then a unit vector along $\\vec{a}$ is :",
     "images": [],
     "options": [
-      "$\\frac{1}{\\sqrt{155}} (7 \\vec{i} +9 \\vec{j} +5 \\vec{k} )$",
-      "$\\frac{1}{\\sqrt{155}} (7 \\vec{i} +9 \\vec{j} -5 \\vec{k} )$",
-      "$\\frac{1}{\\sqrt{155}} (-7 \\vec{i} +9 \\vec{j} -5 \\vec{k} )$",
-      "$\\frac{1}{\\sqrt{155}} (-7 \\vec{i} +9 \\vec{j} +5 \\vec{k} )$"
+      "$\\frac{1}{\\sqrt{155}} (7 \\hat{i} +9 \\hat{j} +5 \\hat{k} )$",
+      "$\\frac{1}{\\sqrt{155}} (7 \\hat{i} +9 \\hat{j} -5 \\hat{k} )$",
+      "$\\frac{1}{\\sqrt{155}} (-7 \\hat{i} +9 \\hat{j} -5 \\hat{k} )$",
+      "$\\frac{1}{\\sqrt{155}} (-7 \\hat{i} +9 \\hat{j} +5 \\hat{k} )$"
     ],
     "correct": "a",
     "chapter": "Vector Algebra",
@@ -77487,7 +71212,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_25",
     "number": "25",
     "type": "mcq",
-    "text": "Consider two vectors $\\vec{u} =3 \\vec{i} - \\vec{j}$ and $\\vec{v} =2 \\vec{i} + \\vec{j} -\\lambda \\vec{k}$ , $\\lambda >0$ . The angle between them is given by ${cos}^{-1} \\left( \\frac{\\sqrt{5}}{2 \\sqrt{7}} \\right)$ . Let $\\vec{v} = \\vec{{v}_{1}} + \\vec{{v}_{2}}$ , where $\\vec{{v}_{1}}$ is parallel to $\\vec{u}$ and $\\vec{{v}_{2}}$ is perpendicular to $\\vec{u}$ . Then the value ${\\left( {\\vec{v}}_{1} \\right)}^{2}+{\\left( {\\vec{v}}_{2} \\right)}^{2}$ is equal to",
+    "text": "Consider two vectors $\\vec{u} =3 \\hat{i} - \\hat{j}$ and $\\vec{v} =2 \\hat{i} + \\hat{j} -\\lambda \\hat{k}$ , $\\lambda >0$ . The angle between them is given by ${cos}^{-1} \\left( \\frac{\\sqrt{5}}{2 \\sqrt{7}} \\right)$ . Let $\\vec{v} = \\vec{{v}_{1}} + \\vec{{v}_{2}}$ , where $\\vec{{v}_{1}}$ is parallel to $\\vec{u}$ and $\\vec{{v}_{2}}$ is perpendicular to $\\vec{u}$ . Then the value ${\\left| {\\vec{v}}_{1} \\right|}^{2}+{\\left| {\\vec{v}}_{2} \\right|}^{2}$ is equal to",
     "images": [],
     "options": [
       "14",
@@ -77506,7 +71231,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_26",
     "number": "26",
     "type": "mcq",
-    "text": "Let the angle $\\theta ,0<\\theta < \\frac{\\pi }{2}$ between two unit vectors $\\vec{a}$ and $\\vec{b}$ be ${sin}^{-1} \\left( \\frac{\\sqrt{65}}{9} \\right)$ . If the vector $\\vec{c} =3 \\vec{a} +6 \\vec{b}$ $+9( \\vec{a} \\times \\vec{b} )$ , then the value of $9( \\vec{c} ⋅ \\vec{a} )-3( \\vec{c} ⋅ \\vec{b} )$ is",
+    "text": "Let the angle $\\theta ,0<\\theta < \\frac{\\pi }{2}$ between two unit vectors $\\hat{a}$ and $\\hat{b}$ be ${sin}^{-1} \\left( \\frac{\\sqrt{65}}{9} \\right)$ . If the vector $\\vec{c} =3 \\hat{a} +6 \\hat{b}$ $+9( \\hat{a} \\times \\hat{b} )$ , then the value of $9( \\vec{c} ⋅ \\hat{a} )-3( \\vec{c} ⋅ \\hat{b} )$ is",
     "images": [],
     "options": [
       "24",
@@ -77544,13 +71269,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_28",
     "number": "28",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} + \\vec{k}$ and $\\vec{b} =2 \\vec{i} + \\vec{j} - \\vec{k}$ . Let $\\vec{c}$ be a unit vector in the plane of the vectors $\\vec{a}$ and $\\vec{b}$ and be perpendicular to $\\vec{a}$ . Then such a vector $\\vec{c}$ is :",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} + \\hat{k}$ and $\\vec{b} =2 \\hat{i} + \\hat{j} - \\hat{k}$ . Let $\\hat{c}$ be a unit vector in the plane of the vectors $\\vec{a}$ and $\\vec{b}$ and be perpendicular to $\\vec{a}$ . Then such a vector $\\vec{c}$ is :",
     "images": [],
     "options": [
-      "$\\frac{1}{\\sqrt{2}} (- \\vec{i} + \\vec{k} )$",
-      "$\\frac{1}{\\sqrt{3}} ( \\vec{i} - \\vec{j} + \\vec{k} )$",
-      "$\\frac{1}{\\sqrt{3}} (- \\vec{i} + \\vec{j} - \\vec{k} )$",
-      "$\\frac{1}{\\sqrt{5}} ( \\vec{j} -2 \\vec{k} )$"
+      "$\\frac{1}{\\sqrt{2}} (- \\hat{i} + \\hat{k} )$",
+      "$\\frac{1}{\\sqrt{3}} ( \\hat{i} - \\hat{j} + \\hat{k} )$",
+      "$\\frac{1}{\\sqrt{3}} (- \\hat{i} + \\hat{j} - \\hat{k} )$",
+      "$\\frac{1}{\\sqrt{5}} ( \\hat{j} -2 \\hat{k} )$"
     ],
     "correct": "a",
     "chapter": "Vector Algebra",
@@ -77582,7 +71307,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_30",
     "number": "30",
     "type": "mcq",
-    "text": "Let the arc $AC$ of a circle subtend a right angle at the centre $O$ . If the point $B$ on the arc $AC$ , divides the $arcAC$ such that $\\frac{length of arcAB}{length of arcBC} = \\frac{1}{5}$ , and $\\vec{OC} =\\alpha \\vec{OA} +\\beta \\vec{OB}$ , then $\\alpha + \\sqrt{2} ( \\sqrt{3} -1)\\beta$ is equal to",
+    "text": "Let the arc $AC$ of a circle subtend a right angle at the centre $O$ . If the point $B$ on the arc $AC$ , divides the $arcAC$ such that $\\frac{length of arcAB}{length of arcBC} = \\frac{1}{5}$ , and $\\overrightarrow{OC} =\\alpha \\overrightarrow{OA} +\\beta \\overrightarrow{OB}$ , then $\\alpha + \\sqrt{2} ( \\sqrt{3} -1)\\beta$ is equal to",
     "images": [],
     "options": [
       "$2- \\sqrt{3}$",
@@ -77601,13 +71326,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_31",
     "number": "31",
     "type": "mcq",
-    "text": "Let a unit vector which makes an angle of ${60}^{∘}$ with $2 \\vec{i} +2 \\vec{j} - \\vec{k}$ and angle of ${45}^{∘}$ with $\\vec{i} - \\vec{k}$ be $\\vec{C}$ . Then $\\vec{C} + \\left( - \\frac{1}{2} \\vec{i} + \\frac{1}{3 \\sqrt{2}} \\vec{j} - \\frac{\\sqrt{2}}{3} \\vec{k} \\right)$ is",
+    "text": "Let a unit vector which makes an angle of ${60}^{∘}$ with $2 \\hat{i} +2 \\hat{j} - \\hat{k}$ and angle of ${45}^{∘}$ with $\\hat{i} - \\hat{k}$ be $\\vec{C}$ . Then $\\vec{C} + \\left( - \\frac{1}{2} \\hat{i} + \\frac{1}{3 \\sqrt{2}} \\hat{j} - \\frac{\\sqrt{2}}{3} \\hat{k} \\right)$ is",
     "images": [],
     "options": [
-      "$\\frac{\\sqrt{2}}{3} \\vec{i} + \\frac{1}{3 \\sqrt{2}} \\vec{j} - \\frac{1}{2} \\vec{k}$",
-      "$- \\frac{\\sqrt{2}}{3} \\vec{i} + \\frac{\\sqrt{2}}{3} \\vec{j} + \\left( \\frac{1}{2} + \\frac{2 \\sqrt{2}}{3} \\right) \\vec{k}$",
-      "$\\frac{\\sqrt{2}}{3} \\vec{i} - \\frac{1}{2} \\vec{k}$",
-      "$\\left( \\frac{1}{\\sqrt{3}} + \\frac{1}{2} \\right) \\vec{i} + \\left( \\frac{1}{\\sqrt{3}} - \\frac{1}{3 \\sqrt{2}} \\right) \\vec{j} + \\left( \\frac{1}{\\sqrt{3}} + \\frac{\\sqrt{2}}{3} \\right) \\vec{k}$"
+      "$\\frac{\\sqrt{2}}{3} \\hat{i} + \\frac{1}{3 \\sqrt{2}} \\hat{j} - \\frac{1}{2} \\hat{k}$",
+      "$- \\frac{\\sqrt{2}}{3} \\hat{i} + \\frac{\\sqrt{2}}{3} \\hat{j} + \\left( \\frac{1}{2} + \\frac{2 \\sqrt{2}}{3} \\right) \\hat{k}$",
+      "$\\frac{\\sqrt{2}}{3} \\hat{i} - \\frac{1}{2} \\hat{k}$",
+      "$\\left( \\frac{1}{\\sqrt{3}} + \\frac{1}{2} \\right) \\hat{i} + \\left( \\frac{1}{\\sqrt{3}} - \\frac{1}{3 \\sqrt{2}} \\right) \\hat{j} + \\left( \\frac{1}{\\sqrt{3}} + \\frac{\\sqrt{2}}{3} \\right) \\hat{k}$"
     ],
     "correct": "c",
     "chapter": "Vector Algebra",
@@ -77620,7 +71345,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_32",
     "number": "32",
     "type": "mcq",
-    "text": "For $\\lambda >0$ , let $\\theta$ be the angle between the vectors $\\vec{a} = \\vec{i} +\\lambda \\vec{j} -3 \\vec{k}$ and $\\vec{b} =3 \\vec{i} - \\vec{j} +2 \\vec{k}$ . If the vectors $\\vec{a} + \\vec{b}$ and $\\vec{a} - \\vec{b}$ are mutually perpendicular, then the value of $(14cos\\theta {)}^{2}$ is equal to",
+    "text": "For $\\lambda >0$ , let $\\theta$ be the angle between the vectors $\\vec{a} = \\hat{i} +\\lambda \\hat{j} -3 \\hat{k}$ and $\\vec{b} =3 \\hat{i} - \\hat{j} +2 \\hat{k}$ . If the vectors $\\vec{a} + \\vec{b}$ and $\\vec{a} - \\vec{b}$ are mutually perpendicular, then the value of $(14cos\\theta {)}^{2}$ is equal to",
     "images": [],
     "options": [
       "20",
@@ -77658,7 +71383,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_34",
     "number": "34",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} +3 \\vec{k} , \\vec{b} =2 \\vec{i} +3 \\vec{j} -5 \\vec{k}$ and $\\vec{c} =3 \\vec{i} - \\vec{j} +\\lambda \\vec{k}$ be three vectors. Let $\\vec{r}$ be a unit vector along $\\vec{b} + \\vec{c}$ . If $\\vec{r} ⋅ \\vec{a} =3$ , then $3\\lambda$ is equal to:",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} +3 \\hat{k} , \\vec{b} =2 \\hat{i} +3 \\hat{j} -5 \\hat{k}$ and $\\vec{c} =3 \\hat{i} - \\hat{j} +\\lambda \\hat{k}$ be three vectors. Let $\\vec{r}$ be a unit vector along $\\vec{b} + \\vec{c}$ . If $\\vec{r} ⋅ \\vec{a} =3$ , then $3\\lambda$ is equal to:",
     "images": [],
     "options": [
       "21",
@@ -77677,7 +71402,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_35",
     "number": "35",
     "type": "mcq",
-    "text": "Consider a $△ABC$ where $A(1,3,2),B(-2,8,0)$ and $C(3,6,7)$ . If the angle bisector of $∠BAC$ meets the line $BC$ at $D$ , then the length of the projection of the vector $\\vec{AD}$ on the vector $\\vec{AC}$ is :",
+    "text": "Consider a $△ABC$ where $A(1,3,2),B(-2,8,0)$ and $C(3,6,7)$ . If the angle bisector of $∠BAC$ meets the line $BC$ at $D$ , then the length of the projection of the vector $\\overrightarrow{AD}$ on the vector $\\overrightarrow{AC}$ is :",
     "images": [],
     "options": [
       "$\\frac{37}{2 \\sqrt{38}}$",
@@ -77696,7 +71421,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_36",
     "number": "36",
     "type": "mcq",
-    "text": "Let a unit vector $\\vec{u} =x \\vec{i} +y \\vec{j} +z \\vec{k}$ make angles $\\frac{\\pi }{2} , \\frac{\\pi }{3}$ and $\\frac{2\\pi }{3}$ with the vectors $\\frac{1}{\\sqrt{2}} \\vec{i} + \\frac{1}{\\sqrt{2}} \\vec{k} , \\frac{1}{\\sqrt{2}} \\vec{j} + \\frac{1}{\\sqrt{2}} \\vec{k}$ and $\\frac{1}{\\sqrt{2}} \\vec{i} + \\frac{1}{\\sqrt{2}} \\vec{j}$ respectively. If $\\vec{v} = \\frac{1}{\\sqrt{2}} \\vec{i} + \\frac{1}{\\sqrt{2}} \\vec{j} + \\frac{1}{\\sqrt{2}} \\vec{k}$ , then $| \\vec{u} - \\vec{v} {|}^{2}$ is equal to",
+    "text": "Let a unit vector $\\hat{u} =x \\hat{i} +y \\hat{j} +z \\hat{k}$ make angles $\\frac{\\pi }{2} , \\frac{\\pi }{3}$ and $\\frac{2\\pi }{3}$ with the vectors $\\frac{1}{\\sqrt{2}} \\hat{i} + \\frac{1}{\\sqrt{2}} \\hat{k} , \\frac{1}{\\sqrt{2}} \\hat{j} + \\frac{1}{\\sqrt{2}} \\hat{k}$ and $\\frac{1}{\\sqrt{2}} \\hat{i} + \\frac{1}{\\sqrt{2}} \\hat{j}$ respectively. If $\\vec{v} = \\frac{1}{\\sqrt{2}} \\hat{i} + \\frac{1}{\\sqrt{2}} \\hat{j} + \\frac{1}{\\sqrt{2}} \\hat{k}$ , then $| \\hat{u} - \\vec{v} {|}^{2}$ is equal to",
     "images": [],
     "options": [
       "9",
@@ -77715,7 +71440,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_37",
     "number": "37",
     "type": "mcq",
-    "text": "An arc $PQ$ of a circle subtends a right angle at its centre $O$ . The mid point of the arc $PQ$ is $R$ . If $\\vec{OP} = \\vec{u} , \\vec{OR} = \\vec{v}$ and $\\vec{OQ} =\\alpha \\vec{u} +\\beta \\vec{v}$ , then $\\alpha ,{\\beta }^{2}$ are the roots of the equation",
+    "text": "An arc $PQ$ of a circle subtends a right angle at its centre $O$ . The mid point of the arc $PQ$ is $R$ . If $\\overrightarrow{OP} = \\vec{u} , \\overrightarrow{OR} = \\vec{v}$ and $\\overrightarrow{OQ} =\\alpha \\vec{u} +\\beta \\vec{v}$ , then $\\alpha ,{\\beta }^{2}$ are the roots of the equation",
     "images": [],
     "options": [
       "${x}^{2}+x-2=0$",
@@ -77734,7 +71459,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_39",
     "number": "39",
     "type": "mcq",
-    "text": "Let $\\vec{\\alpha } =4 \\vec{i} +3 \\vec{j} +5 \\vec{k}$ and $\\vec{\\beta } = \\vec{i} +2 \\vec{j} -4 \\vec{k}$ . Let ${\\vec{\\beta }}_{1}$ be parallel to $\\vec{\\alpha }$ and ${\\vec{\\beta }}_{2}$ be perpendicular to $\\vec{\\alpha }$ . If $\\vec{\\beta } ={\\vec{\\beta }}_{1}+{\\vec{\\beta }}_{2}$ , then the value of $5{\\vec{\\beta }}_{2}⋅( \\vec{i} + \\vec{j} + \\vec{k} )$ is",
+    "text": "Let $\\vec{\\alpha } =4 \\hat{i} +3 \\hat{j} +5 \\hat{k}$ and $\\vec{\\beta } = \\hat{i} +2 \\hat{j} -4 \\hat{k}$ . Let ${\\vec{\\beta }}_{1}$ be parallel to $\\vec{\\alpha }$ and ${\\vec{\\beta }}_{2}$ be perpendicular to $\\vec{\\alpha }$ . If $\\vec{\\beta } ={\\vec{\\beta }}_{1}+{\\vec{\\beta }}_{2}$ , then the value of $5{\\vec{\\beta }}_{2}⋅( \\hat{i} + \\hat{j} + \\hat{k} )$ is",
     "images": [],
     "options": [
       "9",
@@ -77753,7 +71478,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_40",
     "number": "40",
     "type": "mcq",
-    "text": "The vector $\\vec{a} =- \\vec{i} +2 \\vec{j} + \\vec{k}$ is rotated through a right angle, passing through the $y$ -axis in its way and the resulting vector is $\\vec{b}$ . Then the projection of $3 \\vec{a} + \\sqrt{2} \\vec{b}$ on $\\vec{c} =5 \\vec{i} +4 \\vec{j} +3 \\vec{k}$ is",
+    "text": "The vector $\\vec{a} =- \\hat{i} +2 \\hat{j} + \\hat{k}$ is rotated through a right angle, passing through the $y$ -axis in its way and the resulting vector is $\\vec{b}$ . Then the projection of $3 \\vec{a} + \\sqrt{2} \\vec{b}$ on $\\vec{c} =5 \\hat{i} +4 \\hat{j} +3 \\hat{k}$ is",
     "images": [],
     "options": [
       "$3 \\sqrt{2}$",
@@ -77772,7 +71497,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_41",
     "number": "41",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} + \\vec{j} + \\vec{k}$ , and $\\vec{b}$ and $\\vec{c}$ betwonon-zerovectors such that $| \\vec{a} + \\vec{b} + \\vec{c} |=| \\vec{a} + \\vec{b} - \\vec{c} |$ and $\\vec{b} ⋅ \\vec{c} =0$ . Consider the following two statements: (A) $| \\vec{a} +\\lambda \\vec{c} |\\geq | \\vec{a} |$ for all $\\lambda \\in R$ . (B) $\\vec{a}$ and $\\vec{c}$ are always parallel. Then,",
+    "text": "Let $\\vec{a} =2 \\hat{i} + \\hat{j} + \\hat{k}$ , and $\\vec{b}$ and $\\vec{c}$ betwonon-zerovectors such that $| \\vec{a} + \\vec{b} + \\vec{c} |=| \\vec{a} + \\vec{b} - \\vec{c} |$ and $\\vec{b} ⋅ \\vec{c} =0$ . Consider the following two statements: \n(A) $| \\vec{a} +\\lambda \\vec{c} |\\geq | \\vec{a} |$ for all $\\lambda \\in R$ . \n(B) $\\vec{a}$ and $\\vec{c}$ are always parallel. Then,",
     "images": [],
     "options": [
       "both (A) and (B) are correct",
@@ -77791,7 +71516,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_42",
     "number": "42",
     "type": "mcq",
-    "text": "Let $S$ be the set of all $a\\in R$ for which the angle between the vectors $\\vec{u} =a \\left( {log}_{e}b \\right) \\vec{i} -6 \\vec{j} +3 \\vec{k}$ and $\\vec{v} = \\left( {log}_{e}b \\right) \\vec{i} +2 \\vec{j} +2a \\left( {log}_{e}b \\right) \\vec{k} ,(b>1)$ is acute. Then $S$ is equal to",
+    "text": "Let $S$ be the set of all $a\\in R$ for which the angle between the vectors $\\vec{u} =a \\left( {log}_{e}b \\right) \\hat{i} -6 \\hat{j} +3 \\hat{k}$ and $\\vec{v} = \\left( {log}_{e}b \\right) \\hat{i} +2 \\hat{j} +2a \\left( {log}_{e}b \\right) \\hat{k} ,(b>1)$ is acute. Then $S$ is equal to",
     "images": [],
     "options": [
       "$\\left( -\\infty ,- \\frac{4}{3} \\right)$",
@@ -77810,7 +71535,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_43",
     "number": "43",
     "type": "mcq",
-    "text": "Let $\\vec{a}$ and $\\vec{b}$ be two unit vectors such that the angle between them is $\\frac{\\pi }{4}$ . If $\\theta$ is the angle between the vectors $( \\vec{a} + \\vec{b} )$ and $( \\vec{a} +2 \\vec{b} +2( \\vec{a} \\times \\vec{b} ))$ , then the value of $164{cos}^{2}\\theta$ is equal to :",
+    "text": "Let $\\hat{a}$ and $\\hat{b}$ be two unit vectors such that the angle between them is $\\frac{\\pi }{4}$ . If $\\theta$ is the angle between the vectors $( \\hat{a} + \\hat{b} )$ and $( \\hat{a} +2 \\hat{b} +2( \\hat{a} \\times \\hat{b} ))$ , then the value of $164{cos}^{2}\\theta$ is equal to :",
     "images": [],
     "options": [
       "$90+27 \\sqrt{2}$",
@@ -77829,7 +71554,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_44",
     "number": "44",
     "type": "mcq",
-    "text": "Let $\\vec{a} ={a}_{1} \\vec{i} +{a}_{2} \\vec{j} +{a}_{3} \\vec{k} ,{a}_{i}>0,i=1,2,3$ be a vector which makes equal angles with the coordinate axes $OX,OY$ and $OZ$ . Also, let the projection of $\\vec{a}$ on the vector $3 \\vec{i} +4 \\vec{j}$ be 7. Let $\\vec{b}$ be a vector obtained by rotating $\\vec{a}$ with ${90}^{∘}$ . If $\\vec{a} , \\vec{b}$ and $x$ -axis are coplanar, then projection of a vector $\\vec{b}$ on $3 \\vec{i} +4 \\vec{j}$ is equal to",
+    "text": "Let $\\vec{a} ={a}_{1} \\hat{i} +{a}_{2} \\hat{j} +{a}_{3} \\hat{k} ,{a}_{i}>0,i=1,2,3$ be a vector which makes equal angles with the coordinate axes $OX,OY$ and $OZ$ . Also, let the projection of $\\vec{a}$ on the vector $3 \\hat{i} +4 \\hat{j}$ be 7. Let $\\vec{b}$ be a vector obtained by rotating $\\vec{a}$ with ${90}^{∘}$ . If $\\vec{a} , \\vec{b}$ and $x$ -axis are coplanar, then projection of a vector $\\vec{b}$ on $3 \\hat{i} +4 \\hat{j}$ is equal to",
     "images": [],
     "options": [
       "$\\sqrt{7}$",
@@ -77867,7 +71592,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_46",
     "number": "46",
     "type": "mcq",
-    "text": "In a triangle $ABC$ , if $| \\vec{BC} |=3,| \\vec{CA} |=5$ , and $| \\vec{BA} |=7$ , then the projection of the vector $\\vec{BA}$ on $\\vec{BC}$ is equal to",
+    "text": "In a triangle $ABC$ , if $| \\overrightarrow{BC} |=3,| \\overrightarrow{CA} |=5$ , and $| \\overrightarrow{BA} |=7$ , then the projection of the vector $\\overrightarrow{BA}$ on $\\overrightarrow{BC}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{19}{2}$",
@@ -77886,7 +71611,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_47",
     "number": "47",
     "type": "mcq",
-    "text": "In a triangle $ABC$ , if $| \\vec{BC} |=8,| \\vec{CA} |=7,| \\vec{AB} |=10$ , then the projection of the vector $\\vec{AB}$ on $\\vec{AC}$ is equal to",
+    "text": "In a triangle $ABC$ , if $| \\overrightarrow{BC} |=8,| \\overrightarrow{CA} |=7,| \\overrightarrow{AB} |=10$ , then the projection of the vector $\\overrightarrow{AB}$ on $\\overrightarrow{AC}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{25}{4}$",
@@ -77905,7 +71630,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_48",
     "number": "48",
     "type": "mcq",
-    "text": "Let $a,b,c\\in R$ be such that ${a}^{2}+{b}^{2}+{c}^{2}=1$ . If $acos\\theta$ $=bcos \\left( \\theta + \\frac{2\\pi }{3} \\right) =ccos \\left( \\theta + \\frac{4\\pi }{3} \\right)$ , where $\\theta = \\frac{\\pi }{9}$ , then the angle between the vectors $a \\vec{i} +b \\vec{j} +c \\vec{k}$ and $b \\vec{i} +c \\vec{j} +a \\vec{k}$ is",
+    "text": "Let $a,b,c\\in R$ be such that ${a}^{2}+{b}^{2}+{c}^{2}=1$ . If $acos\\theta$ $=bcos \\left( \\theta + \\frac{2\\pi }{3} \\right) =ccos \\left( \\theta + \\frac{4\\pi }{3} \\right)$ , where $\\theta = \\frac{\\pi }{9}$ , then the angle between the vectors $a \\hat{i} +b \\hat{j} +c \\hat{k}$ and $b \\hat{i} +c \\hat{j} +a \\hat{k}$ is",
     "images": [],
     "options": [
       "$\\frac{\\pi }{2}$",
@@ -77924,13 +71649,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_49",
     "number": "49",
     "type": "mcq",
-    "text": "A vector $\\vec{a} =\\alpha \\vec{i} +2 \\vec{j} +\\beta \\vec{k} (\\alpha ,\\beta \\in R)$ lies in the plane of the vectors, $\\vec{b} = \\vec{i} + \\vec{j}$ and $\\vec{c} = \\vec{i} - \\vec{j} +4 \\vec{k}$ . If $\\vec{a}$ bisects the angle between $\\vec{b}$ and $\\vec{c}$ , then",
+    "text": "A vector $\\vec{a} =\\alpha \\hat{i} +2 \\hat{j} +\\beta \\hat{k} (\\alpha ,\\beta \\in R)$ lies in the plane of the vectors, $\\vec{b} = \\hat{i} + \\hat{j}$ and $\\vec{c} = \\hat{i} - \\hat{j} +4 \\hat{k}$ . If $\\vec{a}$ bisects the angle between $\\vec{b}$ and $\\vec{c}$ , then",
     "images": [],
     "options": [
-      "$\\vec{a} ⋅ \\vec{i} +3=0$",
-      "$\\vec{a} ⋅ \\vec{k} +4=0$",
-      "$\\vec{a} ⋅ \\vec{i} +1=0$",
-      "$\\vec{a} ⋅ \\vec{k} +2=0$"
+      "$\\hat{a} ⋅ \\hat{i} +3=0$",
+      "$\\hat{a} ⋅ \\hat{k} +4=0$",
+      "$\\hat{a} ⋅ \\hat{i} +1=0$",
+      "$\\hat{a} ⋅ \\hat{k} +2=0$"
     ],
     "correct": "d",
     "chapter": "Vector Algebra",
@@ -77962,7 +71687,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_51",
     "number": "51",
     "type": "mcq",
-    "text": "The distance of the point having position vector $- \\vec{i} +2 \\vec{j} +6 \\vec{k}$ from the straight line passing through the point ( $2,3,-4$ ) and parallel to the vector, $6 \\vec{i} +3 \\vec{j} -4 \\vec{k}$ is",
+    "text": "The distance of the point having position vector $- \\hat{i} +2 \\hat{j} +6 \\hat{k}$ from the straight line passing through the point ( $2,3,-4$ ) and parallel to the vector, $6 \\hat{i} +3 \\hat{j} -4 \\hat{k}$ is",
     "images": [],
     "options": [
       "$4 \\sqrt{3}$",
@@ -77981,7 +71706,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_52",
     "number": "52",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} + \\sqrt{2} \\vec{k} , \\vec{b} ={b}_{1} \\vec{i} +{b}_{2} \\vec{j} + \\sqrt{2} \\vec{k}$ and $\\vec{c} =5 \\vec{i} + \\vec{j} + \\sqrt{2} \\vec{k}$ be three vectors such that the projection of $\\vec{b}$ on $\\vec{a}$ is $| \\vec{a} |$ . If $\\vec{a} + \\vec{b}$ is perpendicular to $\\vec{c}$ , then $| \\vec{b} |$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} + \\sqrt{2} \\hat{k} , \\vec{b} ={b}_{1} \\hat{i} +{b}_{2} \\hat{j} + \\sqrt{2} \\hat{k}$ and $\\vec{c} =5 \\hat{i} + \\hat{j} + \\sqrt{2} \\hat{k}$ be three vectors such that the projection of $\\vec{b}$ on $\\vec{a}$ is $| \\vec{a} |$ . If $\\vec{a} + \\vec{b}$ is perpendicular to $\\vec{c}$ , then $| \\vec{b} |$ is equal to",
     "images": [],
     "options": [
       "$\\sqrt{32}$",
@@ -78000,7 +71725,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_53",
     "number": "53",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} +{\\lambda }_{1} \\vec{j} +3 \\vec{k} , \\vec{b} =4 \\vec{i} + \\left( 3-{\\lambda }_{2} \\right) \\vec{j} +6 \\vec{k}$ and $\\vec{c} =3 \\vec{i} +6 \\vec{j} + \\left( {\\lambda }_{3}-1 \\right) \\vec{k}$ be three vectors such that $\\vec{b} =2 \\vec{a}$ and $\\vec{a}$ is perpendicular to $\\vec{c}$ . Then a possible value of ( ${\\lambda }_{1},{\\lambda }_{2},{\\lambda }_{3}$ ) is",
+    "text": "Let $\\vec{a} =2 \\hat{i} +{\\lambda }_{1} \\hat{j} +3 \\hat{k} , \\vec{b} =4 \\hat{i} + \\left( 3-{\\lambda }_{2} \\right) \\hat{j} +6 \\hat{k}$ and $\\vec{c} =3 \\hat{i} +6 \\hat{j} + \\left( {\\lambda }_{3}-1 \\right) \\hat{k}$ be three vectors such that $\\vec{b} =2 \\vec{a}$ and $\\vec{a}$ is perpendicular to $\\vec{c}$ . Then a possible value of ( ${\\lambda }_{1},{\\lambda }_{2},{\\lambda }_{3}$ ) is",
     "images": [],
     "options": [
       "$\\left( \\frac{1}{2} ,4,-2 \\right)$",
@@ -78019,7 +71744,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_54",
     "number": "54",
     "type": "mcq",
-    "text": "In a triangle $ABC$ , right angled at the vertex $A$ , if the position vectors of $A,B$ and $C$ are respectively $3 \\vec{i} + \\vec{j} - \\vec{k} ,- \\vec{i} +3 \\vec{j} +p \\vec{k}$ and $5 \\vec{i} +q \\vec{j} -4 \\vec{k}$ , then the point ( $p,q$ ) lies on a line",
+    "text": "In a triangle $ABC$ , right angled at the vertex $A$ , if the position vectors of $A,B$ and $C$ are respectively $3 \\hat{i} + \\hat{j} - \\hat{k} ,- \\hat{i} +3 \\hat{j} +p \\hat{k}$ and $5 \\hat{i} +q \\hat{j} -4 \\hat{k}$ , then the point ( $p,q$ ) lies on a line",
     "images": [],
     "options": [
       "making an obtuse angle with the positive direction of $x$ -axis.",
@@ -78038,7 +71763,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_55",
     "number": "55",
     "type": "mcq",
-    "text": "In a parallelogram $ABCD,| \\vec{AB} |=a,| \\vec{AD} |=b$ and $| \\vec{AC} |=c$ , then $\\vec{DB} ⋅ \\vec{AB}$ has the value",
+    "text": "In a parallelogram $ABCD,| \\overrightarrow{AB} |=a,| \\overrightarrow{AD} |=b$ and $| \\overrightarrow{AC} |=c$ , then $\\overrightarrow{DB} ⋅ \\overrightarrow{AB}$ has the value",
     "images": [],
     "options": [
       "$\\frac{1}{2} \\left( {a}^{2}-{b}^{2}+{c}^{2} \\right)$",
@@ -78076,13 +71801,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_57",
     "number": "57",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} - \\vec{j} + \\vec{k} , \\vec{b} = \\vec{i} +2 \\vec{j} - \\vec{k}$ and $\\vec{c} = \\vec{i} + \\vec{j} -2 \\vec{k}$ be three vectors. A vector of the type $\\vec{b} +\\lambda \\vec{c}$ for some scalar $\\lambda$ , whose projection on $\\vec{a}$ is of magnitude $\\sqrt{\\frac{2}{3}}$ , is",
+    "text": "Let $\\vec{a} =2 \\hat{i} - \\hat{j} + \\hat{k} , \\vec{b} = \\hat{i} +2 \\hat{j} - \\hat{k}$ and $\\vec{c} = \\hat{i} + \\hat{j} -2 \\hat{k}$ be three vectors. A vector of the type $\\vec{b} +\\lambda \\vec{c}$ for some scalar $\\lambda$ , whose projection on $\\vec{a}$ is of magnitude $\\sqrt{\\frac{2}{3}}$ , is",
     "images": [],
     "options": [
-      "$2 \\vec{i} + \\vec{j} +5 \\vec{k}$",
-      "$2 \\vec{i} +3 \\vec{j} -3 \\vec{k}$",
-      "$2 \\vec{i} - \\vec{j} +5 \\vec{k}$",
-      "$2 \\vec{i} +3 \\vec{j} +3 \\vec{k}$"
+      "$2 \\hat{i} + \\hat{j} +5 \\hat{k}$",
+      "$2 \\hat{i} +3 \\hat{j} -3 \\hat{k}$",
+      "$2 \\hat{i} - \\hat{j} +5 \\hat{k}$",
+      "$2 \\hat{i} +3 \\hat{j} +3 \\hat{k}$"
     ],
     "correct": "b",
     "chapter": "Vector Algebra",
@@ -78095,7 +71820,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_58",
     "number": "58",
     "type": "mcq",
-    "text": "Let $\\vec{a}$ and $\\vec{b}$ be two unit vectors. If the vectors $\\vec{c} = \\vec{a} +2 \\vec{b}$ and $\\vec{d} =5 \\vec{a} +4 \\vec{b}$ are perpendicular to each other, then the angle between $\\vec{a}$ and $\\vec{b}$ is",
+    "text": "Let $\\hat{a}$ and $\\hat{b}$ be two unit vectors. If the vectors $\\vec{c} = \\hat{a} +2 \\hat{b}$ and $\\vec{d} =5 \\hat{a} +4 \\hat{b}$ are perpendicular to each other, then the angle between $\\vec{a}$ and $\\vec{b}$ is",
     "images": [],
     "options": [
       "$\\frac{\\pi }{3}$",
@@ -78114,7 +71839,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_59",
     "number": "59",
     "type": "mcq",
-    "text": "Let $ABCD$ be a parallelogram such that $\\vec{AB} = \\vec{q} , \\vec{AD} = \\vec{p}$ and $∠BAD$ be an acute angle. If $\\vec{r}$ is the vector that coincides with the altitude directed from the vertex $B$ to the side $AD$ , then $\\vec{r}$ is given by",
+    "text": "Let $ABCD$ be a parallelogram such that $\\overrightarrow{AB} = \\vec{q} , \\overrightarrow{AD} = \\vec{p}$ and $∠BAD$ be an acute angle. If $\\vec{r}$ is the vector that coincides with the altitude directed from the vertex $B$ to the side $AD$ , then $\\vec{r}$ is given by",
     "images": [],
     "options": [
       "$\\vec{r} = \\vec{q} - \\left( \\frac{\\vec{p} ⋅ \\vec{q}}{\\vec{p} ⋅ \\vec{p}} \\right) \\vec{p}$ .",
@@ -78133,7 +71858,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_60",
     "number": "60",
     "type": "mcq",
-    "text": "If the vectors $\\vec{a} = \\vec{i} - \\vec{j} +2 \\vec{k} , \\vec{b} =2 \\vec{i} +4 \\vec{j} +4 \\vec{k}$ and $\\vec{c} =\\lambda \\vec{i} + \\vec{j} +\\mu \\vec{k}$ are mutually orthogonal, then $(\\lambda ,\\mu )=$",
+    "text": "If the vectors $\\vec{a} = \\hat{i} - \\hat{j} +2 \\hat{k} , \\vec{b} =2 \\hat{i} +4 \\hat{j} +4 \\hat{k}$ and $\\vec{c} =\\lambda \\hat{i} + \\hat{j} +\\mu \\hat{k}$ are mutually orthogonal, then $(\\lambda ,\\mu )=$",
     "images": [],
     "options": [
       "$(-3,2)$",
@@ -78158,7 +71883,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "$\\pi$",
       "0",
       "$\\frac{\\pi }{4}$",
-      "$\\frac{\\pi }{2}$ $(2008)$"
+      "$\\frac{\\pi }{2}$"
     ],
     "correct": "a",
     "chapter": "Vector Algebra",
@@ -78171,7 +71896,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_62",
     "number": "62",
     "type": "mcq",
-    "text": "The values of $a$ , for which the points $A,B,C$ with position vectors $2 \\vec{i} - \\vec{j} + \\vec{k} , \\vec{i} -3 \\vec{j} -5 \\vec{k}$ and $a \\vec{i} -3 \\vec{j} + \\vec{k}$ respectively are the vertices of a rightangled triangle at $C$ are",
+    "text": "The values of $a$ , for which the points $A,B,C$ with position vectors $2 \\hat{i} - \\hat{j} + \\hat{k} , \\hat{i} -3 \hat{j} -5 \\hat{k}$ and $a \\hat{i} -3 \\hat{j} + \\hat{k}$ respectively are the vertices of a rightangled triangle at $C$ are",
     "images": [],
     "options": [
       "2 and 1",
@@ -78209,7 +71934,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_64",
     "number": "64",
     "type": "mcq",
-    "text": "A particle is acted upon by constant forces $4 \\vec{i} + \\vec{j} -3 \\vec{k}$ and $3 \\vec{i} + \\vec{j} - \\vec{k}$ which displace it from a point $\\vec{i} +2 \\vec{j} +3 \\vec{k}$ to the point $5 \\vec{i} +4 \\vec{j} + \\vec{k}$ . The work done in standard units by the forces is given by",
+    "text": "A particle is acted upon by constant forces $4 \\hat{i} + \\hat{j} -3 \\hat{k}$ and $3 \\hat{i} + \\hat{j} - \\hat{k}$ which displace it from a point $\\hat{i} +2 \\hat{j} +3 \\hat{k}$ to the point $5 \\hat{i} +4 \\hat{j} + \\hat{k}$ . The work done in standard units by the forces is given by",
     "images": [],
     "options": [
       "25",
@@ -78272,7 +71997,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
       "${60}^{∘}$",
       "${30}^{∘}$",
       "${45}^{∘}$",
-      "${90}^{∘}$ $(2002)$"
+      "${90}^{∘}$"
     ],
     "correct": "a",
     "chapter": "Vector Algebra",
@@ -78285,7 +72010,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_68",
     "number": "68",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} + \\vec{k} , \\vec{b} =3 \\vec{i} +2 \\vec{j} - \\vec{k} , \\vec{c} =\\mu \\vec{j} +u \\vec{k}$ and $\\vec{d}$ be a unit vector such that $\\vec{a} \\times \\vec{d} = \\vec{b} \\times \\vec{d}$ and $\\vec{c} ⋅ \\vec{d} =1$ . If $\\vec{c}$ is perpendicular to $\\vec{a}$ , then $|3\\lambda \\vec{d} +\\mu \\vec{c} {|}^{2}$ is equal to ___________________",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} + \\hat{k} , \\vec{b} =3 \\hat{i} +2 \\hat{j} - \\hat{k} , \\vec{c} =\\mu \\hat{j} +u \\hat{k}$ and $\\hat{d}$ be a unit vector such that $\\vec{a} \\times \\hat{d} = \\vec{b} \\times \\hat{d}$ and $\\vec{c} ⋅ \\hat{d} =1$ . If $\\vec{c}$ is perpendicular to $\\vec{a}$ , then $|3\\lambda \\hat{d} +\\mu \\vec{c} {|}^{2}$ is equal to ___________________",
     "images": [],
     "options": [],
     "correct": "5",
@@ -78299,7 +72024,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_69",
     "number": "69",
     "type": "numerical",
-    "text": "The least positive integral value of $\\alpha$ , for which the angle between the vectors $\\alpha \\vec{i} -2 \\vec{j} +2 \\vec{k}$ and $\\alpha \\vec{i} +2\\alpha \\vec{j} -2 \\vec{k}$ is acute, is ______________ .",
+    "text": "The least positive integral value of $\\alpha$ , for which the angle between the vectors $\\alpha \\hat{i} -2 \\hat{j} +2 \\hat{k}$ and $\\alpha \\hat{i} +2\\alpha \\hat{j} -2 \\hat{k}$ is acute, is ______________ .",
     "images": [],
     "options": [],
     "correct": "5",
@@ -78313,7 +72038,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_70",
     "number": "70",
     "type": "numerical",
-    "text": "If the projection of the vector $\\vec{i} +2 \\vec{j} + \\vec{k}$ on the sum of the two vectors $2 \\vec{i} +4 \\vec{j} -5 \\vec{k}$ and $-\\lambda \\vec{i} +2 \\vec{j} +3 \\vec{k}$ is 1 , then $\\lambda$ is equal to ______________-",
+    "text": "If the projection of the vector $\\hat{i} +2 \\hat{j} + \\hat{k}$ on the sum of the two vectors $2 \\hat{i} +4 \\hat{j} -5 \\hat{k}$ and $-\\lambda \\hat{i} +2 \\hat{j} +3 \\hat{k}$ is 1 , then $\\lambda$ is equal to ______________-",
     "images": [],
     "options": [],
     "correct": "5",
@@ -78341,7 +72066,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_72",
     "number": "72",
     "type": "numerical",
-    "text": "For $p>0$ , a vector ${\\vec{v}}_{2}=2 \\vec{i} +(p+1) \\vec{j}$ is obtained by rotating the vector ${\\vec{v}}_{1}= \\sqrt{3} p \\vec{i} + \\vec{j}$ by an angle $\\theta$ about origin in counter clockwise direction. If $tan\\theta = \\frac{(\\alpha \\sqrt{3} -2)}{(4 \\sqrt{3} +3)}$ , then the value of $\\alpha$ is equal to ______________ -",
+    "text": "For $p>0$ , a vector ${\\vec{v}}_{2}=2 \\hat{i} +(p+1) \\vec{j}$ is obtained by rotating the vector ${\\vec{v}}_{1}= \\sqrt{3} p \\hat{i} + \\hat{j}$ by an angle $\\theta$ about origin in counter clockwise direction. If $tan\\theta = \\frac{(\\alpha \\sqrt{3} -2)}{(4 \\sqrt{3} +3)}$ , then the value of $\\alpha$ is equal to ______________ -",
     "images": [],
     "options": [],
     "correct": "6",
@@ -78458,7 +72183,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_80",
     "number": "80",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} -3 \\vec{j} + \\vec{k} , \\vec{b} =3 \\vec{i} +2 \\vec{j} +5 \\vec{k}$ and a vector $\\vec{c}$ be such that $( \\vec{a} - \\vec{c} )\\times \\vec{b} =-18 \\vec{i} -3 \\vec{j} +12 \\vec{k}$ and $\\vec{a} ⋅ \\vec{c} =3$ . If $\\vec{b} \\times \\vec{c} = \\vec{d}$ , then $| \\vec{a} ⋅ \\vec{d} |$ is equal to:",
+    "text": "Let $\\vec{a} =2 \\hat{i} -3 \\hat{j} + \\hat{k} , \\vec{b} =3 \\hat{i} +2 \\hat{j} +5 \\hat{k}$ and a vector $\\vec{c}$ be such that $( \\vec{a} - \\vec{c} )\\times \\vec{b} =-18 \\hat{i} -3 \\hat{j} +12 \\hat{k}$ and $\\vec{a} ⋅ \\vec{c} =3$ . If $\\vec{b} \\times \\vec{c} = \\vec{d}$ , then $| \\vec{a} ⋅ \\vec{d} |$ is equal to:",
     "images": [],
     "options": [
       "12",
@@ -78477,13 +72202,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_81",
     "number": "81",
     "type": "mcq",
-    "text": "Let the position vectors of the vertices $A,B$ and $C$ ớ a tetrahedron $ABCD$ be $\\vec{i} +2 \\vec{j} + \\vec{k} , \\vec{i} +3 \\vec{j} -2 \\vec{k}$ and $2 \\vec{i} + \\vec{j} - \\vec{k}$ respectively. The altitude from the vertex $D$ to the opposite face $ABC$ meets the median line segment through $A$ of the triangle $ABC$ at the point $E$ . If the length of $AD$ is $\\frac{\\sqrt{110}}{3}$ and the volume of the tetrahedron is $\\frac{\\sqrt{805}}{6 \\sqrt{2}}$ , then the position vector of $E$ is",
+    "text": "Let the position vectors of the vertices $A,B$ and $C$ ớ a tetrahedron $ABCD$ be $\\hat{i} +2 \\hat{j} + \\hat{k} , \\hat{i} +3 \\hat{j} -2 \\hat{k}$ and $2 \\hat{i} + \\hat{j} - \\hat{k}$ respectively. The altitude from the vertex $D$ to the opposite face $ABC$ meets the median line segment through $A$ of the triangle $ABC$ at the point $E$ . If the length of $AD$ is $\\frac{\\sqrt{110}}{3}$ and the volume of the tetrahedron is $\\frac{\\sqrt{805}}{6 \\sqrt{2}}$ , then the position vector of $E$ is",
     "images": [],
     "options": [
-      "$\\frac{1}{2} ( \\vec{i} +4 \\vec{j} +7 \\vec{k} )$",
-      "$\\frac{1}{6} (7 \\vec{i} +12 \\vec{j} + \\vec{k} )$",
-      "$\\frac{1}{6} (12 \\vec{i} +12 \\vec{j} + \\vec{k} )$",
-      "$\\frac{1}{12} (7 \\vec{i} +4 \\vec{j} +3 \\vec{k} )$"
+      "$\\frac{1}{2} ( \\hat{i} +4 \\hat{j} +7 \\hat{k} )$",
+      "$\\frac{1}{6} (7 \\hat{i} +12 \\hat{j} + \\hat{k} )$",
+      "$\\frac{1}{6} (12 \\hat{i} +12 \\hat{j} + \\hat{k} )$",
+      "$\\frac{1}{12} (7 \\hat{i} +4 \\hat{j} +3 \\hat{k} )$"
     ],
     "correct": "b",
     "chapter": "Vector Algebra",
@@ -78496,7 +72221,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_82",
     "number": "82",
     "type": "mcq",
-    "text": "Let the point $A$ divide the line segment joining the points $P(-1,-1,2)$ and $Q(5,5,10)$ internally in the ratio $r:1(r>0)$ . If $O$ is the origin and $( \\vec{OQ} ⋅ \\vec{OA} )- \\frac{1}{5} | \\vec{OP} \\times \\vec{OA} {|}^{2}=10$ , then the value of $r$ is:",
+    "text": "Let the point $A$ divide the line segment joining the points $P(-1,-1,2)$ and $Q(5,5,10)$ internally in the ratio $r:1(r>0)$ . If $O$ is the origin and $( \\overrightarrow{OQ} ⋅ \\overrightarrow{OA} )- \\frac{1}{5} | \\overrightarrow{OP} \\times \\overrightarrow{OA} {|}^{2}=10$ , then the value of $r$ is:",
     "images": [],
     "options": [
       "7",
@@ -78515,7 +72240,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_83",
     "number": "83",
     "type": "mcq",
-    "text": "Let $\\vec{a} =3 \\vec{i} - \\vec{j} +2 \\vec{k} , \\vec{b} = \\vec{a} \\times ( \\vec{i} -2 \\vec{k} )$ and $\\vec{c} = \\vec{b} \\times \\vec{k}$ . Then the projection of $\\vec{c} -2 \\vec{j}$ on $\\vec{a}$ is :",
+    "text": "Let $\\vec{a} =3 \\hat{i} - \\hat{j} +2 \\hat{k} , \\vec{b} = \\vec{a} \\times ( \\hat{i} -2 \\hat{k} )$ and $\\vec{c} = \\vec{b} \\times \\hat{k}$ . Then the projection of $\\vec{c} -2 \\hat{j}$ on $\\vec{a}$ is :",
     "images": [],
     "options": [
       "$2 \\sqrt{7}$",
@@ -78534,7 +72259,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_84",
     "number": "84",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} - \\vec{j} +3 \\vec{k} , \\vec{b} =3 \\vec{i} -5 \\vec{j} + \\vec{k}$ and $\\vec{c}$ be a vector such that $\\vec{a} \\times \\vec{c} = \\vec{c} \\times \\vec{b}$ and $( \\vec{a} + \\vec{c} )⋅( \\vec{b} + \\vec{c} )=168$ . Then the maximum value of $| \\vec{c} {|}^{2}$ is :",
+    "text": "Let $\\vec{a} =2 \\hat{i} - \\hat{j} +3 \\hat{k} , \\vec{b} =3 \\hat{i} -5 \\hat{j} + \\hat{k}$ and $\\vec{c}$ be a vector such that $\\vec{a} \\times \\vec{c} = \\vec{c} \\times \\vec{b}$ and $( \\vec{a} + \\vec{c} )⋅( \\vec{b} + \\vec{c} )=168$ . Then the maximum value of $| \\vec{c} {|}^{2}$ is :",
     "images": [],
     "options": [
       "462",
@@ -78553,7 +72278,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_85",
     "number": "85",
     "type": "mcq",
-    "text": "Let $\\vec{a}$ be a unit vector perpendicular to the vectors $\\vec{b} = \\vec{i} -2 \\vec{j} +3 \\vec{k}$ and $\\vec{c} =2 \\vec{i} +3 \\vec{j} - \\vec{k}$ , and makes an angle of ${cos}^{-1} \\left( - \\frac{1}{3} \\right)$ with the vector $\\vec{i} + \\vec{j} + \\vec{k}$ . If $\\vec{a}$ makes an angle of $\\frac{\\pi }{3}$ with the vector $\\vec{i} +\\alpha \\vec{j} + \\vec{k}$ , then the value of $\\alpha$ is :",
+    "text": "Let $\\hat{a}$ be a unit vector perpendicular to the vectors $\\vec{b} = \\hat{i} -2 \\hat{j} +3 \\hat{k}$ and $\\vec{c} =2 \\hat{i} +3 \\hat{j} - \\hat{k}$ , and makes an angle of ${cos}^{-1} \\left( - \\frac{1}{3} \\right)$ with the vector $\\hat{i} + \\hat{j} + \\hat{k}$ . If $\\hat{a}$ makes an angle of $\\frac{\\pi }{3}$ with the vector $\\hat{i} +\\alpha \\hat{j} + \\hat{k}$ , then the value of $\\alpha$ is :",
     "images": [],
     "options": [
       "$\\sqrt{3}$",
@@ -78591,7 +72316,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_87",
     "number": "87",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} +5 \\vec{j} - \\vec{k} , \\vec{b} =2 \\vec{i} -2 \\vec{j} +2 \\vec{k}$ and $\\vec{c}$ be three vectors such that $( \\vec{c} + \\vec{i} )\\times ( \\vec{a} + \\vec{b} + \\vec{i} )= \\vec{a} \\times ( \\vec{c} + \\vec{i} )$ . If $\\vec{a} ⋅ \\vec{c} =-29$ , then $\\vec{c} ⋅(-2 \\vec{i} + \\vec{j} + \\vec{k} )$ is equal to:",
+    "text": "Let $\\vec{a} =2 \\hat{i} +5 \\hat{j} - \\hat{k} , \\vec{b} =2 \\hat{i} -2 \\hat{j} +2 \\hat{k}$ and $\\vec{c}$ be three vectors such that $( \\vec{c} + \\hat{i} )\\times ( \\vec{a} + \\vec{b} + \\hat{i} )= \\vec{a} \\times ( \\vec{c} + \\vec{i} )$ . If $\\vec{a} ⋅ \\vec{c} =-29$ , then $\\vec{c} ⋅(-2 \\hat{i} + \\hat{j} + \\hat{k} )$ is equal to:",
     "images": [],
     "options": [
       "15",
@@ -78610,7 +72335,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_88",
     "number": "88",
     "type": "mcq",
-    "text": "Consider three vectors $\\vec{a} , \\vec{b} , \\vec{c}$ . Let $| \\vec{a} |=2,| \\vec{b} |=3$ and $\\vec{a} = \\vec{b} \\times \\vec{c}$ . If $\\alpha \\in \\left( 0, \\frac{\\pi }{3} \\right)$ is the angle between the vectors $\\vec{b}$ and $\\vec{c}$ , then the minimum value of $27| \\vec{c} - \\vec{a} {|}^{2}$ is equal to:",
+    "text": "Consider three vectors $\\vec{a} , \\vec{b} , \\vec{c}$ . Let $| \\vec{a} |=2,| \\vec{b} |=3$ and $\\vec{a} = \\vec{b} \\times \\vec{c}$ . If $\\alpha \\in \\left[ 0, \\frac{\\pi }{3} \\right]$ is the angle between the vectors $\\vec{b}$ and $\\vec{c}$ , then the minimum value of $27| \\vec{c} - \\vec{a} {|}^{2}$ is equal to:",
     "images": [],
     "options": [
       "105",
@@ -78648,7 +72373,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_90",
     "number": "90",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} + \\vec{j} - \\vec{k} , \\vec{b} =(( \\vec{a} \\times ( \\vec{i} + \\vec{j} ))\\times \\vec{i} )\\times \\vec{i}$ . Then the square of the projection of $\\vec{a}$ on $\\vec{b}$ is :",
+    "text": "Let $\\vec{a} =2 \\hat{i} + \\hat{j} - \\hat{k} , \\vec{b} =(( \\vec{a} \\times ( \\hat{i} + \\hat{j} ))\\times \\hat{i} )\\times \\hat{i}$ . Then the square of the projection of $\\vec{a}$ on $\\vec{b}$ is :",
     "images": [],
     "options": [
       "$\\frac{1}{3}$",
@@ -78667,7 +72392,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_91",
     "number": "91",
     "type": "mcq",
-    "text": "Let $\\vec{a} =6 \\vec{i} + \\vec{j} - \\vec{k}$ and $\\vec{b} = \\vec{i} + \\vec{j}$ . If $\\vec{c}$ is a vector such that $| \\vec{c} |\\geq 6, \\vec{a} ⋅ \\vec{c} =6| \\vec{c} |,| \\vec{c} - \\vec{a} |=2 \\sqrt{2}$ and the angle between $\\vec{a} \\times \\vec{b}$ and $\\vec{c}$ is ${60}^{∘}$ , then $|( \\vec{a} \\times \\vec{b} )\\times \\vec{c} |$ is equal to:",
+    "text": "Let $\\vec{a} =6 \\hat{i} + \\hat{j} - \\hat{k}$ and $\\vec{b} = \\hat{i} + \\hat{j}$ . If $\\vec{c}$ is a vector such that $| \\vec{c} |\\geq 6, \\vec{a} ⋅ \\vec{c} =6| \\vec{c} |,| \\vec{c} - \\vec{a} |=2 \\sqrt{2}$ and the angle between $\\vec{a} \\times \\vec{b}$ and $\\vec{c}$ is ${60}^{∘}$ , then $|( \\vec{a} \\times \\vec{b} )\\times \\vec{c} |$ is equal to:",
     "images": [],
     "options": [
       "$\\frac{3}{2} \\sqrt{3}$",
@@ -78686,12 +72411,12 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_92",
     "number": "92",
     "type": "mcq",
-    "text": "The set of all $\\alpha$ , for which the vectors $\\vec{a} =\\alpha t \\vec{i} +6 \\vec{j} -3 \\vec{k}$ and $\\vec{b} =t \\vec{i} -2 \\vec{j} -2\\alpha t \\vec{k}$ are inclined at an obtuse angle for all $t\\in R$ , is",
+    "text": "The set of all $\\alpha$ , for which the vectors $\\vec{a} =\\alpha t \\hat{i} +6 \\hat{j} -3 \\hat{k}$ and $\\vec{b} =t \\hat{i} -2 \\hat{j} -2\\alpha t \\hat{k}$ are inclined at an obtuse angle for all $t\\in R$ , is",
     "images": [],
     "options": [
       "$[0,1)$",
       "$(-2,0]$",
-      "$\\left( - \\frac{4}{3} ,0 \\right)$",
+      "$\\left( - \\frac{4}{3} ,0 \\right]$",
       "$\\left( - \\frac{4}{3} ,1 \\right)$"
     ],
     "correct": "c",
@@ -78705,7 +72430,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_93",
     "number": "93",
     "type": "mcq",
-    "text": "Let $\\vec{a} =4 \\vec{i} - \\vec{j} + \\vec{k} , \\vec{b} =11 \\vec{i} - \\vec{j} + \\vec{k}$ and $\\vec{c}$ be a vector that $( \\vec{a} + \\vec{b} )\\times \\vec{c} = \\vec{c} \\times (-2 \\vec{a} +3 \\vec{b} )$ . If $(2 \\vec{a} +3 \\vec{b} )⋅ \\vec{c} =1670$ , then $| \\vec{c} {|}^{2}$ is equal to:",
+    "text": "Let $\\vec{a} =4 \\hat{i} - \\hat{j} + \\hat{k} , \\vec{b} =11 \\hat{i} - \\hat{j} + \\hat{k}$ and $\\vec{c}$ be a vector that $( \\vec{a} + \\vec{b} )\\times \\vec{c} = \\vec{c} \\times (-2 \\vec{a} +3 \\vec{b} )$ . If $(2 \\vec{a} +3 \\vec{b} )⋅ \\vec{c} =1670$ , then $| \\vec{c} {|}^{2}$ is equal to:",
     "images": [],
     "options": [
       "1600",
@@ -78724,7 +72449,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_94",
     "number": "94",
     "type": "mcq",
-    "text": "Let three vectors $\\vec{a} =\\alpha \\vec{i} +4 \\vec{j} +2 \\vec{k} , \\vec{b} =5 \\vec{i} +3 \\vec{j} +4 \\vec{k}$ , $\\vec{c} =x \\vec{i} +y \\vec{j} +z \\vec{k}$ form a triangle such that $\\vec{c} = \\vec{a} - \\vec{b}$ and the area of the triangle is $5 \\sqrt{6}$ . If $\\alpha$ is a positive real number, then $| \\vec{c} {|}^{2}$ is equal to:",
+    "text": "Let three vectors $\\vec{a} =\\alpha \\hat{i} +4 \\hat{j} +2 \\hat{k} , \\vec{b} =5 \\hat{i} +3 \\hat{j} +4 \\hat{k}$ , $\\vec{c} =x \\hat{i} +y \\hat{j} +z \\hat{k}$ form a triangle such that $\\vec{c} = \\vec{a} - \\vec{b}$ and the area of the triangle is $5 \\sqrt{6}$ . If $\\alpha$ is a positive real number, then $| \\vec{c} {|}^{2}$ is equal to:",
     "images": [],
     "options": [
       "14",
@@ -78743,7 +72468,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_95",
     "number": "95",
     "type": "mcq",
-    "text": "Let $\\vec{OA} =2a, \\vec{OB} =6 \\vec{a} +5 \\vec{b}$ and $\\vec{OC} =3 \\vec{b}$ , where $O$ is the origin. If the area of the parallelogram with adjacent sides $\\vec{OA}$ and $\\vec{OC}$ is 15 sq. units, then the area (in sq. units) of the quadrilateral $OABC$ is equal to:",
+    "text": "Let $\\overrightarrow{OA} =2a, \\overrightarrow{OB} =6 \\vec{a} +5 \\vec{b}$ and $\\overrightarrow{OC} =3 \\vec{b}$ , where $O$ is the origin. If the area of the parallelogram with adjacent sides $\\overrightarrow{OA}$ and $\\overrightarrow{OC}$ is 15 sq. units, then the area (in sq. units) of the quadrilateral $OABC$ is equal to:",
     "images": [],
     "options": [
       "35",
@@ -78762,7 +72487,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_96",
     "number": "96",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} +\\alpha \\vec{j} + \\vec{k} , \\vec{b} =- \\vec{i} + \\vec{k} , \\vec{c} =\\beta \\vec{j} - \\vec{k}$ , where $\\alpha$ and $\\beta$ are integers and $\\alpha \\beta =-6$ . Let the values of the ordered pair ( $\\alpha ,\\beta$ ), for which the area of the parallelogram of diagonals $\\vec{a} + \\vec{b}$ and $\\vec{b} + \\vec{c}$ is $\\frac{\\sqrt{21}}{2} ,bc \\left( {\\alpha }_{1},{\\beta }_{1} \\right)$ and $\\left( {\\alpha }_{2},{\\beta }_{2} \\right)$ . Then ${\\alpha }_{1}^{2}+{\\beta }_{1}^{2}-{\\alpha }_{2}{\\beta }_{2}$ is equal to",
+    "text": "Let $\\vec{a} =2 \\hat{i} +\\alpha \\hat{j} + \\hat{k} , \\vec{b} =- \\hat{i} + \\hat{k} , \\vec{c} =\\beta \\hat{j} - \\hat{k}$ , where $\\alpha$ and $\\beta$ are integers and $\\alpha \\beta =-6$ . Let the values of the ordered pair ( $\\alpha ,\\beta$ ), for which the area of the parallelogram of diagonals $\\vec{a} + \\vec{b}$ and $\\vec{b} + \\vec{c}$ is $\\frac{\\sqrt{21}}{2} ,bc \\left( {\\alpha }_{1},{\\beta }_{1} \\right)$ and $\\left( {\\alpha }_{2},{\\beta }_{2} \\right)$ . Then ${\\alpha }_{1}^{2}+{\\beta }_{1}^{2}-{\\alpha }_{2}{\\beta }_{2}$ is equal to",
     "images": [],
     "options": [
       "21",
@@ -78781,7 +72506,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_97",
     "number": "97",
     "type": "mcq",
-    "text": "Between the following two statements: Statement-I : Let $\\vec{a} = \\vec{i} +2 \\vec{j} -3 \\vec{k}$ and $\\vec{b} =2 \\vec{i} + \\vec{j} - \\vec{k}$ . Then the vector $\\vec{r}$ satisfying $\\vec{a} \\times \\vec{r} = \\vec{a} \\times \\vec{b}$ and $\\vec{a} ⋅ \\vec{r} =0$ is of magnitude $\\sqrt{10}$ . Statement-II : In a triangle $ABC,cos2A+cos2B+cos2C$ $\\geq - \\frac{3}{2}$ .",
+    "text": "Between the following two statements: \nStatement-I : Let $\\vec{a} = \\vec{i} +2 \\vec{j} -3 \\vec{k}$ and $\\vec{b} =2 \\hat{i} + \\hat{j} - \\hat{k}$ . Then the vector $\\vec{r}$ satisfying $\\vec{a} \\times \\vec{r} = \\vec{a} \\times \\vec{b}$ and $\\vec{a} ⋅ \\vec{r} =0$ is of magnitude $\\sqrt{10}$ . \nStatement-II : In a triangle $ABC,cos2A+cos2B+cos2C$ $\\geq - \\frac{3}{2}$ .",
     "images": [],
     "options": [
       "Both Statement-I and Statement-II are incorrect.",
@@ -78800,7 +72525,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_98",
     "number": "98",
     "type": "mcq",
-    "text": "Let $\\vec{OA} = \\vec{a} , \\vec{OB} =12 \\vec{a} +4 \\vec{h}$ and $\\vec{OC} =h$ , where $O$ is the origin. If $S$ is the parallelogram with adjacent sides $OA$ and $OC$ , then area of the quadrilateral $OABC$ is equal to _____________ .",
+    "text": "Let $\\overrightarrow{OA} = \\vec{a} , \\overrightarrow{OB} =12 \\vec{a} +4 \\vec{h}$ and $\\overrightarrow{OC} =h$ , where $O$ is the origin. If $S$ is the parallelogram with adjacent sides $OA$ and $OC$ , then area of the quadrilateral $OABC$ is equal to _____________ .",
     "images": [],
     "options": [
       "8",
@@ -78819,7 +72544,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_99",
     "number": "99",
     "type": "mcq",
-    "text": "Let $A(2,3,5)$ and $C(-3,4,-2)$ be opposite vertices of a parallelogram $ABCD$ . If the diagonal $\\vec{BD} = \\vec{i} +2 \\vec{j} +3 \\vec{k}$ , then the area of the parallelogram is equal to",
+    "text": "Let $A(2,3,5)$ and $C(-3,4,-2)$ be opposite vertices of a parallelogram $ABCD$ . If the diagonal $\\overrightarrow{BD} = \\hat{i} +2 \\hat{j} +3 \\hat{k}$ , then the area of the parallelogram is equal to",
     "images": [],
     "options": [
       "$\\frac{1}{2} \\sqrt{410}$",
@@ -78838,7 +72563,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_100",
     "number": "100",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} +\\alpha \\vec{j} +\\beta \\vec{k} ,\\alpha ,\\beta \\in R$ . Let a vector $\\vec{b}$ be such that the angle between $\\vec{a}$ and $\\vec{b}$ is $\\frac{\\pi }{4}$ and $| \\vec{b} {|}^{2}=6$ . If $\\vec{a} ⋅ \\vec{b} =3 \\sqrt{2}$ , then the value of $\\left( {\\alpha }^{2}+{\\beta }^{2} \\right) | \\vec{a} \\times \\vec{b} {|}^{2}$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} +\\alpha \\hat{j} +\\beta \\hat{k} ,\\alpha ,\\beta \\in R$ . Let a vector $\\vec{b}$ be such that the angle between $\\vec{a}$ and $\\vec{b}$ is $\\frac{\\pi }{4}$ and $| \\vec{b} {|}^{2}=6$ . If $\\vec{a} ⋅ \\vec{b} =3 \\sqrt{2}$ , then the value of $\\left( {\\alpha }^{2}+{\\beta }^{2} \\right) | \\vec{a} \\times \\vec{b} {|}^{2}$ is equal to",
     "images": [],
     "options": [
       "95",
@@ -78857,7 +72582,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_101",
     "number": "101",
     "type": "mcq",
-    "text": "Let $\\vec{a} =3 \\vec{i} + \\vec{j} -2 \\vec{k} , \\vec{b} =4 \\vec{i} + \\vec{j} +7 \\vec{k}$ and $\\vec{c} = \\vec{i} -3 \\vec{j} +4 \\vec{k}$ be three vectors. If a vectors $\\vec{p}$ satisfies $\\vec{p} \\times \\vec{b} = \\vec{c} \\times \\vec{b}$ and $\\vec{p} ⋅ \\vec{a} =0$ , then $\\vec{p} ⋅( \\vec{i} - \\vec{j} - \\vec{k} )$ is equal to",
+    "text": "Let $\\vec{a} =3 \\hat{i} + \\hat{j} -2 \\hat{k} , \\vec{b} =4 \\hat{i} + \\hat{j} +7 \\hat{k}$ and $\\vec{c} = \\hat{i} -3 \\hat{j} +4 \\hat{k}$ be three vectors. If a vectors $\\vec{p}$ satisfies $\\vec{p} \\times \\vec{b} = \\vec{c} \\times \\vec{b}$ and $\\vec{p} ⋅ \\vec{a} =0$ , then $\\vec{p} ⋅( \\hat{i} - \\hat{j} - \\hat{k} )$ is equal to",
     "images": [],
     "options": [
       "28",
@@ -78876,7 +72601,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_102",
     "number": "102",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} +3 \\vec{j} +4 \\vec{k} , \\vec{b} = \\vec{i} -2 \\vec{j} -2 \\vec{k}$ and $\\vec{c} =- \\vec{i} +4 \\vec{j} +3 \\vec{k}$ . If $\\vec{d}$ is a vector perpendicular to both $\\vec{b}$ and $\\vec{c}$ , and $\\vec{a} ⋅ \\vec{d} =18$ , then $| \\vec{a} \\times \\vec{d} {|}^{2}$ is equal to",
+    "text": "Let $\\vec{a} =2 \\hat{i} +3 \\hat{j} +4 \\hat{k} , \\vec{b} = \\hat{i} -2 \\hat{j} -2 \\hat{k}$ and $\\vec{c} =- \\hat{i} +4 \\hat{j} +3 \\hat{k}$ . If $\\vec{d}$ is a vector perpendicular to both $\\vec{b}$ and $\\vec{c}$ , and $\\vec{a} ⋅ \\vec{d} =18$ , then $| \\vec{a} \\times \\vec{d} {|}^{2}$ is equal to",
     "images": [],
     "options": [
       "720",
@@ -78895,7 +72620,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_103",
     "number": "103",
     "type": "mcq",
-    "text": "If the points with position vectors $\\alpha \\vec{i} +10 \\vec{j} +13 \\vec{k}$ , $6 \\vec{i} +11 \\vec{j} +11 \\vec{k} , \\frac{9}{2} \\vec{i} +\\beta \\vec{j} -8 \\vec{k}$ are collinear, then $(19\\alpha -6\\beta {)}^{2}$ is equal to",
+    "text": "If the points with position vectors $\\alpha \\hat{i} +10 \\hat{j} +13 \\hat{k}$ , $6 \\hat{i} +11 \\hat{j} +11 \\hat{k} , \\frac{9}{2} \\hat{i} +\\beta \\hat{j} -8 \\hat{k}$ are collinear, then $(19\\alpha -6\\beta {)}^{2}$ is equal to",
     "images": [],
     "options": [
       "36",
@@ -78914,7 +72639,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_104",
     "number": "104",
     "type": "mcq",
-    "text": "Let $O$ be the origin and the position vector of the point $P$ be $- \\vec{i} -2 \\vec{j} +3 \\vec{k}$ . If the position vectors of the points $A,B$ and $C$ are $-2 \\vec{i} + \\vec{j} -3 \\vec{k} ,2 \\vec{i} +4 \\vec{j} -2 \\vec{k}$ and $-4 \\vec{i} +2 \\vec{j} - \\vec{k}$ respectively, then the projection of the vector $\\vec{OP}$ on a vector perpendicular to the vectors $\\vec{AB}$ and $\\vec{AC}$ is",
+    "text": "Let $O$ be the origin and the position vector of the point $P$ be $- \\hat{i} -2 \\hat{j} +3 \\hat{k}$ . If the position vectors of the points $A,B$ and $C$ are $-2 \\hat{i} + \\hat{j} -3 \\hat{k} ,2 \\hat{i} +4 \\hat{j} -2 \\hat{k}$ and $-4 \\hat{i} +2 \\hat{j} - \\hat{k}$ respectively, then the projection of the vector $\\overrightarrow{OP}$ on a vector perpendicular to the vectors $\\overrightarrow{AB}$ and $\\vec{AC}$ is",
     "images": [],
     "options": [
       "$\\frac{8}{3}$",
@@ -78933,7 +72658,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_105",
     "number": "105",
     "type": "mcq",
-    "text": ". Let $\\vec{a} =2 \\vec{i} +7 \\vec{j} - \\vec{k} , \\vec{b} =3 \\vec{i} +5 \\vec{k}$ and $\\vec{c} = \\vec{i} - \\vec{j} +2 \\vec{k}$ . Let $\\vec{d}$ be a vector which is perpendicular to both $\\vec{a}$ and $\\vec{b}$ , and $\\vec{c} ⋅ \\vec{d} =12$ . Then $(- \\vec{i} + \\vec{j} - \\vec{k} )⋅( \\vec{c} \\times \\vec{d} )$ is equal to",
+    "text": ". Let $\\vec{a} =2 \\hat{i} +7 \\hat{j} - \\hat{k} , \\vec{b} =3 \\hat{i} +5 \\hat{k}$ and $\\vec{c} = \\hat{i} - \\hat{j} +2 \\hat{k}$ . Let $\\vec{d}$ be a vector which is perpendicular to both $\\vec{a}$ and $\\vec{b}$ , and $\\vec{c} ⋅ \\vec{d} =12$ . Then $(- \\hat{i} + \\hat{j} - \\hat{k} )⋅( \\vec{c} \\times \\vec{d} )$ is equal to",
     "images": [],
     "options": [
       "24",
@@ -78952,7 +72677,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_106",
     "number": "106",
     "type": "mcq",
-    "text": "Let $\\lambda \\in Z, \\vec{a} =\\lambda \\vec{i} + \\vec{j} - \\vec{k}$ and $\\vec{b} =3 \\vec{i} - \\vec{j} +2 \\vec{k}$ . Let $\\vec{c}$ be a vector such that $( \\vec{a} + \\vec{b} + \\vec{c} )\\times \\vec{c} = \\vec{0} , \\vec{a} ⋅ \\vec{c} =-17$ and $\\vec{b} ⋅ \\vec{c} =-20$ . Then $| \\vec{c} \\times (\\lambda \\vec{i} + \\vec{j} + \\vec{k} ){|}^{2}$ is",
+    "text": "Let $\\lambda \\in Z, \\vec{a} =\\lambda \\hat{i} + \\hat{j} - \\hat{k}$ and $\\vec{b} =3 \\hat{i} - \\hat{j} +2 \\hat{k}$ . Let $\\vec{c}$ be a vector such that $( \\vec{a} + \\vec{b} + \\vec{c} )\\times \\vec{c} = \\vec{0} , \\vec{a} ⋅ \\vec{c} =-17$ and $\\vec{b} ⋅ \\vec{c} =-20$ . Then $| \\vec{c} \\times (\\lambda \\hat{i} + \\hat{j} + \\hat{k} ){|}^{2}$ is",
     "images": [],
     "options": [
       "46",
@@ -78971,7 +72696,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_107",
     "number": "107",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} +4 \\vec{j} +2 \\vec{k} , \\vec{b} =3 \\vec{i} -2 \\vec{j} +7 \\vec{k}$ and $\\vec{c} =2 \\vec{i} - \\vec{j} +4 \\vec{k}$ . If a vector $\\vec{d}$ satisfies $\\vec{d} \\times \\vec{b} = \\vec{c} \\times \\vec{b}$ and $\\vec{d} ⋅ \\vec{a} =24$ , then $| \\vec{d} {|}^{2}$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} +4 \\hat{j} +2 \\hat{k} , \\vec{b} =3 \\hat{i} -2 \\hat{j} +7 \\hat{k}$ and $\\vec{c} =2 \\hat{i} - \\hat{j} +4 \\hat{k}$ . If a vector $\\vec{d}$ satisfies $\\vec{d} \\times \\vec{b} = \\vec{c} \\times \\vec{b}$ and $\\vec{d} ⋅ \\vec{a} =24$ , then $| \\vec{d} {|}^{2}$ is equal to",
     "images": [],
     "options": [
       "423",
@@ -78990,7 +72715,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_108",
     "number": "108",
     "type": "mcq",
-    "text": "Let for a triangle $ABC$ , $\\vec{AB} =-2 \\vec{i} + \\vec{j} +3 \\vec{k} , \\vec{CB} =\\alpha \\vec{i} +\\beta \\vec{j} +\\gamma \\vec{k}$ $\\vec{CA} =4 \\vec{i} +3 \\vec{j} +8 \\vec{k}$ . If $δ>0$ and the area of the triangle $ABC$ is $5 \\sqrt{6}$ , then $\\vec{CB} ⋅ \\vec{CA}$ is equal to",
+    "text": "Let for a triangle $ABC$ , $\\overrightrrow{AB} =-2 \\hat{i} + \\hat{j} +3 \\hat{k} , \\overrightarrow{CB} =\\alpha \\hat{i} +\\beta \\hat{j} +\\gamma \\hat{k}$ $\\overrightarrow{CA} =4 \\hat{i} +3 \\hat{j} +8 \\hat{k}$ . If $δ>0$ and the area of the triangle $ABC$ is $5 \\sqrt{6}$ , then $\\overrightarrow{CB} ⋅ \\overrightarrow{CA}$ is equal to",
     "images": [],
     "options": [
       "120",
@@ -79028,7 +72753,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_110",
     "number": "110",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} -7 \\vec{j} +5 \\vec{k} , \\vec{b} = \\vec{i} + \\vec{k}$ and $\\vec{c} = \\vec{i} +2 \\vec{j} -3 \\vec{k}$ be three given vectors. If $\\vec{r}$ is a vector such that $\\vec{r} \\times \\vec{a} = \\vec{c} \\times \\vec{a}$ and $\\vec{r} ⋅ \\vec{b} =0$ , then $| \\vec{r} |$ is equal to",
+    "text": "Let $\\vec{a} =2 \\hat{i} -7 \\hat{j} +5 \\hat{k} , \\vec{b} = \\hat{i} + \\hat{k}$ and $\\vec{c} = \\hat{i} +2 \\hat{j} -3 \\hat{k}$ be three given vectors. If $\\vec{r}$ is a vector such that $\\vec{r} \\times \\vec{a} = \\vec{c} \\times \\vec{a}$ and $\\vec{r} ⋅ \\vec{b} =0$ , then $| \\vec{r} |$ is equal to",
     "images": [],
     "options": [
       "$\\frac{11}{7} \\sqrt{2}$ `",
@@ -79085,7 +72810,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_113",
     "number": "113",
     "type": "mcq",
-    "text": "If $\\vec{a} = \\vec{i} +2 \\vec{k} , \\vec{b} = \\vec{i} + \\vec{j} + \\vec{k} , \\vec{c} =7 \\vec{i} -3 \\vec{j} +4 \\vec{k}$ , $\\vec{r} \\times \\vec{b} + \\vec{b} \\times \\vec{c} = \\vec{0}$ and $\\vec{r} ⋅ \\vec{a} =0$ . Then $\\vec{r} ⋅ \\vec{c}$ is equal to",
+    "text": "If $\\vec{a} = \\hat{i} +2 \\hat{k} , \\vec{b} = \\hat{i} + \\hat{j} + \\hat{k} , \\vec{c} =7 \\hat{i} -3 \\hat{j} +4 \\hat{k}$ , $\\vec{r} \\times \\vec{b} + \\vec{b} \\times \\vec{c} = \\vec{0}$ and $\\vec{r} ⋅ \\vec{a} =0$ . Then $\\vec{r} ⋅ \\vec{c}$ is equal to",
     "images": [],
     "options": [
       "34",
@@ -79104,7 +72829,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_114",
     "number": "114",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} +3 \\vec{k} , \\vec{b} = \\vec{i} - \\vec{j} +2 \\vec{k}$ and $\\vec{c} =5 \\vec{i} -3 \\vec{j} +3 \\vec{k}$ be there vectors. If $\\vec{r}$ is a vector such that, $\\vec{r} \\times \\vec{b} = \\vec{c} \\times \\vec{b}$ and $\\vec{r} ⋅ \\vec{a} =0$ , then $25| \\vec{r} {|}^{2}$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} +3 \\hat{k} , \\vec{b} = \\hat{i} - \\hat{j} +2 \\hat{k}$ and $\\vec{c} =5 \\hat{i} -3 \\hat{j} +3 \\hat{k}$ be there vectors. If $\\vec{r}$ is a vector such that, $\\vec{r} \\times \\vec{b} = \\vec{c} \\times \\vec{b}$ and $\\vec{r} ⋅ \\vec{a} =0$ , then $25| \\vec{r} {|}^{2}$ is equal to",
     "images": [],
     "options": [
       "560",
@@ -79123,7 +72848,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_115",
     "number": "115",
     "type": "mcq",
-    "text": "Let $ABC$ be a triangle such that $\\vec{BC} = \\vec{a} , \\vec{CA} = \\vec{b}$ , $\\vec{AB} = \\vec{c} ,| \\vec{a} |=6 \\sqrt{2} ,| \\vec{b} |=2 \\sqrt{3}$ and $\\vec{b} ⋅ \\vec{c} =12$ . Consider the statements : $\\left( {S}_{1} \\right) :|( \\vec{a} \\times \\vec{b} )+( \\vec{c} \\times \\vec{b} )|-| \\vec{c} |=6(2 \\sqrt{2} -1)$ $\\left( {S}_{2} \\right) :∠ACB={cos}^{-1} \\left( \\sqrt{\\frac{2}{3}} \\right)$ Then",
+    "text": "Let $ABC$ be a triangle such that $\\overrightarrow{BC} = \\vec{a} , \\overrightarrow{CA} = \\vec{b}$ , $\\overrightarrow{AB} = \\vec{c} ,| \\vec{a} |=6 \\sqrt{2} ,| \\vec{b} |=2 \\sqrt{3}$ and $\\vec{b} ⋅ \\vec{c} =12$ . Consider the statements : \n$\\left( {S}_{1} \\right) :|( \\vec{a} \\times \\vec{b} )+( \\vec{c} \\times \\vec{b} )|-| \\vec{c} |=6(2 \\sqrt{2} -1)$ \n$\\left( {S}_{2} \\right) :∠ACB={cos}^{-1} \\left( \\sqrt{\\frac{2}{3}} \\right)$ Then",
     "images": [],
     "options": [
       "both $\\left( {S}_{1} \\right)$ and $\\left( {S}_{2} \\right)$ are true",
@@ -79142,7 +72867,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_116",
     "number": "116",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} - \\vec{j} +2 \\vec{k}$ and let $\\vec{b}$ be a vector such that $\\vec{a} \\times \\vec{b} =2 \\vec{i} - \\vec{k}$ and $\\vec{a} ⋅ \\vec{b} =3$ . Then the projection of $\\vec{b}$ on the vector $\\vec{a} - \\vec{b}$ is",
+    "text": "Let $\\vec{a} = \\hat{i} - \\hat{j} +2 \\hat{k}$ and let $\\vec{b}$ be a vector such that $\\vec{a} \\times \\vec{b} =2 \\hat{i} - \\hat{k}$ and $\\vec{a} ⋅ \\vec{b} =3$ . Then the projection of $\\vec{b}$ on the vector $\\vec{a} - \\vec{b}$ is",
     "images": [],
     "options": [
       "$\\frac{2}{\\sqrt{21}}$",
@@ -79161,7 +72886,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_117",
     "number": "117",
     "type": "mcq",
-    "text": "Let $\\vec{a} =\\alpha \\vec{i} + \\vec{j} - \\vec{k}$ and $\\vec{b} =2 \\vec{i} + \\vec{j} -\\alpha \\vec{k} ,\\alpha >0$ . If the projection of $\\vec{a} \\times \\vec{b}$ on the vector $- \\vec{i} +2 \\vec{j} -2 \\vec{k}$ is 30 , then $\\alpha$ is equal to",
+    "text": "Let $\\vec{a} =\\alpha \\hat{i} + \\hat{j} - \\hat{k}$ and $\\vec{b} =2 \\hat{i} + \\hat{j} -\\alpha \\hat{k} ,\\alpha >0$ . If the projection of $\\vec{a} \\times \\vec{b}$ on the vector $- \\hat{i} +2 \\hat{j} -2 \\hat{k}$ is 30 , then $\\alpha$ is equal to",
     "images": [],
     "options": [
       "$\\frac{15}{2}$",
@@ -79180,7 +72905,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_118",
     "number": "118",
     "type": "mcq",
-    "text": "Let $\\vec{a} =\\alpha \\vec{i} + \\vec{j} +\\beta \\vec{k}$ and $\\vec{b} =3 \\vec{i} -5 \\vec{j} +4 \\vec{k}$ be two vectors, such that $\\vec{a} \\times \\vec{b} =- \\vec{i} +9 \\vec{j} +12 \\vec{k}$ . Then the projection of $\\vec{b} -2 \\vec{a}$ on $\\vec{b} + \\vec{a}$ is equal to",
+    "text": "Let $\\vec{a} =\\alpha \\hat{i} + \\hat{j} +\\beta \\hat{k}$ and $\\vec{b} =3 \\hat{i} -5 \\hat{j} +4 \\hat{k}$ be two vectors, such that $\\vec{a} \\times \\vec{b} =- \\hat{i} +9 \\hat{j} +12 \\hat{k}$ . Then the projection of $\\vec{b} -2 \\vec{a}$ on $\\vec{b} + \\vec{a}$ is equal to",
     "images": [],
     "options": [
       "2",
@@ -79199,7 +72924,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_119",
     "number": "119",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} - \\vec{j} +5 \\vec{k}$ and $\\vec{b} =\\alpha \\vec{i} +\\beta \\vec{j} +2 \\vec{k}$ . If $(( \\vec{a} \\times \\vec{b} )\\times \\vec{i} )⋅ \\vec{k} = \\frac{23}{2}$ , then $| \\vec{b} \\times 2 \\vec{j} |$ is equal to",
+    "text": "Let $\\vec{a} =2 \\hat{i} - \\hat{j} +5 \\hat{k}$ and $\\vec{b} =\\alpha \\hat{i} +\\beta \\hat{j} +2 \\{k}$ . If $(( \\vec{a} \\times \\vec{b} )\\times \\hat{i} )⋅ \\hat{k} = \\frac{23}{2}$ , then $| \\vec{b} \\times 2 \\hat{j} |$ is equal to",
     "images": [],
     "options": [
       "4",
@@ -79237,7 +72962,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_121",
     "number": "121",
     "type": "mcq",
-    "text": "Let $\\vec{a} =3 \\vec{i} + \\vec{j}$ and $\\vec{b} = \\vec{i} +2 \\vec{j} + \\vec{k}$ . Let $\\vec{c}$ be a vector satisfying $\\vec{a} \\times ( \\vec{b} \\times \\vec{c} )= \\vec{b} +\\lambda \\vec{c}$ . If $\\vec{b}$ and $\\vec{c}$ are nonparallel, then the value of $\\lambda$ is",
+    "text": "Let $\\vec{a} =3 \\hat{i} + \\hat{j}$ and $\\vec{b} = \\hat{i} +2 \\hat{j} + \\hat{k}$ . Let $\\vec{c}$ be a vector satisfying $\\vec{a} \\times ( \\vec{b} \\times \\vec{c} )= \\vec{b} +\\lambda \\vec{c}$ . If $\\vec{b}$ and $\\vec{c}$ are nonparallel, then the value of $\\lambda$ is",
     "images": [],
     "options": [
       "-5",
@@ -79256,7 +72981,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_122",
     "number": "122",
     "type": "mcq",
-    "text": "Let $\\vec{a}$ and $\\vec{b}$ be two unit vectors such that $|( \\vec{a} + \\vec{b} )+2( \\vec{a} \\times \\vec{b} )|=2.$ . If $\\theta \\in (0,\\pi )$ is the angle between $\\vec{a}$ and $\\vec{b}$ , then among the statements $\\left( {S}_{1} \\right) :2| \\vec{a} \\times \\vec{b} |=| \\vec{a} - \\vec{b} |$ $\\left( {S}_{2} \\right)$ : The projection of $\\vec{a}$ on $( \\vec{a} + \\vec{b} )$ is $\\frac{1}{2}$",
+    "text": "Let $\\hat{a}$ and $\\hat{b}$ be two unit vectors such that $|( \\hat{a} + \\hat{b} )+2( \\hat{a} \\times \\hat{b} )|=2.$ . If $\\theta \\in (0,\\pi )$ is the angle between $\\hat{a}$ and $\\hat{b}$ , then among the statements \n$\\left( {S}_{1} \\right) :2| \\hat{a} \\times \\hat{b} |=| \\hat{a} - \\hat{b} |$ \n$\\left( {S}_{2} \\right)$ : The projection of $\\hat{a}$ on $( \\hat{a} + \\hat{b} )$ is $\\frac{1}{2}$",
     "images": [],
     "options": [
       "Only $\\left( {S}_{1} \\right)$ is true.",
@@ -79294,7 +73019,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_124",
     "number": "124",
     "type": "mcq",
-    "text": "Let $\\vec{a} =\\alpha \\vec{i} +2 \\vec{j} - \\vec{k}$ and $\\vec{b} =-2 \\vec{i} +\\alpha \\vec{j} + \\vec{k}$ , where $\\alpha \\in R$ . If the area of the parallelogram whose adjacent sides are represented by the vectors $\\vec{a}$ and $\\vec{b}$ is $\\sqrt{15 \\left( {\\alpha }^{2}+4 \\right)}$ , then the value of $2| \\vec{a} {|}^{2}+( \\vec{a} ⋅ \\vec{b} )| \\vec{b} {|}^{2}$ is equal to",
+    "text": "Let $\\vec{a} =\\alpha \\hat{i} +2 \\hat{j} - \\hat{k}$ and $\\vec{b} =-2 \\hat{i} +\\alpha \\hat{j} + \\hat{k}$ , where $\\alpha \\in R$ . If the area of the parallelogram whose adjacent sides are represented by the vectors $\\vec{a}$ and $\\vec{b}$ is $\\sqrt{15 \\left( {\\alpha }^{2}+4 \\right)}$ , then the value of $2| \\vec{a} {|}^{2}+( \\vec{a} ⋅ \\vec{b} )| \\vec{b} {|}^{2}$ is equal to",
     "images": [],
     "options": [
       "10",
@@ -79313,7 +73038,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_125",
     "number": "125",
     "type": "mcq",
-    "text": ". Let $\\vec{a}$ be a vector which is perpendicular to the vector $3 \\vec{i} + \\frac{1}{2} \\vec{j} +2 \\vec{k}$ . If $\\vec{a} \\times (2 \\vec{i} + \\vec{k} )=2 \\vec{i} -13 \\vec{j} -4 \\vec{k}$ , then the projection of the vector $\\vec{a}$ on the vector $2 \\vec{i} +2 \\vec{j} + \\vec{k}$ is",
+    "text": ". Let $\\vec{a}$ be a vector which is perpendicular to the vector $3 \\hat{i} + \\frac{1}{2} \\hat{j} +2 \\hat{k}$ . If $\\vec{a} \\times (2 \\hat{i} + \\hat{k} )=2 \\hat{i} -13 \\hat{j} -4 \\hat{k}$ , then the projection of the vector $\\vec{a}$ on the vector $2 \\hat{i} +2 \\hat{j} + \\hat{k}$ is",
     "images": [],
     "options": [
       "$\\frac{1}{3}$",
@@ -79332,7 +73057,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_126",
     "number": "126",
     "type": "mcq",
-    "text": "Let $\\vec{a} =\\alpha \\vec{i} ∣3 \\vec{j} \\vec{k} , \\vec{b} =3 \\vec{i} -\\beta \\vec{j} +4 \\vec{k}$ and $\\vec{i} - \\vec{i} +2 \\vec{j} -2 \\vec{k}$ where $\\alpha ,\\beta \\in R$ , be three vectors. If the projection of $\\vec{a}$ on $\\vec{c}$ is $\\frac{10}{3}$ and $\\vec{b} \\times \\vec{c} =-6 \\vec{i} +10 \\vec{j} +7 \\vec{k}$ , then the value of $\\alpha +\\beta$ is equal to",
+    "text": "Let $\\vec{a} =\\alpha \\hat{i} ∣3 \\hat{j} \\hat{k} , \\vec{b} =3 \\hat{i} -\\beta \\hat{j} +4 \\hat{k}$ and $\\vec{i} - \\hat{i} +2 \\hat{j} -2 \\hat{k}$ where $\\alpha ,\\beta \\in R$ , be three vectors. If the projection of $\\vec{a}$ on $\\vec{c}$ is $\\frac{10}{3}$ and $\\vec{b} \\times \\vec{c} =-6 \\hat{i} +10 \\hat{j} +7 \\hat{k}$ , then the value of $\\alpha +\\beta$ is equal to",
     "images": [],
     "options": [
       "3",
@@ -79370,7 +73095,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_128",
     "number": "128",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} -3 \\vec{k}$ and $\\vec{b} =2 \\vec{i} -3 \\vec{j} +5 \\vec{k}$ . If $\\vec{r} \\times \\vec{a} = \\vec{b} \\times \\vec{r} , \\vec{r} ⋅(\\alpha \\vec{i} +2 \\vec{j} + \\vec{k} )=3$ and $\\vec{r} ⋅(2 \\vec{i} +5 \\vec{j} -\\alpha \\vec{k} )=-1,\\alpha \\in R$ , then the value of $\\alpha +| \\vec{r} {|}^{2}$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} -3 \\hat{k}$ and $\\vec{b} =2 \\hat{i} -3 \\hat{j} +5 \\hat{k}$ . If $\\vec{r} \\times \\vec{a} = \\vec{b} \\times \\vec{r} , \\vec{r} ⋅(\\alpha \\hat{i} +2 \\hat{j} + \\hat{k} )=3$ and $\\vec{r} ⋅(2 \\hat{i} +5 \\hat{j} -\\alpha \\hat{k} )=-1,\\alpha \\in R$ , then the value of $\\alpha +| \\vec{r} {|}^{2}$ is equal to",
     "images": [],
     "options": [
       "13",
@@ -79389,7 +73114,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_129",
     "number": "129",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} -3 \\vec{j} +4 \\vec{k}$ and $\\vec{b} =7 \\vec{i} + \\vec{j} -6 \\vec{k}$ . If $\\vec{r} \\times \\vec{a} = \\vec{r} \\times \\vec{b} , \\vec{r} ⋅( \\vec{i} +2 \\vec{j} + \\vec{k} )=-3$ , then $\\vec{r} ⋅(2 \\vec{i} -3 \\vec{j} + \\vec{k} )$ is equal to",
+    "text": "Let $\\vec{a} =2 \\hat{i} -3 \\hat{j} +4 \\hat{k}$ and $\\vec{b} =7 \\hat{i} + \\hat{j} -6 \\hat{k}$ . If $\\vec{r} \\times \\vec{a} = \\vec{r} \\times \\vec{b} , \\vec{r} ⋅( \\hat{i} +2 \\hat{j} + \\hat{k} )=-3$ , then $\\vec{r} ⋅(2 \\hat{i} -3 \\hat{j} + \\hat{k} )$ is equal to",
     "images": [],
     "options": [
       "8",
@@ -79427,7 +73152,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_131",
     "number": "131",
     "type": "mcq",
-    "text": "The magnitude of the projection of the vector $2 \\vec{i} +3 \\vec{j} + \\vec{k}$ on the vector perpendicular to the plane containing the vector $\\vec{i} + \\vec{j} + \\vec{k}$ and $\\vec{i} +2 \\vec{j} +3 \\vec{k}$ , is",
+    "text": "The magnitude of the projection of the vector $2 \\hat{i} +3 \\hat{j} + \\hat{k}$ on the vector perpendicular to the plane containing the vector $\\hat{i} + \\hat{j} + \\hat{k}$ and $\\hat{i} +2 \\hat{j} +3 \\hat{k}$ , is",
     "images": [],
     "options": [
       "$\\frac{\\sqrt{3}}{2}$",
@@ -79446,7 +73171,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_132",
     "number": "132",
     "type": "mcq",
-    "text": "Let $\\vec{a} =3 \\vec{i} +2 \\vec{j} +x \\vec{k}$ and $b= \\vec{i} - \\vec{j} + \\vec{k}$ , for some real $x$ . Then $|a\\times \\vec{b} |=r$ is possible if",
+    "text": "Let $\\vec{a} =3 \\hat{i} +2 \\hat{j} +x \\hat{k}$ and $b= \\hat{i} - \\hat{j} + \\hat{k}$ , for some real $x$ . Then $|a\\times \\vec{b} |=r$ is possible if",
     "images": [],
     "options": [
       "$r\\geq 5 \\sqrt{\\frac{3}{2}}$",
@@ -79465,13 +73190,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_133",
     "number": "133",
     "type": "mcq",
-    "text": "Let $\\vec{\\alpha } =3 \\vec{i} + \\vec{j}$ and $\\vec{\\beta } =2 \\vec{i} - \\vec{j} +3 \\vec{k}$ . If $\\vec{\\beta } ={\\vec{\\beta }}_{1}-{\\vec{\\beta }}_{2}$ , where ${\\vec{\\beta }}_{1}$ is parallel to $\\vec{\\alpha }$ and ${\\vec{\\beta }}_{2}$ is perpendicular to $\\vec{\\alpha }$ , then ${\\vec{\\beta }}_{1}\\times {\\vec{\\beta }}_{2}$ is equal to",
+    "text": "Let $\\vec{\\alpha } =3 \\hat{i} + \\hat{j}$ and $\\vec{\\beta } =2 \\hat{i} - \\hat{j} +3 \\hat{k}$ . If $\\vec{\\beta } ={\\vec{\\beta }}_{1}-{\\vec{\\beta }}_{2}$ , where ${\\vec{\\beta }}_{1}$ is parallel to $\\vec{\\alpha }$ and ${\\vec{\\beta }}_{2}$ is perpendicular to $\\vec{\\alpha }$ , then ${\\vec{\\beta }}_{1}\\times {\\vec{\\beta }}_{2}$ is equal to",
     "images": [],
     "options": [
-      "$-3 \\vec{i} +9 \\vec{j} +5 \\vec{k}$",
-      "$\\frac{1}{2} (-3 \\vec{i} +9 \\vec{j} +5 \\vec{k} )$",
-      "$3 \\vec{i} -9 \\vec{j} -5 \\vec{k}$",
-      "$\\frac{1}{2} (3 \\vec{i} -9 \\vec{j} +5 \\vec{k} )$"
+      "$-3 \\hat{i} +9 \\hat{j} +5 \\hat{k}$",
+      "$\\frac{1}{2} (-3 \\hat{i} +9 \\hat{j} +5 \\hat{k} )$",
+      "$3 \\hat{i} -9 \\hat{j} -5 \\hat{k}$",
+      "$\\frac{1}{2} (3 \\hat{i} -9 \\hat{j} +5 \\hat{k} )$"
     ],
     "correct": "b",
     "chapter": "Vector Algebra",
@@ -79484,13 +73209,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_134",
     "number": "134",
     "type": "mcq",
-    "text": "Let $\\vec{a} =3 \\vec{i} +2 \\vec{j} +2 \\vec{k}$ and $\\vec{b} = \\vec{i} +2 \\vec{j} -2 \\vec{k}$ be two vectors. If a vector perpendicular to both the vectors $\\vec{a} + \\vec{b}$ and $\\vec{a} - \\vec{b}$ has the magnitude 12 then one such vector is",
+    "text": "Let $\\vec{a} =3 \\hat{i} +2 \\hat{j} +2 \\hat{k}$ and $\\hat{b} = \\hat{i} +2 \\hat{j} -2 \\hat{k}$ be two vectors. If a vector perpendicular to both the vectors $\\vec{a} + \\vec{b}$ and $\\vec{a} - \\vec{b}$ has the magnitude 12 then one such vector is",
     "images": [],
     "options": [
-      "$4(2 \\vec{i} -2 \\vec{j} - \\vec{k} )$",
-      "$4(-2 \\vec{i} -2 \\vec{j} + \\vec{k} )$",
-      "$4(2 \\vec{i} +2 \\vec{j} + \\vec{k} )$",
-      "$4(2 \\vec{i} +2 \\vec{j} - \\vec{k} )$"
+      "$4(2 \\hat{i} -2 \\hat{j} - \\hat{k} )$",
+      "$4(-2 \\hat{i} -2 \\hat{j} + \\hat{k} )$",
+      "$4(2 \\hat{i} +2 \\hat{j} + \\hat{k} )$",
+      "$4(2 \\hat{i} +2 \\hat{j} - \\hat{k} )$"
     ],
     "correct": "a",
     "chapter": "Vector Algebra",
@@ -79522,7 +73247,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_136",
     "number": "136",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} + \\vec{j} -2 \\vec{k}$ and $\\vec{b} = \\vec{i} + \\vec{j}$ . Let $\\vec{c}$ be a vector such that $| \\vec{c} - \\vec{a} |=3,|( \\vec{a} \\times \\vec{b} )\\times \\vec{c} |=3$ and the angle between $\\vec{c}$ and $\\vec{a} \\times \\vec{b}$ be ${30}^{∘}$ . Then $\\vec{a} ⋅ \\vec{c}$ is equal to",
+    "text": "Let $\\vec{a} =2 \\hat{i} + \\hat{j} -2 \\hat{k}$ and $\\vec{b} = \\hat{i} + \\hat{j}$ . Let $\\vec{c}$ be a vector such that $| \\vec{c} - \\vec{a} |=3,|( \\vec{a} \\times \\vec{b} )\\times \\vec{c} |=3$ and the angle between $\\vec{c}$ and $\\vec{a} \\times \\vec{b}$ be ${30}^{∘}$ . Then $\\vec{a} ⋅ \\vec{c}$ is equal to",
     "images": [],
     "options": [
       "2",
@@ -79541,13 +73266,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_137",
     "number": "137",
     "type": "mcq",
-    "text": "If the vector $\\vec{b} =3 \\vec{j} +4 \\vec{k}$ is written as the sum of a vector ${\\vec{b}}_{1}$ , parallel to $\\vec{a} = \\vec{i} + \\vec{j}$ and a vector ${\\vec{b}}_{2}$ , perpendicular to $\\vec{a}$ , then ${\\vec{b}}_{1}\\times {\\vec{b}}_{2}$ is equal to",
+    "text": "If the vector $\\vec{b} =3 \\hat{j} +4 \\hat{k}$ is written as the sum of a vector ${\\vec{b}}_{1}$ , parallel to $\\vec{a} = \\hat{i} + \\hat{j}$ and a vector ${\\vec{b}}_{2}$ , perpendicular to $\\vec{a}$ , then ${\\vec{b}}_{1}\\times {\\vec{b}}_{2}$ is equal to",
     "images": [],
     "options": [
-      "$3 \\vec{i} -3 \\vec{j} +9 \\vec{k}$",
-      "$-3 \\vec{i} +3 \\vec{j} -9 \\vec{k}$",
-      "$-6 \\vec{i} +6 \\vec{j} - \\frac{9}{2} \\vec{k}$",
-      "$6 \\vec{i} -6 \\vec{j} + \\frac{9}{2} \\vec{k}$"
+      "$3 \\hat{i} -3 \\hat{j} +9 \\hat{k}$",
+      "$-3 \\hat{i} +3 \\hat{j} -9 \\hat{k}$",
+      "$-6 \\hat{i} +6 \\hat{j} - \\frac{9}{2} \\hat{k}$",
+      "$6 \\hat{i} -6 \\hat{j} + \\frac{9}{2} \\hat{k}$"
     ],
     "correct": "d",
     "chapter": "Vector Algebra",
@@ -79560,7 +73285,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_138",
     "number": "138",
     "type": "mcq",
-    "text": "The area (in sq. units) of the parallelogram whose diagonals are along the vectors $8 \\vec{i} -6 \\vec{j}$ and $3 \\vec{i} +4 \\vec{j} -12 \\vec{k}$ , is",
+    "text": "The area (in sq. units) of the parallelogram whose diagonals are along the vectors $8 \\hat{i} -6 \\hat{j}$ and $3 \\hat{i} +4 \\hat{j} -12 \\hat{k}$ , is",
     "images": [],
     "options": [
       "65",
@@ -79598,7 +73323,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_140",
     "number": "140",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} + \\vec{j} -2 \\vec{k} , \\vec{b} = \\vec{i} + \\vec{j}$ . If $\\vec{c}$ is a vector such that $\\vec{a} ⋅ \\vec{c} =| \\vec{c} |,| \\vec{c} - \\vec{a} |=2 \\sqrt{2}$ and the angle between $\\vec{a} \\times \\vec{b}$ and $\\vec{c}$ is ${30}^{∘}$ , then $|( \\vec{a} \\times \\vec{b} )\\times \\vec{c} |$ equals",
+    "text": "Let $\\vec{a} =2 \\hat{i} + \\hat{j} -2 \\hat{k} , \\vec{b} = \\hat{i} + \\hat{j}$ . If $\\vec{c}$ is a vector such that $\\vec{a} ⋅ \\vec{c} =| \\vec{c} |,| \\vec{c} - \\vec{a} |=2 \\sqrt{2}$ and the angle between $\\vec{a} \\times \\vec{b}$ and $\\vec{c}$ is ${30}^{∘}$ , then $|( \\vec{a} \\times \\vec{b} )\\times \\vec{c} |$ equals",
     "images": [],
     "options": [
       "$\\frac{1}{2}$",
@@ -79617,7 +73342,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_141",
     "number": "141",
     "type": "mcq",
-    "text": "If $\\vec{u} = \\vec{j} +4 \\vec{k} , \\vec{v} = \\vec{i} -3k$ , and $\\vec{w} =cos\\theta \\vec{i} +sin\\theta \\vec{j}$ are vectors in 3 -dimensional space, then the maximum possible value of $| \\vec{u} \\times \\vec{v} ⋅ \\vec{w} |$ is",
+    "text": "If $\\vec{u} = \\hat{j} +4 \\hat{k} , \\vec{v} = \\hat{i} -3k$ , and $\\vec{w} =cos\\theta \\hat{i} +sin\\theta \\hat{j}$ are vectors in 3 -dimensional space, then the maximum possible value of $| \\vec{u} \\times \\vec{v} ⋅ \\vec{w} |$ is",
     "images": [],
     "options": [
       "$\\sqrt{3}$",
@@ -79636,7 +73361,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_142",
     "number": "142",
     "type": "mcq",
-    "text": "If $\\vec{u}$ and $\\vec{v}$ are unit vectors and $\\theta$ is the acute angle between them, then $2 \\vec{u} \\times 3 \\vec{v}$ is a unit vector for",
+    "text": "If $\\hat{u}$ and $\\hat{v}$ are unit vectors and $\\theta$ is the acute angle between them, then $2 \\hat{u} \\times 3 \\hat{v}$ is a unit vector for",
     "images": [],
     "options": [
       "no value of $\\theta$",
@@ -79655,7 +73380,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_143",
     "number": "143",
     "type": "mcq",
-    "text": "For any vector $\\vec{a}$ , the value of $( \\vec{a} \\times \\vec{i} {)}^{2}+( \\vec{a} \\times \\vec{j} {)}^{2}+( \\vec{a} \\times \\vec{k} {)}^{2}$ is equal to",
+    "text": "For any vector $\\vec{a}$ , the value of $( \\vec{a} \\times \\hat{i} {)}^{2}+( \\vec{a} \\times \\hat{j} {)}^{2}+( \\vec{a} \\times \\hat{k} {)}^{2}$ is equal to",
     "images": [],
     "options": [
       "${\\vec{a}}^{2}$",
@@ -79674,7 +73399,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_144",
     "number": "144",
     "type": "mcq",
-    "text": "Let $\\vec{u} = \\vec{i} + \\vec{j} , \\vec{v} = \\vec{i} - \\vec{j}$ and $\\vec{w} = \\vec{i} +2 \\vec{j} +3 \\vec{k}$ . If $\\vec{n}$ is a unit vector such that $\\vec{u} ⋅ \\vec{n} =0$ and $\\vec{v} ⋅ \\vec{n} =0$ , then $| \\vec{w} ⋅ \\vec{n} |$ is equal to",
+    "text": "Let $\\vec{u} = \\hat{i} + \\hat{j} , \\vec{v} = \\hat{i} - \\hat{j}$ and $\\vec{w} = \\hat{i} +2 \\hat{j} +3 \\hat{k}$ . If $\\hat{n}$ is a unit vector such that $\\vec{u} ⋅ \\hat{n} =0$ and $\\vec{v} ⋅ \\hat{n} =0$ , then $| \\vec{w} ⋅ \\hat{n} |$ is equal to",
     "images": [],
     "options": [
       "1",
@@ -79712,7 +73437,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_146",
     "number": "146",
     "type": "mcq",
-    "text": "$\\vec{a} =3 \\vec{i} -5 \\vec{j}$ and $\\vec{b} =6 \\vec{i} +3 \\vec{j}$ are two vectors and $\\vec{c}$ is a vector such that $\\vec{c} = \\vec{a} \\times \\vec{b}$ then $| \\vec{a} |:| \\vec{b} |:| \\vec{c} |=$",
+    "text": "$\\vec{a} =3 \\hat{i} -5 \\hat{j}$ and $\\vec{b} =6 \\hat{i} +3 \\hat{j}$ are two vectors and $\\vec{c}$ is a vector such that $\\vec{c} = \\vec{a} \\times \\vec{b}$ then $| \\vec{a} |:| \\vec{b} |:| \\vec{c} |=$",
     "images": [],
     "options": [
       "$\\sqrt{39} : \\sqrt{45} : \\sqrt{39}$",
@@ -79769,7 +73494,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_149",
     "number": "149",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} + \\vec{k} , \\vec{b} =3 \\vec{i} -3 \\vec{j} +3 \\vec{k} , \\vec{c} =2 \\vec{i} - \\vec{j} +2 \\vec{k}$ and $\\vec{d}$ be a vector such that $\\vec{b} \\times \\vec{d} = \\vec{c} \\times \\vec{d}$ and $\\vec{a} ⋅ \\vec{d} =4$ . Then $|( \\vec{a} \\times \\vec{d} ){|}^{2}$ is equal to ____",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} + \\hat{k} , \\vec{b} =3 \\hat{i} -3 \\hat{j} +3 \\hat{k} , \\vec{c} =2 \\hat{i} - \\hat{j} +2 \\hat{k}$ and $\\vec{d}$ be a vector such that $\\vec{b} \\times \\vec{d} = \\vec{c} \\times \\vec{d}$ and $\\vec{a} ⋅ \\vec{d} =4$ . Then $|( \\vec{a} \\times \\vec{d} ){|}^{2}$ is equal to ____",
     "images": [],
     "options": [],
     "correct": "128",
@@ -79783,7 +73508,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_150",
     "number": "150",
     "type": "numerical",
-    "text": "Let $\\vec{c}$ be the projection vector of $\\vec{b} =\\lambda \\vec{i} +4 \\vec{k} ,\\lambda >0$ , on the vector $\\vec{a} = \\vec{i} +2 \\vec{j} +2 \\vec{k}$ . If $| \\vec{a} + \\vec{c} |=7$ , then the area of the parallelogram formed by the vectors $\\vec{b}$ and $\\vec{c}$ is _____________ .",
+    "text": "Let $\\vec{c}$ be the projection vector of $\\vec{b} =\\lambda \\hat{i} +4 \\hat{k} ,\\lambda >0$ , on the vector $\\vec{a} = \\hat{i} +2 \\hat{j} +2 \\hat{k}$ . If $| \\vec{a} + \\vec{c} |=7$ , then the area of the parallelogram formed by the vectors $\\vec{b}$ and $\\vec{c}$ is _____________ .",
     "images": [],
     "options": [],
     "correct": "16",
@@ -79797,7 +73522,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_151",
     "number": "151",
     "type": "numerical",
-    "text": "Let $ABC$ be a triangle of area $15 \\sqrt{2}$ and the vectors $\\vec{AB} = \\vec{i} +2 \\vec{j} -7 \\vec{k} , \\vec{BC} =a \\vec{i} +b \\vec{j} +c \\vec{k}$ and $\\vec{AC} =6 \\vec{i} +d \\vec{j} -2 \\vec{k} ,d>0$ . Then the square of the length of the largest side of the triangle $ABC$ is ___________ .",
+    "text": "Let $ABC$ be a triangle of area $15 \\sqrt{2}$ and the vectors $\\overrightarrow{AB} = \\hat{i} +2 \\hat{j} -7 \\hat{k} , \\overrightarrow{BC} =a \\hat{i} +b \\hat{j} +c \\hat{k}$ and $\\overrightarrow{AC} =6 \\hat{i} +d \\hat{j} -2 \\hat{k} ,d>0$ . Then the square of the length of the largest side of the triangle $ABC$ is ___________ .",
     "images": [],
     "options": [],
     "correct": "54",
@@ -79811,7 +73536,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_152",
     "number": "152",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} -3 \\vec{j} +7 \\vec{k} , \\vec{b} =2 \\vec{i} - \\vec{j} + \\vec{k}$ and $\\vec{c}$ be a vector such that $( \\vec{a} +2 \\vec{b} )\\times \\vec{c} =3( \\vec{c} \\times \\vec{a} )$ . If $\\vec{a} ⋅ \\vec{c} =130$ , then $\\vec{b} ⋅ \\vec{c}$ is equal to ____________ .",
+    "text": "Let $\\vec{a} = \\hat{i} -3 \\hat{j} +7 \\hat{k} , \\vec{b} =2 \\hat{i} - \\hat{j} + \\hat{k}$ and $\\vec{c}$ be a vector such that $( \\vec{a} +2 \\vec{b} )\\times \\vec{c} =3( \\vec{c} \\times \\vec{a} )$ . If $\\vec{a} ⋅ \\vec{c} =130$ , then $\\vec{b} ⋅ \\vec{c}$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "30",
@@ -79825,7 +73550,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_153",
     "number": "153",
     "type": "numerical",
-    "text": "Let $\\vec{a} =2 \\vec{i} -3 \\vec{j} +4 \\vec{k} , \\vec{b} =3 \\vec{i} +4 \\vec{j} -5 \\vec{k}$ and a vector $\\vec{c}$ be such that $\\vec{a} \\times ( \\vec{b} + \\vec{c} )+ \\vec{b} \\times \\vec{c} = \\vec{i} +8 \\vec{j} +13 \\vec{k}$ . If $\\vec{a} ⋅ \\vec{c} =13$ , then $(24- \\vec{b} ⋅ \\vec{c} )$ is equal to _______________ .",
+    "text": "Let $\\vec{a} =2 \\hat{i} -3 \\hat{j} +4 \\hat{k} , \\vec{b} =3 \\hat{i} +4 \\hat{j} -5 \\hat{k}$ and a vector $\\vec{c}$ be such that $\\vec{a} \\times ( \\vec{b} + \\vec{c} )+ \\vec{b} \\times \\vec{c} = \\hat{i} +8 \\vec{j} +13 \\hat{k}$ . If $\\vec{a} ⋅ \\vec{c} =13$ , then $(24- \\vec{b} ⋅ \\vec{c} )$ is equal to _______________ .",
     "images": [],
     "options": [],
     "correct": "46",
@@ -79839,7 +73564,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_154",
     "number": "154",
     "type": "numerical",
-    "text": "Let $\\vec{a} =9 \\vec{i} -13 \\vec{j} +25 \\vec{k} , \\vec{b} =3 \\vec{i} +7 \\vec{j} -13 \\vec{k}$ and $\\vec{c} =17 \\vec{i} -2 \\vec{j} + \\vec{k}$ be three given vectors. If $\\vec{r}$ is a vector such that $\\vec{r} \\times \\vec{a} =( \\vec{b} + \\vec{c} )\\times \\vec{a}$ and $\\vec{r} ⋅( \\vec{b} - \\vec{c} )=0$ , then $\\frac{|593 \\vec{r} +67 \\vec{a} {|}^{2}}{(593{)}^{2}}$ is equal to ________",
+    "text": "Let $\\vec{a} =9 \\hat{i} -13 \\hat{j} +25 \\hat{k} , \\vec{b} =3 \\hat{i} +7 \\hat{j} -13 \\hat{k}$ and $\\vec{c} =17 \\hat{i} -2 \\hat{j} + \\hat{k}$ be three given vectors. If $\\vec{r}$ is a vector such that $\\vec{r} \\times \\vec{a} =( \\vec{b} + \\vec{c} )\\times \\vec{a}$ and $\\vec{r} ⋅( \\vec{b} - \\vec{c} )=0$ , then $\\frac{|593 \\vec{r} +67 \\vec{a} {|}^{2}}{(593{)}^{2}}$ is equal to ________",
     "images": [],
     "options": [],
     "correct": "569",
@@ -79853,7 +73578,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_155",
     "number": "155",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} + \\vec{k} , \\vec{b} =- \\vec{i} -8 \\vec{j} +2 \\vec{k}$ and $\\vec{c} =4 \\vec{i} +{c}_{2} \\vec{j} +{c}_{3} \\vec{k}$ be three vectors such that $\\vec{b} \\times \\vec{a} = \\vec{c} \\times \\vec{a}$ . If the angle between the vector $\\vec{c}$ and the vector $3 \\vec{i} +4 \\vec{j} + \\vec{k}$ is $\\theta$ , then the greatest integer less than or equal to ${tan}^{2}\\theta$ is ________ .",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} + \\hat{k} , \\vec{b} =- \\hat{i} -8 \\hat{j} +2 \\hat{k}$ and $\\vec{c} =4 \\hat{i} +{c}_{2} \\hat{j} +{c}_{3} \\hat{k}$ be three vectors such that $\\vec{b} \\times \\vec{a} = \\vec{c} \\times \\vec{a}$ . If the angle between the vector $\\vec{c}$ and the vector $3 \\hat{i} +4 \\hat{j} + \\hat{k}$ is $\\theta$ , then the greatest integer less than or equal to ${tan}^{2}\\theta$ is ________ .",
     "images": [],
     "options": [],
     "correct": "38",
@@ -79867,7 +73592,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_156",
     "number": "156",
     "type": "numerical",
-    "text": "Let $\\vec{a}$ and $\\vec{b}$ be two vectors such that $| \\vec{a} |=1,| \\vec{b} |=4$ and $\\vec{a} ⋅ \\vec{b} =2$ . If $\\vec{c} =(2 \\vec{a} \\times \\vec{b} )-3 \\vec{b}$ and the angle between $\\vec{b}$ and $\\vec{c}$ is $\\alpha$ , then $192{sin}^{2}\\alpha$ is equal to______________ (31's Jan 1's Shifi 2024)",
+    "text": "Let $\\vec{a}$ and $\\vec{b}$ be two vectors such that $| \\vec{a} |=1,| \\vec{b} |=4$ and $\\vec{a} ⋅ \\vec{b} =2$ . If $\\vec{c} =(2 \\vec{a} \\times \\vec{b} )-3 \\vec{b}$ and the angle between $\\vec{b}$ and $\\vec{c}$ is $\\alpha$ , then $192{sin}^{2}\\alpha$ is equal to______________ ",
     "images": [],
     "options": [],
     "correct": "48",
@@ -79881,7 +73606,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_157",
     "number": "157",
     "type": "numerical",
-    "text": "Let $\\vec{u} =3 \\vec{i} +2 \\vec{j} + \\vec{k} , \\vec{b} =2 \\vec{i} - \\vec{j} +3 \\vec{k}$ and $\\vec{c}$ be a vector such that $( \\vec{a} + \\vec{b} )\\times \\vec{c} =2( \\vec{a} \\times \\vec{b} )+24 \\vec{j} -6 \\vec{k}$ and $( \\vec{a} - \\vec{b} + \\vec{i} )⋅ \\vec{c} =-3$ . Then $| \\vec{c} {|}^{2}$ is equal to ________________ -",
+    "text": "Let $\\vec{u} =3 \\hat{i} +2 \\hat{j} + \\hat{k} , \\vec{b} =2 \\hat{i} - \\hat{j} +3 \\hat{k}$ and $\\vec{c}$ be a vector such that $( \\vec{a} + \\vec{b} )\\times \\vec{c} =2( \\vec{a} \\times \\vec{b} )+24 \\vec{j} -6 \\vec{k}$ and $( \\vec{a} - \\vec{b} + \\vec{i} )⋅ \\vec{c} =-3$ . Then $| \\vec{c} {|}^{2}$ is equal to ________________ -",
     "images": [],
     "options": [],
     "correct": "38",
@@ -79895,7 +73620,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_158",
     "number": "158",
     "type": "numerical",
-    "text": "Let $a=6 \\vec{i} +9 \\vec{j} +12 \\vec{k} , \\vec{b} =\\alpha \\vec{i} +11 \\vec{j} -2 \\vec{k}$ and $\\vec{c}$ be vectors such that $\\vec{a} \\times \\vec{c} = \\vec{a} \\times \\vec{b}$ . If $\\vec{a} ⋅ \\vec{c} --12$ , $\\vec{c} ⋅( \\vec{i} -2 \\vec{j} + \\vec{k} )-5$ , then $\\vec{c} ⋅( \\vec{i} + \\vec{j} + \\vec{k} )$ is equal to ______________ .",
+    "text": "Let $a=6 \\hat{i} +9 \\hat{j} +12 \\hat{k} , \\vec{b} =\\alpha \\hat{i} +11 \\hat{j} -2 \\hat{k}$ and $\\vec{c}$ be vectors such that $\\vec{a} \\times \\vec{c} = \\vec{a} \\times \\vec{b}$ . If $\\vec{a} ⋅ \\vec{c} --12$ , $\\vec{c} ⋅( \\hat{i} -2 \\hat{j} + \\hat{k} )-5$ , then $\\vec{c} ⋅( \\hat{i} + \\hat{j} + \\hat{k} )$ is equal to ______________ .",
     "images": [],
     "options": [],
     "correct": "11",
@@ -79909,7 +73634,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_159",
     "number": "159",
     "type": "numerical",
-    "text": "Let $\\vec{a} =3 \\vec{i} + \\vec{j} - \\vec{k}$ and $\\vec{c} =2 \\vec{i} 3 \\vec{j} ∣3 \\vec{k}$ . If $\\vec{b}$ is a vector such that $\\vec{a} = \\vec{b} \\times \\vec{c}$ and $| \\vec{b} {|}^{2}=50$ , then $\\left( 72-| \\vec{b} + \\vec{c} {|}^{2} \\right)$ is equal to ________________ .",
+    "text": "Let $\\vec{a} =3 \\hat{i} + \\hat{j} - \\hat{k}$ and $\\vec{c} =2 \\hat{i} 3 \\hat{j} ∣3 \\hat{k}$ . If $\\vec{b}$ is a vector such that $\\vec{a} = \\vec{b} \\times \\vec{c}$ and $| \\vec{b} {|}^{2}=50$ , then $\\left( 72-| \\vec{b} + \\vec{c} {|}^{2} \\right)$ is equal to ________________ .",
     "images": [],
     "options": [],
     "correct": "66",
@@ -79937,7 +73662,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_161",
     "number": "161",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} +\\lambda \\vec{k} , \\vec{b} =3 \\vec{i} -5 \\vec{j} -\\lambda \\vec{k} , \\vec{a} ⋅ \\vec{c} =7$ , $2 \\vec{b} ⋅ \\vec{c} +43=0, \\vec{a} \\times \\vec{c} = \\vec{b} \\times \\vec{c}$ . The $| \\vec{a} ⋅ \\vec{b} |$ is equal to______________ .",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} +\\lambda \\hat{k} , \\vec{b} =3 \\hat{i} -5 \\hat{j} -\\lambda \\hat{k} , \\vec{a} ⋅ \\vec{c} =7$ , $2 \\vec{b} ⋅ \\vec{c} +43=0, \\vec{a} \\times \\vec{c} = \\vec{b} \\times \\vec{c}$ . The $| \\vec{a} ⋅ \\vec{b} |$ is equal to______________ .",
     "images": [],
     "options": [],
     "correct": "8",
@@ -80007,7 +73732,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_167",
     "number": "167",
     "type": "numerical",
-    "text": "Let $\\vec{b} = \\vec{i} + \\vec{j} +\\lambda \\vec{k} ,\\lambda \\in R$ . If $\\vec{a}$ is a vector such that $\\vec{u} \\times \\vec{b} -13 \\vec{i} - \\vec{j} -4 \\vec{k}$ and $\\vec{u} ⋅ \\vec{b} +21=0$ , then $( \\vec{b} - \\vec{a} )⋅( \\vec{k} - \\vec{j} )+( \\vec{b} + \\vec{u} )⋅( \\vec{i} - \\vec{k} )$ is equal to _______________",
+    "text": "Let $\\vec{b} = \\hat{i} + \\hat{j} +\\lambda \\hat{k} ,\\lambda \\in R$ . If $\\vec{a}$ is a vector such that $\\vec{u} \\times \\vec{b} -13 \\hat{i} - \\hat{j} -4 \\hat{k}$ and $\\vec{u} ⋅ \\vec{b} +21=0$ , then $( \\vec{b} - \\vec{a} )⋅( \\hat{k} - \\hat{j} )+( \\vec{b} + \\vec{u} )⋅( \\hat{i} - \\hat{k} )$ is equal to _______________",
     "images": [],
     "options": [],
     "correct": "14",
@@ -80021,7 +73746,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_169",
     "number": "169",
     "type": "numerical",
-    "text": "Let $\\vec{a} =2 \\vec{i} - \\vec{j} +2 \\vec{k}$ and $\\vec{b} = \\vec{i} +2 \\vec{j} - \\vec{k}$ . Let a vector $\\vec{v}$ be in the plane containing $\\vec{a}$ and $\\vec{b}$ . If $\\vec{v}$ is perpendicular to the vector $3 \\vec{i} +2 \\vec{j} - \\vec{k}$ and its projection on $\\vec{a}$ is 19 units, then $|2 \\vec{v} {|}^{2}$ is equal to________________.",
+    "text": "Let $\\vec{a} =2 \\hat{i} - \\hat{j} +2 \\hat{k}$ and $\\vec{b} = \\hat{i} +2 \\hat{j} - \\hat{k}$ . Let a vector $\\vec{v}$ be in the plane containing $\\vec{a}$ and $\\vec{b}$ . If $\\vec{v}$ is perpendicular to the vector $3 \\hat{i} +2 \\hat{j} - \\hat{k}$ and its projection on $\\vec{a}$ is 19 units, then $|2 \\vec{v} {|}^{2}$ is equal to________________.",
     "images": [],
     "options": [],
     "correct": "1494",
@@ -80035,7 +73760,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_170",
     "number": "170",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} +5 \\vec{j} +\\alpha \\vec{k} , \\vec{b} = \\vec{i} +3 \\vec{j} +\\beta \\vec{k}$ and $\\vec{c} =- \\vec{i} +2 \\vec{j} -3 \\vec{k}$ be three vectors such that, $| \\vec{b} \\times \\vec{c} |=5 \\sqrt{3}$ and $\\vec{a}$ is perpendicular to $\\vec{b}$ . Then the greatest amongst the values of $| \\vec{a} {|}^{2}$ is _______________",
+    "text": "Let $\\vec{a} = \\hat{i} +5 \\hat{j} +\\alpha \\hat{k} , \\vec{b} = \\hat{i} +3 \\hat{j} +\\beta \\hat{k}$ and $\\vec{c} =- \\hat{i} +2 \\hat{j} -3 \\hat{k}$ be three vectors such that, $| \\vec{b} \\times \\vec{c} |=5 \\sqrt{3}$ and $\\vec{a}$ is perpendicular to $\\vec{b}$ . Then the greatest amongst the values of $| \\vec{a} {|}^{2}$ is _______________",
     "images": [],
     "options": [],
     "correct": "90",
@@ -80049,7 +73774,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_171",
     "number": "171",
     "type": "numerical",
-    "text": "Let $\\vec{p} =2 \\vec{i} +3 \\vec{j} + \\vec{k}$ and $\\vec{q} = \\vec{i} +2 \\vec{j} + \\vec{k}$ be two vectors. If a vector $\\vec{r} =(\\alpha \\vec{i} +\\beta \\vec{j} +\\gamma \\vec{k} )$ is perpendicular to each of the vectors $( \\vec{p} + \\vec{q} )$ and $( \\vec{p} - \\vec{q} )$ , and $| \\vec{r} |= \\sqrt{3}$ , then $|\\alpha |+|\\beta |+|\\gamma |$ is equal to ______________ .",
+    "text": "Let $\\vec{p} =2 \\hat{i} +3 \\hat{j} + \\hat{k}$ and $\\vec{q} = \\hat{i} +2 \\hat{j} + \\hat{k}$ be two vectors. If a vector $\\vec{r} =(\\alpha \\hat{i} +\\beta \\hat{j} +\\gamma \\hat{k} )$ is perpendicular to each of the vectors $( \\vec{p} + \\vec{q} )$ and $( \\vec{p} - \\vec{q} )$ , and $| \\vec{r} |= \\sqrt{3}$ , then $|\\alpha |+|\\beta |+|\\gamma |$ is equal to ______________ .",
     "images": [],
     "options": [],
     "correct": "3",
@@ -80063,7 +73788,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_172",
     "number": "172",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} - \\vec{k} , \\vec{b} = \\vec{i} - \\vec{j}$ and $\\vec{c} = \\vec{i} - \\vec{j} - \\vec{k}$ be three given vectors. If $\\vec{r}$ is a vector such that $\\vec{r} \\times \\vec{a} = \\vec{c} \\times \\vec{a}$ and $\\vec{r} ⋅ \\vec{b} =0$ , then $\\vec{r} ⋅ \\vec{a}$ is equal to ________________ .",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} - \\hat{k} , \\vec{b} = \\hat{i} - \\hat{j}$ and $\\vec{c} = \\hat{i} - \\hat{j} - \\hat{k}$ be three given vectors. If $\\vec{r}$ is a vector such that $\\vec{r} \\times \\vec{a} = \\vec{c} \\times \\vec{a}$ and $\\vec{r} ⋅ \\vec{b} =0$ , then $\\vec{r} ⋅ \\vec{a}$ is equal to ________________ .",
     "images": [],
     "options": [],
     "correct": "12",
@@ -80077,7 +73802,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_173",
     "number": "173",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} +\\alpha \\vec{j} +3 \\vec{k}$ and $\\vec{b} =3 \\vec{i} -\\alpha \\vec{j} + \\vec{k}$ . If the area of the parallelogram whose adjacent sides are represented by the vectors $\\vec{a}$ and $\\vec{h}$ is $8 \\sqrt{3}$ square units, then $\\vec{a} ⋅ \\vec{b}$ is equal to ____________ .",
+    "text": "Let $\\vec{a} = \\hat{i} +\\alpha \\hat{j} +3 \\hat{k}$ and $\\vec{b} =3 \\hat{i} -\\alpha \\hat{j} + \\hat{k}$ . If the area of the parallelogram whose adjacent sides are represented by the vectors $\\vec{a}$ and $\\vec{h}$ is $8 \\sqrt{3}$ square units, then $\\vec{a} ⋅ \\vec{b}$ is equal to ____________ .",
     "images": [],
     "options": [],
     "correct": "2",
@@ -80091,7 +73816,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_174",
     "number": "174",
     "type": "numerical",
-    "text": "Let the position vectors of points ' $A$ ' and ' $B$ ' be $\\vec{i} + \\vec{j} + \\vec{k}$ and $2 \\vec{i} + \\vec{j} +3 \\vec{k}$ , respectively. A puint ' $P$ ' divides the line segment $AB$ internally in the ratio $\\lambda :1(\\lambda >0)$ . If $O$ is the origin and $\\vec{OB} ⋅ \\vec{OP} -3| \\vec{OA} \\times \\vec{OP} {|}^{2}=6$ , then $\\lambda$ is equal to __________________ .",
+    "text": "Let the position vectors of points ' $A$ ' and ' $B$ ' be $\\hat{i} + \\hat{j} + \\hat{k}$ and $2 \\hat{i} + \\hat{j} +3 \\hat{k}$ , respectively. A puint ' $P$ ' divides the line segment $AB$ internally in the ratio $\\lambda :1(\\lambda >0)$ . If $O$ is the origin and $\\overrightarrow{OB} ⋅ \\overrightarrow{OP} -3| \\overrightarrow{OA} \\times \\overrightarrow{OP} {|}^{2}=6$ , then $\\lambda$ is equal to __________________ .",
     "images": [],
     "options": [],
     "correct": "0.8",
@@ -80119,7 +73844,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_176",
     "number": "176",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} +3 \\vec{k} , \\vec{b} =3 \\vec{i} + \\vec{j} - \\vec{k}$ and $\\vec{c}$ be three vectors such that $\\vec{c}$ is coplanar with $\\vec{a}$ and $\\vec{b}$ . If the vector $\\vec{c}$ is perpendicular to $\\vec{b}$ and $\\vec{a} ⋅ \\vec{c} =5$ , then $| \\vec{c} |$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} +3 \\hat{k} , \\vec{b} =3 \\hat{i} + \\hat{j} - \\hat{k}$ and $\\vec{c}$ be three vectors such that $\\vec{c}$ is coplanar with $\\vec{a}$ and $\\vec{b}$ . If the vector $\\vec{c}$ is perpendicular to $\\vec{b}$ and $\\vec{a} ⋅ \\vec{c} =5$ , then $| \\vec{c} |$ is equal to",
     "images": [],
     "options": [
       "$\\sqrt{\\frac{11}{6}}$",
@@ -80138,7 +73863,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_177",
     "number": "177",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} + \\vec{k} , \\vec{b} =2 \\vec{i} +4 \\vec{j} -5 \\vec{k}$ and $\\vec{c} =x \\vec{i} +2 \\vec{j} +3 \\vec{k} ,x\\in R$ . If $\\vec{d}$ is the unit vector in the direction of $\\vec{b} + \\vec{c}$ such that $\\vec{a} ⋅ \\vec{d} =1$ , then $( \\vec{a} \\times \\vec{b} )⋅ \\vec{c}$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} + \\hat{k} , \\vec{b} =2 \\hat{i} +4 \\hat{j} -5 \\hat{k}$ and $\\vec{c} =x \\hat{i} +2 \\hat{j} +3 \\hat{k} ,x\\in R$ . If $\\vec{d}$ is the unit vector in the direction of $\\vec{b} + \\vec{c}$ such that $\\vec{a} ⋅ \\vec{d} =1$ , then $( \\vec{a} \\times \\vec{b} )⋅ \\vec{c}$ is equal to",
     "images": [],
     "options": [
       "11",
@@ -80157,7 +73882,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_178",
     "number": "178",
     "type": "mcq",
-    "text": "Let $\\vec{a} =-5 \\vec{i} + \\vec{j} -3 \\vec{k} , \\vec{b} = \\vec{i} +2 \\vec{j} -4 \\vec{k}$ and $\\vec{c} =((( \\vec{a} \\times \\vec{b} )\\times \\vec{i} )\\times \\vec{i} )\\times \\vec{i}$ . Then $\\vec{c} ⋅(- \\vec{i} + \\vec{j} + \\vec{k} )$ is equal to :",
+    "text": "Let $\\vec{a} =-5 \\hat{i} + \\hat{j} -3 \\hat{k} , \\vec{b} = \\hat{i} +2 \\hat{j} -4 \\hat{k}$ and $\\vec{c} =((( \\vec{a} \\times \\vec{b} )\\times \\hat{i} )\\times \\hat{i} )\\times \\hat{i}$ . Then $\\vec{c} ⋅(- \\hat{i} + \\hat{j} + \\hat{k} )$ is equal to :",
     "images": [],
     "options": [
       "-12",
@@ -80176,7 +73901,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_179",
     "number": "179",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} + \\vec{k} , \\vec{b} =3( \\vec{i} - \\vec{j} + \\vec{k} )$ . Let $\\vec{c}$ be the vector such that $\\vec{a} \\times \\vec{c} = \\vec{b}$ and $\\vec{a} ⋅ \\vec{c} =3$ . Then $\\vec{a} ⋅(( \\vec{c} \\times \\vec{b} )- \\vec{b} - \\vec{c} )$ is equal to:",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} + \\hat{k} , \\vec{b} =3( \\hat{i} - \\hat{j} + \\hat{k} )$ . Let $\\vec{c}$ be the vector such that $\\vec{a} \\times \\vec{c} = \\vec{b}$ and $\\vec{a} ⋅ \\vec{c} =3$ . Then $\\vec{a} ⋅(( \\vec{c} \\times \\vec{b} )- \\vec{b} - \\vec{c} )$ is equal to:",
     "images": [],
     "options": [
       "36",
@@ -80195,7 +73920,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_180",
     "number": "180",
     "type": "mcq",
-    "text": "Let $\\vec{a} ={a}_{1} \\vec{i} +{a}_{2} \\vec{j} +{a}_{3} \\vec{k}$ and $\\vec{b} ={b}_{1} \\vec{i} +{b}_{2} \\vec{j} +{b}_{3} \\vec{k}$ be two vectors such that $| \\vec{a} |=1, \\vec{a} ⋅ \\vec{b} =2$ and $| \\vec{b} |=4$ . If $\\vec{c} =2( \\vec{a} \\times \\vec{b} )-3 \\vec{b}$ , then the angle between $\\vec{b}$ and $\\vec{c}$ is equal to",
+    "text": "Let $\\vec{a} ={a}_{1} \\hat{i} +{a}_{2} \\hat{j} +{a}_{3} \\hat{k}$ and $\\vec{b} ={b}_{1} \\hat{i} +{b}_{2} \\hat{j} +{b}_{3} \\hat{k}$ be two vectors such that $| \\vec{a} |=1, \\vec{a} ⋅ \\vec{b} =2$ and $| \\vec{b} |=4$ . If $\\vec{c} =2( \\vec{a} \\times \\vec{b} )-3 \\vec{b}$ , then the angle between $\\vec{b}$ and $\\vec{c}$ is equal to",
     "images": [],
     "options": [
       "${cos}^{-1} \\left( - \\frac{\\sqrt{3}}{2} \\right)$",
@@ -80233,7 +73958,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_182",
     "number": "182",
     "type": "mcq",
-    "text": "Let the position vectors of the points $A,B,C$ and $D$ be $5 \\vec{i} +5 \\vec{j} +2\\lambda \\vec{k} , \\vec{i} +2 \\vec{j} +3 \\vec{k} ,-2 \\vec{i} +\\lambda \\vec{j} +4 \\vec{k}$ and $- \\vec{i} +5 \\vec{j} +6 \\vec{k}$ . Let the set $={\\lambda \\in R$ : the points $A,B$ , $C$ and $D$ are coplanar}. Then ${∑}_{\\lambda \\in S} (\\lambda +2{)}^{2}$ is equal to",
+    "text": "Let the position vectors of the points $A,B,C$ and $D$ be $5 \\hat{i} +5 \\hat{j} +2\\lambda \\hat{k} , \\hat{i} +2 \\hat{j} +3 \\hat{k} ,-2 \\hat{i} +\\lambda \\hat{j} +4 \\hat{k}$ and $- \\hat{i} +5 \\hat{j} +6 \\hat{k}$ . Let the set $={\\lambda \\in R$ : the points $A,B$ , $C$ and $D$ are coplanar}. Then ${∑}_{\\lambda \\in S} (\\lambda +2{)}^{2}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{37}{2}$",
@@ -80271,7 +73996,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_184",
     "number": "184",
     "type": "mcq",
-    "text": "The sum of all values of $\\alpha$ , for which the points whose position vectors are $\\vec{i} -2 \\vec{j} +3 \\vec{k} ,2 \\vec{i} -3 \\vec{j} +4 \\vec{k}$ , $(\\alpha +1) \\vec{i} +2 \\vec{k}$ and $9 \\vec{i} +(\\alpha -8) \\vec{j} +6 \\vec{k}$ are coplanar, is equal to",
+    "text": "The sum of all values of $\\alpha$ , for which the points whose position vectors are $\\hat{i} -2 \\hat{j} +3 \\hat{k} ,2 \\hat{i} -3 \\hat{j} +4 \\hat{k}$ , $(\\alpha +1) \\hat{i} +2 \\hat{k}$ and $9 \\hat{i} +(\\alpha -8) \\hat{j} +6 \\hat{k}$ are coplanar, is equal to",
     "images": [],
     "options": [
       "6",
@@ -80290,7 +74015,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_185",
     "number": "185",
     "type": "mcq",
-    "text": "Let the vectors ${\\vec{u}}_{1}= \\vec{i} + \\vec{j} +a \\vec{k} ,{\\vec{u}}_{2}= \\vec{i} +b \\vec{j} + \\vec{k}$ and ${\\vec{u}}_{3}=c \\vec{i} + \\vec{j} + \\vec{k}$ be coplanar. If the vectors ${\\vec{v}}_{1}=(a+b) \\vec{i} +c \\vec{j} +c \\vec{k} ,{\\vec{v}}_{2}=a \\vec{i} +(b+c) \\vec{j} +a \\vec{k}$ and ${\\vec{v}}_{3}=b \\vec{i} +b \\vec{j} +(c+a) \\vec{k}$ are also coplanar, then $6(a+b+c)$ is equal to",
+    "text": "Let the vectors ${\\vec{u}}_{1}= \\hat{i} + \\hat{j} +a \\hat{k} ,{\\vec{u}}_{2}= \\hat{i} +b \\hat{j} + \\hat{k}$ and ${\\vec{u}}_{3}=c \\hat{i} + \\hat{j} + \\hat{k}$ be coplanar. If the vectors ${\\vec{v}}_{1}=(a+b) \\hat{i} +c \\hat{j} +c \\hat{k} ,{\\vec{v}}_{2}=a \\hat{i} +(b+c) \\hat{j} +a \\hat{k}$ and ${\\vec{v}}_{3}=b \\hat{i} +b \\hat{j} +(c+a) \\hat{k}$ are also coplanar, then $6(a+b+c)$ is equal to",
     "images": [],
     "options": [
       "4",
@@ -80312,10 +74037,10 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "text": "If four distinct points with position vectors $\\vec{a} , \\vec{b} , \\vec{c}$ and $\\vec{d}$ are coplanar, then $[ \\vec{a} \\vec{b} \\vec{c} ]$ is equal to",
     "images": [],
     "options": [
-      "$\\left( \\begin{bmatrix} \\vec{b} & \\vec{c} & \\vec{d} \\end{bmatrix} \\right) + \\left( \\begin{bmatrix} \\vec{d} & \\vec{a} & \\vec{c} \\end{bmatrix} \\right) + \\left( \\begin{bmatrix} \\vec{d} & \\vec{b} & \\vec{a} \\end{bmatrix} \\right)$",
-      "$\\left( \\begin{bmatrix} \\vec{d} & \\vec{c} \\\\ a & a \\end{bmatrix} \\right) + \\left( \\begin{bmatrix} \\vec{b} & \\vec{d} & \\vec{a} \\end{bmatrix} \\right) + \\left( \\begin{bmatrix} \\vec{c} & \\vec{d} & \\vec{b} \\end{bmatrix} \\right)$",
-      "$\\left( \\begin{bmatrix} \\vec{d} & \\vec{b} & \\vec{a} \\end{bmatrix} \\right) + \\left( \\begin{bmatrix} \\vec{a} & \\vec{c} & \\vec{d} \\end{bmatrix} \\right) + \\left( \\begin{bmatrix} \\vec{d} & \\vec{b} & \\vec{c} \\end{bmatrix} \\right)$",
-      "$\\left( \\begin{bmatrix} \\vec{a} & \\vec{d} & \\vec{b} \\end{bmatrix} \\right) + \\left( \\begin{bmatrix} \\vec{d} & \\vec{c} & \\vec{a} \\end{bmatrix} \\right) + \\left( \\begin{bmatrix} \\vec{d} & \\vec{b} & \\vec{c} \\end{bmatrix} \\right)$"
+      "$\\left[ \\vec{b} & \\vec{c} & \\vec{d} \\right] + \\left[ \\vec{d} & \\vec{a} & \\vec{c} \\right] + \\left[ \\vec{d} & \\vec{b} & \\vec{a} \\right]$",
+      "$\\left[ \\vec{d} & \\vec{c} \\\\ a & a \\right] + \\left[ \\vec{b} & \\vec{d} & \\vec{a} \\right] + \\left[ \\vec{c} & \\vec{d} & \\vec{b} \\right]$",
+      "$\\left[ \\vec{d} & \\vec{b} & \\vec{a} \\right] + \\left[ \\vec{a} & \\vec{c} & \\vec{d} \\right] + \\left[ \\vec{d} & \\vec{b} & \\vec{c} \\right]$",
+      "$\\left[ \\vec{a} & \\vec{d} & \\vec{b} \\right] + \\left[ \\vec{d} & \\vec{c} & \\vec{a} \\right] + \\left[ \\vec{d} & \\vec{b} & \\vec{c} \\right]$"
     ],
     "correct": "b",
     "chapter": "Vector Algebra",
@@ -80328,7 +74053,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_187",
     "number": "187",
     "type": "mcq",
-    "text": "Let $a,b,c$ be three distinct real numbers, none equal to one. If the vectors $a \\vec{i} + \\vec{j} + \\vec{k} , \\vec{i} +b \\vec{j} + \\vec{k}$ and $\\vec{i} + \\vec{j} +c \\vec{k}$ are coplanar, then $\\frac{1}{1-a} + \\frac{1}{1-b} + \\frac{1}{1-c}$ is equal to",
+    "text": "Let $a,b,c$ be three distinct real numbers, none equal to one. If the vectors $a \\hat{i} + \\hat{j} + \\hat{k} , \\hat{i} +b \\hat{j} + \\hat{k}$ and $\\hat{i} + \\hat{j} +c \\hat{k}$ are coplanar, then $\\frac{1}{1-a} + \\frac{1}{1-b} + \\frac{1}{1-c}$ is equal to",
     "images": [],
     "options": [
       "-2",
@@ -80347,7 +74072,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_188",
     "number": "188",
     "type": "mcq",
-    "text": "Let $S$ be the set of all $(\\lambda ,\\mu )$ for which the vectors $\\lambda \\vec{i} - \\vec{j} + \\vec{k} , \\vec{i} +2 \\vec{j} +\\mu \\vec{k}$ and $3 \\vec{i} -4 \\vec{j} +5 \\vec{k}$ , where $\\lambda -\\mu =5$ , are coplanar, then ${∑}_{(\\lambda ,\\mu )\\in S} 80 \\left( {\\lambda }^{2}+{\\mu }^{2} \\right)$ is equal to",
+    "text": "Let $S$ be the set of all $(\\lambda ,\\mu )$ for which the vectors $\\lambda \\hat{i} - \\hat{j} + \\hat{k} , \\hat{i} +2 \\hat{j} +\\mu \\hat{k}$ and $3 \\hat{i} -4 \\hat{j} +5 \\hat{k}$ , where $\\lambda -\\mu =5$ , are coplanar, then ${∑}_{(\\lambda ,\\mu )\\in S} 80 \\left( {\\lambda }^{2}+{\\mu }^{2} \\right)$ is equal to",
     "images": [],
     "options": [
       "2290",
@@ -80366,7 +74091,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_189",
     "number": "189",
     "type": "mcq",
-    "text": "Let $\\vec{u} = \\vec{i} - \\vec{j} -2 \\vec{k} , \\vec{v} =2 \\vec{i} + \\vec{j} - \\vec{k} , \\vec{v} ⋅ \\vec{w} =2$ and $\\vec{v} \\times \\vec{w} = \\vec{u} +\\lambda \\vec{v}$ . Then $\\vec{u} ⋅ \\vec{w}$ is equal to",
+    "text": "Let $\\vec{u} = \\hat{i} - \\hat{j} -2 \\hat{k} , \\vec{v} =2 \\hat{i} + \\hat{j} - \\hat{k} , \\vec{v} ⋅ \\vec{w} =2$ and $\\vec{v} \\times \\vec{w} = \\vec{u} +\\lambda \\vec{v}$ . Then $\\vec{u} ⋅ \\vec{w}$ is equal to",
     "images": [],
     "options": [
       "1",
@@ -80404,7 +74129,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_191",
     "number": "191",
     "type": "mcq",
-    "text": "If the four points, whose position vectors are $3 \\vec{ı} -4 \\vec{ȷ} +2 \\vec{k} , \\vec{ı} +2 \\vec{ȷ} - \\vec{k} ,-2 \\vec{ı} - \\vec{ȷ} +3 \\vec{k}$ and $5 \\vec{ı} -2\\alpha \\vec{ȷ} +4 \\vec{k}$ are coplanar, then $\\alpha$ is equal to",
+    "text": "If the four points, whose position vectors are $3 \\hat{ı} -4 \\hat{ȷ} +2 \\hat{k} , \\hat{ı} +2 \\hat{ȷ} - \\hat{k} ,-2 \\hat{ı} - \\hat{ȷ} +3 \\hat{k}$ and $5 \\hat{ı} -2\\alpha \\hat{ȷ} +4 \\hat{k}$ are coplanar, then $\\alpha$ is equal to",
     "images": [],
     "options": [
       "$\\frac{107}{17}$",
@@ -80423,7 +74148,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_192",
     "number": "192",
     "type": "mcq",
-    "text": "If the vectors $\\vec{a} =\\lambda \\vec{i} +\\mu \\vec{j} +4 \\vec{k} , \\vec{b} =-2 \\vec{i} +4 \\vec{j} -2 \\vec{k}$ and $\\vec{c} =2 \\vec{i} +3 \\vec{j} + \\vec{k}$ are coplanar and the projection of $\\vec{a}$ on the vector $\\vec{b}$ is $\\sqrt{54}$ units, then the sum of all possible values of $\\lambda +\\mu$ is equal to",
+    "text": "If the vectors $\\vec{a} =\\lambda \\hat{i} +\\mu \\hat{j} +4 \\hat{k} , \\vec{b} =-2 \\hat{i} +4 \\hat{j} -2 \\hat{k}$ and $\\vec{c} =2 \\hat{i} +3 \\hat{j} + \\hat{k}$ are coplanar and the projection of $\\vec{a}$ on the vector $\\vec{b}$ is $\\sqrt{54}$ units, then the sum of all possible values of $\\lambda +\\mu$ is equal to",
     "images": [],
     "options": [
       "18",
@@ -80442,7 +74167,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_193",
     "number": "193",
     "type": "mcq",
-    "text": "Let $\\vec{a} =4 \\vec{i} +3 \\vec{j}$ and $\\vec{b} =3 \\vec{i} -4 \\vec{j} +5 \\vec{k}$ . If $\\vec{c}$ is a vector such that $\\vec{c} ⋅( \\vec{a} \\times \\vec{b} )+25=0, \\vec{c} ⋅( \\vec{i} + \\vec{j} + \\vec{k} )=4$ , and projection of $\\vec{c}$ on $\\vec{a}$ is 1 , then the projection of $\\vec{c}$ on $\\vec{b}$ equals",
+    "text": "Let $\\vec{a} =4 \\hat{i} +3 \\hat{j}$ and $\\vec{b} =3 \\hat{i} -4 \\hat{j} +5 \\hat{k}$ . If $\\vec{c}$ is a vector such that $\\vec{c} ⋅( \\vec{a} \\times \\vec{b} )+25=0, \\vec{c} ⋅( \\hat{i} + \\hat{j} + \\hat{k} )=4$ , and projection of $\\vec{c}$ on $\\vec{a}$ is 1 , then the projection of $\\vec{c}$ on $\\vec{b}$ equals",
     "images": [],
     "options": [
       "$\\frac{1}{\\sqrt{2}}$",
@@ -80461,7 +74186,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_194",
     "number": "194",
     "type": "mcq",
-    "text": "If $\\vec{a} , \\vec{b} , \\vec{c}$ are three non-zero vectors and $\\vec{n}$ is a unit vector perpendicular to $\\vec{c}$ such that $\\vec{a} =\\alpha \\vec{b} - \\vec{n} ,(\\alpha \\neq 0)$ and $\\vec{b} ⋅ \\vec{c} =12$ , then $| \\vec{c} \\times ( \\vec{a} \\times \\vec{b} )|$ is equal to",
+    "text": "If $\\vec{a} , \\vec{b} , \\vec{c}$ are three non-zero vectors and $\\vec{n}$ is a unit vector perpendicular to $\\vec{c}$ such that $\\vec{a} =\\alpha \\vec{b} - \\hat{n} ,(\\alpha \\neq 0)$ and $\\vec{b} ⋅ \\vec{c} =12$ , then $| \\vec{c} \\times ( \\vec{a} \\times \\vec{b} )|$ is equal to",
     "images": [],
     "options": [
       "9",
@@ -80480,7 +74205,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_195",
     "number": "195",
     "type": "mcq",
-    "text": "Let $\\lambda \\in R, \\vec{a} =\\lambda \\vec{i} +2 \\vec{j} -3 \\vec{k} , \\vec{b} = \\vec{i} -\\lambda \\vec{j} +2 \\vec{k}$ . If $(( \\vec{a} + \\vec{b} )\\times ( \\vec{a} \\times \\vec{b} ))\\times ( \\vec{a} - \\vec{b} )=8 \\vec{i} -40 \\vec{j} -24 \\vec{k}$ , then $|\\lambda ( \\vec{a} + \\vec{b} )\\times ( \\vec{a} - \\vec{b} ){|}^{2}$ is equal to",
+    "text": "Let $\\lambda \\in R, \\vec{a} =\\lambda \\hat{i} +2 \\hat{j} -3 \\hat{k} , \\vec{b} = \\hat{i} -\\lambda \\hat{j} +2 \\hat{k}$ . If $(( \\vec{a} + \\vec{b} )\\times ( \\vec{a} \\times \\vec{b} ))\\times ( \\vec{a} - \\vec{b} )=8 \\hat{i} -40 \\hat{j} -24 \\hat{k}$ , then $|\\lambda ( \\vec{a} + \\vec{b} )\\times ( \\vec{a} - \\vec{b} ){|}^{2}$ is equal to",
     "images": [],
     "options": [
       "136",
@@ -80518,7 +74243,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_197",
     "number": "197",
     "type": "mcq",
-    "text": "Let the vectors $\\vec{a} =(1+t) \\vec{i} +(1-t) \\vec{j} + \\vec{k}$ , $\\vec{b} =(1-t) \\vec{i} +(1+t) \\vec{j} +2 \\vec{k}$ and $\\vec{c} =t \\vec{i} -t \\vec{j} + \\vec{k} ,t\\in R$ be such that for $\\alpha ,\\beta ,\\gamma \\in R,\\alpha \\vec{a} +\\beta \\vec{b} +\\gamma \\vec{c} = \\vec{0}$ $⇒\\alpha =\\beta =\\gamma =0$ . Then, the set of all values of $t$ is:",
+    "text": "Let the vectors $\\vec{a} =(1+t) \\hat{i} +(1-t) \\hat{j} + \\hat{k}$ , $\\vec{b} =(1-t) \\hat{i} +(1+t) \\hat{j} +2 \\hat{k}$ and $\\vec{c} =t \\hat{i} -t \\hat{j} + \\hat{k} ,t\\in R$ be such that for $\\alpha ,\\beta ,\\gamma \\in R,\\alpha \\vec{a} +\\beta \\vec{b} +\\gamma \\vec{c} = \\vec{0}$ $⇒\\alpha =\\beta =\\gamma =0$ . Then, the set of all values of $t$ is:",
     "images": [],
     "options": [
       "a non-empty finite set",
@@ -80575,7 +74300,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_200",
     "number": "200",
     "type": "mcq",
-    "text": "Let $\\vec{a} , \\vec{b}$ be unit vectors. If $\\vec{c}$ be a vector such that the angle between $\\vec{a}$ and $\\vec{c}$ is $\\frac{\\pi }{12}$ , and $\\vec{b} = \\vec{c} +2( \\vec{c} \\times \\vec{a} )$ , then $|\\sigma \\vec{c} {|}^{2}$ is equal to",
+    "text": "Let $\\hat{a} , \\hat{b}$ be unit vectors. If $\\vec{c}$ be a vector such that the angle between $\\vec{a}$ and $\\vec{c}$ is $\\frac{\\pi }{12}$ , and $\\vec{b} = \\vec{c} +2( \\vec{c} \\times \\vec{a} )$ , then $|\\sigma \\vec{c} {|}^{2}$ is equal to",
     "images": [],
     "options": [
       "$6(3- \\sqrt{3} )$",
@@ -80613,7 +74338,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_202",
     "number": "202",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} +2 \\vec{k} , \\vec{b} =2 \\vec{i} -3 \\vec{j} + \\vec{k}$ and $\\vec{c} = \\vec{i} - \\vec{j} + \\vec{k}$ be three given vectors. Let $\\vec{v}$ be a vector in the plane of $\\vec{a}$ and $\\vec{b}$ whose projection on $\\vec{c}$ is $\\frac{2}{\\sqrt{3}}$ . If $\\vec{v} ⋅ \\vec{j} =7$ , then $\\vec{v} ⋅( \\vec{i} + \\vec{k} )$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} +2 \\hat{k} , \\vec{b} =2 \\hat{i} -3 \\hat{j} + \\hat{k}$ and $\\vec{c} = \\hat{i} - \\hat{j} + \\hat{k}$ be three given vectors. Let $\\vec{v}$ be a vector in the plane of $\\vec{a}$ and $\\vec{b}$ whose projection on $\\vec{c}$ is $\\frac{2}{\\sqrt{3}}$ . If $\\vec{v} ⋅ \\vec{j} =7$ , then $\\vec{v} ⋅( \\vec{i} + \\vec{k} )$ is equal to",
     "images": [],
     "options": [
       "6",
@@ -80632,7 +74357,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_203",
     "number": "203",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} - \\vec{k}$ and $\\vec{c} =2 \\vec{i} -3 \\vec{j} +2 \\vec{k}$ . Then the number of vectors $\\vec{b}$ such that $\\vec{b} \\times \\vec{c} = \\vec{a}$ and $| \\vec{b} |\\in {1,2,…,10}$ is",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} - \\hat{k}$ and $\\vec{c} =2 \\hat{i} -3 \\hat{j} +2 \\hat{k}$ . Then the number of vectors $\\vec{b}$ such that $\\vec{b} \\times \\vec{c} = \\vec{a}$ and $| \\vec{b} |\\in {1,2,…,10}$ is",
     "images": [],
     "options": [
       "0",
@@ -80651,7 +74376,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_204",
     "number": "204",
     "type": "mcq",
-    "text": "Let $A,B,C$ be three points whose position vectors respectively are $\\vec{a} = \\vec{i} +4 \\vec{j} +3 \\vec{k} ; \\vec{b} =2 \\vec{i} +\\alpha \\vec{j} +4 \\vec{k}$ , $\\alpha \\in R; \\vec{c} =3 \\vec{i} -2 \\vec{j} +5 \\vec{k}$ If $\\alpha$ is the smallest positive integer for which $\\vec{a} , \\vec{b} , \\vec{c}$ are noncollinear, then the length of the median, in $△ABC$ , through $A$ is",
+    "text": "Let $A,B,C$ be three points whose position vectors respectively are $\\vec{a} = \\hat{i} +4 \\hat{j} +3 \\hat{k} ; \\vec{b} =2 \\hat{i} +\\alpha \\hat{j} +4 \\hat{k}$ , $\\alpha \\in R; \\vec{c} =3 \\hat{i} -2 \\hat{j} +5 \\hat{k}$ If $\\alpha$ is the smallest positive integer for which $\\vec{a} , \\vec{b} , \\vec{c}$ are noncollinear, then the length of the median, in $△ABC$ , through $A$ is",
     "images": [],
     "options": [
       "$\\frac{\\sqrt{82}}{2}$",
@@ -80670,7 +74395,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_205",
     "number": "205",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} + \\vec{k}$ and $\\vec{b} = \\vec{j} - \\vec{k}$ . If $\\vec{c}$ is a vector such that $\\vec{a} \\times \\vec{c} = \\vec{b}$ and $\\vec{a} ⋅ \\vec{c} =3$ , then $\\vec{a} ⋅( \\vec{b} \\times \\vec{c} )$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} + \\hat{k}$ and $\\vec{b} = \\hat{j} - \\hat{k}$ . If $\\vec{c}$ is a vector such that $\\vec{a} \\times \\vec{c} = \\vec{b}$ and $\\vec{a} ⋅ \\vec{c} =3$ , then $\\vec{a} ⋅( \\vec{b} \\times \\vec{c} )$ is equal to",
     "images": [],
     "options": [
       "6",
@@ -80708,7 +74433,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_207",
     "number": "207",
     "type": "mcq",
-    "text": "Let $\\vec{a} =2 \\vec{i} + \\vec{j} -2 \\vec{k}$ and $\\vec{b} = \\vec{i} + \\vec{j}$ . If $\\vec{c}$ is a vector such that $\\vec{a} ⋅ \\vec{c} =| \\vec{c} |,| \\vec{c} - \\vec{a} |=2 \\sqrt{2}$ and the angle between $( \\vec{a} \\times \\vec{b} )$ and $\\vec{c}$ is $\\frac{\\pi }{6}$ , then the value of $|( \\vec{a} \\times \\vec{b} )\\times \\vec{c} |$ is",
+    "text": "Let $\\vec{a} =2 \\hat{i} + \\hat{j} -2 \\hat{k}$ and $\\vec{b} = \\hat{i} + \\hat{j}$ . If $\\vec{c}$ is a vector such that $\\vec{a} ⋅ \\vec{c} =| \\vec{c} |,| \\vec{c} - \\vec{a} |=2 \\sqrt{2}$ and the angle between $( \\vec{a} \\times \\vec{b} )$ and $\\vec{c}$ is $\\frac{\\pi }{6}$ , then the value of $|( \\vec{a} \\times \\vec{b} )\\times \\vec{c} |$ is",
     "images": [],
     "options": [
       "3",
@@ -80746,7 +74471,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_209",
     "number": "209",
     "type": "mcq",
-    "text": "Let a vector $\\vec{a}$ be coplanar with vectors $\\vec{b} =2 \\vec{i} + \\vec{j} + \\vec{k}$ and $\\vec{c} = \\vec{i} - \\vec{j} + \\vec{k}$ . If $\\vec{a}$ is perpendicular to $\\vec{d} =3 \\vec{i} +2 \\vec{j} +6 \\vec{k}$ , and $| \\vec{a} |= \\sqrt{10}$ . Then, a possible value of $[ \\vec{a} \\vec{b} \\vec{c} ]+[ \\vec{a} \\vec{b} \\vec{d} ]+[ \\vec{a} \\vec{c} \\vec{d} ]$ is equal to",
+    "text": "Let a vector $\\vec{a}$ be coplanar with vectors $\\vec{b} =2 \\hat{i} + \\hat{j} + \\hat{k}$ and $\\vec{c} = \\hat{i} - \\hat{j} + \\hat{k}$ . If $\\vec{a}$ is perpendicular to $\\vec{d} =3 \\hat{i} +2 \\hat{j} +6 \\hat{k}$ , and $| \\vec{a} |= \\sqrt{10}$ . Then, a possible value of $[ \\vec{a} \\vec{b} \\vec{c} ]+[ \\vec{a} \\vec{b} \\vec{d} ]+[ \\vec{a} \\vec{c} \\vec{d} ]$ is equal to",
     "images": [],
     "options": [
       "-38",
@@ -80765,7 +74490,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_210",
     "number": "210",
     "type": "mcq",
-    "text": "Let the vectors $(2+a+b) \\vec{i} +(a+2b+c) \\vec{j} -(b+c) \\vec{k}$ , $(1+b) \\vec{i} +2b \\vec{j} -b \\vec{k}$ and $(2+b) \\vec{i} +2b \\vec{j} +(1-b) \\vec{k} ,a,b,c\\in R$ be co-planar. Then which of the following is true?",
+    "text": "Let the vectors $(2+a+b) \\hat{i} +(a+2b+c) \\hat{j} -(b+c) \\hat{k}$ , $(1+b) \\hat{i} +2b \\hat{j} -b \\hat{k}$ and $(2+b) \\hat{i} +2b \\hat{j} +(1-b) \\hat{k} ,a,b,c\\in R$ be co-planar. Then which of the following is true?",
     "images": [],
     "options": [
       "$2a=b+c$",
@@ -80784,7 +74509,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_211",
     "number": "211",
     "type": "mcq",
-    "text": "Let $a,b$ and $c$ be distinct positive numbers. If the vectors $a \\vec{i} +a \\vec{j} +c \\vec{k} , \\vec{i} + \\vec{k}$ and $c \\vec{i} +c \\vec{j} +b \\vec{k}$ are coplanar, then $c$ is equal to",
+    "text": "Let $a,b$ and $c$ be distinct positive numbers. If the vectors $a \\hat{i} +a \\hat{j} +c \\hat{k} , \\hat{i} + \\hat{k}$ and $c \\hat{i} +c \\hat{j} +b \\hat{k}$ are coplanar, then $c$ is equal to",
     "images": [],
     "options": [
       "$\\frac{a+b}{2}$",
@@ -80803,13 +74528,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_212",
     "number": "212",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} +2 \\vec{k}$ and $\\vec{b} =- \\vec{i} +2 \\vec{j} +3 \\vec{k}$ . Then the vector product $( \\vec{a} + \\vec{b} )\\times (( \\vec{a} \\times (( \\vec{a} - \\vec{b} )\\times \\vec{b} ))\\times \\vec{b} )$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} +2 \\hat{k}$ and $\\vec{b} =- \\hat{i} +2 \\hat{j} +3 \\hat{k}$ . Then the vector product $( \\vec{a} + \\vec{b} )\\times (( \\vec{a} \\times (( \\vec{a} - \\vec{b} )\\times \\vec{b} ))\\times \\vec{b} )$ is equal to",
     "images": [],
     "options": [
-      "$7(30 \\vec{i} -5 \\vec{j} +7 \\vec{k} )$",
-      "$7(34 \\vec{i} -5 \\vec{j} +3 \\vec{k} )$",
-      "$5(30 \\vec{i} -5 \\vec{j} +7 \\vec{k} )$",
-      "$5(34 \\vec{i} -5 \\vec{j} +3 \\vec{k} )$"
+      "$7(30 \\hat{i} -5 \\hat{j} +7 \\hat{k} )$",
+      "$7(34 \\hat{i} -5 \\hat{j} +3 \\hat{k} )$",
+      "$5(30 \\hat{i} -5 \\hat{j} +7 \\hat{k} )$",
+      "$5(34 \\hat{i} -5 \\hat{j} +3 \\hat{k} )$"
     ],
     "correct": "b",
     "chapter": "Vector Algebra",
@@ -80841,7 +74566,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_214",
     "number": "214",
     "type": "mcq",
-    "text": "Let $O$ be the origin. Let $\\vec{OP} =x \\vec{i} +y \\vec{j} - \\vec{k}$ and $\\vec{OQ} =- \\vec{i} +2 \\vec{j} +3x \\vec{k} ,x,y\\in R,x>0$ , be such that $| \\vec{PQ} |= \\sqrt{20}$ and the vector $\\vec{OP}$ is perpendicular to $\\vec{OQ}$ . If $\\vec{OR} =3 \\vec{i} +z \\vec{j} -7 \\vec{k} ,z\\in R$ , is coplanar with $\\vec{OP}$ and $\\vec{OQ}$ , then the value of ${x}^{2}+{y}^{2}+{z}^{2}$ is equal to",
+    "text": "Let $O$ be the origin. Let $\\overrightarrow{OP} =x \\hat{i} +y \\hat{j} - \\hat{k}$ and $\\overrightarrow{OQ} =- \\hat{i} +2 \\hat{j} +3x \\hat{k} ,x,y\\in R,x>0$ , be such that $| \\overrightarrow{PQ} |= \\sqrt{20}$ and the vector $\\overrightarrow{OP}$ is perpendicular to $\\overrightarrow{OQ}$ . If $\\overrightarrow{OR} =3 \\hat{i} +z \\hat{j} -7 \\hat{k} ,z\\in R$ , is coplanar with $\\overrightarrow{OP}$ and $\\overrightarrow{OQ}$ , then the value of ${x}^{2}+{y}^{2}+{z}^{2}$ is equal to",
     "images": [],
     "options": [
       "1",
@@ -80898,7 +74623,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_217",
     "number": "217",
     "type": "mcq",
-    "text": "Let ${x}_{0}$ be the point of local maxima of $f(x)= \\vec{a} ⋅( \\vec{b} \\times \\vec{c} )$ , where $\\vec{a} =x \\vec{i} -2 \\vec{j} +3 \\vec{k} , \\vec{b} =-2 \\vec{i} +x \\vec{j} - \\vec{k}$ and $\\vec{c} =7 \\vec{i} -2 \\vec{j} +x \\vec{k}$ . Then the value of $\\vec{a} ⋅ \\vec{b} + \\vec{b} ⋅ \\vec{c} + \\vec{c} ⋅ \\vec{a}$ at $x={x}_{0}$ is",
+    "text": "Let ${x}_{0}$ be the point of local maxima of $f(x)= \\vec{a} ⋅( \\vec{b} \\times \\vec{c} )$ , where $\\vec{a} =x \\hat{i} -2 \\hat{j} +3 \\hat{k} , \\vec{b} =-2 \\hat{i} +x \\hat{j} - \\hat{k}$ and $\\vec{c} =7 \\hat{i} -2 \\hat{j} +x \\hat{k}$ . Then the value of $\\vec{a} ⋅ \\vec{b} + \\vec{b} ⋅ \\vec{c} + \\vec{c} ⋅ \\vec{a}$ at $x={x}_{0}$ is",
     "images": [],
     "options": [
       "-22",
@@ -80917,7 +74642,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_218",
     "number": "218",
     "type": "mcq",
-    "text": "If the volume of a parallelopiped, whose coterminus edges are given by the vectors $\\vec{a} = \\vec{i} + \\vec{j} +n \\vec{k}$ , $\\vec{b} =2 \\vec{i} +4 \\vec{j} -n \\vec{k}$ and $\\vec{c} = \\vec{i} +n \\vec{j} +3 \\vec{k} (n\\geq 0)$ , is 158 cu . units, then",
+    "text": "If the volume of a parallelopiped, whose coterminus edges are given by the vectors $\\vec{a} = \\hat{i} + \\hat{j} +n \\hat{k}$ , $\\vec{b} =2 \\hat{i} +4 \\hat{j} -n \\hat{k}$ and $\\vec{c} = \\hat{i} +n \\hat{j} +3 \\hat{k} (n\\geq 0)$ , is 158 cu . units, then",
     "images": [],
     "options": [
       "$\\vec{a} ⋅ \\vec{c} =17$",
@@ -80936,7 +74661,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_219",
     "number": "219",
     "type": "mcq",
-    "text": "Let the volume of a parallelopiped whose coterminous edges are given by $\\vec{u} = \\vec{i} + \\vec{j} +\\lambda \\vec{k} , \\vec{v} = \\vec{i} + \\vec{j} +3 \\vec{k}$ and $\\vec{w} =2 \\vec{i} + \\vec{j} + \\vec{k}$ be 1 cu . unit. If $\\theta$ be the angle between the edges $\\vec{u}$ and $\\vec{w}$ , then $cos\\theta$ can be",
+    "text": "Let the volume of a parallelopiped whose coterminous edges are given by $\\vec{u} = \\hat{i} + \\hat{j} +\\lambda \\hat{k} , \\vec{v} = \\hat{i} + \\hat{j} +3 \\hat{k}$ and $\\vec{w} =2 \\hat{i} + \\hat{j} + \\hat{k}$ be 1 cu . unit. If $\\theta$ be the angle between the edges $\\vec{u}$ and $\\vec{w}$ , then $cos\\theta$ can be",
     "images": [],
     "options": [
       "$\\frac{7}{6 \\sqrt{6}}$",
@@ -80955,7 +74680,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_220",
     "number": "220",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} -2 \\vec{j} + \\vec{k}$ and $\\vec{b} = \\vec{i} - \\vec{j} + \\vec{k}$ be two vectors. If $\\vec{c}$ is a vector such that $\\vec{b} \\times \\vec{c} = \\vec{b} \\times \\vec{a}$ and $\\vec{c} ⋅ \\vec{a} =0$ , then $\\vec{c} ⋅ \\vec{b}$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} -2 \\hat{j} + \\hat{k}$ and $\\vec{b} = \\hat{i} - \\hat{j} + \\hat{k}$ be two vectors. If $\\vec{c}$ is a vector such that $\\vec{b} \\times \\vec{c} = \\vec{b} \\times \\vec{a}$ and $\\vec{c} ⋅ \\vec{a} =0$ , then $\\vec{c} ⋅ \\vec{b}$ is equal to",
     "images": [],
     "options": [
       "$\\frac{1}{2}$",
@@ -80974,7 +74699,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_221",
     "number": "221",
     "type": "mcq",
-    "text": "If the volume of parallelopiped formed by the vectors $\\vec{i} +\\lambda \\vec{j} + \\vec{k} , \\vec{j} +\\lambda \\vec{k}$ and $\\lambda \\vec{i} + \\vec{k}$ is minimum, then $\\lambda$ is equal to",
+    "text": "If the volume of parallelopiped formed by the vectors $\\hat{i} +\\lambda \\hat{j} + \\hat{k} , \\hat{j} +\\lambda \\hat{k}$ and $\\lambda \\hat{i} + \\hat{k}$ is minimum, then $\\lambda$ is equal to",
     "images": [],
     "options": [
       "$- \\sqrt{3}$",
@@ -80993,7 +74718,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_222",
     "number": "222",
     "type": "mcq",
-    "text": "Let $\\alpha \\in R$ and the three vectors $\\vec{a} =\\alpha \\vec{i} + \\vec{j} +3 \\vec{k}$ , $\\vec{b} =2 \\vec{i} + \\vec{j} -\\alpha \\vec{k}$ and $\\vec{c} =\\alpha \\vec{i} -2 \\vec{j} +3 \\vec{k}$ . Then the set $S={\\alpha : \\vec{a} , \\vec{b}$ and $\\vec{c}$ are coplanar $}$",
+    "text": "Let $\\alpha \\in R$ and the three vectors $\\vec{a} =\\alpha \\hat{i} + \\hat{j} +3 \\hat{k}$ , $\\vec{b} =2 \\hat{i} + \\hat{j} -\\alpha \\hat{k}$ and $\\vec{c} =\\alpha \\hat{i} -2 \\hat{j} +3 \\hat{k}$ . Then the set $S={\\alpha : \\vec{a} , \\vec{b}$ and $\\vec{c}$ are coplanar $}$",
     "images": [],
     "options": [
       "is singleton",
@@ -81012,7 +74737,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_223",
     "number": "223",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} - \\vec{j} , \\vec{b} = \\vec{i} + \\vec{j} + \\vec{k}$ and $\\vec{c}$ be a vector such that $\\vec{a} \\times \\vec{c} + \\vec{b} = \\vec{0}$ and $\\vec{a} ⋅ \\vec{c} =4$ then $| \\vec{c} {|}^{2}$ is equal to",
+    "text": "Let $\\vec{a} = \\hat{i} - \\hat{j} , \\vec{b} = \\hat{i} + \\hat{j} + \\hat{k}$ and $\\vec{c}$ be a vector such that $\\vec{a} \\times \\vec{c} + \\vec{b} = \\vec{0}$ and $\\vec{a} ⋅ \\vec{c} =4$ then $| \\vec{c} {|}^{2}$ is equal to",
     "images": [],
     "options": [
       "8",
@@ -81031,13 +74756,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_224",
     "number": "224",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} +4 \\vec{k} , \\vec{b} = \\vec{i} +\\lambda \\vec{j} +4 \\vec{k}$ and $\\vec{c} =2 \\vec{i} +4 \\vec{j}$ $+ \\left( {\\lambda }^{2}-1 \\right) \\vec{k}$ be coplanar vectors. Then the non-zero vector $\\vec{a} \\times \\vec{c}$ is",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} +4 \\hat{k} , \\vec{b} = \\hat{i} +\\lambda \\hat{j} +4 \\hat{k}$ and $\\vec{c} =2 \\hat{i} +4 \\hat{j}$ $+ \\left( {\\lambda }^{2}-1 \\right) \\hat{k}$ be coplanar vectors. Then the non-zero vector $\\vec{a} \\times \\vec{c}$ is",
     "images": [],
     "options": [
-      "$-10 \\vec{i} +5 \\vec{j}$",
-      "$-14 \\vec{i} +5 \\vec{j}$",
-      "$-14 \\vec{i} -5 \\vec{j}$",
-      "$-10 \\vec{i} -5 \\vec{j}$"
+      "$-10 \\hat{i} +5 \\hat{j}$",
+      "$-14 \\hat{i} +5 \\hat{j}$",
+      "$-14 \\hat{i} -5 \\hat{j}$",
+      "$-10 \\hat{i} -5 \\hat{j}$"
     ],
     "correct": "a",
     "chapter": "Vector Algebra",
@@ -81050,7 +74775,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_225",
     "number": "225",
     "type": "mcq",
-    "text": "The sum of the distinct real values of $\\mu$ , for which the vectors, $\\mu \\vec{i} + \\vec{j} + \\vec{k} , \\vec{i} +\\mu \\vec{j} + \\vec{k} , \\vec{i} + \\vec{j} +\\mu \\vec{k}$ are co-planar, is",
+    "text": "The sum of the distinct real values of $\\mu$ , for which the vectors, $\\mu \\hat{i} + \\hat{j} + \\hat{k} , \\hat{i} +\\mu \\hat{j} + \\hat{k} , \\hat{i} + \\hat{j} +\\mu \\hat{k}$ are co-planar, is",
     "images": [],
     "options": [
       "2",
@@ -81088,7 +74813,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_227",
     "number": "227",
     "type": "mcq",
-    "text": "Let $\\vec{u}$ be a vector coplanar with the vectors $\\vec{a} =2 \\vec{i} +3 \\vec{j} - \\vec{k}$ and $\\vec{b} = \\vec{j} + \\vec{k}$ . If $\\vec{u}$ is perpendicular to $\\vec{a}$ and $\\vec{u} ⋅ \\vec{b} =24$ , then $| \\vec{u} {|}^{2}$ is equal to",
+    "text": "Let $\\vec{u}$ be a vector coplanar with the vectors $\\vec{a} =2 \\hat{i} +3 \\hat{j} - \\hat{k}$ and $\\vec{b} = \\hat{j} + \\hat{k}$ . If $\\vec{u}$ is perpendicular to $\\vec{a}$ and $\\vec{u} ⋅ \\vec{b} =24$ , then $| \\vec{u} {|}^{2}$ is equal to",
     "images": [],
     "options": [
       "336",
@@ -81107,7 +74832,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_228",
     "number": "228",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} + \\vec{k} , \\vec{c} = \\vec{j} - \\vec{k}$ and a vector $\\vec{b}$ be such that $\\vec{a} \\times \\vec{b} = \\vec{c}$ and $\\vec{a} ⋅ \\vec{b} =3$ . Then $| \\vec{b} |$ equals:",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} + \\hat{k} , \\vec{c} = \\hat{j} - \\hat{k}$ and a vector $\\vec{b}$ be such that $\\vec{a} \\times \\vec{b} = \\vec{c}$ and $\\vec{a} ⋅ \\vec{b} =3$ . Then $| \\vec{b} |$ equals:",
     "images": [],
     "options": [
       "$\\sqrt{\\frac{11}{3}}$",
@@ -81164,7 +74889,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_231",
     "number": "231",
     "type": "mcq",
-    "text": "If $[ \\vec{a} \\times \\vec{b} \\vec{b} \\times \\vec{c} \\vec{c} \\times a]=\\lambda \\left( \\begin{bmatrix} \\vec{a} & \\vec{b} \\\\ \\vec{c} & {]}^{2} \\end{bmatrix} \\right)$ , then $\\lambda$ is equal to",
+    "text": "If $[ \\vec{a} \\times \\vec{b} \\vec{b} \\times \\vec{c} \\vec{c} \\times a]=\\lambda \\left[ \\vec{a} & \\vec{b} \\\\ \\vec{c} & {]}^{2} $ , then $\\lambda$ is equal to",
     "images": [],
     "options": [
       "3",
@@ -81183,7 +74908,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_232",
     "number": "232",
     "type": "mcq",
-    "text": "If $\\vec{a} = \\frac{1}{\\sqrt{10}} (3 \\vec{i} + \\vec{k} )$ and $\\vec{b} = \\frac{1}{7} (2 \\vec{i} +3 \\vec{j} -6 \\vec{k} )$ , then the value of $(2 \\vec{a} - \\vec{b} )⋅[( \\vec{a} \\times \\vec{b} )\\times ( \\vec{a} +2 \\vec{b} )]$ is",
+    "text": "If $\\vec{a} = \\frac{1}{\\sqrt{10}} (3 \\hat{i} + \\hat{k} )$ and $\\vec{b} = \\frac{1}{7} (2 \\hat{i} +3 \\hat{j} -6 \\hat{k} )$ , then the value of $(2 \\vec{a} - \\vec{b} )⋅[( \\vec{a} \\times \\vec{b} )\\times ( \\vec{a} +2 \\vec{b} )]$ is",
     "images": [],
     "options": [
       "5",
@@ -81221,13 +74946,13 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_234",
     "number": "234",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{j} - \\vec{k}$ and $\\vec{c} = \\vec{i} - \\vec{j} - \\vec{k}$ . Then the vector $\\vec{b}$ satisfying $\\vec{a} \\times \\vec{b} + \\vec{c} =0$ and $\\vec{a} ⋅ \\vec{b} =3$ is",
+    "text": "Let $\\vec{a} = \\hat{j} - \\hat{k}$ and $\\vec{c} = \\hat{i} - \\hat{j} - \\hat{k}$ . Then the vector $\\vec{b}$ satisfying $\\vec{a} \\times \\vec{b} + \\vec{c} =0$ and $\\vec{a} ⋅ \\vec{b} =3$ is",
     "images": [],
     "options": [
-      "$- \\vec{i} + \\vec{j} -2 \\vec{k}$",
-      "$2 \\vec{i} - \\vec{j} +2 \\vec{k}$",
-      "$\\vec{i} - \\vec{j} -2 \\vec{k}$",
-      "$\\vec{i} + \\vec{j} -2 \\vec{k}$"
+      "$- \\hat{i} + \\hat{j} -2 \\hat{k}$",
+      "$2 \\hat{i} - \\hat{j} +2 \\hat{k}$",
+      "$\\hat{i} - \\hat{j} -2 \\hat{k}$",
+      "$\\hat{i} + \\hat{j} -2 \\hat{k}$"
     ],
     "correct": "a",
     "chapter": "Vector Algebra",
@@ -81259,7 +74984,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_236",
     "number": "236",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} + \\vec{k} , \\vec{b} = \\vec{i} - \\vec{j} +2 \\vec{k}$ and $\\vec{c} =x \\vec{i} +(x-2) \\vec{j} - \\vec{k}$ . If the vectors lies in the plane of $\\vec{a}$ and $\\vec{b}$ , then $x$ equals",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} + \\hat{k} , \\vec{b} = \\hat{i} - \\hat{j} +2 \\hat{k}$ and $\\vec{c} =x \\hat{i} +(x-2) \\hat{j} - \\hat{k}$ . If the vectors lies in the plane of $\\vec{a}$ and $\\vec{b}$ , then $x$ equals",
     "images": [],
     "options": [
       "-4",
@@ -81297,7 +75022,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_238",
     "number": "238",
     "type": "mcq",
-    "text": "If $\\vec{a} , \\vec{b} , \\vec{c}$ are non-coplanar vectors and $\\lambda$ is a real number then $\\left( \\begin{bmatrix} \\lambda ( \\vec{a} + \\vec{b} ) & {\\lambda }^{2} \\vec{b} & \\lambda \\vec{c} \\end{bmatrix} \\right) = \\left( \\begin{bmatrix} \\vec{a} & \\vec{b} + \\vec{c} & \\vec{b} \\end{bmatrix} \\right)$ for",
+    "text": "If $\\vec{a} , \\vec{b} , \\vec{c}$ are non-coplanar vectors and $\\lambda$ is a real number then $\\left[ \\lambda ( \\vec{a} + \\vec{b} ) & {\\lambda }^{2} \\vec{b} & \\lambda \\vec{c} \\right] = \\left[ \\vec{a} & \\vec{b} + \\vec{c} & \\vec{b} \\right]$ for",
     "images": [],
     "options": [
       "no value of $\\lambda$",
@@ -81316,7 +75041,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_239",
     "number": "239",
     "type": "mcq",
-    "text": "Let $a,b$ and $c$ be distinct non-negative numbers. If the vectors $a \\vec{i} +a \\vec{j} +c \\vec{k} , \\vec{i} + \\vec{k}$ and $c \\vec{i} +c \\vec{j} +b \\vec{k}$ lie in a plane, then $c$ is",
+    "text": "Let $a,b$ and $c$ be distinct non-negative numbers. If the vectors $a \\hat{i} +a \\hat{j} +c \\hat{k} , \\hat{i} + \\hat{k}$ and $c \\hat{i} +c \\hat{j} +b \\hat{k}$ lie in a plane, then $c$ is",
     "images": [],
     "options": [
       "the arithmetic mean of $a$ and $b$",
@@ -81335,7 +75060,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_240",
     "number": "240",
     "type": "mcq",
-    "text": "Let $\\vec{a} = \\vec{i} - \\vec{k} , \\vec{b} =x \\vec{i} + \\vec{j} +(1-x) \\vec{k}$ and $\\vec{c} =y \\vec{i} +x \\vec{j} +(1+x-y) \\vec{k}$ . Then $[ \\vec{a} , \\vec{b} , \\vec{c} ]$ depends on",
+    "text": "Let $\\vec{a} = \\hat{i} - \\hat{k} , \\vec{b} =x \\hat{i} + \\hat{j} +(1-x) \\hat{k}$ and $\\vec{c} =y \\hat{i} +x \\hat{j} +(1+x-y) \\hat{k}$ . Then $[ \\vec{a} , \\vec{b} , \\vec{c} ]$ depends on",
     "images": [],
     "options": [
       "only $x$",
@@ -81392,7 +75117,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_243",
     "number": "243",
     "type": "mcq",
-    "text": "If $\\vec{a} , \\vec{b} , \\vec{c}$ are vectors such that $\\left( \\begin{bmatrix} \\vec{a} & \\vec{b} & \\vec{c} \\end{bmatrix} \\right) =4$ then $[ \\vec{a} \\times \\vec{b} \\vec{b} \\times \\vec{c} \\vec{c} \\times \\vec{a} ]=$",
+    "text": "If $\\vec{a} , \\vec{b} , \\vec{c}$ are vectors such that $\\left[ \\vec{a} & \\vec{b} & \\vec{c} \\right] =4$ then $[ \\vec{a} \\times \\vec{b} \\vec{b} \\times \\vec{c} \\vec{c} \\times \\vec{a} ]=$",
     "images": [],
     "options": [
       "16",
@@ -81411,7 +75136,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_244",
     "number": "244",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} + \\vec{k} , \\vec{b} =2 \\vec{i} +2 \\vec{j} + \\vec{k}$ and $\\vec{d} = \\vec{a} \\times \\vec{b}$ . If $\\vec{c}$ is a vector such that $\\vec{a} ⋅ \\vec{c} =| \\vec{c} |,| \\vec{c} -2 \\vec{a} {|}^{2}=8$ and the angle between $\\vec{d}$ and $\\vec{c}$ is $\\frac{\\pi }{4}$ , then $|10-3 \\vec{b} ⋅ \\vec{c} |$ $+| \\vec{d} \\times \\vec{c} {|}^{2}$ is equal to ___________ .",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} + \\hat{k} , \\vec{b} =2 \\hat{i} +2 \\hat{j} + \\hat{k}$ and $\\vec{d} = \\vec{a} \\times \\vec{b}$ . If $\\vec{c}$ is a vector such that $\\vec{a} ⋅ \\vec{c} =| \\vec{c} |,| \\vec{c} -2 \\vec{a} {|}^{2}=8$ and the angle between $\\vec{d}$ and $\\vec{c}$ is $\\frac{\\pi }{4}$ , then $|10-3 \\vec{b} ⋅ \\vec{c} |$ $+| \\vec{d} \\times \\vec{c} {|}^{2}$ is equal to ___________ .",
     "images": [],
     "options": [],
     "correct": "6",
@@ -81425,7 +75150,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_245",
     "number": "245",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} +2 \\vec{j} +3 \\vec{k}$ and $\\vec{b} = \\vec{i} + \\vec{j} - \\vec{k}$ . If $\\vec{c}$ is a vector such that $\\vec{a} ⋅ \\vec{c} =11, \\vec{b} ⋅( \\vec{a} \\times \\vec{c} )=27$ and $\\vec{b} ⋅ \\vec{c} =- \\sqrt{3} | \\vec{b} |$ , then $| \\vec{a} \\times \\vec{c} {|}^{2}$ is equal to ________ .",
+    "text": "Let $\\vec{a} = \\hat{i} +2 \\hat{j} +3 \\hat{k}$ and $\\vec{b} = \\hat{i} + \\hat{j} - \\hat{k}$ . If $\\vec{c}$ is a vector such that $\\vec{a} ⋅ \\vec{c} =11, \\vec{b} ⋅( \\vec{a} \\times \\vec{c} )=27$ and $\\vec{b} ⋅ \\vec{c} =- \\sqrt{3} | \\vec{b} |$ , then $| \\vec{a} \\times \\vec{c} {|}^{2}$ is equal to ________ .",
     "images": [],
     "options": [],
     "correct": "285",
@@ -81439,7 +75164,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_246",
     "number": "246",
     "type": "numerical",
-    "text": "Let $\\vec{v} =\\alpha \\vec{i} +2 \\vec{j} -3 \\vec{k} , \\vec{w} =2\\alpha \\vec{i} + \\vec{j} - \\vec{k}$ and $\\vec{u}$ be a vector such that $| \\vec{u} |=\\alpha >0$ . If the minimum value of the scalar triple product $[ \\vec{u} \\vec{v} \\vec{w} ]$ is $-\\alpha \\sqrt{3401}$ , and $| \\vec{u} ⋅ \\vec{i} {|}^{2}= \\frac{m}{n}$ where $m$ and $n$ are coprime natural numbers, then $m+n$ is equal to _____________ .",
+    "text": "Let $\\vec{v} =\\alpha \\hat{i} +2 \\hat{j} -3 \\vec{k} , \\vec{w} =2\\alpha \\hat{i} + \\hat{j} - \\hat{k}$ and $\\vec{u}$ be a vector such that $| \\vec{u} |=\\alpha >0$ . If the minimum value of the scalar triple product $[ \\vec{u} \\vec{v} \\vec{w} ]$ is $-\\alpha \\sqrt{3401}$ , and $| \\vec{u} ⋅ \\vec{i} {|}^{2}= \\frac{m}{n}$ where $m$ and $n$ are coprime natural numbers, then $m+n$ is equal to _____________ .",
     "images": [],
     "options": [],
     "correct": "3501",
@@ -81453,7 +75178,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_247",
     "number": "247",
     "type": "numerical",
-    "text": "Let $\\vec{a} , \\vec{b}$ and $\\vec{c}$ be three non-zero non-coplanar vectors. Let the position vector of four points $A,B$ , $C$ and $D$ be $\\vec{a} - \\vec{b} + \\vec{c} ,\\lambda \\vec{a} -3 \\vec{b} +4 \\vec{c} ,- \\vec{a} +2 \\vec{b} -3 \\vec{c}$ and $2 \\vec{a} -4 \\vec{b} +6 \\vec{c}$ respectively. If $\\vec{AB} , \\vec{AC}$ and $\\vec{AD}$ are coplanar, then $\\lambda$ is equal to ___________",
+    "text": "Let $\\vec{a} , \\vec{b}$ and $\\vec{c}$ be three non-zero non-coplanar vectors. Let the position vector of four points $A,B$ , $C$ and $D$ be $\\vec{a} - \\vec{b} + \\vec{c} ,\\lambda \\vec{a} -3 \\vec{b} +4 \\vec{c} ,- \\vec{a} +2 \\vec{b} -3 \\vec{c}$ and $2 \\vec{a} -4 \\vec{b} +6 \\vec{c}$ respectively. If $\\overrightarrow{AB} , \\overrightarrow{AC}$ and $\\overrightarrow{AD}$ are coplanar, then $\\lambda$ is equal to ___________",
     "images": [],
     "options": [],
     "correct": "2",
@@ -81467,7 +75192,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_248",
     "number": "248",
     "type": "numerical",
-    "text": "If $\\vec{a} =2 \\vec{i} + \\vec{j} +3 \\vec{k} , \\vec{b} =3 \\vec{i} +3 \\vec{j} + \\vec{k}$ and $\\vec{c} ={c}_{1} \\vec{i} +{c}_{2} \\vec{j} +{c}_{3} \\vec{k}$ are coplanar vectors and $\\vec{a} ⋅ \\vec{c} =5, \\vec{b} ⊥ \\vec{c}$ , then $122 \\left( {c}_{1}+{c}_{2}+{c}_{3} \\right)$ is equal to ______________ .",
+    "text": "If $\\vec{a} =2 \\hat{i} + \\hat{j} +3 \\hat{k} , \\vec{b} =3 \\hat{i} +3 \\hat{j} + \\hat{k}$ and $\\vec{c} ={c}_{1} \\hat{i} +{c}_{2} \\hat{j} +{c}_{3} \\hat{k}$ are coplanar vectors and $\\vec{a} ⋅ \\vec{c} =5, \\vec{b} ⊥ \\vec{c}$ , then $122 \\left( {c}_{1}+{c}_{2}+{c}_{3} \\right)$ is equal to ______________ .",
     "images": [],
     "options": [],
     "correct": "150",
@@ -81481,7 +75206,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_249",
     "number": "249",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} + \\vec{j} + \\vec{k} , \\vec{b}$ and $\\vec{c} = \\vec{j} - \\vec{k}$ be three vectors such that $\\vec{a} \\times \\vec{b} = \\vec{c}$ and $\\vec{a} ⋅ \\vec{b} =1$ . If the length of projection vector of the vector $\\vec{b}$ on the vector $\\vec{a} \\times \\vec{c}$ is $l$ , then the value of $3{l}^{2}$ is equal to ________________",
+    "text": "Let $\\vec{a} = \\hat{i} + \\hat{j} + \\hat{k} , \\vec{b}$ and $\\vec{c} = \\hat{j} - \\hat{k}$ be three vectors such that $\\vec{a} \\times \\vec{b} = \\vec{c}$ and $\\vec{a} ⋅ \\vec{b} =1$ . If the length of projection vector of the vector $\\vec{b}$ on the vector $\\vec{a} \\times \\vec{c}$ is $l$ , then the value of $3{l}^{2}$ is equal to ________________",
     "images": [],
     "options": [],
     "correct": "2",
@@ -81495,7 +75220,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_250",
     "number": "250",
     "type": "numerical",
-    "text": "Let $\\vec{a} = \\vec{i} -\\alpha \\vec{j} +\\beta \\vec{k} , \\vec{b} =3 \\vec{i} +\\beta \\vec{j} -\\alpha \\vec{k}$ and $\\vec{c} =-\\alpha \\vec{i} -2 \\vec{j} + \\vec{k}$ , where $\\alpha$ and $\\beta$ are integers. If $\\vec{a} ⋅ \\vec{b} =-1$ and $\\vec{b} ⋅ \\vec{c} =10$ , then $( \\vec{a} \\times \\vec{b} )⋅ \\vec{c}$ is equal to_________________ .",
+    "text": "Let $\\vec{a} = \\hat{i} -\\alpha \\hat{j} +\\beta \\hat{k} , \\vec{b} =3 \\hat{i} +\\beta \\hat{j} -\\alpha \\hat{k}$ and $\\vec{c} =-\\alpha \\hat{i} -2 \\hat{j} + \\hat{k}$ , where $\\alpha$ and $\\beta$ are integers. If $\\vec{a} ⋅ \\vec{b} =-1$ and $\\vec{b} ⋅ \\vec{c} =10$ , then $( \\vec{a} \\times \\vec{b} )⋅ \\vec{c}$ is equal to_________________ .",
     "images": [],
     "options": [],
     "correct": "9",
@@ -81509,7 +75234,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_251",
     "number": "251",
     "type": "numerical",
-    "text": "Let $\\vec{c}$ be a vector perpendicular to the vectors $\\vec{a} = \\vec{i} + \\vec{j} - \\vec{k}$ and $\\vec{b} = \\vec{i} +2 \\vec{j} + \\vec{k}$ . If $\\vec{c} ⋅( \\vec{i} + \\vec{j} +3 \\vec{k} )=8$ , then the value of $\\vec{c} ⋅( \\vec{a} \\times \\vec{b} )$ is equal to _________________ .",
+    "text": "Let $\\vec{c}$ be a vector perpendicular to the vectors $\\vec{a} = \\hat{i} + \\hat{j} - \\hat{k}$ and $\\vec{b} = \\hat{i} +2 \\hat{j} + \\hat{k}$ . If $\\vec{c} ⋅( \\hat{i} + \\hat{j} +3 \\hat{k} )=8$ , then the value of $\\vec{c} ⋅( \\vec{a} \\times \\vec{b} )$ is equal to _________________ .",
     "images": [],
     "options": [],
     "correct": "28",
@@ -81523,7 +75248,7 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "id": "jee_mains_math_vector_algebra_252",
     "number": "252",
     "type": "numerical",
-    "text": "If $\\vec{a} =\\alpha \\vec{i} +\\beta \\vec{j} +3 \\vec{k} , \\vec{b} =-\\beta \\vec{i} -\\alpha \\vec{j} - \\vec{k}$ and $\\vec{c} = \\vec{i} -2 \\vec{j} - \\vec{k}$ such that $\\vec{a} ⋅ \\vec{b} =1$ and $\\vec{b} ⋅ \\vec{c} =-3$ , then $\\frac{1}{3} (( \\vec{a} \\times \\vec{b} )⋅ \\vec{c} )$ is equal to _____________ .",
+    "text": "If $\\vec{a} =\\alpha \\hat{i} +\\beta \\hat{j} +3 \\hat{k} , \\vec{b} =-\\beta \\hat{i} -\\alpha \\hat{j} - \\hat{k}$ and $\\vec{c} = \\vec{i} -2 \\vec{j} - \\vec{k}$ such that $\\vec{a} ⋅ \\vec{b} =1$ and $\\vec{b} ⋅ \\vec{c} =-3$ , then $\\frac{1}{3} (( \\vec{a} \\times \\vec{b} )⋅ \\vec{c} )$ is equal to _____________ .",
     "images": [],
     "options": [],
     "correct": "2",
@@ -81533,32 +75258,5 @@ export const QUESTIONS_JEE_MAINS_MATH = [
     "needsManualReview": false,
     "difficulty": "Medium"
   },
-  {
-    "id": "jee_mains_math_vector_algebra_253",
-    "number": "253",
-    "type": "numerical",
-    "text": "Let $\\vec{x}$ be a vector in the plane containing vectors $\\vec{a} =2 \\vec{i} - \\vec{j} + \\vec{k}$ and $\\vec{b} = \\vec{i} +2 \\vec{j} - \\vec{k}$ . If the vector $\\vec{x}$ is perpendicular to $3 \\vec{i} +2 \\vec{j} - \\vec{k}$ and its projection on $\\vec{a}$ is $\\frac{17 \\sqrt{6}}{2}$ , then the value of $| \\vec{x} {|}^{2}$ is equal to  . 254. Let three vectors $\\vec{a} , \\vec{b}$ and $\\vec{c}$ be such that $\\vec{c}$ is coplanar with $\\vec{a}$ and $\\vec{b} , \\vec{a} ⋅ \\vec{c} =7$ and $\\vec{b}$ is perpendicular to $\\vec{c}$ , where $\\vec{a} =- \\vec{i} + \\vec{j} + \\vec{k}$ and $\\vec{b} =2 \\vec{i} + \\vec{k}$ , then the value of $2| \\vec{a} + \\vec{b} + \\vec{c} {|}^{2}$ is ____________ .",
-    "images": [],
-    "options": [],
-    "correct": "486",
-    "chapter": "Vector Algebra",
-    "topic": "Scalar And Vector Triple Product*",
-    "solution": "<p><strong>Ans: 486</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Vector Algebra\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Easy"
-  },
-  {
-    "id": "jee_mains_math_vector_algebra_255",
-    "number": "255",
-    "type": "numerical",
-    "text": "If the vectors, $\\vec{p} =(a+1) \\vec{i} +a \\vec{j} +a \\vec{k}$ , $\\vec{q} =a \\vec{i} +(a+1) \\vec{j} +a \\vec{k}$ and $\\vec{r} =a \\vec{i} +a \\vec{j} +(a+1) \\vec{k} ,(a\\in R)$ are coplanar and $3( \\vec{p} ⋅ \\vec{q} {)}^{2}-\\lambda | \\vec{r} \\times \\vec{q} {|}^{2}=0$ , then the value of $\\lambda$ is ____________ .",
-    "images": [],
-    "options": [],
-    "correct": "18",
-    "chapter": "Vector Algebra",
-    "topic": "Scalar And Vector Triple Product*",
-    "solution": "<p><strong>Ans: 18</strong></p><p>Detailed step-by-step solution for this question from the chapter \"Vector Algebra\" will be updated shortly.</p>",
-    "needsManualReview": false,
-    "difficulty": "Hard"
-  }
+  
 ];

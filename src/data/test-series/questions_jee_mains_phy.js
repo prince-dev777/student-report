@@ -17944,7 +17944,7 @@ export const QUESTIONS_JEE_MAINS_PHY = [
     "options": [
       "$\\hat{s} = \\left( \\frac{-3 \\hat{j} +4 \\hat{k}}{5} \\right)$",
       "$\\hat{s} = \\left( \\frac{-4 \\hat{k} +3 \\hat{j}}{5} \\right)$",
-      "$\\hat{s} = \\left( \\frac{4 \\hat{j} -3 \\hat{k}}{5} \\right)$",
+      "$\\hat{s} = \\left( \\frac{4 \\hat{j} -3 \\hatk}}{5} \\right)$",
       "$\\hat{s} = \\left( \\frac{3 \\hat{i} -4 \\hat{j}}{5} \\right)$"
     ],
     "correct": "a",
@@ -52025,7 +52025,7 @@ export const QUESTIONS_JEE_MAINS_PHY = [
     "id": "jee_mains_phy_optics_153",
     "number": "153",
     "type": "mcq",
-    "text": "A thin convex lens of focal length $f$ is put on a plane mirror as shown in the figure. When an object is kept at a distance a from the lens - mirror combination, its image is formed at a distance  $\\frac{a}{3}$ in front of the combination. The value of $a$ is The value of $a$ is",
+    "text": "A thin convex lens of focal length $f$ is put on a plane mirror as shown in the figure. When an object is kept at a distance a from the lens - mirror combination, its image is formed at a distance $\\frac{a}{3}$ in front of the combination. The value of $a$ is The value of $a$ is",
     "images": [
       "https://res.cloudinary.com/dqowxwv8k/image/upload/career_xone_questions/phy/optics/q153_49.jpg"
     ],

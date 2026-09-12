@@ -833,7 +833,13 @@ export default function ParentPortalWeb() {
       const alreadyHasNotice = list.some(n => n.type === 'ATTENDANCE' && (n.message.includes(dateKey) || n.title.includes(dateKey) || n.time.includes(dateKey)));
       if (!alreadyHasNotice && !seenKeys.has(`ATT_${dateKey}`)) {
         seenKeys.add(`ATT_${dateKey}`);
-        const pName = studentData?.parentName || 'Parent';
+        const rawParent = (studentData?.parentName || '').trim();
+        const rawFather = (studentData?.fatherName || '').trim();
+        const pName = (rawParent && !['undefined', 'null'].includes(rawParent.toLowerCase()))
+          ? rawParent
+          : ((rawFather && !['undefined', 'null'].includes(rawFather.toLowerCase()))
+            ? rawFather
+            : 'Parent');
         const sName = studentData?.name || 'Student';
         const cleanDate = dateKey.includes('-') ? (dateKey.split('-')[0].length === 4 ? dateKey.split('-').reverse().join('-') : dateKey) : dateKey;
         const timeStr = a.entryTime && a.entryTime !== '--' ? ` at ${a.entryTime}` : '';
