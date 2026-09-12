@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { getLocalDb, getLocalCollection, isLocalDbReady } from './localDb.js';
+import { getLocalDb, getLocalCollection, isLocalDbReady, ensureLocalDb } from './localDb.js';
 import { connectCloudDb, getCloudDb, getCloudCollection, isCloudDbAvailable } from './cloudDb.js';
 import { ALL_COLLECTIONS } from '../services/jsonBackupService.js';
 import { logInfo, logError, logWarn } from '../utils/logger.js';
@@ -240,8 +240,11 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
   try {
     let localColl = null;
     try {
+      await ensureLocalDb();
       localColl = getLocalCollection(collectionName);
-    } catch (e) {}
+    } catch (e) {
+      logWarn('SYNC_DELETE', `getLocalCollection failed for [${collectionName}]: ${e.message}`);
+    }
 
     const cloudColl = await getCloudCollection(collectionName);
     const fixedFilter = fixObjectIds(filter);
@@ -383,7 +386,10 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
     for (const rel of cascadeRelations) {
       try {
         let localRelColl = null;
-        try { localRelColl = getLocalCollection(rel.collection); } catch (e) {}
+        try {
+          await ensureLocalDb();
+          localRelColl = getLocalCollection(rel.collection);
+        } catch (e) {}
         const cloudRelColl = await getCloudCollection(rel.collection);
         const fixedRelFilter = fixObjectIds(rel.filter);
 

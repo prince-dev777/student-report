@@ -8,31 +8,56 @@ import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import MouseTrail from './components/MouseTrail';
-// 🚀 Lazy-load desktop-only admin modules to keep web & mobile portal bundle feather-light
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Students = lazy(() => import('./pages/Students'));
-const Attendance = lazy(() => import('./pages/Attendance'));
-const SMSCenter = lazy(() => import('./pages/SMSCenter'));
-const ShareApp = lazy(() => import('./pages/ShareApp'));
-const Sessions = lazy(() => import('./pages/Sessions'));
-const Inquiries = lazy(() => import('./pages/Inquiries'));
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
-const Tests = lazy(() => import('./pages/Tests'));
-const Settings = lazy(() => import('./pages/Settings'));
+// 🛡️ Resilient lazy loader with automatic retry & reload on dynamic import module failures
+const lazyWithRetry = (componentImport) =>
+  lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      console.warn('⚠️ Dynamic import failed, retrying...', error);
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      try {
+        return await componentImport();
+      } catch (retryError) {
+        console.error('🚨 Dynamic import second attempt failed, refreshing view:', retryError);
+        const retryKey = 'lazy_retry_' + (window.location.hash || window.location.pathname);
+        const alreadyRetried = sessionStorage.getItem(retryKey);
+        if (!alreadyRetried) {
+          sessionStorage.setItem(retryKey, 'true');
+          window.location.reload();
+          return new Promise(() => {});
+        }
+        sessionStorage.removeItem(retryKey);
+        throw retryError;
+      }
+    }
+  });
+
+// 🚀 Lazy-load desktop-only admin modules with resilient retry
+const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'));
+const Students = lazyWithRetry(() => import('./pages/Students'));
+const Attendance = lazyWithRetry(() => import('./pages/Attendance'));
+const SMSCenter = lazyWithRetry(() => import('./pages/SMSCenter'));
+const ShareApp = lazyWithRetry(() => import('./pages/ShareApp'));
+const Sessions = lazyWithRetry(() => import('./pages/Sessions'));
+const Inquiries = lazyWithRetry(() => import('./pages/Inquiries'));
+const Login = lazyWithRetry(() => import('./pages/Login'));
+const Register = lazyWithRetry(() => import('./pages/Register'));
+const Tests = lazyWithRetry(() => import('./pages/Tests'));
+const Settings = lazyWithRetry(() => import('./pages/Settings'));
 import { API_BASE } from './utils/api';
 import GlobalScannerDeskListener from './components/GlobalScannerDeskListener';
 import { useApp } from './context/AppContext';
 
 // 🚀 Lazy-load massive modules to eliminate 17.5MB bundle from startup path
-const TestSeries = lazy(() => import('./pages/TestSeries'));
-const SuperAdminLogin = lazy(() => import('./pages/SuperAdminLogin'));
-const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
-const StaffAttendanceWeb = lazy(() => import('./pages/StaffAttendanceWeb'));
-const SaaSShowcaseLandingPage = lazy(() => import('./pages/SaaSShowcaseLandingPage'));
-const ParentPortalWeb = lazy(() => import('./pages/ParentPortalWeb'));
-const TeacherPortalWeb = lazy(() => import('./pages/TeacherPortalWeb'));
-const StaffInquiryWeb = lazy(() => import('./pages/StaffInquiryWeb'));
+const TestSeries = lazyWithRetry(() => import('./pages/TestSeries'));
+const SuperAdminLogin = lazyWithRetry(() => import('./pages/SuperAdminLogin'));
+const SuperAdminDashboard = lazyWithRetry(() => import('./pages/SuperAdminDashboard'));
+const StaffAttendanceWeb = lazyWithRetry(() => import('./pages/StaffAttendanceWeb'));
+const SaaSShowcaseLandingPage = lazyWithRetry(() => import('./pages/SaaSShowcaseLandingPage'));
+const ParentPortalWeb = lazyWithRetry(() => import('./pages/ParentPortalWeb'));
+const TeacherPortalWeb = lazyWithRetry(() => import('./pages/TeacherPortalWeb'));
+const StaffInquiryWeb = lazyWithRetry(() => import('./pages/StaffInquiryWeb'));
 
 const KEEP_ALIVE_ROUTES = [
   { path: '/', component: Dashboard, id: 'dashboard' },

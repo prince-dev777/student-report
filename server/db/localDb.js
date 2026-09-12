@@ -10,7 +10,9 @@ export async function connectLocalDb() {
     return localConnection;
   }
 
-  const primaryUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27018/student-report';
+  const envUri = process.env.LOCAL_MONGODB_URI || process.env.MONGODB_URI;
+  const isCloudUri = envUri && (envUri.includes('mongodb.net') || envUri.includes('replicaSet'));
+  const primaryUri = (!isCloudUri && envUri) ? envUri : 'mongodb://127.0.0.1:27018/student-report';
   const fallbackLocalUri = 'mongodb://127.0.0.1:27017/student-report';
   const cloudFallbackUri = process.env.CLOUD_MONGODB_URI || 
     'mongodb://student_report:helloai.com@ac-hqw4l9b-shard-00-00.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-01.thx91mx.mongodb.net:27017,ac-hqw4l9b-shard-00-02.thx91mx.mongodb.net:27017/test?ssl=true&replicaSet=atlas-srcmx3-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
@@ -56,11 +58,21 @@ export function getLocalDb() {
   if (mongoose.connection && mongoose.connection.readyState === 1) {
     return mongoose.connection;
   }
-  return localConnection;
+  if (localConnection && localConnection.readyState === 1) {
+    return localConnection;
+  }
+  return null;
 }
 
 export function isLocalDbReady() {
-  return mongoose.connection && mongoose.connection.readyState === 1;
+  return (mongoose.connection && mongoose.connection.readyState === 1) || (localConnection && localConnection.readyState === 1);
+}
+
+export async function ensureLocalDb() {
+  if (!isLocalDbReady()) {
+    await connectLocalDb();
+  }
+  return getLocalDb();
 }
 
 export function getLocalCollection(collectionName) {
