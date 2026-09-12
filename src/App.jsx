@@ -48,6 +48,7 @@ const Settings = lazyWithRetry(() => import('./pages/Settings'));
 import { API_BASE } from './utils/api';
 import GlobalScannerDeskListener from './components/GlobalScannerDeskListener';
 import { useApp } from './context/AppContext';
+import AppStartupSplash from './components/AppStartupSplash';
 
 // 🚀 Lazy-load massive modules to eliminate 17.5MB bundle from startup path
 const TestSeries = lazyWithRetry(() => import('./pages/TestSeries'));
@@ -281,7 +282,7 @@ export default function App() {
 
     return (
       <HashRouter>
-        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0f172a' }} />}>
+        <Suspense fallback={<AppStartupSplash />}>
           <Routes>
             <Route path="/staff" element={<StaffAttendanceWeb />} />
             <Route path="/parent" element={<ParentPortalWeb />} />
@@ -303,7 +304,7 @@ export default function App() {
   return (
     <HashRouter>
       <AuthProvider>
-        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0f172a' }} />}>
+        <Suspense fallback={<AppStartupSplash />}>
           <Routes>
             <Route path="/superadmin" element={<SuperAdminLogin />} />
             <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
