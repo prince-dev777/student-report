@@ -52,12 +52,86 @@ async function syncToCloud() {
   try {
     localConn = await getLocalConnection();
     logInfo('SYNC', 'Connected to local DB.');
+
+    cloudConn = await mongoose.createConnection(CLOUD_URI, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+      retryWrites: true,
+      w: 'majority'
+    }).asPromise();
+    logInfo('SYNC', 'Connected to MongoDB Atlas Cloud.');
     
     const cloudDb = cloudConn.useDb('test').db;
+
+    // 0. Drain any pending offline tombstones from local queue to Cloud Atlas
+    const PENDING_TOMBSTONES_FILE = path.join(__dirname, 'data', 'pending_tombstones.json');
+    let pendingTombstones = [];
+    try {
+      const localPendingColl = localConn.collection('pending_tombstones');
+      if (localPendingColl) {
+        pendingTombstones = await localPendingColl.find({}).toArray().catch(() => []);
+      }
+    } catch (e) {}
+
+    if (fs.existsSync(PENDING_TOMBSTONES_FILE)) {
+      try {
+        const fileData = JSON.parse(fs.readFileSync(PENDING_TOMBSTONES_FILE, 'utf8')) || [];
+        pendingTombstones = [...pendingTombstones, ...fileData];
+      } catch (e) {}
+    }
+
+    if (pendingTombstones.length > 0) {
+      logInfo('SYNC', `⚡ Draining ${pendingTombstones.length} pending offline tombstones to Cloud Atlas...`);
+      const tombstonesColl = cloudDb.collection('deletedrecords');
+      for (const t of pendingTombstones) {
+        if (!t.collectionName) continue;
+        const targetCloudColl = cloudDb.collection(t.collectionName);
+        const clauses = [];
+        if (t.docId && mongoose.Types.ObjectId.isValid(t.docId)) clauses.push({ _id: new mongoose.Types.ObjectId(t.docId) });
+        if (t.docId) clauses.push({ _id: String(t.docId) });
+        if (t.customId) clauses.push({ id: String(t.customId) });
+        if (t.rollNo) clauses.push({ rollNo: String(t.rollNo) });
+        if (t.username) clauses.push({ username: String(t.username) });
+        if (t.studentId) clauses.push({ studentId: String(t.studentId) });
+        if (t.testId) clauses.push({ testId: String(t.testId) });
+        if (clauses.length > 0) {
+          await targetCloudColl.deleteMany({ $or: clauses }).catch(() => {});
+        }
+      }
+
+      const cleanTombstones = pendingTombstones.map(t => ({
+        collectionName: t.collectionName,
+        docId: t.docId ? String(t.docId) : null,
+        customId: t.customId ? String(t.customId) : null,
+        rollNo: t.rollNo ? String(t.rollNo) : null,
+        username: t.username ? String(t.username) : null,
+        studentId: t.studentId ? String(t.studentId) : null,
+        testId: t.testId ? String(t.testId) : null,
+        deletedAt: t.deletedAt ? new Date(t.deletedAt) : new Date()
+      }));
+
+      await tombstonesColl.insertMany(cleanTombstones, { ordered: false }).catch(() => {});
+
+      try {
+        await localConn.collection('pending_tombstones').deleteMany({}).catch(() => {});
+      } catch (e) {}
+      if (fs.existsSync(PENDING_TOMBSTONES_FILE)) {
+        try { fs.writeFileSync(PENDING_TOMBSTONES_FILE, '[]', 'utf8'); } catch (e) {}
+      }
+      logInfo('SYNC', `✅ Successfully drained ${pendingTombstones.length} pending tombstones.`);
+    }
+
     let cloudTombstones = [];
     try {
       cloudTombstones = await cloudDb.collection('deletedrecords').find({}).toArray();
     } catch (tErr) {}
+
+    let localTombstones = [];
+    try {
+      localTombstones = await localConn.collection('deletedrecords').find({}).toArray();
+    } catch (tErr) {}
+
+    const allTombstones = [...cloudTombstones, ...localTombstones];
 
     const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
 
@@ -86,17 +160,38 @@ async function syncToCloud() {
       }
 
       // Filter out any local activeDocs that match tombstones so they are NEVER re-uploaded to Cloud!
-      const collTombstones = cloudTombstones.filter(t => t.collectionName === collName);
+      const collTombstones = allTombstones.filter(t => t.collectionName === collName);
       const tDocIds = new Set(collTombstones.map(t => String(t.docId)).filter(Boolean));
       const tCustomIds = new Set(collTombstones.map(t => String(t.customId)).filter(Boolean));
+      const tRollNos = new Set(collTombstones.map(t => String(t.rollNo)).filter(Boolean));
+      const tUsernames = new Set(collTombstones.map(t => String(t.username)).filter(Boolean));
+      const tStudentIds = new Set(collTombstones.map(t => String(t.studentId)).filter(Boolean));
       const tTestIds = new Set(collTombstones.map(t => String(t.testId)).filter(Boolean));
+
+      // Also purge matching records from cloudColl immediately
+      const tObjectIds = Array.from(tDocIds).filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
+      const tombPurgeClauses = [
+        ...(tDocIds.size > 0 || tObjectIds.length > 0 ? [{ _id: { $in: [...Array.from(tDocIds), ...tObjectIds] } }] : []),
+        ...(tCustomIds.size > 0 ? [{ id: { $in: Array.from(tCustomIds) } }] : []),
+        ...(tRollNos.size > 0 ? [{ rollNo: { $in: Array.from(tRollNos) } }] : []),
+        ...(tUsernames.size > 0 ? [{ username: { $in: Array.from(tUsernames) } }] : []),
+        ...(tStudentIds.size > 0 ? [{ studentId: { $in: Array.from(tStudentIds) } }] : []),
+        ...(tTestIds.size > 0 ? [{ testId: { $in: Array.from(tTestIds) } }] : [])
+      ];
+
+      if (tombPurgeClauses.length > 0) {
+        await cloudColl.deleteMany({ $or: tombPurgeClauses }).catch(() => {});
+      }
 
       const cleanActiveDocs = [];
       const tombstonedLocalIds = [];
       for (const doc of activeDocs) {
         const isTombstoned = tDocIds.has(String(doc._id)) ||
           (doc.id && tCustomIds.has(String(doc.id))) ||
-          (collName === 'testresults' && doc.testId && tTestIds.has(String(doc.testId)));
+          (doc.rollNo && tRollNos.has(String(doc.rollNo))) ||
+          (doc.username && tUsernames.has(String(doc.username))) ||
+          (doc.studentId && tStudentIds.has(String(doc.studentId))) ||
+          (doc.testId && tTestIds.has(String(doc.testId)));
         if (isTombstoned) {
           tombstonedLocalIds.push(doc._id);
         } else {
@@ -116,27 +211,22 @@ async function syncToCloud() {
 
       // Process specific collections for local file uploads (OMR images)
       if (collName === 'testresults') {
-        // Fetch all published tests to make sure we ONLY upload OMRs of published tests to Cloudinary!
         let publishedTestIds = new Set();
         try {
-          const testsColl = localConn.collection('tests');
-          const publishedTests = await testsColl.find({
-            isDeleted: { $ne: true },
-            $or: [{ isPublished: true }, { status: 'published' }]
-          }).project({ id: 1, _id: 1 }).toArray();
-          publishedTestIds = new Set(publishedTests.map(t => String(t.id || t._id)));
-        } catch (e) {}
+          const publishedTests = await localConn.collection('tests').find({ status: 'Published' }).project({ id: 1, _id: 1 }).toArray();
+          publishedTests.forEach(t => {
+            if (t.id) publishedTestIds.add(String(t.id));
+            if (t._id) publishedTestIds.add(String(t._id));
+          });
+        } catch (tErr) {}
 
         for (let i = 0; i < cleanActiveDocs.length; i++) {
           const doc = cleanActiveDocs[i];
-          // Check if this test result belongs to a published test
           const testIdStr = String(doc.testId || '');
           if (!publishedTestIds.has(testIdStr)) {
-            // Test is not published yet - skip Cloudinary upload to save quota
             continue;
           }
 
-          // If the OMR image is a local path (starts with /uploads/omr/)
           if (doc.omrSheetImage && doc.omrSheetImage.startsWith('/uploads/omr/')) {
             const localFilePath = path.join(dataPath, doc.omrSheetImage);
             if (fs.existsSync(localFilePath)) {
@@ -149,7 +239,6 @@ async function syncToCloud() {
                 doc.omrSheetImage = uploadRes.secure_url;
                 doc.omrSheetPublicId = uploadRes.public_id;
                 
-                // Update local DB so it doesn't upload again next time
                 await localColl.updateOne({ _id: doc._id }, { $set: { omrSheetImage: uploadRes.secure_url, omrSheetPublicId: uploadRes.public_id } });
               } catch (uploadErr) {
                 console.error(`   - ❌ Failed to upload OMR image for test result ${doc._id}:`, uploadErr.message);
@@ -161,7 +250,7 @@ async function syncToCloud() {
         }
       }
 
-      // Upsert active documents to cloud
+      // Upsert active documents to cloud safely using multi-key filters
       let bulkOps;
       if (collName === 'attendances') {
         bulkOps = cleanActiveDocs.map(doc => ({
@@ -171,6 +260,42 @@ async function syncToCloud() {
             upsert: true
           }
         }));
+      } else if (collName === 'students' || collName === 'tests') {
+        bulkOps = cleanActiveDocs.map(doc => {
+          const repl = { ...doc };
+          delete repl._id;
+          return {
+            updateOne: {
+              filter: { $or: [{ id: doc.id }, ...(doc.rollNo ? [{ rollNo: doc.rollNo }] : []), { _id: doc._id }] },
+              update: { $set: repl },
+              upsert: true
+            }
+          };
+        });
+      } else if (collName === 'testresults') {
+        bulkOps = cleanActiveDocs.map(doc => {
+          const repl = { ...doc };
+          delete repl._id;
+          return {
+            updateOne: {
+              filter: { $or: [{ testId: doc.testId, studentId: doc.studentId }, { id: doc.id }, { _id: doc._id }] },
+              update: { $set: repl },
+              upsert: true
+            }
+          };
+        });
+      } else if (collName === 'users') {
+        bulkOps = cleanActiveDocs.map(doc => {
+          const repl = { ...doc };
+          delete repl._id;
+          return {
+            updateOne: {
+              filter: { $or: [{ username: doc.username }, { _id: doc._id }] },
+              update: { $set: repl },
+              upsert: true
+            }
+          };
+        });
       } else {
         bulkOps = cleanActiveDocs.map(doc => ({
           replaceOne: {

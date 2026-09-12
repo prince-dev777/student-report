@@ -507,25 +507,12 @@ export default function StaffAttendanceWeb() {
   }, [viewTab, scannerType, isAuthenticated]);
 
   // Mark all unmarked students as Checked-In
+  // Bulk mark present is permanently disabled to guarantee 0% WhatsApp ban risk
   const handleMarkAllPresent = async () => {
-    const confirmMark = window.confirm(`Are you sure you want to Check In all unmarked students for ${selectedDate}?`);
-    if (!confirmMark) return;
-
-    const unmarked = students.filter(s => getStudentStatus(s.id).status === 'UNMARKED');
-    if (unmarked.length === 0) {
-      toast.error('All students are already marked for today!');
-      return;
-    }
-
-    toast.loading(`Checking in ${unmarked.length} students...`, { id: 'bulk' });
-    let count = 0;
-    for (const student of unmarked) {
-      try {
-        await handleMarkStatus(student, 'IN');
-        count++;
-      } catch (e) {}
-    }
-    toast.success(`Successfully Checked In ${count} students!`, { id: 'bulk' });
+    toast.error('Bulk attendance check-in is disabled to guarantee 0% WhatsApp ban risk. Please mark students individually via scanner or one-click.', {
+      icon: '🛡️',
+      duration: 4000
+    });
   };
 
   // Stats calculation
@@ -1193,19 +1180,10 @@ const getCourseName = (batch) => {
               <option value="UNMARKED">Unmarked</option>
             </select>
 
-            {/* Bulk Action Button */}
-            <button
-              onClick={handleMarkAllPresent}
-              disabled={unmarkedCount === 0}
-              style={{
-                ...styles.bulkBtn,
-                opacity: unmarkedCount === 0 ? 0.5 : 1,
-                cursor: unmarkedCount === 0 ? 'not-allowed' : 'pointer'
-              }}
-            >
-              <CheckCheck size={16} />
-              <span>Mark All Present</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#10b981', fontWeight: 600, background: '#ecfdf5', padding: '6px 12px', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
+              <CheckCheck size={15} />
+              <span>1-by-1 Safe Punch (0% Ban Risk)</span>
+            </div>
           </div>
         </div>
 

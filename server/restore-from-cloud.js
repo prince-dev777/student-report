@@ -53,10 +53,76 @@ async function restoreFromCloud() {
     localConn = await getLocalConnection();
 
     const cloudDb = cloudConn.useDb('test').db;
+
+    // 0. Drain any pending offline tombstones from local queue to Cloud Atlas
+    const PENDING_TOMBSTONES_FILE = path.join(__dirname, 'data', 'pending_tombstones.json');
+    let pendingTombstones = [];
+    try {
+      const localPendingColl = localConn.collection('pending_tombstones');
+      if (localPendingColl) {
+        pendingTombstones = await localPendingColl.find({}).toArray().catch(() => []);
+      }
+    } catch (e) {}
+
+    if (fs.existsSync(PENDING_TOMBSTONES_FILE)) {
+      try {
+        const fileData = JSON.parse(fs.readFileSync(PENDING_TOMBSTONES_FILE, 'utf8')) || [];
+        pendingTombstones = [...pendingTombstones, ...fileData];
+      } catch (e) {}
+    }
+
+    if (pendingTombstones.length > 0) {
+      logInfo('RESTORE', `⚡ Draining ${pendingTombstones.length} pending offline tombstones to Cloud Atlas...`);
+      const tombstonesColl = cloudDb.collection('deletedrecords');
+      for (const t of pendingTombstones) {
+        if (!t.collectionName) continue;
+        const targetCloudColl = cloudDb.collection(t.collectionName);
+        const clauses = [];
+        if (t.docId && mongoose.Types.ObjectId.isValid(t.docId)) clauses.push({ _id: new mongoose.Types.ObjectId(t.docId) });
+        if (t.docId) clauses.push({ _id: String(t.docId) });
+        if (t.customId) clauses.push({ id: String(t.customId) });
+        if (t.rollNo) clauses.push({ rollNo: String(t.rollNo) });
+        if (t.username) clauses.push({ username: String(t.username) });
+        if (t.studentId) clauses.push({ studentId: String(t.studentId) });
+        if (t.testId) clauses.push({ testId: String(t.testId) });
+        if (clauses.length > 0) {
+          await targetCloudColl.deleteMany({ $or: clauses }).catch(() => {});
+        }
+      }
+
+      const cleanTombstones = pendingTombstones.map(t => ({
+        collectionName: t.collectionName,
+        docId: t.docId ? String(t.docId) : null,
+        customId: t.customId ? String(t.customId) : null,
+        rollNo: t.rollNo ? String(t.rollNo) : null,
+        username: t.username ? String(t.username) : null,
+        studentId: t.studentId ? String(t.studentId) : null,
+        testId: t.testId ? String(t.testId) : null,
+        deletedAt: t.deletedAt ? new Date(t.deletedAt) : new Date()
+      }));
+
+      await tombstonesColl.insertMany(cleanTombstones, { ordered: false }).catch(() => {});
+
+      try {
+        await localConn.collection('pending_tombstones').deleteMany({}).catch(() => {});
+      } catch (e) {}
+      if (fs.existsSync(PENDING_TOMBSTONES_FILE)) {
+        try { fs.writeFileSync(PENDING_TOMBSTONES_FILE, '[]', 'utf8'); } catch (e) {}
+      }
+      logInfo('RESTORE', `✅ Successfully drained ${pendingTombstones.length} pending tombstones.`);
+    }
+
     let cloudTombstones = [];
     try {
       cloudTombstones = await cloudDb.collection('deletedrecords').find({}).toArray();
     } catch (tErr) {}
+
+    let localTombstones = [];
+    try {
+      localTombstones = await localConn.collection('deletedrecords').find({}).toArray();
+    } catch (tErr) {}
+
+    const allTombstones = [...cloudTombstones, ...localTombstones];
 
     const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
     let totalRestored = 0;
@@ -66,25 +132,35 @@ async function restoreFromCloud() {
         const cloudColl = cloudDb.collection(collName);
         const localColl = localConn.collection(collName);
 
-        // Purge local docs that have tombstones on Cloud
-        const collTombstones = cloudTombstones.filter(t => t.collectionName === collName);
+        // Purge local & cloud docs that match tombstones
+        const collTombstones = allTombstones.filter(t => t.collectionName === collName);
         const tDocIds = collTombstones.map(t => t.docId).filter(Boolean);
         const tCustomIds = collTombstones.map(t => t.customId).filter(Boolean);
+        const tRollNos = collTombstones.map(t => t.rollNo).filter(Boolean);
+        const tUsernames = collTombstones.map(t => t.username).filter(Boolean);
+        const tStudentIds = collTombstones.map(t => t.studentId).filter(Boolean);
         const tTestIds = collTombstones.map(t => t.testId).filter(Boolean);
         const tObjectIds = tDocIds.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
 
         const tombFilterClauses = [
-          { _id: { $in: [...tDocIds, ...tObjectIds] } },
+          ...(tDocIds.length > 0 || tObjectIds.length > 0 ? [{ _id: { $in: [...tDocIds, ...tObjectIds] } }] : []),
           ...(tCustomIds.length > 0 ? [{ id: { $in: tCustomIds } }] : []),
-          ...(collName === 'testresults' && tTestIds.length > 0 ? [{ testId: { $in: tTestIds } }] : [])
+          ...(tRollNos.length > 0 ? [{ rollNo: { $in: tRollNos } }] : []),
+          ...(tUsernames.length > 0 ? [{ username: { $in: tUsernames } }] : []),
+          ...(tStudentIds.length > 0 ? [{ studentId: { $in: tStudentIds } }] : []),
+          ...(tTestIds.length > 0 ? [{ testId: { $in: tTestIds } }] : [])
         ];
 
         if (collTombstones.length > 0 && tombFilterClauses.length > 0) {
           await localColl.deleteMany({ $or: tombFilterClauses }).catch(() => {});
+          await cloudColl.deleteMany({ $or: tombFilterClauses }).catch(() => {});
         }
 
         const tombstoneDocIds = new Set(tDocIds.map(String));
         const tombstoneCustomIds = new Set(tCustomIds.map(String));
+        const tombstoneRollNos = new Set(tRollNos.map(String));
+        const tombstoneUsernames = new Set(tUsernames.map(String));
+        const tombstoneStudentIds = new Set(tStudentIds.map(String));
         const tombstoneTestIds = new Set(tTestIds.map(String));
 
         // Fetch all documents from Cloud, filtering out tombstoned items
@@ -93,7 +169,10 @@ async function restoreFromCloud() {
           if (d.isDeleted) return false;
           if (tombstoneDocIds.has(String(d._id))) return false;
           if (d.id && tombstoneCustomIds.has(String(d.id))) return false;
-          if (collName === 'testresults' && d.testId && tombstoneTestIds.has(String(d.testId))) return false;
+          if (d.rollNo && tombstoneRollNos.has(String(d.rollNo))) return false;
+          if (d.username && tombstoneUsernames.has(String(d.username))) return false;
+          if (d.studentId && tombstoneStudentIds.has(String(d.studentId))) return false;
+          if (d.testId && tombstoneTestIds.has(String(d.testId))) return false;
           return true;
         });
 
@@ -130,7 +209,19 @@ async function restoreFromCloud() {
             delete repl._id;
             return {
               updateOne: {
-                filter: { $or: [{ id: doc.id }, { _id: doc._id }] },
+                filter: { $or: [{ id: doc.id }, ...(doc.rollNo ? [{ rollNo: doc.rollNo }] : []), { _id: doc._id }] },
+                update: { $set: repl },
+                upsert: true
+              }
+            };
+          });
+        } else if (collName === 'users') {
+          bulkOps = docs.map(doc => {
+            const repl = { ...doc };
+            delete repl._id;
+            return {
+              updateOne: {
+                filter: { $or: [{ username: doc.username }, { _id: doc._id }] },
                 update: { $set: repl },
                 upsert: true
               }

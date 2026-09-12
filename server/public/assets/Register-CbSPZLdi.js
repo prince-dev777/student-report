@@ -1,4 +1,4 @@
-import{o as e}from"./rolldown-runtime-CMxvf4Kt.js";import{d as t}from"./vendor-charts-ByRd4wAk.js";import{Et as n}from"./vendor-core-CcSwyHZw.js";import{Dn as r,Ft as i,It as a,k as o,u as s}from"./vendor-react-Du3guypW.js";import{r as c}from"./index-wizczeI9.js";var l=e(t(),1),u=n();function d(){let[e,t]=(0,l.useState)(``),[n,d]=(0,l.useState)(``),[f,p]=(0,l.useState)(!1),[m,h]=(0,l.useState)(!1),{login:g}=c(),_=r();return(0,u.jsxs)(`div`,{className:`login-container`,children:[(0,u.jsxs)(`div`,{className:`login-box`,children:[(0,u.jsxs)(`div`,{className:`login-header`,children:[(0,u.jsx)(`div`,{className:`logo-icon-login`,style:{background:`none`,width:`auto`,height:`auto`,marginBottom:`16px`},children:(0,u.jsx)(`img`,{src:`./logo.jpg`,alt:`Logo`,style:{width:`80px`,height:`80px`,borderRadius:`16px`,objectFit:`contain`}})}),(0,u.jsx)(`h2`,{children:`CAREER XONE`}),(0,u.jsx)(`p`,{children:`Admin Security Portal`})]}),(0,u.jsxs)(`form`,{onSubmit:async t=>{t.preventDefault(),h(!0),await g(e,n)&&_(`/`),h(!1)},className:`login-form`,children:[(0,u.jsxs)(`div`,{className:`input-group`,children:[(0,u.jsx)(`label`,{children:`Username`}),(0,u.jsxs)(`div`,{className:`input-with-icon`,children:[(0,u.jsx)(s,{size:18,className:`input-icon`}),(0,u.jsx)(`input`,{type:`text`,placeholder:`Enter admin username`,value:e,onChange:e=>t(e.target.value),required:!0})]})]}),(0,u.jsxs)(`div`,{className:`input-group`,children:[(0,u.jsx)(`label`,{children:`Password`}),(0,u.jsxs)(`div`,{className:`input-with-icon`,children:[(0,u.jsx)(o,{size:18,className:`input-icon`}),(0,u.jsx)(`input`,{type:f?`text`:`password`,placeholder:`Enter password`,value:n,onChange:e=>d(e.target.value),required:!0}),(0,u.jsx)(`button`,{type:`button`,onClick:()=>p(!f),style:{position:`absolute`,right:`14px`,top:`50%`,transform:`translateY(-50%)`,background:`none`,border:`none`,cursor:`pointer`,color:`#64748b`,display:`flex`,alignItems:`center`,padding:0},children:f?(0,u.jsx)(a,{size:18}):(0,u.jsx)(i,{size:18})})]})]}),(0,u.jsx)(`button`,{type:`submit`,className:`login-btn`,disabled:m,children:m?`Authenticating...`:`Secure Login`})]})]}),(0,u.jsx)(`style`,{children:`
+import{o as e}from"./rolldown-runtime-CMxvf4Kt.js";import{d as t}from"./vendor-charts-ByRd4wAk.js";import{Et as n}from"./vendor-core-CcSwyHZw.js";import{Dn as r,dn as i,k as a,p as o,u as s,xn as c}from"./vendor-react-Du3guypW.js";import{r as l}from"./index-Yz7nxxc7.js";var u=e(t(),1),d=n();function f(){let[e,t]=(0,u.useState)(``),[n,f]=(0,u.useState)(``),[p,m]=(0,u.useState)(``),[h,g]=(0,u.useState)(``),[_,v]=(0,u.useState)(!1),{register:y}=l(),b=r();return(0,d.jsxs)(`div`,{className:`login-container`,children:[(0,d.jsxs)(`div`,{className:`login-box`,style:{maxWidth:`480px`},children:[(0,d.jsxs)(`div`,{className:`login-header`,children:[(0,d.jsx)(`div`,{className:`logo-icon-login`,children:(0,d.jsx)(i,{size:32,color:`#ffffff`})}),(0,d.jsx)(`h2`,{children:`Register Institute`}),(0,d.jsx)(`p`,{children:`Create your coaching admin account`})]}),(0,d.jsxs)(`form`,{onSubmit:async t=>{t.preventDefault(),v(!0),await y(e,n,p,h)&&b(`/`),v(!1)},className:`login-form`,children:[(0,d.jsxs)(`div`,{className:`input-group`,children:[(0,d.jsx)(`label`,{children:`Institute Name`}),(0,d.jsxs)(`div`,{className:`input-with-icon`,children:[(0,d.jsx)(i,{size:18,className:`input-icon`}),(0,d.jsx)(`input`,{type:`text`,placeholder:`e.g. Career Xone`,value:e,onChange:e=>t(e.target.value),required:!0})]})]}),(0,d.jsxs)(`div`,{className:`input-group`,children:[(0,d.jsx)(`label`,{children:`Your Name (Admin)`}),(0,d.jsxs)(`div`,{className:`input-with-icon`,children:[(0,d.jsx)(o,{size:18,className:`input-icon`}),(0,d.jsx)(`input`,{type:`text`,placeholder:`Enter your full name`,value:n,onChange:e=>f(e.target.value),required:!0})]})]}),(0,d.jsxs)(`div`,{className:`input-group`,children:[(0,d.jsx)(`label`,{children:`Admin Username`}),(0,d.jsxs)(`div`,{className:`input-with-icon`,children:[(0,d.jsx)(s,{size:18,className:`input-icon`}),(0,d.jsx)(`input`,{type:`text`,placeholder:`Choose a username`,value:p,onChange:e=>m(e.target.value),required:!0})]})]}),(0,d.jsxs)(`div`,{className:`input-group`,children:[(0,d.jsx)(`label`,{children:`Admin Password`}),(0,d.jsxs)(`div`,{className:`input-with-icon`,children:[(0,d.jsx)(a,{size:18,className:`input-icon`}),(0,d.jsx)(`input`,{type:`password`,placeholder:`Create a password`,value:h,onChange:e=>g(e.target.value),required:!0})]})]}),(0,d.jsx)(`button`,{type:`submit`,className:`login-btn`,disabled:_,children:_?`Creating Account...`:`Register Institute`}),(0,d.jsxs)(`p`,{className:`auth-link`,children:[`Already registered? `,(0,d.jsx)(c,{to:`/login`,children:`Login here`})]})]})]}),(0,d.jsx)(`style`,{children:`
         .login-container {
           min-height: 100vh;
           display: flex;
@@ -16,7 +16,7 @@ import{o as e}from"./rolldown-runtime-CMxvf4Kt.js";import{d as t}from"./vendor-c
           padding: 40px;
           border-radius: 24px;
           width: 100%;
-          max-width: 420px;
+          max-width: 480px;
           box-shadow: 0 8px 32px rgba(37, 99, 235, 0.12);
         }
         .login-header {
@@ -69,7 +69,7 @@ import{o as e}from"./rolldown-runtime-CMxvf4Kt.js";import{d as t}from"./vendor-c
           width: 100%;
           background: #ffffff;
           border: 1px solid rgba(37, 99, 235, 0.15);
-          padding: 12px 42px 12px 42px;
+          padding: 12px 16px 12px 42px;
           border-radius: 12px;
           color: #0f172a;
           font-size: 0.95rem;
@@ -119,4 +119,4 @@ import{o as e}from"./rolldown-runtime-CMxvf4Kt.js";import{d as t}from"./vendor-c
         .auth-link a:hover {
           text-decoration: underline;
         }
-      `})]})}export{d as default};
+      `})]})}export{f as default};

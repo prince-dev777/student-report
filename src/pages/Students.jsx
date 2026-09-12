@@ -297,12 +297,12 @@ export default function Students() {
       } else {
         const res = await addStudent(formData);
         toast.success('New student registered successfully!');
-        if (res && res.parentUserId && res.parentPlainPassword) {
+        if (res && (res.rollNo || res.name)) {
           setCreatedStudentCreds({
             studentName: res.name,
             rollNo: res.rollNo,
-            username: res.parentUserId,
-            password: res.parentPlainPassword
+            parentPhone: res.parentPhone,
+            parentUserId: res.parentUserId
           });
         }
       }
@@ -849,35 +849,40 @@ export default function Students() {
 
       {createdStudentCreds && createPortal(
         <div className="modal-overlay" onClick={() => setCreatedStudentCreds(null)}>
-          <div className="modal-content" style={{ maxWidth: '400px' }}>
+          <div className="modal-content" style={{ maxWidth: '420px' }}>
             <div className="modal-header">
-              <h3>Parent App Credentials</h3>
+              <h3>Parent Portal Access Info</h3>
               <button className="modal-close" onClick={() => setCreatedStudentCreds(null)}>
                 <X size={18} />
               </button>
             </div>
             <div className="modal-body" style={{ padding: '20px', textAlign: 'center' }}>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                Please save these login credentials for <strong>{createdStudentCreds.name}</strong>'s parent. They will not be shown again.
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '0.9rem' }}>
+                Registration successful for <strong>{createdStudentCreds.studentName}</strong>! Parents can log in directly without a password.
               </p>
               <div className="card" style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '12px', textAlign: 'left', marginBottom: '20px' }}>
                 <div style={{ marginBottom: '12px' }}>
-                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Parent User ID</span>
-                  <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{createdStudentCreds.parentUserId}</strong>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Student Roll No</span>
+                  <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{createdStudentCreds.rollNo}</strong>
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Parent Mobile</span>
+                  <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>{createdStudentCreds.parentPhone || 'Registered Mobile'}</strong>
                 </div>
                 <div>
-                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Parent Password</span>
-                  <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{createdStudentCreds.parentPlainPassword}</strong>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'block' }}>Direct Login Portal</span>
+                  <strong style={{ fontSize: '0.85rem', color: 'var(--accent-blue)', wordBreak: 'break-all' }}>https://studentreport.cxjeeneet.com/parent</strong>
+                  <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', marginTop: '4px', fontWeight: 600 }}>⚡ 1-Click Fast Login (No password needed)</span>
                 </div>
               </div>
               <button 
                 className="btn btn-primary w-full justify-center" 
                 onClick={() => {
-                  navigator.clipboard.writeText(`User ID: ${createdStudentCreds.parentUserId}\nPassword: ${createdStudentCreds.parentPlainPassword}`);
-                  alert('Credentials copied to clipboard!');
+                  navigator.clipboard.writeText(`Student: ${createdStudentCreds.studentName}\nRoll No: ${createdStudentCreds.rollNo}\nPortal Link: https://studentreport.cxjeeneet.com/parent\n(Login directly using Roll No or Mobile - No Password Needed)`);
+                  alert('Login details copied to clipboard!');
                 }}
               >
-                Copy to Clipboard
+                Copy Portal Info
               </button>
             </div>
             <div className="modal-footer">

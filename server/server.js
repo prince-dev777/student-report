@@ -2162,8 +2162,9 @@ app.post('/api/students', async (req, res) => {
         studentName: student.name,
         type: 'WELCOME',
         detail: {
-          parentUserId: student.parentUserId,
-          parentPassword: plainPassword
+          rollNo: student.rollNo,
+          parentPhone: student.parentPhone,
+          parentUserId: student.parentUserId
         }
       }).catch(err => console.error('Failed to send WhatsApp welcome alert:', err.message));
     }
@@ -2337,12 +2338,13 @@ app.delete('/api/students/:id', async (req, res) => {
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
     const studentIds = [student.id, String(student._id), String(student.rollNo)].filter(Boolean);
+    const parentUsernames = [student.parentUserId, `CAREER${student.rollNo}`, String(student.rollNo)].filter(Boolean);
 
-    await dualDelete('students', { _id: student._id }, [
+    await dualDelete('students', { $or: [{ _id: student._id }, { id: student.id }, { rollNo: student.rollNo }] }, [
       { collection: 'attendances', filter: { studentId: { $in: studentIds } } },
       { collection: 'testresults', filter: { studentId: { $in: studentIds } } },
       { collection: 'smslogs', filter: { studentId: { $in: studentIds } } },
-      ...(student.parentUserId ? [{ collection: 'users', filter: { username: student.parentUserId } }] : [])
+      { collection: 'users', filter: { username: { $in: parentUsernames } } }
     ]);
 
     triggerBackgroundCloudSync();
@@ -2776,7 +2778,7 @@ app.delete('/api/inquiries/:id', authenticateToken, async (req, res) => {
     const inquiry = await Inquiry.findOne({ id: req.params.id, instituteId: req.user.instituteId });
     if (!inquiry) return res.status(404).json({ error: 'Inquiry not found' });
 
-    await dualDelete('inquiries', { _id: inquiry._id });
+    await dualDelete('inquiries', { $or: [{ _id: inquiry._id }, { id: inquiry.id }] });
     triggerBackgroundCloudSync();
     res.json({ message: 'Inquiry permanently deleted successfully' });
   } catch (err) {
@@ -4849,13 +4851,36 @@ app.delete('/api/database/item/:collection/:id', protect, async (req, res) => {
     }
 
     const query = { instituteId: instId, $or: [{ _id: id }, { id }] };
-    const doc = await Model.findOneAndDelete(query);
+    const doc = await Model.findOne(query);
     if (!doc) return res.status(404).json({ error: 'Document not found' });
 
-    // Trigger cloud sync to propagate hard delete
+    const cascade = [];
+    if (collection === 'students') {
+      const sIds = [doc.id, String(doc._id), String(doc.rollNo)].filter(Boolean);
+      cascade.push(
+        { collection: 'attendances', filter: { studentId: { $in: sIds } } },
+        { collection: 'testresults', filter: { studentId: { $in: sIds } } },
+        { collection: 'smslogs', filter: { studentId: { $in: sIds } } }
+      );
+      const pUsernames = [doc.parentUserId, `CAREER${doc.rollNo}`, String(doc.rollNo)].filter(Boolean);
+      cascade.push({ collection: 'users', filter: { username: { $in: pUsernames } } });
+    } else if (collection === 'tests') {
+      const tIds = [doc.id, String(doc._id)].filter(Boolean);
+      cascade.push({ collection: 'testresults', filter: { testId: { $in: tIds } } });
+    }
+
+    const deleteFilter = {
+      $or: [
+        { _id: doc._id },
+        { id: doc.id },
+        ...(doc.rollNo ? [{ rollNo: doc.rollNo }] : [])
+      ]
+    };
+
+    await dualDelete(collection, deleteFilter, cascade);
     triggerBackgroundCloudSync();
 
-    res.json({ message: 'Record permanently deleted successfully from local database and queued for cloud purge.' });
+    res.json({ message: 'Record permanently deleted successfully from local database and Cloud Atlas with tombstones.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -4868,38 +4893,17 @@ app.post('/api/database/purge-deleted', protect, async (req, res) => {
     const { collection } = req.body;
 
     let deletedStats = {};
+    const collList = (!collection || collection === 'all')
+      ? ['students', 'tests', 'testresults', 'attendances', 'sessions', 'inquiries', 'smslogs']
+      : [collection];
 
-    if (!collection || collection === 'all' || collection === 'students') {
-      const r = await Student.deleteMany({ instituteId: instId, isDeleted: true });
-      deletedStats.students = r.deletedCount;
-    }
-    if (!collection || collection === 'all' || collection === 'tests') {
-      const r = await Test.deleteMany({ instituteId: instId, isDeleted: true });
-      deletedStats.tests = r.deletedCount;
-    }
-    if (!collection || collection === 'all' || collection === 'testresults') {
-      const r = await TestResult.deleteMany({ instituteId: instId, isDeleted: true });
-      deletedStats.testresults = r.deletedCount;
-    }
-    if (!collection || collection === 'all' || collection === 'attendances') {
-      const r = await Attendance.deleteMany({ instituteId: instId, isDeleted: true });
-      deletedStats.attendances = r.deletedCount;
-    }
-    if (!collection || collection === 'all' || collection === 'sessions') {
-      const r = await Session.deleteMany({ instituteId: instId, isDeleted: true });
-      deletedStats.sessions = r.deletedCount;
-    }
-    if (!collection || collection === 'all' || collection === 'inquiries') {
-      const r = await Inquiry.deleteMany({ instituteId: instId, isDeleted: true });
-      deletedStats.inquiries = r.deletedCount;
-    }
-    if (!collection || collection === 'all' || collection === 'smslogs') {
-      const r = await SMSLog.deleteMany({ instituteId: instId, isDeleted: true });
-      deletedStats.smslogs = r.deletedCount;
+    for (const c of collList) {
+      const result = await dualDelete(c, { instituteId: instId, isDeleted: true });
+      deletedStats[c] = result.localDeleted;
     }
 
     triggerBackgroundCloudSync();
-    res.json({ message: 'Soft-deleted trash permanently purged from local database.', deletedStats });
+    res.json({ message: 'Soft-deleted trash permanently purged from local database and Cloud Atlas.', deletedStats });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -4915,23 +4919,15 @@ app.post('/api/database/wipe-collection', protect, async (req, res) => {
       return res.status(400).json({ error: 'Invalid confirmation token' });
     }
 
-    let Model;
-    switch (collection) {
-      case 'students': Model = Student; break;
-      case 'tests': Model = Test; break;
-      case 'testresults': Model = TestResult; break;
-      case 'attendances': Model = Attendance; break;
-      case 'sessions': Model = Session; break;
-      case 'inquiries': Model = Inquiry; break;
-      case 'smslogs': Model = SMSLog; break;
-      case 'notifications': Model = Notification; break;
-      default: return res.status(400).json({ error: 'Invalid collection name' });
+    const validCollections = ['students', 'tests', 'testresults', 'attendances', 'sessions', 'inquiries', 'smslogs', 'notifications'];
+    if (!validCollections.includes(collection)) {
+      return res.status(400).json({ error: 'Invalid collection name' });
     }
 
-    const r = await Model.deleteMany({ instituteId: instId });
+    const result = await dualDelete(collection, { instituteId: instId });
     triggerBackgroundCloudSync();
 
-    res.json({ message: `Successfully wiped ${r.deletedCount} records from '${collection}'.`, deletedCount: r.deletedCount });
+    res.json({ message: `Successfully wiped ${result.localDeleted} records from '${collection}' in Local and Cloud Atlas.`, deletedCount: result.localDeleted });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

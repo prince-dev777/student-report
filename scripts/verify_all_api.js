@@ -23,12 +23,21 @@ async function verifyEverything() {
   // STEP 1: Check MongoDB Connection
   console.log('[1/4] Connecting to MongoDB (port 27018)...');
   try {
-    await mongoose.connect('mongodb://127.0.0.1:27018/student-report', {
-      serverSelectionTimeoutMS: 2500
+    await mongoose.connect('mongodb://127.0.0.1:27018/student-report?directConnection=true', {
+      serverSelectionTimeoutMS: 2500,
+      directConnection: true
     });
     console.log('  ✅ MongoDB Connected Successfully!');
   } catch (dbErr) {
-    console.warn('  ⚠️ Local MongoDB not running on 27018...');
+    try {
+      await mongoose.connect('mongodb://127.0.0.1:27017/student-report?directConnection=true', {
+        serverSelectionTimeoutMS: 2500,
+        directConnection: true
+      });
+      console.log('  ✅ MongoDB Connected Successfully (Port 27017)!');
+    } catch (dbErr2) {
+      console.warn('  ⚠️ Local MongoDB not running on 27018/27017...');
+    }
   }
 
   // If in CI/Vercel/cloud build environment or if MongoDB is not running locally, skip local integration tests

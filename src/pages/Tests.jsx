@@ -1856,11 +1856,11 @@ export default function Tests() {
     
     return stats;
   };
-  const handlePublishTest = async (sendSMS) => {
+  const handlePublishTest = async () => {
     if (!selectedTestResults || !selectedTestResults.test) return;
-    const toastId = toast.loading(sendSMS ? 'Publishing and Sending SMS...' : 'Publishing Results...');
+    const toastId = toast.loading('Publishing Results to Parent Portal...');
     try {
-      const res = await api.publishTestResults(selectedTestResults.test.id, sendSMS);
+      const res = await api.publishTestResults(selectedTestResults.test.id, false);
       toast.success(res.message || 'Results published successfully', { id: toastId });
       setShowResultsModal(false);
       if (updateTest) {
@@ -4872,13 +4872,9 @@ export default function Tests() {
                   <Download size={16} />
                   Download Excel
                 </button>
-                <button className="btn btn-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePublishTest(false)}>
+                <button className="btn btn-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePublishTest()}>
                   <Award size={16} />
-                  Publish Marks
-                </button>
-                <button className="btn btn-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePublishTest(true)}>
-                  <UserCheck size={16} />
-                  Publish & Send SMS
+                  Publish Marks to Portal
                 </button>
               </div>
               <button className="btn btn-primary" onClick={() => setShowResultsModal(false)}>

@@ -70,7 +70,7 @@ const typeFilterOptions = [
 ];
 
 export default function SMSCenter() {
-  const { students = [], smsHistory = [], setSMSHistory, sendManualSMS, sendBulkManualSMS, deleteSMS, deleteBulkSMS, deleteAllSMS } = useApp();
+  const { students = [], smsHistory = [], setSMSHistory, sendManualSMS, deleteSMS, deleteBulkSMS, deleteAllSMS } = useApp();
 
   // WhatsApp Local Client State
   const [whatsappStatus, setWhatsappStatus] = useState('offline');
@@ -93,7 +93,7 @@ export default function SMSCenter() {
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState('all');
+  const [selectedStudent, setSelectedStudent] = useState('');
   const [message, setMessage] = useState('');
   const [attachment, setAttachment] = useState(null);
   const [sending, setSending] = useState(false);
@@ -536,11 +536,12 @@ export default function SMSCenter() {
   }, [smsHistory, typeFilter, searchQuery, students]);
 
   const studentOptions = useMemo(() => {
-    const opts = students.filter(s => s.status === 'active').map(s => ({
-      value: s.id,
-      label: `${s.name} - ${s.parentPhone} (Roll: ${s.rollNo})`
-    }));
-    return [{ value: 'all', label: '📢 All Students (Bulk SMS)' }, ...opts];
+    return (students || [])
+      .filter(s => s.status === 'active')
+      .map(s => ({
+        value: s.id,
+        label: `${s.name} - ${s.parentPhone || 'No Phone'} (Roll: ${s.rollNo || 'N/A'})`
+      }));
   }, [students]);
 
   // Pagination
@@ -622,17 +623,15 @@ export default function SMSCenter() {
 
     setSending(true);
     try {
-      if (selectedStudent === 'all') {
-        const activeIds = (students || [])
-          .filter((s) => s.status === 'active')
-          .map((s) => s.id);
-        await sendBulkManualSMS(activeIds, message, attachment);
-      } else {
-        await sendManualSMS(selectedStudent, message, attachment);
+      if (!selectedStudent || selectedStudent === 'all') {
+        toast.error('Please select an individual student. Bulk WhatsApp messaging is permanently disabled to ensure 0% ban risk.');
+        setSending(false);
+        return;
       }
+      await sendManualSMS(selectedStudent, message, attachment);
       setMessage('');
       setAttachment(null);
-      setSelectedStudent('all');
+      setSelectedStudent('');
       setShowModal(false);
     } catch (err) {
       toast.error('Failed to send SMS');
@@ -2309,8 +2308,8 @@ export default function SMSCenter() {
                   <label className="form-label">Select Student</label>
                   <Select
                     options={studentOptions}
-                    value={studentOptions.find(o => o.value === selectedStudent) || studentOptions[0]}
-                    onChange={(selected) => setSelectedStudent(selected.value)}
+                    value={studentOptions.find(o => o.value === selectedStudent) || null}
+                    onChange={(selected) => setSelectedStudent(selected ? selected.value : '')}
                     isSearchable={true}
                     placeholder="Search by Name, Mobile, or Roll No..."
                     className="react-select-container"
@@ -2398,7 +2397,7 @@ export default function SMSCenter() {
                   disabled={sending || !message.trim()}
                 >
                   <Send size={16} />
-                  {sending ? 'Sending...' : selectedStudent === 'all' ? 'Send to All' : 'Send SMS'}
+                  {sending ? 'Sending...' : 'Send SMS (Safe 1-by-1)'}
                 </button>
               </div>
             </motion.div>

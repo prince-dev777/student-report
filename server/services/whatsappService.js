@@ -164,14 +164,16 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   } else if (type === 'ABSENT') {
     messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} is absent from the institute today on ${formattedDate} (${detail}). - Career Xone`;
   } else if (type === 'TEST_RESULT' && typeof detail === 'object') {
-    const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
+    const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/parent';
     const percent = detail.percentage ?? (detail.totalMarks ? Math.round((Number(detail.marks) / detail.totalMarks) * 1000) / 10 : 0);
     messageText = `📊 *Test Result Announcement - Career Xone*\n\nDear Parent, your ward *${studentName}* has appeared for *${detail.testName || detail.subject || 'Exam'}* on ${formattedDate}.\n\n🎯 *Marks Scored:* ${detail.marks}/${detail.totalMarks} (${percent}%)\n🏆 *Rank:* ${detail.rank || '-'}/${detail.totalStudents || '-'}\n\n📱 *View Complete Report & Scanned OMR Sheet:*\n🔗 ${portalUrl}\n\n- Career Xone (CX Career Academy)`;
   } else if (type === 'SESSION_CONTINUE' || type === 'MISSED_EXIT' || type === 'PUNCH_MISSED') {
     messageText = `PUNCH MISSED AT ${formattedDate} PLEASE VERIFY MANUALLY AT CAREER XONE !`;
   } else if (type === 'WELCOME') {
-    const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/?app=parent#/parent';
-    messageText = `🎉 Welcome to Career Xone!\n\n${studentName} has been registered successfully on ${formattedDate}.\n\n📱 *Download/Access Parents App:*\n🔗 Link: ${portalUrl}\n\n*Login Credentials:*\nUser ID: ${detail.parentUserId}\nPassword: ${detail.parentPassword}\n\nPlease login to track attendance and test results regularly.`;
+    const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/parent';
+    const sRoll = (typeof detail === 'object' && detail?.rollNo) ? detail.rollNo : (studentId || '');
+    const sPhone = parentPhone || '';
+    messageText = `🎉 *Welcome to Career Xone!*\n\nDear Parent, your ward *${studentName}*${sRoll ? ` (Roll No: ${sRoll})` : ''} has been registered successfully on ${formattedDate}.\n\n📱 *Parents Portal & Mobile App:*\n🔗 Link: ${portalUrl}\n\n🔑 *Fast 1-Click Login (No password needed):*\nLogin with: *Roll No${sRoll ? ` (${sRoll})` : ''}* OR *Registered Mobile (${sPhone})*\n\nPlease access the portal regularly to track attendance and test performance.\n\n- Career Xone`;
   } else {
     messageText = `Notification for ${studentName} (${formattedDate}): ${detail || 'No details provided.'}`;
   }

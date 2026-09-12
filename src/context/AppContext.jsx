@@ -670,33 +670,11 @@ export function AppProvider({ children }) {
       });
     }
 
-    // Send SMS for each result ONLY if Published
+    // Notify completion
     if (status === 'Published') {
-      for (const result of newResults) {
-        const student = students.find((s) => s.id === result.studentId);
-        if (student) {
-          const instName = user?.instituteName || 'Career Xone Pro';
-          const smsLog = await sendTestResultSMS(
-            student, test.name, result.marks, result.totalMarks,
-            result.percentage, result.rank, totalStudents,
-            instName
-          );
-          
-          if (backendOnline) {
-            try {
-              const savedLog = await api.createSMSLog(smsLog);
-              setSMSHistory((h) => [savedLog, ...h]);
-            } catch (e) {
-              console.error('Failed to log SMS on server', e);
-            }
-          } else {
-            setSMSHistory((h) => [smsLog, ...h]);
-          }
-        }
-      }
-      toast.success(`Results published & ${newResults.length} SMS sent! 🎉`);
+      toast.success(`Marks published successfully to Parent Portal! 📊`);
     } else {
-      toast.success('Marks saved successfully! No SMS was sent.');
+      toast.success('Marks saved successfully as Draft.');
     }
   }, [tests, students, backendOnline, user]);
 
@@ -722,24 +700,14 @@ export function AppProvider({ children }) {
     toast.success(`SMS sent to ${student.parentName}!`);
   }, [students, backendOnline, user]);
 
-  const sendBulkManualSMS = useCallback(async (studentIds, message, attachment = null) => {
-    const targetStudents = students.filter((s) => studentIds.includes(s.id));
-    const instName = user?.instituteName || 'Career Xone Pro';
-    for (const student of targetStudents) {
-      const smsLog = await sendCustomSMS(student, message, instName, attachment);
-      if (backendOnline) {
-        try {
-          const savedLog = await api.createSMSLog(smsLog);
-          setSMSHistory((h) => [savedLog, ...h]);
-        } catch (e) {
-          console.error(e);
-        }
-      } else {
-        setSMSHistory((h) => [smsLog, ...h]);
-      }
-    }
-    toast.success(`SMS sent to ${targetStudents.length} parents! 📱`);
-  }, [students, backendOnline, user]);
+  // Bulk WhatsApp messaging permanently disabled for 0% WhatsApp ban risk
+  const sendBulkManualSMS = useCallback(async () => {
+    toast.error('Bulk WhatsApp messaging is permanently disabled to ensure 0% ban risk. Please send messages individually.', {
+      icon: '🛡️',
+      duration: 4000
+    });
+    return { success: false, error: 'Bulk messaging permanently disabled' };
+  }, []);
 
   const deleteSMS = useCallback(async (id) => {
     const targetId = String(id);

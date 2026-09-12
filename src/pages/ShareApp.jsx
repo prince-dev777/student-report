@@ -5,13 +5,13 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { 
   Smartphone, Link as LinkIcon, MessageSquare, Copy, CheckCircle2, 
-  Download, Send, Sparkles, UserCheck, Key, User, Users, Search, X 
+  Download, Send, Sparkles, UserCheck, Key, User, Users, Search, X, ShieldCheck 
 } from 'lucide-react';
 import { api } from '../utils/api';
 import toast from 'react-hot-toast';
 
 export default function ShareApp() {
-  const { students, sendBulkManualSMS, sendManualSMS } = useApp();
+  const { students, sendManualSMS } = useApp();
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
   const [staffCopied, setStaffCopied] = useState(false);
@@ -163,42 +163,9 @@ export default function ShareApp() {
     toast.success("Inquiry Passcode updated!");
   };
 
-  // Handle Bulk Send
-  const handleSendToAll = async () => {
-    if (!students || students.length === 0) {
-      toast.error("No students found to send the link!");
-      return;
-    }
-
-    const studentsWithPhone = students.filter(s => {
-      const p = String(s.parentPhone || '').replace(/\D/g, '');
-      return p.length >= 10;
-    });
-
-    if (studentsWithPhone.length === 0) {
-      toast.error("No students have valid parent phone numbers!");
-      return;
-    }
-
-    const confirmSend = window.confirm(
-      `Are you sure you want to send the Parents App link via WhatsApp to ${studentsWithPhone.length} parents?\n\n(Messages will be queued safely and dispatched one by one with a 2.5s rate-limit delay to prevent spam blocks)`
-    );
-    
-    if (confirmSend) {
-      setIsSending(true);
-      try {
-        const studentIds = studentsWithPhone.map(s => s.id);
-        const instName = user?.instituteName || 'Career Xone Pro';
-        const message = `Dear Parent ({{studentName}}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: {{studentName}} (Roll: {{rollNo}})\n🔑 User ID: {{parentUserId}}\n🔒 Password: {{password}}\n\n- ${instName}`;
-        await sendBulkManualSMS(studentIds, message);
-        toast.success(`WhatsApp blast queued for ${studentsWithPhone.length} parents! 📱`);
-      } catch (error) {
-        toast.error("Failed to send links.");
-        console.error(error);
-      } finally {
-        setIsSending(false);
-      }
-    }
+  // Handle Bulk Send (Permanently Blocked for Anti-Ban Safety)
+  const handleSendToAll = () => {
+    toast.error("Bulk broadcast is permanently disabled to ensure 0% WhatsApp ban risk. Please send links to individual parents.");
   };
 
   // Handle Single Student Send
@@ -212,9 +179,7 @@ export default function ShareApp() {
     setIsSending(true);
     try {
       const instName = user?.instituteName || 'Career Xone';
-      const pUserId = student.parentUserId || `CAREER${student.rollNo}` || String(student.rollNo);
-      const pPass = student.parentPasswordPlain || student.password || String(student.rollNo || '123456');
-      const message = `Dear Parent (${student.name}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: ${student.name} (Roll: ${student.rollNo})\n🔑 User ID: ${pUserId}\n🔒 Password: ${pPass}\n\n- ${instName}`;
+      const message = `Dear Parent (${student.name}), please open our Institute's official Parents Portal to track live Attendance, Test Results & Performance.\n\n📱 Portal Link: ${parentAppLink}\n\n👤 Student: ${student.name} (Roll: ${student.rollNo})\n🔑 Login with: Roll No (${student.rollNo}) or Mobile (${student.parentPhone})\n⚡ Fast 1-Click Login (No password needed)\n\n- ${instName}`;
       
       await sendManualSMS(student.id, message);
       toast.success(`App link sent to ${student.name}'s parent via WhatsApp!`);
@@ -339,184 +304,133 @@ export default function ShareApp() {
 
           <div style={{ height: '1px', background: 'var(--border-color-light)', margin: '8px 0 16px' }} />
 
-          {/* WhatsApp Mode Toggle */}
+          {/* WhatsApp Individual Link Sender (Bulk Blasting Permanently Disabled for 100% Anti-Ban Safety) */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MessageSquare size={18} color="var(--accent-green)" />
                 Send via WhatsApp
               </h3>
-
-              {/* Toggle Buttons: Bulk vs Separate */}
-              <div style={{
-                display: 'flex', background: 'rgba(0,0,0,0.05)',
-                padding: '3px', borderRadius: '10px', gap: '2px'
+              <span style={{
+                background: 'rgba(16, 185, 129, 0.1)', color: '#10b981',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                padding: '2px 8px', borderRadius: '12px', fontSize: '0.70rem', fontWeight: 700
               }}>
-                <button
-                  onClick={() => setSendMode('BULK')}
-                  style={{
-                    padding: '4px 10px', borderRadius: '8px', border: 'none',
-                    fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
-                    background: sendMode === 'BULK' ? '#ffffff' : 'transparent',
-                    color: sendMode === 'BULK' ? 'var(--accent-blue)' : 'var(--text-tertiary)',
-                    boxShadow: sendMode === 'BULK' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none'
-                  }}
-                >
-                  <Users size={12} style={{ display: 'inline', marginRight: 4 }} />
-                  Bulk (All)
-                </button>
-                <button
-                  onClick={() => setSendMode('SINGLE')}
-                  style={{
-                    padding: '4px 10px', borderRadius: '8px', border: 'none',
-                    fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
-                    background: sendMode === 'SINGLE' ? '#ffffff' : 'transparent',
-                    color: sendMode === 'SINGLE' ? 'var(--accent-blue)' : 'var(--text-tertiary)',
-                    boxShadow: sendMode === 'SINGLE' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none'
-                  }}
-                >
-                  <User size={12} style={{ display: 'inline', marginRight: 4 }} />
-                  Separate (Single)
-                </button>
-              </div>
+                🛡️ 0% Ban Risk (1-by-1)
+              </span>
             </div>
 
-            {/* BULK MODE */}
-            {sendMode === 'BULK' ? (
-              <div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginBottom: '12px' }}>
-                  Send Parents App download link + credentials to all <strong>{students?.length || 0}</strong> registered parents.
-                </p>
+            <div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
+                Search and select a student to send their parent a personalized App link via WhatsApp.
+              </p>
 
+              {/* Search Student Input */}
+              <div style={{ position: 'relative', marginBottom: '8px' }}>
+                <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  placeholder="Search student by Name, Roll No, Phone..."
+                  value={studentSearchQuery}
+                  onChange={(e) => setStudentSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 28px 8px 32px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-primary)',
+                    fontSize: '0.82rem',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                {studentSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setStudentSearchQuery('')}
+                    style={{
+                      position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px', display: 'flex'
+                    }}
+                    title="Clear Search"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={selectedStudentId}
+                onChange={(e) => setSelectedStudentId(e.target.value)}
+                style={{
+                  width: '100%', padding: '9px 12px',
+                  borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)',
+                  background: 'var(--bg-primary)', fontSize: '0.85rem', fontWeight: 500,
+                  color: 'var(--text-primary)', outline: 'none', marginBottom: '12px'
+                }}
+              >
+                <option value="">
+                  {filteredStudents.length === 0 ? '-- No students match search --' : `-- Select Student (${filteredStudents.length} available) --`}
+                </option>
+                {filteredStudents.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} (Roll: {s.rollNo || 'N/A'}) — 📞 {s.parentPhone}
+                  </option>
+                ))}
+              </select>
+
+              {selectedStudent && (
                 <div style={{
-                  background: 'rgba(5, 150, 105, 0.04)',
-                  border: '1px solid rgba(5, 150, 105, 0.15)',
+                  background: 'rgba(37, 99, 235, 0.04)',
+                  border: '1px solid rgba(37, 99, 235, 0.15)',
                   borderRadius: 'var(--radius-md)',
                   padding: '12px',
                   marginBottom: '14px'
                 }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-green)', display: 'block', marginBottom: '2px' }}>
-                    BULK MESSAGE PREVIEW:
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-blue)', display: 'block', marginBottom: '2px' }}>
+                    INDIVIDUAL PREVIEW FOR {selectedStudent.name.toUpperCase()}:
                   </span>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontStyle: 'italic' }}>
-                    "Dear Parent, please download our Institute's official Parents App... Link: {parentAppLink}"
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontStyle: 'italic' }}>
+                    "Dear Parent ({selectedStudent.name}), open Parents Portal... Login: Roll No ({selectedStudent.rollNo}) or Mobile ({selectedStudent.parentPhone}) - 1-Click Fast Login"
                   </p>
                 </div>
+              )}
 
-                <button
-                  onClick={handleSendToAll}
-                  disabled={isSending || !students || students.length === 0}
-                  style={{
-                    width: '100%', padding: '11px 18px',
-                    background: isSending || !students || students.length === 0 ? '#94a3b8' : 'linear-gradient(135deg, #059669, #10b981)',
-                    color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)',
-                    fontSize: '0.88rem', fontWeight: 600,
-                    cursor: isSending || !students || students.length === 0 ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    boxShadow: isSending ? 'none' : '0 4px 14px rgba(5, 150, 105, 0.35)'
-                  }}
-                >
-                  <Send size={16} />
-                  <span>{isSending ? 'Sending...' : `Send Bulk WhatsApp Blast to ${students?.length || 0} Parents`}</span>
-                </button>
+              <button
+                onClick={handleSendToSingle}
+                disabled={isSending || !selectedStudentId}
+                style={{
+                  width: '100%', padding: '11px 18px',
+                  background: isSending || !selectedStudentId ? '#94a3b8' : 'linear-gradient(135deg, #2563eb, #3b82f6)',
+                  color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)',
+                  fontSize: '0.88rem', fontWeight: 600,
+                  cursor: isSending || !selectedStudentId ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  boxShadow: isSending || !selectedStudentId ? 'none' : '0 4px 14px rgba(37, 99, 235, 0.35)'
+                }}
+              >
+                <Send size={16} />
+                <span>{isSending ? 'Sending...' : `Send Link to ${selectedStudent?.name || 'Selected Student'}`}</span>
+              </button>
+
+              <div style={{
+                marginTop: '12px',
+                padding: '8px 10px',
+                borderRadius: '8px',
+                background: 'rgba(16, 185, 129, 0.06)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                fontSize: '0.72rem',
+                color: '#10b981',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <ShieldCheck size={14} style={{ flexShrink: 0 }} />
+                <span>Bulk blasting is permanently disabled to guarantee 0% WhatsApp ban risk.</span>
               </div>
-            ) : (
-              /* SEPARATE MODE */
-              <div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
-                  Search and select a student to send their parent a personalized App link via WhatsApp.
-                </p>
-
-                {/* Search Student Input */}
-                <div style={{ position: 'relative', marginBottom: '8px' }}>
-                  <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)' }} />
-                  <input
-                    type="text"
-                    placeholder="Search student by Name, Roll No, Phone..."
-                    value={studentSearchQuery}
-                    onChange={(e) => setStudentSearchQuery(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 28px 8px 32px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--bg-primary)',
-                      fontSize: '0.82rem',
-                      color: 'var(--text-primary)',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  {studentSearchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setStudentSearchQuery('')}
-                      style={{
-                        position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
-                        background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px', display: 'flex'
-                      }}
-                      title="Clear Search"
-                    >
-                      <X size={13} />
-                    </button>
-                  )}
-                </div>
-
-                <select
-                  value={selectedStudentId}
-                  onChange={(e) => setSelectedStudentId(e.target.value)}
-                  style={{
-                    width: '100%', padding: '9px 12px',
-                    borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)',
-                    background: 'var(--bg-primary)', fontSize: '0.85rem', fontWeight: 500,
-                    color: 'var(--text-primary)', outline: 'none', marginBottom: '12px'
-                  }}
-                >
-                  <option value="">
-                    {filteredStudents.length === 0 ? '-- No students match search --' : `-- Select Student (${filteredStudents.length} available) --`}
-                  </option>
-                  {filteredStudents.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} (Roll: {s.rollNo || 'N/A'}) — 📞 {s.parentPhone}
-                    </option>
-                  ))}
-                </select>
-
-                {selectedStudent && (
-                  <div style={{
-                    background: 'rgba(37, 99, 235, 0.04)',
-                    border: '1px solid rgba(37, 99, 235, 0.15)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '12px',
-                    marginBottom: '14px'
-                  }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-blue)', display: 'block', marginBottom: '2px' }}>
-                      INDIVIDUAL PREVIEW FOR {selectedStudent.name.toUpperCase()}:
-                    </span>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4, fontStyle: 'italic' }}>
-                      "Dear Parent ({selectedStudent.name}), download Parents App... User ID: {selectedStudent.parentUserId || `CAREER${selectedStudent.rollNo}`}, Password: {selectedStudent.parentPasswordPlain || selectedStudent.password || selectedStudent.rollNo || '123456'}"
-                    </p>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleSendToSingle}
-                  disabled={isSending || !selectedStudentId}
-                  style={{
-                    width: '100%', padding: '11px 18px',
-                    background: isSending || !selectedStudentId ? '#94a3b8' : 'linear-gradient(135deg, #2563eb, #3b82f6)',
-                    color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)',
-                    fontSize: '0.88rem', fontWeight: 600,
-                    cursor: isSending || !selectedStudentId ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    boxShadow: isSending || !selectedStudentId ? 'none' : '0 4px 14px rgba(37, 99, 235, 0.35)'
-                  }}
-                >
-                  <Send size={16} />
-                  <span>{isSending ? 'Sending...' : `Send Link to ${selectedStudent?.name || 'Selected Student'}`}</span>
-                </button>
-              </div>
-            )}
+            </div>
           </div>
         </motion.div>
 
