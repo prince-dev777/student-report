@@ -272,15 +272,17 @@ export default function Inquiries() {
   };
 
   const handleDelete = async (id) => {
+    if (!id) return;
+    const targetId = String(id);
     try {
       if (backendOnline) {
         try {
-          await api.deleteInquiry(id);
+          await api.deleteInquiry(targetId);
         } catch (apiErr) {
           console.warn('API delete failed, removing locally:', apiErr.message);
         }
       }
-      setInquiries(prev => prev.filter(iq => iq.id !== id));
+      setInquiries(prev => prev.filter(iq => String(iq.id) !== targetId && String(iq._id) !== targetId));
       toast.success('Inquiry deleted');
       setInquiryToDelete(null);
     } catch (err) {
@@ -952,7 +954,7 @@ export default function Inquiries() {
                 type="button" 
                 className="btn btn-sm" 
                 style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '8px' }}
-                onClick={() => handleDelete(inquiryToDelete.id)}
+                onClick={() => handleDelete(inquiryToDelete.id || inquiryToDelete._id)}
               >
                 Delete
               </button>

@@ -679,7 +679,14 @@ export async function performFullSync() {
           cloudDocs.forEach(cd => {
             if (collName === 'testresults') cloudMap.set(`${cd.testId}_${cd.studentId}`, cd);
             else if (collName === 'attendances') cloudMap.set(`${cd.studentId}_${cd.date}`, cd);
-            else if (collName === 'students' || collName === 'tests') cloudMap.set(cd.id, cd);
+            else if (collName === 'students') {
+              if (cd.id) cloudMap.set(cd.id, cd);
+              if (cd.rollNo) cloudMap.set(`ROLL_${String(cd.rollNo).trim()}`, cd);
+            }
+            else if (collName === 'tests') {
+              if (cd.id) cloudMap.set(cd.id, cd);
+              if (cd.name && cd.date) cloudMap.set(`TEST_${cd.name.trim().toLowerCase()}_${cd.date}`, cd);
+            }
             else cloudMap.set(String(cd._id), cd);
           });
 
@@ -693,9 +700,17 @@ export async function performFullSync() {
             let key = String(ld._id);
             if (collName === 'testresults') key = `${ld.testId}_${ld.studentId}`;
             else if (collName === 'attendances') key = `${ld.studentId}_${ld.date}`;
-            else if (collName === 'students' || collName === 'tests') key = ld.id;
+            else if (collName === 'students') key = ld.id;
+            else if (collName === 'tests') key = ld.id;
 
-            const cloudDoc = cloudMap.get(key);
+            let cloudDoc = cloudMap.get(key);
+            if (!cloudDoc && collName === 'students' && ld.rollNo) {
+              cloudDoc = cloudMap.get(`ROLL_${String(ld.rollNo).trim()}`);
+            }
+            if (!cloudDoc && collName === 'tests' && ld.name && ld.date) {
+              cloudDoc = cloudMap.get(`TEST_${ld.name.trim().toLowerCase()}_${ld.date}`);
+            }
+
             if (!cloudDoc) return true;
             const localTime = new Date(ld.updatedAt || 0).getTime();
             const cloudTime = new Date(cloudDoc.updatedAt || 0).getTime();
@@ -715,15 +730,34 @@ export async function performFullSync() {
                   }
                 };
               }
-              if (collName === 'students' || collName === 'tests') {
+              if (collName === 'students') {
                 const repl = { ...doc };
                 delete repl._id;
-                if (collName === 'students' && !repl.photo) {
+                if (!repl.photo) {
                   delete repl.photo;
+                }
+                const orConds = [{ id: doc.id }, { _id: doc._id }];
+                if (doc.rollNo) {
+                  orConds.push({ rollNo: String(doc.rollNo).trim() });
                 }
                 return {
                   updateOne: {
-                    filter: { $or: [{ id: doc.id }, { _id: doc._id }] },
+                    filter: { $or: orConds },
+                    update: { $set: repl },
+                    upsert: true
+                  }
+                };
+              }
+              if (collName === 'tests') {
+                const repl = { ...doc };
+                delete repl._id;
+                const orConds = [{ id: doc.id }, { _id: doc._id }];
+                if (doc.name && doc.date) {
+                  orConds.push({ name: doc.name, date: doc.date });
+                }
+                return {
+                  updateOne: {
+                    filter: { $or: orConds },
                     update: { $set: repl },
                     upsert: true
                   }
@@ -761,7 +795,14 @@ export async function performFullSync() {
             localDocs.forEach(ld => {
               if (collName === 'testresults') localMap.set(`${ld.testId}_${ld.studentId}`, ld);
               else if (collName === 'attendances') localMap.set(`${ld.studentId}_${ld.date}`, ld);
-              else if (collName === 'students' || collName === 'tests') localMap.set(ld.id, ld);
+              else if (collName === 'students') {
+                if (ld.id) localMap.set(ld.id, ld);
+                if (ld.rollNo) localMap.set(`ROLL_${String(ld.rollNo).trim()}`, ld);
+              }
+              else if (collName === 'tests') {
+                if (ld.id) localMap.set(ld.id, ld);
+                if (ld.name && ld.date) localMap.set(`TEST_${ld.name.trim().toLowerCase()}_${ld.date}`, ld);
+              }
               else localMap.set(String(ld._id), ld);
             });
 
@@ -777,9 +818,17 @@ export async function performFullSync() {
               let key = String(cd._id);
               if (collName === 'testresults') key = `${cd.testId}_${cd.studentId}`;
               else if (collName === 'attendances') key = `${cd.studentId}_${cd.date}`;
-              else if (collName === 'students' || collName === 'tests') key = cd.id;
+              else if (collName === 'students') key = cd.id;
+              else if (collName === 'tests') key = cd.id;
 
-              const localDoc = localMap.get(key);
+              let localDoc = localMap.get(key);
+              if (!localDoc && collName === 'students' && cd.rollNo) {
+                localDoc = localMap.get(`ROLL_${String(cd.rollNo).trim()}`);
+              }
+              if (!localDoc && collName === 'tests' && cd.name && cd.date) {
+                localDoc = localMap.get(`TEST_${cd.name.trim().toLowerCase()}_${cd.date}`);
+              }
+
               if (!localDoc) return true;
               const cloudTime = new Date(cd.updatedAt || 0).getTime();
               const localTime = new Date(localDoc.updatedAt || 0).getTime();
@@ -812,15 +861,34 @@ export async function performFullSync() {
                       }
                     };
                   }
-                  if (collName === 'students' || collName === 'tests') {
+                  if (collName === 'students') {
                     const repl = { ...doc };
                     delete repl._id;
-                    if (collName === 'students' && !repl.photo) {
+                    if (!repl.photo) {
                       delete repl.photo;
+                    }
+                    const orConds = [{ id: doc.id }, { _id: doc._id }];
+                    if (doc.rollNo) {
+                      orConds.push({ rollNo: String(doc.rollNo).trim() });
                     }
                     return {
                       updateOne: {
-                        filter: { $or: [{ id: doc.id }, { _id: doc._id }] },
+                        filter: { $or: orConds },
+                        update: { $set: repl },
+                        upsert: true
+                      }
+                    };
+                  }
+                  if (collName === 'tests') {
+                    const repl = { ...doc };
+                    delete repl._id;
+                    const orConds = [{ id: doc.id }, { _id: doc._id }];
+                    if (doc.name && doc.date) {
+                      orConds.push({ name: doc.name, date: doc.date });
+                    }
+                    return {
+                      updateOne: {
+                        filter: { $or: orConds },
                         update: { $set: repl },
                         upsert: true
                       }
@@ -859,6 +927,16 @@ export async function performFullSync() {
       const statusFile = path.join(process.cwd(), 'server', 'sync-status.json');
       fs.writeFileSync(statusFile, JSON.stringify({ lastSync: lastSyncTimestamp }), 'utf8');
     } catch (e) {}
+
+    // Automatic Deduplication Guard: clean and merge duplicate students/records seamlessly
+    try {
+      const localDb = getLocalDb() || mongoose.connection.db;
+      if (localDb) {
+        await mergeDuplicatesOnDb(localDb, 'PostSyncLocal');
+      }
+    } catch (dedupErr) {
+      logWarn('SYNC', `Post-sync deduplication notice: ${dedupErr.message}`);
+    }
 
     logInfo('SYNC', `✅ Safe Two-Way Sync Completed! (Pushed: ${totalPushed}, Pulled: ${totalPulled}, Purged: ${totalPurged})`);
 
@@ -996,15 +1074,34 @@ export async function pullAndRestoreFromCloud() {
                 }
               };
             }
-            if (collName === 'students' || collName === 'tests') {
+            if (collName === 'students') {
               const repl = { ...doc };
               delete repl._id;
-              if (collName === 'students' && !repl.photo) {
+              if (!repl.photo) {
                 delete repl.photo;
+              }
+              const orConds = [{ id: doc.id }, { _id: doc._id }];
+              if (doc.rollNo) {
+                orConds.push({ rollNo: String(doc.rollNo).trim() });
               }
               return {
                 updateOne: {
-                  filter: { $or: [{ id: doc.id }, { _id: doc._id }] },
+                  filter: { $or: orConds },
+                  update: { $set: repl },
+                  upsert: true
+                }
+              };
+            }
+            if (collName === 'tests') {
+              const repl = { ...doc };
+              delete repl._id;
+              const orConds = [{ id: doc.id }, { _id: doc._id }];
+              if (doc.name && doc.date) {
+                orConds.push({ name: doc.name, date: doc.date });
+              }
+              return {
+                updateOne: {
+                  filter: { $or: orConds },
                   update: { $set: repl },
                   upsert: true
                 }
@@ -1039,6 +1136,16 @@ export async function pullAndRestoreFromCloud() {
     if (totalRestored === 0) {
       logWarn('PULL', 'Cloud was empty, seeding from bundled database_snapshot.json...');
       return restoreLocalFromSnapshot();
+    }
+
+    // Automatic Deduplication Guard after Cloud Pull
+    try {
+      const localDb = getLocalDb() || mongoose.connection.db;
+      if (localDb) {
+        await mergeDuplicatesOnDb(localDb, 'PostCloudPull');
+      }
+    } catch (dedupErr) {
+      logWarn('PULL', `Post-pull deduplication notice: ${dedupErr.message}`);
     }
 
     logInfo('PULL', `✅ Pull from Cloud completed (${totalRestored} records restored with ObjectIds)`);
@@ -1088,6 +1195,16 @@ export async function restoreLocalFromSnapshot() {
         await localColl.bulkWrite(batch, { ordered: false });
       }
       totalRestored += docs.length;
+    }
+
+    // Automatic Deduplication Guard after Snapshot Restore
+    try {
+      const localDb = getLocalDb() || mongoose.connection.db;
+      if (localDb) {
+        await mergeDuplicatesOnDb(localDb, 'PostSnapshotRestore');
+      }
+    } catch (dedupErr) {
+      logWarn('RESTORE_SNAP', `Post-snapshot deduplication notice: ${dedupErr.message}`);
     }
 
     logInfo('RESTORE_SNAP', `✅ Restored ${totalRestored} records from local snapshot [${snapPath}]`);

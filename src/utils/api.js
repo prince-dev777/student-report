@@ -39,9 +39,18 @@ export async function checkBackendStatus(retries = (isElectron ? 5 : 2), delay =
   return false;
 }
 
-export function getMediaUrl(path) {
+export function getMediaUrl(path, student = null) {
   if (!path) return '';
   if (path.startsWith('data:')) return path;
+
+  // Electron desktop: route Cloudinary student photos through local offline cache proxy
+  if (isElectron && path.startsWith('http') && (path.includes('cloudinary') || path.includes('careerxone_students') || path.includes('/photos/'))) {
+    const rollNo = student?.rollNo || '';
+    const id = student?.id || student?._id || '';
+    const name = student?.name || '';
+    return `http://localhost:5000/api/media/photo?url=${encodeURIComponent(path)}&rollNo=${encodeURIComponent(rollNo)}&id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+  }
+
   if (path.startsWith('http')) return path;
   
   // replace backslashes with forward slashes for URLs
@@ -55,6 +64,20 @@ export function getMediaUrl(path) {
   
   const base = API_BASE.replace('/api', '');
   return `${base}${normalizedPath.startsWith('/') ? '' : '/'}${normalizedPath}`;
+}
+
+export function getStudentPhotoUrl(photoUrl, student = {}) {
+  if (!photoUrl) return '';
+  if (photoUrl.startsWith('data:')) return photoUrl;
+  
+  if (isElectron) {
+    const rollNo = student.rollNo || '';
+    const id = student.id || student._id || '';
+    const name = student.name || '';
+    return `http://localhost:5000/api/media/photo?url=${encodeURIComponent(photoUrl)}&rollNo=${encodeURIComponent(rollNo)}&id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+  }
+  
+  return getMediaUrl(photoUrl);
 }
 
 // Generic fetch handler

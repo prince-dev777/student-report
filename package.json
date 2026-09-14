@@ -16,7 +16,7 @@
     "photos:upload": "node scripts/bulk_upload_student_photos.js",
     "postinstall": "node -e \"if (!process.env.VERCEL && require('fs').existsSync('./scripts/postinstall.cjs')) { require('./scripts/postinstall.cjs'); }\"",
     "electron:dev": "node scripts/pre-dev.js && concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run build && electron-builder",
+    "electron:build": "npm run build && electron-builder && node scripts/copy_to_pendrive.cjs",
     "electron:publish": "npm run build && electron-builder -p always"
   },
   "build": {

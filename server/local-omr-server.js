@@ -28,8 +28,8 @@ process.on('uncaughtException', (err) => {
 const gracefulShutdown = async () => {
   console.log('\nShutting down local-omr-server gracefully...');
   try {
-    const { disconnectWhatsAppClient } = await import('./services/whatsappClient.js');
-    disconnectWhatsAppClient(); // Safely closes Puppeteer and releases session locks
+    const { gracefulShutdownWhatsAppClient } = await import('./services/whatsappClient.js');
+    await gracefulShutdownWhatsAppClient(); // Safely snapshots session vault, closes Puppeteer and releases session locks without deleting auth
   } catch (err) {
     console.error('Error during shutdown:', err);
   }

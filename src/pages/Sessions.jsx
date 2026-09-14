@@ -83,15 +83,16 @@ export default function Sessions() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this session?')) return;
     
+    const targetId = String(id);
     try {
       if (backendOnline) {
         try {
-          await api.deleteSession(id);
+          await api.deleteSession(targetId);
         } catch (apiErr) {
           console.warn('API delete failed, removing locally:', apiErr.message);
         }
       }
-      setSessions(prev => prev.filter(s => s.id !== id && s._id !== id));
+      setSessions(prev => prev.filter(s => String(s.id) !== targetId && String(s._id) !== targetId));
       toast.success('Session deleted successfully!');
     } catch (err) {
       toast.error('Failed to delete session');
@@ -323,7 +324,7 @@ export default function Sessions() {
                       <button className="btn btn-icon mr-2" onClick={() => handleEdit(s)} title="Edit session">
                         <Edit size={17} className="text-primary" />
                       </button>
-                      <button className="btn btn-icon text-danger" onClick={() => handleDelete(s.id)} title="Delete session">
+                      <button className="btn btn-icon text-danger" onClick={() => handleDelete(s.id || s._id)} title="Delete session">
                         <Trash2 size={17} />
                       </button>
                     </td>

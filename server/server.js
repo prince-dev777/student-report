@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import { v2 as cloudinary } from 'cloudinary';
 import cron from 'node-cron';
 import AdmZip from 'adm-zip';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -332,6 +333,167 @@ if (dataPath !== __dirname) {
   }));
 }
 
+// 📸 OFFLINE PHOTO CACHE PROXY & INSTANT RESILIENT AVATAR ENGINE
+app.get('/api/media/photo', async (req, res) => {
+  try {
+    const { url, rollNo, id, name } = req.query;
+    if (!url && !rollNo && !id) {
+      return res.status(400).send('Photo URL, rollNo, or student ID is required');
+    }
+
+    const cleanRoll = rollNo ? String(rollNo).trim() : '';
+    const cleanId = id ? String(id).trim() : '';
+    const photosDir = path.join(dataPath, 'uploads', 'photos');
+    if (!fs.existsSync(photosDir)) {
+      try { fs.mkdirSync(photosDir, { recursive: true }); } catch (e) {}
+    }
+
+    // Candidate filenames (rollNo takes precedence, then ID, then hash of URL)
+    const candidateFiles = [];
+    if (cleanRoll) candidateFiles.push(`stu_${cleanRoll}.jpg`);
+    if (cleanId) candidateFiles.push(`stu_${cleanId}.jpg`);
+    if (url) {
+      const hash = crypto.createHash('md5').update(String(url)).digest('hex');
+      candidateFiles.push(`photo_${hash}.jpg`);
+    }
+
+    // 1. Direct local disk hit (100% Offline with zero internet dependency)
+    for (const file of candidateFiles) {
+      const fullPath = path.join(photosDir, file);
+      if (fs.existsSync(fullPath)) {
+        try {
+          const stat = fs.statSync(fullPath);
+          if (stat.size > 0) {
+            res.setHeader('Content-Type', 'image/jpeg');
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            return res.sendFile(fullPath);
+          }
+        } catch (e) {}
+      }
+    }
+
+    // 2. If not on disk, try downloading from remote URL if online
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3500);
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const primaryFilename = candidateFiles[0] || 'stu_temp.jpg';
+          fs.writeFile(path.join(photosDir, primaryFilename), buffer, () => {});
+          res.setHeader('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          return res.send(buffer);
+        }
+      } catch (e) {
+        // Network offline or failed
+      }
+    }
+
+    // 3. Crisp SVG initials avatar fallback (NO broken image icons ever!)
+    const initials = (name || cleanRoll || 'CX')
+      .split(' ')
+      .map(w => w[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+
+    const colors = [
+      ['#0284c7', '#2563eb'],
+      ['#7c3aed', '#6366f1'],
+      ['#059669', '#10b981'],
+      ['#d97706', '#f59e0b'],
+      ['#dc2626', '#ef4444'],
+      ['#db2777', '#f43f5e']
+    ];
+    const colorIndex = (cleanRoll ? parseInt(cleanRoll.replace(/\D/g, '') || 0, 10) : 0) % colors.length;
+    const [c1, c2] = colors[colorIndex];
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+      <defs>
+        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${c1}" />
+          <stop offset="100%" stop-color="${c2}" />
+        </linearGradient>
+      </defs>
+      <rect width="100" height="100" rx="16" fill="url(#grad)" />
+      <text x="50" y="55" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="36" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">${initials}</text>
+    </svg>`;
+
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    return res.send(svg);
+  } catch (err) {
+    res.status(500).send('Error rendering photo');
+  }
+});
+
+// Background Worker: Pre-cache student photos locally on disk for 100% offline access
+let isCachingPhotos = false;
+async function cacheAllStudentPhotos() {
+  if (isCachingPhotos) return;
+  isCachingPhotos = true;
+
+  try {
+    const photosDir = path.join(dataPath, 'uploads', 'photos');
+    if (!fs.existsSync(photosDir)) {
+      try { fs.mkdirSync(photosDir, { recursive: true }); } catch (e) {}
+    }
+
+    const studentsWithPhotos = await Student.find({
+      isDeleted: { $ne: true },
+      photo: { $regex: '^https?://' }
+    }).select('rollNo id photo name').lean();
+
+    let cachedCount = 0;
+    for (const student of studentsWithPhotos) {
+      const cleanRoll = student.rollNo ? String(student.rollNo).trim() : '';
+      const cleanId = student.id ? String(student.id).trim() : '';
+      const filename = cleanRoll ? `stu_${cleanRoll}.jpg` : `stu_${cleanId}.jpg`;
+      const localPath = path.join(photosDir, filename);
+
+      if (fs.existsSync(localPath)) {
+        try {
+          if (fs.statSync(localPath).size > 0) continue;
+        } catch (e) {}
+      }
+
+      // Download missing photo
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(student.photo, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (res.ok) {
+          const buffer = Buffer.from(await res.arrayBuffer());
+          fs.writeFileSync(localPath, buffer);
+          cachedCount++;
+          await new Promise(r => setTimeout(r, 60));
+        }
+      } catch (err) {
+        // Network offline or failed - continue with others
+      }
+    }
+
+    if (cachedCount > 0) {
+      console.log(`[MediaCache] 📸 Successfully cached ${cachedCount} student photos locally for offline access!`);
+    }
+  } catch (err) {
+    console.warn('[MediaCache] Notice during photo caching:', err.message);
+  } finally {
+    isCachingPhotos = false;
+  }
+}
+
+// Start photo caching 25s after boot, and repeat every 30 mins
+setTimeout(cacheAllStudentPhotos, 25000);
+setInterval(cacheAllStudentPhotos, 30 * 60 * 1000);
+
+
 // Serve static client assets (PWA manifests, Service Worker, compiled JS/CSS)
 const staticDirs = [
   path.join(__dirname, 'public'),
@@ -539,6 +701,16 @@ mongoose.connect(MONGODB_URI)
     } catch(err) {
       console.error('Error checking DB count for auto-restore:', err);
     }
+
+    // Auto-Deduplication Guard: clean up any duplicate records on boot (e.g. from previous installs)
+    try {
+      if (mongoose.connection && mongoose.connection.db) {
+        await mergeDuplicatesOnDb(mongoose.connection.db, 'StartupLocal');
+      }
+    } catch (dedupErr) {
+      console.warn('Startup deduplication notice:', dedupErr.message);
+    }
+
 
     // Migration: reconstruct parentPasswordPlain for existing students
     try {
@@ -2335,16 +2507,19 @@ app.delete('/api/students/:id', async (req, res) => {
       }));
     }
     const student = await Student.findOne(query);
-    if (!student) return res.status(404).json({ error: 'Student not found' });
 
-    const studentIds = [student.id, String(student._id), String(student.rollNo)].filter(Boolean);
-    const parentUsernames = [student.parentUserId, `CAREER${student.rollNo}`, String(student.rollNo)].filter(Boolean);
+    const studentIds = student ? [student.id, String(student._id), String(student.rollNo)].filter(Boolean) : [rawId];
+    const parentUsernames = student ? [student.parentUserId, `CAREER${student.rollNo}`, String(student.rollNo)].filter(Boolean) : [];
 
-    await dualDelete('students', { $or: [{ _id: student._id }, { id: student.id }, { rollNo: student.rollNo }] }, [
+    const deleteFilter = student 
+      ? { $or: [{ _id: student._id }, { id: student.id }, { rollNo: student.rollNo }] }
+      : { $or: [{ id: rawId }, ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])] };
+
+    await dualDelete('students', deleteFilter, [
       { collection: 'attendances', filter: { studentId: { $in: studentIds } } },
       { collection: 'testresults', filter: { studentId: { $in: studentIds } } },
       { collection: 'smslogs', filter: { studentId: { $in: studentIds } } },
-      { collection: 'users', filter: { username: { $in: parentUsernames } } }
+      ...(parentUsernames.length > 0 ? [{ collection: 'users', filter: { username: { $in: parentUsernames } } }] : [])
     ]);
 
     triggerBackgroundCloudSync();
@@ -2365,7 +2540,15 @@ app.get('/api/classes', authenticateToken, async (req, res) => {
     }
 
     const query = { isDeleted: { $ne: true } };
-    if (instId) query.instituteId = instId;
+    if (instId) {
+      query.$or = [
+        { instituteId: instId },
+        { instituteId: String(instId) },
+        ...(mongoose.Types.ObjectId.isValid(instId) ? [{ instituteId: new mongoose.Types.ObjectId(instId) }] : []),
+        { instituteId: null },
+        { instituteId: { $exists: false } }
+      ];
+    }
 
     const students = await Student.find(query, 'class');
     const classCountMap = {};
@@ -2726,10 +2909,12 @@ app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
         }
       ];
     }
-    const session = await Session.findOneAndDelete(query);
-    if (!session) return res.status(404).json({ error: 'Session not found' });
+    const session = await Session.findOne(query);
+    const deleteFilter = session 
+      ? { $or: [{ _id: session._id }, { id: session.id }] }
+      : { $or: [{ id: idParam }, ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: idParam }] : [])] };
 
-    await dualDelete('sessions', { $or: [{ _id: session._id }, { id: session.id }] });
+    await dualDelete('sessions', deleteFilter);
     triggerBackgroundCloudSync();
     res.json({ message: 'Session permanently deleted successfully' });
   } catch (err) {
@@ -2775,10 +2960,30 @@ app.put('/api/inquiries/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/inquiries/:id', authenticateToken, async (req, res) => {
   try {
-    const inquiry = await Inquiry.findOne({ id: req.params.id, instituteId: req.user.instituteId });
-    if (!inquiry) return res.status(404).json({ error: 'Inquiry not found' });
+    const rawId = req.params.id;
+    const query = {
+      $or: [
+        { id: rawId },
+        ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])
+      ]
+    };
+    if (req.user && req.user.instituteId) {
+      query.$or = query.$or.map(clause => ({
+        ...clause,
+        $or: [
+          { instituteId: req.user.instituteId },
+          { instituteId: String(req.user.instituteId) },
+          { instituteId: null },
+          { instituteId: { $exists: false } }
+        ]
+      }));
+    }
+    const inquiry = await Inquiry.findOne(query);
+    const deleteFilter = inquiry 
+      ? { $or: [{ _id: inquiry._id }, { id: inquiry.id }] }
+      : { $or: [{ id: rawId }, ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])] };
 
-    await dualDelete('inquiries', { $or: [{ _id: inquiry._id }, { id: inquiry.id }] });
+    await dualDelete('inquiries', deleteFilter);
     triggerBackgroundCloudSync();
     res.json({ message: 'Inquiry permanently deleted successfully' });
   } catch (err) {
@@ -2994,11 +3199,11 @@ app.put('/api/tests/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/tests/:id', authenticateToken, async (req, res) => {
   try {
-    const testLookup = buildTestLookup(req.params.id, req.user.instituteId);
+    const rawId = req.params.id;
+    const testLookup = buildTestLookup(rawId, req.user.instituteId);
     const test = await Test.findOne(testLookup);
-    if (!test) return res.status(404).json({ error: 'Test not found' });
 
-    const testIdKeys = [test.id, String(test.id), test._id, test._id.toString()].filter(Boolean);
+    const testIdKeys = test ? [test.id, String(test.id), test._id, test._id.toString()].filter(Boolean) : [rawId];
 
     // Clean up associated Cloudinary OMR images to prevent orphaned files
     try {
@@ -3015,7 +3220,11 @@ app.delete('/api/tests/:id', authenticateToken, async (req, res) => {
       console.warn('Failed to cleanup Cloudinary images on test delete:', cleanErr.message);
     }
 
-    await dualDelete('tests', { $or: [{ _id: test._id }, { id: test.id }] }, [
+    const deleteFilter = test 
+      ? { $or: [{ _id: test._id }, { id: test.id }] }
+      : { $or: [{ id: rawId }, ...(mongoose.Types.ObjectId.isValid(rawId) ? [{ _id: rawId }] : [])] };
+
+    await dualDelete('tests', deleteFilter, [
       { collection: 'testresults', filter: { testId: { $in: testIdKeys } } }
     ]);
 

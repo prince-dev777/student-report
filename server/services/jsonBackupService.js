@@ -35,7 +35,7 @@ export async function generateDatabaseSnapshot(dataPath) {
 
     const snapshot = {
       exportedAt: new Date().toISOString(),
-      appVersion: '1.0.41',
+      appVersion: '1.0.42',
       totalCollections: ALL_COLLECTIONS.length,
       data: {}
     };

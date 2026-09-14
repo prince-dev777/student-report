@@ -2,6 +2,7 @@ import { createRequire } from 'module';
 import { spawn, execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import net from 'net';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -149,8 +150,42 @@ async function runMasterProductionAudit() {
   // ==========================================================================
   console.log('\n💾 [STAGE 4/7] Testing MongoDB Database Schema & Core Collections...');
 
+  let mongodProcess = null;
+  const mongodExePath = path.join(serverDir, 'bin', 'mongod.exe');
+  const appData = process.env.APPDATA || path.join(process.env.USERPROFILE || '', 'AppData', 'Roaming');
+  const dbPath = path.join(appData, 'student-report', 'mongodb_data');
+
+  let mongoRunning = false;
+  try {
+    const s = net.connect(27018, '127.0.0.1');
+    await new Promise((resolve, reject) => {
+      s.on('connect', () => { s.destroy(); resolve(); });
+      s.on('error', (err) => { s.destroy(); reject(err); });
+    });
+    mongoRunning = true;
+  } catch (e) {
+    mongoRunning = false;
+  }
+
+  if (!mongoRunning && fs.existsSync(mongodExePath) && fs.existsSync(dbPath)) {
+    console.log('  ⚙️ Starting Embedded MongoDB Engine for Audit on port 27018...');
+    mongodProcess = spawn(mongodExePath, [
+      '--dbpath', dbPath,
+      '--port', '27018',
+      '--bind_ip', '127.0.0.1'
+    ], { stdio: 'ignore' });
+    await new Promise(r => setTimeout(r, 2500));
+  }
+
   const { connectLocalDb } = await import('../server/db/localDb.js');
-  await connectLocalDb();
+  try {
+    await connectLocalDb();
+  } catch (e) {
+    await new Promise(r => setTimeout(r, 1500));
+    try {
+      await connectLocalDb();
+    } catch (e2) {}
+  }
   const dbState = mongoose.connection.readyState === 1;
   reportCheck('MongoDB Database Connection (Local / Cloud Hybrid)', dbState);
 
@@ -311,6 +346,9 @@ async function runMasterProductionAudit() {
   // ==========================================================================
   if (serverProcess) {
     serverProcess.kill('SIGINT');
+  }
+  if (mongodProcess) {
+    mongodProcess.kill('SIGINT');
   }
   await mongoose.disconnect();
 

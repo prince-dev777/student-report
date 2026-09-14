@@ -256,22 +256,25 @@ function createWindow() {
             splashWindow = null;
           }
         } catch(e) {}
-      }, 300);
+      }, 500);
     }
   };
 
   // Send app version to renderer and reveal window when page is fully rendered
   mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.webContents.executeJavaScript(
-      `window.__APP_VERSION__ = '${app.getVersion()}'`
-    ).catch(() => {});
+    const currentURL = mainWindow.webContents.getURL();
+    if (currentURL && !currentURL.includes('about:blank')) {
+      mainWindow.webContents.executeJavaScript(
+        `window.__APP_VERSION__ = '${app.getVersion()}'`
+      ).catch(() => {});
 
-    // Allow a brief 200ms frame buffer for initial paint before smooth reveal
-    setTimeout(revealMainWindow, 200);
+      // Allow a brief 300ms frame buffer for initial paint before smooth reveal
+      setTimeout(revealMainWindow, 300);
+    }
   });
 
-  // Failsafe timeout: reveal window after 12s no matter what
-  setTimeout(revealMainWindow, 12000);
+  // Failsafe timeout: reveal window after 30s no matter what
+  setTimeout(revealMainWindow, 30000);
 
   // Check if we are in development mode
   const isDev = !app.isPackaged;
@@ -305,7 +308,7 @@ function createWindow() {
         req.setTimeout(800, () => { req.destroy(); resolve(false); });
       });
 
-      for (let attempt = 0; attempt < 35; attempt++) {
+      for (let attempt = 0; attempt < 70; attempt++) {
         const ready = await isServerUp();
         if (ready) break;
         await new Promise(r => setTimeout(r, 350));

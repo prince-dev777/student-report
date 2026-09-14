@@ -68,3 +68,5 @@ server/omr_engine_bin/
 student_photos/
 CareerXone_*.pdf
 CareerXone_*.html
+server/data/mongodb_data/
+mongodb_data/

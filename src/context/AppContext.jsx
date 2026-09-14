@@ -26,6 +26,53 @@ function saveLocalData(key, data) {
   }
 }
 
+function deduplicateStudents(studentList) {
+  if (!Array.isArray(studentList)) return [];
+  const seenRolls = new Set();
+  const seenIds = new Set();
+  const clean = [];
+  for (const s of studentList) {
+    if (!s || s.isDeleted) continue;
+    const normRoll = s.rollNo ? String(s.rollNo).trim() : null;
+    const sId = s.id ? String(s.id).trim() : (s._id ? String(s._id) : null);
+    if (normRoll && seenRolls.has(normRoll)) continue;
+    if (sId && seenIds.has(sId)) continue;
+    if (normRoll) seenRolls.add(normRoll);
+    if (sId) seenIds.add(sId);
+    clean.push(s);
+  }
+  return clean;
+}
+
+function deduplicateTests(testList) {
+  if (!Array.isArray(testList)) return [];
+  const seenKeys = new Set();
+  const clean = [];
+  for (const t of testList) {
+    if (!t || t.isDeleted) continue;
+    const normKey = t.name && t.date ? `${t.name.trim().toLowerCase()}_${t.date}` : (t.id || String(t._id));
+    if (seenKeys.has(normKey)) continue;
+    seenKeys.add(normKey);
+    clean.push(t);
+  }
+  return clean;
+}
+
+function deduplicateSessions(sessionList) {
+  if (!Array.isArray(sessionList)) return [];
+  const seenNames = new Set();
+  const clean = [];
+  for (const sess of sessionList) {
+    if (!sess || sess.isDeleted) continue;
+    const sName = (sess.sessionName || sess.name || '').trim().toLowerCase();
+    const sKey = sName || sess.id || String(sess._id);
+    if (seenNames.has(sKey)) continue;
+    seenNames.add(sKey);
+    clean.push(sess);
+  }
+  return clean;
+}
+
 export function AppProvider({ children }) {
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -99,7 +146,10 @@ export function AppProvider({ children }) {
         api.getInquiries().catch(() => [])
       ]);
 
-      const serverStudents = studentsRes?.students || [];
+      const rawStudents = studentsRes?.students || [];
+      const serverStudents = deduplicateStudents(rawStudents);
+      const cleanTests = deduplicateTests(serverTests || []);
+      const cleanSessions = deduplicateSessions(serverSessions || []);
       const validIds = new Set(serverStudents.map((s) => s.id));
       
       if (Array.isArray(serverStudents) && serverStudents.length > 0) {
@@ -113,9 +163,9 @@ export function AppProvider({ children }) {
         setAttendance(serverAttendance);
       }
 
-      if (Array.isArray(serverTests)) {
-        setTests(serverTests);
-        try { localStorage.setItem('edutrack_tests', JSON.stringify(serverTests)); } catch(e) {}
+      if (Array.isArray(cleanTests)) {
+        setTests(cleanTests);
+        try { localStorage.setItem('edutrack_tests', JSON.stringify(cleanTests)); } catch(e) {}
       }
 
       if (Array.isArray(serverResults)) {
@@ -126,9 +176,9 @@ export function AppProvider({ children }) {
         setSMSHistory(serverSMS);
       }
 
-      if (Array.isArray(serverSessions)) {
-        setSessions(serverSessions);
-        try { localStorage.setItem('edutrack_sessions', JSON.stringify(serverSessions)); } catch(e) {}
+      if (Array.isArray(cleanSessions)) {
+        setSessions(cleanSessions);
+        try { localStorage.setItem('edutrack_sessions', JSON.stringify(cleanSessions)); } catch(e) {}
       }
 
       if (Array.isArray(serverInquiries)) {
@@ -187,15 +237,18 @@ export function AppProvider({ children }) {
     initRanRef.current = true;
 
     function loadFallbackData() {
-      let localStudents = loadLocalData('students', []);
+      let rawLocalStudents = loadLocalData('students', []);
+      let localStudents = deduplicateStudents(rawLocalStudents);
+      let localTests = deduplicateTests(loadLocalData('tests', []));
+      let localSessions = deduplicateSessions(loadLocalData('sessions', []));
       const validIds = new Set(localStudents.map((s) => s.id));
       
       setStudents(localStudents);
       setAttendance(loadLocalData('attendance', []).filter((a) => validIds.has(a.studentId)));
-      setTests(loadLocalData('tests', []));
+      setTests(localTests);
       setTestResults(loadLocalData('testResults', []).filter((r) => validIds.has(r.studentId)));
       setSMSHistory(loadLocalData('smsHistory', []).filter((sms) => validIds.has(sms.studentId)));
-      setSessions(loadLocalData('sessions', []));
+      setSessions(localSessions);
       setInquiries(loadLocalData('inquiries', []));
     }
 
@@ -399,39 +452,39 @@ export function AppProvider({ children }) {
   }, [backendOnline]);
 
   const deleteStudent = useCallback(async (id) => {
+    if (!id) return;
+    const targetId = String(id);
+    setStudents((prev) => prev.filter((s) => String(s.id) !== targetId && String(s._id) !== targetId));
+    setAttendance((prev) => prev.filter((a) => String(a.studentId) !== targetId));
+    setTestResults((prev) => prev.filter((r) => String(r.studentId) !== targetId));
+    setSMSHistory((prev) => prev.filter((sms) => String(sms.studentId) !== targetId));
+
     if (backendOnline) {
       try {
-        await api.deleteStudent(id);
-        setStudents((prev) => prev.filter((s) => s.id !== id));
-        setAttendance((prev) => prev.filter((a) => a.studentId !== id));
-        setTestResults((prev) => prev.filter((r) => r.studentId !== id));
-        setSMSHistory((prev) => prev.filter((sms) => sms.studentId !== id));
+        await api.deleteStudent(targetId);
         toast.success('✅ Student deleted successfully!');
         return;
       } catch (err) {
+        console.error('Failed to delete student on server:', err);
         toast.error('Failed to delete student');
         return;
       }
     }
-
-    setStudents((prev) => prev.filter((s) => s.id !== id));
-    setAttendance((prev) => prev.filter((a) => a.studentId !== id));
-    setTestResults((prev) => prev.filter((r) => r.studentId !== id));
-    setSMSHistory((prev) => prev.filter((sms) => sms.studentId !== id));
     toast.success('Student removed locally!');
   }, [backendOnline]);
 
   const deleteStudentsBulk = useCallback(async (ids) => {
     if (!Array.isArray(ids) || ids.length === 0) return;
-    const idSet = new Set(ids);
+    const idSet = new Set(ids.map(String));
+
+    setStudents((prev) => prev.filter((s) => !idSet.has(String(s.id)) && !idSet.has(String(s._id))));
+    setAttendance((prev) => prev.filter((a) => !idSet.has(String(a.studentId))));
+    setTestResults((prev) => prev.filter((r) => !idSet.has(String(r.studentId))));
+    setSMSHistory((prev) => prev.filter((sms) => !idSet.has(String(sms.studentId))));
 
     if (backendOnline) {
       try {
         await api.deleteStudentsBulk(ids);
-        setStudents((prev) => prev.filter((s) => !idSet.has(s.id)));
-        setAttendance((prev) => prev.filter((a) => !idSet.has(a.studentId)));
-        setTestResults((prev) => prev.filter((r) => !idSet.has(r.studentId)));
-        setSMSHistory((prev) => prev.filter((sms) => !idSet.has(sms.studentId)));
         toast.success(`✅ Deleted ${ids.length} students successfully!`);
         return;
       } catch (err) {
@@ -440,11 +493,6 @@ export function AppProvider({ children }) {
         return;
       }
     }
-
-    setStudents((prev) => prev.filter((s) => !idSet.has(s.id)));
-    setAttendance((prev) => prev.filter((a) => !idSet.has(a.studentId)));
-    setTestResults((prev) => prev.filter((r) => !idSet.has(r.studentId)));
-    setSMSHistory((prev) => prev.filter((sms) => !idSet.has(sms.studentId)));
     toast.success(`Removed ${ids.length} students locally!`);
   }, [backendOnline]);
 
@@ -605,20 +653,22 @@ export function AppProvider({ children }) {
   }, [backendOnline]);
 
   const deleteTest = useCallback(async (testId) => {
+    if (!testId) return;
+    const targetId = String(testId);
+    setTests((prev) => prev.filter((t) => String(t.id) !== targetId && String(t._id) !== targetId));
+    setTestResults((prev) => prev.filter((r) => String(r.testId) !== targetId));
+
     if (backendOnline) {
       try {
-        await api.deleteTest(testId);
-        setTests((prev) => prev.filter((t) => t.id !== testId));
-        setTestResults((prev) => prev.filter((r) => r.testId !== testId));
+        await api.deleteTest(targetId);
         toast.success('Test and results deleted!');
         return;
       } catch (err) {
+        console.error('Failed to delete test on server:', err);
         toast.error('Failed to delete test');
         return;
       }
     }
-    setTests((prev) => prev.filter((t) => t.id !== testId));
-    setTestResults((prev) => prev.filter((r) => r.testId !== testId));
     toast.success('Test deleted locally!');
   }, [backendOnline]);
 

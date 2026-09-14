@@ -10,6 +10,7 @@ import AddStudentModal from '../components/AddStudentModal';
 import StudentProfileModal from '../components/StudentProfileModal';
 import BulkUploadModal from '../components/BulkUploadModal';
 import ManageClassesModal from '../components/ManageClassesModal';
+import StudentAvatar from '../components/StudentAvatar';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 
@@ -316,13 +317,20 @@ export default function Students() {
   };
 
   const handleDelete = (student) => {
-    setStudentToDelete(student);
+    if (typeof student === 'object' && student !== null) {
+      setStudentToDelete(student);
+    } else if (typeof student === 'string') {
+      const found = students.find(s => s.id === student || s._id === student) || { id: student, name: 'this student' };
+      setStudentToDelete(found);
+    }
   };
 
   const confirmDelete = async () => {
     if (!studentToDelete) return;
     try {
-      await deleteStudent(studentToDelete.id);
+      const targetId = studentToDelete.id || studentToDelete._id || (typeof studentToDelete === 'string' ? studentToDelete : null);
+      if (!targetId) return;
+      await deleteStudent(targetId);
       toast.success('Student deleted successfully');
       setStudentToDelete(null);
       fetchData(currentPage, searchQuery);
@@ -737,18 +745,7 @@ export default function Students() {
                     <td><strong style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}>{student.rollNo}</strong></td>
                     <td>
                       <div className="flex items-center gap-12">
-                        {student.photo ? (
-                          <img 
-                            src={student.photo} 
-                            alt={student.name} 
-                            className="student-avatar" 
-                            style={{ objectFit: 'cover', border: '1px solid var(--border-color)' }} 
-                          />
-                        ) : (
-                          <div className={`student-avatar ${getAvatarClass(idx)}`}>
-                            {getInitials(student.name)}
-                          </div>
-                        )}
+                        <StudentAvatar student={student} idx={idx} size={38} />
                         <div>
                           <strong className="text-primary">{student.name}</strong>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
@@ -780,7 +777,7 @@ export default function Students() {
                         </button>
                         <button 
                           className="btn btn-icon btn-ghost text-danger" 
-                          onClick={() => handleDelete(student.id, student.name)}
+                          onClick={() => handleDelete(student)}
                           title="Delete Student"
                         >
                           <Trash2 size={16} />
@@ -905,7 +902,7 @@ export default function Students() {
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Delete Student</h3>
                 <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Are you sure you want to delete <strong>{studentToDelete.name}</strong>?
+                  Are you sure you want to delete <strong>{studentToDelete?.name || studentToDelete?.id || 'this student'}</strong>?
                 </p>
               </div>
             </div>
@@ -922,10 +919,12 @@ export default function Students() {
                 className="btn btn-sm" 
                 style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 14px' }}
                 onClick={async () => {
-                  const id = studentToDelete.id;
+                  const id = studentToDelete?.id || studentToDelete?._id || (typeof studentToDelete === 'string' ? studentToDelete : null);
                   setStudentToDelete(null);
-                  await deleteStudent(id);
-                  fetchData(currentPage, searchQuery);
+                  if (id) {
+                    await deleteStudent(id);
+                    fetchData(currentPage, searchQuery);
+                  }
                 }}
               >
                 Delete
