@@ -13,8 +13,7 @@ import {
 import { getAvatarClass, getInitials } from '../data/sampleData';
 import { formatDate, formatTime, calcAttendancePercent, formatBatchName } from '../utils/helpers';
 import { useApp } from '../context/AppContext';
-import { QRCodeSVG } from 'qrcode.react';
-import idLogo from '../assets/id-logo.png';
+import StudentIdCard from './StudentIdCard';
 
 export default function StudentProfileModal({ 
   student: initialStudent, 
@@ -550,218 +549,53 @@ export default function StudentProfileModal({
                     <div className="print-id-container" style={{ display: 'flex', gap: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
                       {/* FRONT SIDE */}
                       <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textAlign: 'center' }}>
+                        <div className="no-print" style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textAlign: 'center' }}>
                           🪪 FRONT SIDE
                         </div>
-                        <div className="print-id-card" style={{ 
-                          width: '235px', 
-                          height: '375px', 
-                          boxSizing: 'border-box',
-                          background: 'linear-gradient(135deg, #f0f7ff 0%, #dbeafe 100%)', 
-                          borderRadius: '12px', 
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.15)', 
-                          overflow: 'hidden', 
-                          display: 'flex', 
-                          flexDirection: 'column',
-                          border: '1.5px solid #bfdbfe',
-                          position: 'relative',
-                          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-                        }}>
-                          {/* Top Cover Banner (Facebook-style Full Header) */}
-                          <div style={{
-                            boxSizing: 'border-box',
-                            height: '85px',
-                            width: '100%',
-                            margin: 0,
-                            background: '#ffffff',
-                            borderBottom: '2.5px solid #2563eb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '4px 8px',
-                            position: 'relative'
-                          }}>
-                            <img src={idLogo} alt="Career Xone" style={{ maxWidth: '98%', maxHeight: '96%', width: 'auto', height: '72px', objectFit: 'contain' }} />
-                          </div>
-                          
-                          {/* Student Avatar / Photo (Overlapping Cover Banner Facebook Style) */}
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            marginTop: '-44px',
-                            marginBottom: '1px',
-                            zIndex: 5,
-                            position: 'relative'
-                          }}>
-                            {student.photo ? (
-                              <img src={student.photo} alt={student.name} style={{ width: '88px', height: '98px', borderRadius: '12px', objectFit: 'cover', border: '3px solid #ffffff', boxShadow: '0 5px 14px rgba(0,0,0,0.20)', background: '#ffffff' }} />
-                            ) : (
-                              <div style={{ width: '88px', height: '98px', borderRadius: '12px', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #ffffff', boxShadow: '0 5px 14px rgba(0,0,0,0.20)', fontSize: '1.8rem', color: '#ffffff', fontWeight: 900 }}>
-                                {getInitials(student.name)}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div style={{ padding: '0 10px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '3px' }}>
-                            <div>
-                              <h3 style={{ margin: '1px 0 1px 0', fontSize: '0.90rem', color: '#0f172a', fontWeight: 900, lineHeight: 1.25 }}>{student.name}</h3>
-                              <div style={{ margin: '0 0 2px 0' }}>
-                                <span style={{ fontSize: '0.62rem', color: '#1d4ed8', fontWeight: 800, background: 'rgba(37, 99, 235, 0.10)', border: '1px solid rgba(37, 99, 235, 0.22)', padding: '1px 8px', borderRadius: '10px', display: 'inline-block' }}>
-                                  Course: {batches?.find(b => b.id === student.batch)?.name || student.batch || 'General'}
-                                </span>
-                              </div>
-                              
-                              <div style={{ textAlign: 'left', fontSize: '0.62rem', color: '#0f172a', lineHeight: '1.40', background: 'rgba(255,255,255,0.95)', padding: '4px 8px', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}><strong style={{ minWidth: '48px', color: '#475569' }}>Roll No:</strong> <span style={{ fontWeight: 900, color: '#1e3a8a' }}>{student.rollNo || '—'}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}><strong style={{ minWidth: '48px', color: '#475569' }}>Parent:</strong> <span style={{ fontWeight: 600, textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{student.parentName || 'N/A'}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', marginBottom: '1px' }}><strong style={{ minWidth: '48px', color: '#475569' }}>Contact:</strong> <span style={{ fontWeight: 700, textAlign: 'right', flex: 1 }}>{student.parentPhone}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}><strong style={{ minWidth: '48px', color: '#475569' }}>Address:</strong> <span style={{ textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{student.address || 'N/A'}</span></div>
-                              </div>
-                            </div>
-                            
-                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '2px 0 1px' }}>
-                              <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: '#ffffff',
-                                padding: '3px',
-                                borderRadius: '8px',
-                                border: '2px solid #93c5fd',
-                                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.12)'
-                              }}>
-                                <QRCodeSVG value={String(student.rollNo || '')} size={64} level="M" />
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', padding: '4px', textAlign: 'center', fontSize: '0.60rem', color: '#fff', fontWeight: '800', letterSpacing: '0.5px' }}>
-                            STUDENT ID: {student.id}
-                          </div>
-                        </div>
+                        <StudentIdCard student={student} side="front" batches={batches} />
                       </div>
 
                       {/* BACK SIDE */}
                       <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textAlign: 'center' }}>
-                          📜 BACK SIDE (Terms & Conditions)
+                        <div className="no-print" style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textAlign: 'center' }}>
+                          📜 BACK SIDE (Terms &amp; Conditions)
                         </div>
-                        <div className="print-id-card" style={{ 
-                          width: '235px', 
-                          height: '375px', 
-                          boxSizing: 'border-box',
-                          background: '#ffffff', 
-                          borderRadius: '12px', 
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.15)', 
-                          overflow: 'hidden', 
-                          display: 'flex', 
-                          flexDirection: 'column', 
-                          justifyContent: 'space-between', 
-                          border: '1.5px solid #bfdbfe',
-                          position: 'relative',
-                          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-                        }}>
-                          {/* Header */}
-                          <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', padding: '5px 8px', textAlign: 'center', color: '#fff' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.4px' }}>Terms & Conditions</h4>
-                            <span style={{ fontSize: '0.48rem', opacity: 0.9 }}>Career Xone Rules & Regulations</span>
-                          </div>
-
-                          {/* Rules Body */}
-                          <div style={{ padding: '6px 8px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <ul style={{ 
-                              margin: 0, 
-                              paddingLeft: 0, 
-                              listStyle: 'none', 
-                              fontSize: '0.49rem', 
-                              color: '#1e293b', 
-                              lineHeight: '1.24', 
-                              display: 'flex', 
-                              flexDirection: 'column', 
-                              gap: '3px', 
-                              textAlign: 'left' 
-                            }}>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Students must carry their ID card daily and produce it upon demand.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Ensure the ID card is renewed before the expiry date.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Arrive on time; prior parental permission is required to leave early.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>All students must wear the prescribed uniform with shoes.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Students must maintain discipline, decency, and decorum on campus.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Any student guilty of misconduct or indiscipline is liable to be rusticated.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Use or possession of mobile phones is strictly prohibited inside campus.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>A fee of ₹200/- will be charged for issuing a duplicate card if lost or damaged.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>If found outside premises, please return it to the institute reception.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Any disruptive activity harming academic reputation will face strict action.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>All immoral, antisocial, or communal activities are strictly prohibited.</span>
-                              </li>
-                              <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-                                <span style={{ color: '#2563eb', fontSize: '0.45rem', marginTop: '1px' }}>◆</span>
-                                <span>Applicable charges apply for course/batch changes after admission.</span>
-                              </li>
-                            </ul>
-
-                            {/* Emergency & Address Box */}
-                            <div style={{ 
-                              background: '#f0f9ff', 
-                              border: '1px solid #bae6fd', 
-                              borderRadius: '6px', 
-                              padding: '3px 6px', 
-                              fontSize: '0.48rem', 
-                              color: '#0369a1', 
-                              textAlign: 'center', 
-                              lineHeight: '1.2',
-                              marginTop: '2px'
-                            }}>
-                              <strong>Reception:</strong> 9673383561 / 9145481323 | Gondia (MH)
-                            </div>
-                          </div>
-
-                          {/* Footer */}
-                          <div style={{ background: '#1e3a8a', padding: '4px', textAlign: 'center', fontSize: '0.52rem', color: '#fff', fontWeight: 700, letterSpacing: '0.5px' }}>
-                            CAREER XONE • से सब संभव है
-                          </div>
-                        </div>
+                        <StudentIdCard student={student} side="back" batches={batches} />
                       </div>
                     </div>
                     
                     <button 
-                      className="btn btn-primary" 
+                      className="btn btn-primary no-print" 
                       onClick={() => window.print()}
                       style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}
                     >
-                      <Printer size={16} /> Print Both Sides (Front & Back)
+                      <Printer size={16} /> Print Both Sides (Front &amp; Back)
                     </button>
+
+                    <style>{`
+                      @media print {
+                        body * {
+                          visibility: hidden !important;
+                        }
+                        .print-id-container, .print-id-container * {
+                          visibility: visible !important;
+                        }
+                        .print-id-container {
+                          position: fixed !important;
+                          left: 0 !important;
+                          top: 0 !important;
+                          width: 100% !important;
+                          margin: 0 !important;
+                          padding: 20px !important;
+                          display: flex !important;
+                          justify-content: center !important;
+                          align-items: flex-start !important;
+                          gap: 30px !important;
+                          background: #ffffff !important;
+                          box-shadow: none !important;
+                        }
+                      }
+                    `}</style>
                   </motion.div>
                 )}
               </AnimatePresence>

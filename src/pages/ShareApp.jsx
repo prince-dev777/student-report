@@ -91,8 +91,8 @@ export default function ShareApp() {
   }, []);
 
   const baseDomain = "https://studentreport.cxjeeneet.com";
-  const parentAppLink = "https://studentreport.cxjeeneet.com/?app=parent#/parent";
-  const teacherWebLink = "https://studentreport.cxjeeneet.com/?app=teacher#/teacher";
+  const parentAppLink = "https://studentreport.cxjeeneet.com/parent";
+  const teacherWebLink = "https://studentreport.cxjeeneet.com/teacher";
   const inquiryWebLink = "https://studentreport.cxjeeneet.com/inquiry?app=inquiry#/inquiry";
   const staffWebLink = "https://studentreport.cxjeeneet.com/staff?app=staff#/staff";
 

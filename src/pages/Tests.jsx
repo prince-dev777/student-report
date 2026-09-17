@@ -99,11 +99,93 @@ export default function Tests() {
     if (toggleAppCardTheme) {
       toggleAppCardTheme(theme);
     }
-    try {
-      localStorage.setItem('tests_create_card_theme', theme);
-      localStorage.setItem('app_card_theme', theme);
-    } catch (e) {}
   };
+
+  // 🎚️ Leaderboard Horizontal Slider & Drag Pan Controls
+  const leaderboardTableRef = React.useRef(null);
+  const [leaderboardScrollRatio, setLeaderboardScrollRatio] = useState(0);
+  const isDraggingLeaderboard = React.useRef(false);
+  const dragStartX = React.useRef(0);
+  const dragScrollStart = React.useRef(0);
+
+  const updateLeaderboardScrollRatio = React.useCallback(() => {
+    const el = leaderboardTableRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll > 2) {
+      const ratio = Math.min(100, Math.max(0, Math.round((el.scrollLeft / maxScroll) * 100)));
+      setLeaderboardScrollRatio(ratio);
+    } else {
+      setLeaderboardScrollRatio(0);
+    }
+  }, []);
+
+  const handleLeaderboardSliderChange = (e) => {
+    const newRatio = Number(e.target.value);
+    setLeaderboardScrollRatio(newRatio);
+    const el = leaderboardTableRef.current;
+    if (el) {
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      el.scrollLeft = (newRatio / 100) * maxScroll;
+    }
+  };
+
+  const handleLeaderboardSlideStep = (direction) => {
+    const el = leaderboardTableRef.current;
+    if (!el) return;
+    const step = Math.max(220, Math.round(el.clientWidth * 0.35));
+    el.scrollBy({ left: direction === 'left' ? -step : step, behavior: 'smooth' });
+  };
+
+  const handleLeaderboardJump = (position) => {
+    const el = leaderboardTableRef.current;
+    if (!el) return;
+    el.scrollTo({ left: position === 'start' ? 0 : el.scrollWidth, behavior: 'smooth' });
+  };
+
+  const handleTableMouseDown = (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('button, a, input, select, label')) return;
+    const el = leaderboardTableRef.current;
+    if (!el) return;
+    isDraggingLeaderboard.current = true;
+    dragStartX.current = e.pageX;
+    dragScrollStart.current = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+    el.style.userSelect = 'none';
+  };
+
+  const handleTableMouseMove = (e) => {
+    if (!isDraggingLeaderboard.current) return;
+    e.preventDefault();
+    const el = leaderboardTableRef.current;
+    if (!el) return;
+    const deltaX = (e.pageX - dragStartX.current) * 1.4;
+    el.scrollLeft = dragScrollStart.current - deltaX;
+  };
+
+  const handleTableMouseUpOrLeave = () => {
+    if (!isDraggingLeaderboard.current) return;
+    isDraggingLeaderboard.current = false;
+    const el = leaderboardTableRef.current;
+    if (el) {
+      el.style.cursor = 'grab';
+      el.style.removeProperty('user-select');
+    }
+  };
+
+  React.useEffect(() => {
+    if (showResultsModal && selectedTestResults) {
+      const timer = setTimeout(() => {
+        updateLeaderboardScrollRatio();
+      }, 120);
+      window.addEventListener('resize', updateLeaderboardScrollRatio);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', updateLeaderboardScrollRatio);
+      };
+    }
+  }, [showResultsModal, selectedTestResults, updateLeaderboardScrollRatio]);
 
   // For Create Test form (Answer Key input removed as it is now moved to Enter Marks page)
   const [testForm, setTestForm] = useState({
@@ -4725,23 +4807,185 @@ export default function Tests() {
                 <X size={18} />
               </button>
             </div>
-            <div className="modal-body" style={{ flex: '1 1 auto', overflowY: 'auto', minHeight: 0, padding: '16px 24px' }}>
-              <div className="table-container" style={{ maxHeight: 'calc(90vh - 140px)', overflowY: 'auto' }}>
-                <table className="data-table">
-                  <thead>
+            <div className="modal-body" style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', padding: '12px 24px 16px' }}>
+              {/* 🎚️ Top Horizontal Slider & Navigation Bar */}
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  padding: '8px 14px',
+                  background: 'linear-gradient(90deg, #eff6ff 0%, #ffffff 50%, #f0fdf4 100%)',
+                  border: '1.5px solid #bfdbfe',
+                  borderRadius: '10px',
+                  marginBottom: '10px',
+                  flexShrink: 0,
+                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)'
+                }}
+              >
+                {/* Left Controls: Jump to Start & Slide Left */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleLeaderboardJump('start')}
+                    disabled={leaderboardScrollRatio <= 0}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '5px 9px',
+                      borderRadius: '6px',
+                      border: '1px solid #cbd5e1',
+                      background: leaderboardScrollRatio <= 0 ? '#f1f5f9' : '#ffffff',
+                      color: leaderboardScrollRatio <= 0 ? '#94a3b8' : '#1e3a8a',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      cursor: leaderboardScrollRatio <= 0 ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Jump to Student & Rank (Leftmost)"
+                  >
+                    ⏮️ Start
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLeaderboardSlideStep('left')}
+                    disabled={leaderboardScrollRatio <= 0}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '5px 11px',
+                      borderRadius: '6px',
+                      border: '1px solid #cbd5e1',
+                      background: leaderboardScrollRatio <= 0 ? '#f1f5f9' : '#ffffff',
+                      color: leaderboardScrollRatio <= 0 ? '#94a3b8' : '#2563eb',
+                      fontSize: '0.76rem',
+                      fontWeight: 800,
+                      cursor: leaderboardScrollRatio <= 0 ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Slide table left"
+                  >
+                    <ChevronLeft size={16} /> Slide Left
+                  </button>
+                </div>
+
+                {/* Center: Real-time Range Slider */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, maxWidth: '540px', margin: '0 8px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>
+                    👤 Student Info
+                  </span>
+
+                  <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={leaderboardScrollRatio}
+                      onChange={handleLeaderboardSliderChange}
+                      className="leaderboard-range-slider"
+                      style={{
+                        width: '100%',
+                        height: '7px',
+                        borderRadius: '6px',
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        background: `linear-gradient(to right, #2563eb ${leaderboardScrollRatio}%, #cbd5e1 ${leaderboardScrollRatio}%)`,
+                        outline: 'none',
+                        cursor: 'ew-resize',
+                        margin: 0
+                      }}
+                      title="Drag slider left/right to view all columns"
+                    />
+                  </div>
+
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>
+                    OMR &amp; Results 📄
+                  </span>
+                </div>
+
+                {/* Right Controls: Slide Right & Jump to End */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleLeaderboardSlideStep('right')}
+                    disabled={leaderboardScrollRatio >= 100}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '5px 11px',
+                      borderRadius: '6px',
+                      border: '1px solid #cbd5e1',
+                      background: leaderboardScrollRatio >= 100 ? '#f1f5f9' : '#ffffff',
+                      color: leaderboardScrollRatio >= 100 ? '#94a3b8' : '#2563eb',
+                      fontSize: '0.76rem',
+                      fontWeight: 800,
+                      cursor: leaderboardScrollRatio >= 100 ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Slide table right"
+                  >
+                    Slide Right <ChevronRight size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLeaderboardJump('end')}
+                    disabled={leaderboardScrollRatio >= 100}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '5px 9px',
+                      borderRadius: '6px',
+                      border: '1px solid #cbd5e1',
+                      background: leaderboardScrollRatio >= 100 ? '#f1f5f9' : '#ffffff',
+                      color: leaderboardScrollRatio >= 100 ? '#94a3b8' : '#1e3a8a',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      cursor: leaderboardScrollRatio >= 100 ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Jump to OMR Sheet & Results (Rightmost)"
+                  >
+                    OMRs ⏭️
+                  </button>
+                </div>
+              </div>
+
+              {/* Scrollable Table Container */}
+              <div 
+                ref={leaderboardTableRef}
+                onScroll={updateLeaderboardScrollRatio}
+                onMouseDown={handleTableMouseDown}
+                onMouseMove={handleTableMouseMove}
+                onMouseUp={handleTableMouseUpOrLeave}
+                onMouseLeave={handleTableMouseUpOrLeave}
+                className="table-container" 
+                style={{ 
+                  flex: 1, 
+                  overflow: 'auto', 
+                  minHeight: 0,
+                  cursor: isDraggingLeaderboard.current ? 'grabbing' : 'grab'
+                }}
+              >
+                <table className="data-table" style={{ minWidth: '1080px' }}>
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                     <tr>
-                      <th style={{ width: '80px' }}>Rank</th>
-                      <th>Roll No</th>
-                      <th>Student</th>
+                      <th style={{ width: '80px', position: 'sticky', top: 0, background: '#f1f6fd', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>Rank</th>
+                      <th style={{ position: 'sticky', top: 0, background: '#f1f6fd', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>Roll No</th>
+                      <th style={{ position: 'sticky', top: 0, background: '#f1f6fd', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>Student</th>
                       {selectedTestResults.test.subjectMapping?.length > 0 && 
                         selectedTestResults.test.subjectMapping.map((m, i) => (
-                          <th key={i}>{m.subject}</th>
+                          <th key={i} style={{ position: 'sticky', top: 0, background: '#f1f6fd', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>{m.subject}</th>
                         ))
                       }
-                      <th style={{ width: '120px' }}>Total Marks</th>
-                      <th>Percentage</th>
-                      <th>Percentile</th>
-                      <th>OMR Sheet</th>
+                      <th style={{ width: '120px', position: 'sticky', top: 0, background: '#f1f6fd', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>Total Marks</th>
+                      <th style={{ position: 'sticky', top: 0, background: '#f1f6fd', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>Percentage</th>
+                      <th style={{ position: 'sticky', top: 0, background: '#f1f6fd', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>Percentile</th>
+                      <th style={{ position: 'sticky', top: 0, background: '#f1f6fd', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>OMR Sheet</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4865,6 +5109,33 @@ export default function Tests() {
                   </tbody>
                 </table>
               </div>
+              <style>{`
+                .leaderboard-range-slider::-webkit-slider-thumb {
+                  -webkit-appearance: none;
+                  appearance: none;
+                  width: 18px;
+                  height: 18px;
+                  border-radius: 50%;
+                  background: #2563eb;
+                  border: 2.5px solid #ffffff;
+                  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.45);
+                  cursor: ew-resize;
+                  transition: transform 0.1s ease;
+                }
+                .leaderboard-range-slider::-webkit-slider-thumb:hover {
+                  transform: scale(1.25);
+                  background: #1d4ed8;
+                }
+                .leaderboard-range-slider::-moz-range-thumb {
+                  width: 18px;
+                  height: 18px;
+                  border-radius: 50%;
+                  background: #2563eb;
+                  border: 2.5px solid #ffffff;
+                  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.45);
+                  cursor: ew-resize;
+                }
+              `}</style>
             </div>
             <div className="modal-footer" style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px' }}>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
