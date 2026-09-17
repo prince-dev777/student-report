@@ -45,7 +45,24 @@ function copyBuildToPendrive() {
     return { success: false, reason: 'dist-electron-v2 not found' };
   }
 
-  const files = fs.readdirSync(distDir);
+  let files = fs.readdirSync(distDir);
+  const spaceExe = files.find(f => f.startsWith('Career Xone Pro Setup') && f.endsWith('.exe'));
+  if (spaceExe) {
+    const hyphenExe = spaceExe.replace(/ /g, '-');
+    try {
+      fs.renameSync(path.join(distDir, spaceExe), path.join(distDir, hyphenExe));
+      console.log(`🔄 Auto-renamed: "${spaceExe}" -> "${hyphenExe}"`);
+      const spaceBlockmap = files.find(f => f.startsWith('Career Xone Pro Setup') && f.endsWith('.blockmap'));
+      if (spaceBlockmap) {
+        fs.renameSync(path.join(distDir, spaceBlockmap), path.join(distDir, spaceBlockmap.replace(/ /g, '-')));
+        console.log(`🔄 Auto-renamed: "${spaceBlockmap}" -> "${spaceBlockmap.replace(/ /g, '-')}"`);
+      }
+      files = fs.readdirSync(distDir);
+    } catch (renameErr) {
+      console.warn('Auto-rename warning:', renameErr.message);
+    }
+  }
+
   const exeFile = files.find(f => f.startsWith('Career-Xone-Pro-Setup-') && f.endsWith('.exe'));
 
   if (!exeFile) {

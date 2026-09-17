@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Career Xone — Student ID Card (PRO REFINED v3)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background: #0b1120;
+      color: #f1f5f9;
+      min-height: 100vh;
+      padding: 30px 20px 60px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header.page-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .badge-pill {
+      display: inline-block;
+      padding: 5px 16px;
+      border-radius: 99px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    p.subtitle {
+      color: #94a3b8;
+      font-size: 0.98rem;
+      max-width: 760px;
+      margin: 0 auto 24px;
+      line-height: 1.5;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 36px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ctrl-label {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-toggle {
+      background: #0f172a;
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-toggle:hover {
+      background: #334155;
+      color: #ffffff;
+    }
+
+    .btn-toggle.active {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-print {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-print:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
+    }
+
+    /* Side-by-Side Showcase */
+    .showcase-grid {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .card-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .column-header {
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      padding: 6px 16px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      background: rgba(37, 99, 235, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      color: #60a5fa;
+    }
+
+    .column-header.back-header {
+      background: rgba(168, 85, 247, 0.2);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      color: #c084fc;
+    }
+
+    /* ==========================================================================
+       ID CARD BASE STYLING (260px x 390px - STANDARD PVC ID CARD)
+       ========================================================================== */
+    .id-card-wrapper {
+      width: 260px;
+      height: 390px;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+      border: 2px solid #2563eb;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      background: #ffffff;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .id-card-wrapper:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+    }
+
+    /* --------------------------------------------------
+       FRONT SIDE: PRO REFINED v3
+       -------------------------------------------------- */
+    .top-banner-pro {
+      width: 100%;
+      height: 78px; /* Extra spacious for huge brand logo */
+      background: #ffffff;
+      border-bottom: 2px solid #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      position: relative;
+    }
+
+    .top-banner-pro img {
+      max-height:111%;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .photo-wrap-pro {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 2px;
+      position: relative;
+    }
+
+    /* Centered Avatar Box with Balanced Letter Spacing */
+    .avatar-box-pro {
+      width: 78px;
+      height: 82px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border: 2px solid #f59e0b;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      color: #ffffff;
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-indent: 2px; /* 100% mathematically centered */
+      line-height: 1;
+    }
+
+    .avatar-img-pro {
+      width: 78px;
+      height: 82px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 2px solid #f59e0b;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      background: #ffffff;
+    }
+
+    .roll-pill {
+      background: #f59e0b;
+      color: #0f172a;
+      font-size: 0.48rem;
+      font-weight: 900;
+      padding: 1.5px 9px;
+      border-radius: 99px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.20);
+      margin-top: -7px;
+      z-index: 5;
+      letter-spacing: 0.5px;
+    }
+
+    /* Details Area */
+    .card-body {
+      padding: 0 10px;
+      text-align: center;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .student-name {
+      margin: 2px 0 1px;
+      font-size: 0.88rem;
+      color: #0f172a;
+      font-weight: 900;
+      line-height: 1.15;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+
+    /* Clean Badge without Star Emoji */
+    .batch-badge {
+      display: inline-block;
+      background: linear-gradient(90deg, #1e3a8a, #2563eb);
+      color: #ffffff;
+      font-size: 0.54rem;
+      font-weight: 800;
+      padding: 2px 10px;
+      border-radius: 4px;
+      margin: 1px 0 2px;
+      letter-spacing: 0.4px;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+    }
+
+    /* Info Table Box (3 Essential Rows Only) */
+    .info-table-pro {
+      background: #f8fafc;
+      border-radius: 6px;
+      border: 1px solid #bfdbfe;
+      padding: 3px 6px;
+      text-align: left;
+      font-size: 0.60rem;
+      color: #0f172a;
+      line-height: 1.34;
+      box-shadow: 0 1px 4px rgba(37, 99, 235, 0.06);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      padding: 1.5px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-row strong {
+      color: #475569;
+      font-weight: 700;
+      min-width: 60px;
+      flex-shrink: 0;
+    }
+
+    .info-row span {
+      font-weight: 700;
+      text-align: right;
+      flex: 1;
+      word-break: break-word;
+    }
+
+    .info-row .highlight-id {
+      color: #2563eb;
+      font-weight: 900;
+      font-family: monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.5px;
+    }
+
+    /* HUGE QR Code Container */
+    .qr-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 1px 0 2px;
+    }
+
+    .qr-box {
+      background: #ffffff;
+      padding: 2.5px;
+      border-radius: 6px;
+      border: 1.5px solid #93c5fd;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+      display: inline-flex;
+    }
+
+    /* Footer Ribbon (100% Dead Centered) */
+    .footer-ribbon-pro {
+      box-sizing: border-box;
+      height: 25px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 8px;
+      font-size: 0.62rem;
+      line-height: 1;
+      color: #ffffff;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+      border-top: 1.5px solid #f59e0b;
+    }
+
+    /* --------------------------------------------------
+       BACK SIDE: RULES & FOOTER
+       -------------------------------------------------- */
+    .card-back {
+      border: 2px solid #2563eb;
+      background: #ffffff;
+    }
+
+    .back-header-strip {
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      padding: 7px 10px;
+      text-align: center;
+      color: #ffffff;
+      border-bottom: 2px solid #f59e0b;
+    }
+
+    .back-header-strip h4 {
+      font-size: 0.82rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+
+    .back-header-strip p {
+      font-size: 0.50rem;
+      opacity: 0.9;
+      margin-top: 1px;
+    }
+
+    .back-body {
+      padding: 8px 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .rules-list {
+      list-style: none;
+      font-size: 0.52rem;
+      color: #1e293b;
+      line-height: 1.34;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      text-align: left;
+    }
+
+    .rules-list li {
+      display: flex;
+      gap: 4px;
+      align-items: flex-start;
+    }
+
+    .rules-list li span.dot {
+      color: #2563eb;
+      font-size: 0.45rem;
+      margin-top: 1px;
+    }
+
+    .back-footer-box {
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 6px;
+      margin-top: 4px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .institute-contact {
+      text-align: center;
+      font-size: 0.51rem;
+      color: #334155;
+      font-weight: 600;
+      line-height: 1.4;
+      width: 100%;
+    }
+
+    /* Explanation Callout */
+    .feature-list {
+      background: #1e293b;
+      border-radius: 14px;
+      padding: 24px;
+      margin-top: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .feature-list h3 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: 14px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .feature-item {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 14px 18px;
+      border-radius: 10px;
+      border-left: 4px solid #3b82f6;
+    }
+
+    .feature-item h4 {
+      font-size: 0.90rem;
+      color: #f1f5f9;
+      margin-bottom: 5px;
+    }
+
+    .feature-item p {
+      font-size: 0.80rem;
+      color: #94a3b8;
+      line-height: 1.45;
+    }
+
+    /* Print View */
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .controls-bar, .column-header, header.page-header, .feature-list {
+        display: none !important;
+      }
+      .showcase-grid {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+      }
+      .id-card-wrapper {
+        box-shadow: none;
+        page-break-inside: avoid;
+        margin: 20px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header class="page-header">
+      <div class="badge-pill">💎 PRO REFINED v3 (ALL AUDIO FEEDBACK APPLIED)</div>
+      <h1>Career Xone — Student ID Card (PRO REFINED v3)</h1>
+      <p class="subtitle">
+        1. Footer tagline 100% center aligned. 2. Logo aur bhi bada (68px). 3. Front se Session hataya. 4. QR Code bohot bada (80px). 5. Back side se signature hataya. 6. Back footer me bhi official tagline set!
+      </p>
+    </header>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <div class="controls-group">
+        <span class="ctrl-label">👤 Student Data:</span>
+        <button id="btnShreya" class="btn-toggle active" onclick="setStudent('shreya')">
+          Shreya Mandhata (Initial Avatar SM)
+        </button>
+        <button id="btnAryan" class="btn-toggle" onclick="setStudent('aryan')">
+          Aryan Sharma (Real Photo)
+        </button>
+      </div>
+
+      <div>
+        <button class="btn-print" onclick="window.print()">🖨️ Test Print / Save PDF</button>
+      </div>
+    </div>
+
+    <!-- Live Front & Back Showcase Grid -->
+    <div class="showcase-grid">
+
+      <!-- ================================================================
+           SIDE 1: FRONT SIDE (PRO REFINED v3)
+           ================================================================ -->
+      <div class="card-column">
+        <div class="column-header">
+          🪪 FRONT SIDE (PRO REFINED v3)
+        </div>
+
+        <div class="id-card-wrapper">
+          <!-- Top Banner with Huge Logo -->
+          <div class="top-banner-pro">
+            <img src="id-logo.png" alt="Career Xone" />
+          </div>
+
+          <!-- Photo with Centered Initials & Gold Roll Pill -->
+          <div class="photo-wrap-pro">
+            <div id="proAvatarBox" class="avatar-box-pro">SM</div>
+            <img id="proAvatarImg" class="avatar-img-pro" src="" alt="Student" style="display: none;" />
+            <div class="roll-pill" id="proRollPill">ROLL: 4839</div>
+          </div>
+
+          <!-- Body -->
+          <div class="card-body">
+            <div>
+              <h3 id="proStudentName" class="student-name">SHREYA MANDHATA</h3>
+              
+              <!-- Clean Batch Badge -->
+              <div id="proStudentCourse" class="batch-badge">
+                JEE REPEATER ( 2026-27 )
+              </div>
+
+              <!-- Info Table (3 Essential Rows Only: No Duplicate Roll No, No Blood Group, No Session) -->
+              <div class="info-table-pro">
+                <div class="info-row">
+                  <strong>Student ID:</strong>
+                  <span id="proStudentId" class="highlight-id">STUMTBAT47IH4WV</span>
+                </div>
+                <div class="info-row">
+                  <strong>Parent:</strong>
+                  <span id="proParent">Santosh Mandhata</span>
+                </div>
+                <div class="info-row">
+                  <strong>Contact:</strong>
+                  <span id="proContact">7225880949</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- HUGE Scannable QR (80px) -->
+            <div class="qr-container">
+              <div class="qr-box" id="proQrBox"></div>
+            </div>
+          </div>
+
+          <!-- Footer Ribbon (100% Dead Centered) -->
+          <div class="footer-ribbon-pro">
+            CAREER XONE • से सब संभव है
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================
+           SIDE 2: BACK SIDE (TERMS & REGULATIONS)
+           ================================================================ -->
+      <div class="card-column">
+        <div class="column-header back-header">
+          📜 BACK SIDE (Rules &amp; Regulations)
+        </div>
+
+        <div class="id-card-wrapper card-back">
+          <!-- Back Header Ribbon -->
+          <div class="back-header-strip">
+            <h4>TERMS &amp; CONDITIONS</h4>
+            <p>Career Xone Rules &amp; Regulations</p>
+          </div>
+
+          <!-- Back Rules Body -->
+          <div class="back-body">
+            <ul class="rules-list">
+              <li>
+                <span class="dot">◆</span>
+                <span>Students must carry their ID card daily and produce it upon demand.</span>
+              </li>
+              <li>
+                <span class="dot">◆</span>
+                <span>Students must ensure their ID card is renewed before its expiry date.</span>
+              </li>
+              <li>
+                <span class="dot">◆</span>
+                <span>Students must arrive on time; prior parental permission is required for early departure.</span>
+              </li>
+              <li>
+                <span class="dot">◆</span>
+                <span>All students must wear the prescribed uniform.</span>
+              </li>
+              <li>
+                <span class="dot">◆</span>
+                <span>Students must maintain discipline, decency, and decorum on campus.</span>
+              </li>
+              <li>
+                <span class="dot">◆</span>
+                <span>Misconduct or indiscipline may result in immediate rustication.</span>
+              </li>
+              <li>
+                <span class="dot">◆</span>
+                <span>The use or possession of mobile phones is strictly prohibited on campus.</span>
+              </li>
+              <li>
+                <span class="dot">◆</span>
+                <span>A fee of ₹200 will be charged for issuing a duplicate ID card in case of loss.</span>
+              </li>
+              <li>
+                <span class="dot">◆</span>
+                <span>If found, please return this ID card to Career Xone reception.</span>
+              </li>
+            </ul>
+
+            <!-- Bottom Contact (Without Signature Box) -->
+            <div class="back-footer-box">
+              <div class="institute-contact">
+                Hadditoli Road, Near Ananya Hospital, Gondia, MH - 441601<br/>
+                Mob: +91 96733 83561 / 91454 81323 • Email: cxjeeneet@gmail.com
+              </div>
+            </div>
+          </div>
+
+          <!-- Back Footer Strip (With Brand Motto Tagline!) -->
+          <div class="footer-ribbon-pro">
+            CAREER XONE • से सब संभव है
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Final Polish Highlights -->
+    <div class="feature-list">
+      <h3>🔍 Audio Feedback Ke Sabhi Sudhar:</h3>
+      <div class="feature-grid">
+        <div class="feature-item">
+          <h4>1. Footer Tagline 100% Centered</h4>
+          <p>CSS ka flex centering bug theek kiya — ab "CAREER XONE • से सब संभव है" bilkul dead-center me align hai.</p>
+        </div>
+        <div class="feature-item">
+          <h4>2. Brand Logo Aur Bada (68px)</h4>
+          <p>Top banner me Career Xone ka brand logo ab bada, proud aur bold look me shine kar raha hai.</p>
+        </div>
+        <div class="feature-item">
+          <h4>3. Front Se Session Hataya</h4>
+          <p>Front table se unwanted "Session" field hata di gayi hai — ab sirf 3 essential fields hain: ID, Parent, Contact.</p>
+        </div>
+        <div class="feature-item">
+          <h4>4. QR Code Bohot Bada (80px)</h4>
+          <p>Session hatne se mili jagah ka faayda utha kar QR code ko 80px tak bada kar diya hai jo super fast scan hoga.</p>
+        </div>
+        <div class="feature-item">
+          <h4>5. Signature Box Removed</h4>
+          <p>Back side se unwanted "Auth Signatory" hata diya gaya hai aur contact details ko clean centered layout diya hai.</p>
+        </div>
+        <div class="feature-item">
+          <h4>6. Back Footer Me Bhi Motto</h4>
+          <p>Back side footer me "VALID FOR ACADEMIC SESSION" hata kar wahan bhi "CAREER XONE • से सब संभव है" set kar diya gaya hai.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const sampleStudents = {
+      shreya: {
+        name: 'SHREYA MANDHATA',
+        course: 'JEE REPEATER ( 2026-27 )',
+        rollNo: '4839',
+        studentId: 'STUMTBAT47IH4WV',
+        parent: 'Santosh Mandhata',
+        contact: '7225880949',
+        initials: 'SM',
+        photo: null
+      },
+      aryan: {
+        name: 'ARYAN SHARMA',
+        course: 'NEET TARGET ( 2026-27 )',
+        rollNo: '1042',
+        studentId: 'STUMTNEET9882XY',
+        parent: 'Rajesh Sharma',
+        contact: '9822345678',
+        initials: 'AS',
+        photo: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80'
+      }
+    };
+
+    let currentStudent = 'shreya';
+
+    function updateStudentData() {
+      const s = sampleStudents[currentStudent];
+
+      document.getElementById('proStudentName').textContent = s.name;
+      document.getElementById('proStudentCourse').textContent = s.course;
+      document.getElementById('proRollPill').textContent = 'ROLL: ' + s.rollNo;
+      document.getElementById('proStudentId').textContent = s.studentId;
+      document.getElementById('proParent').textContent = s.parent || '—';
+      document.getElementById('proContact').textContent = s.contact || '—';
+
+      if (s.photo) {
+        document.getElementById('proAvatarBox').style.display = 'none';
+        document.getElementById('proAvatarImg').style.display = 'block';
+        document.getElementById('proAvatarImg').src = s.photo;
+      } else {
+        document.getElementById('proAvatarBox').style.display = 'flex';
+        document.getElementById('proAvatarBox').textContent = s.initials;
+        document.getElementById('proAvatarImg').style.display = 'none';
+      }
+
+      const proBox = document.getElementById('proQrBox');
+      proBox.innerHTML = '';
+      new QRCode(proBox, {
+        text: String(s.rollNo),
+        width: 80,
+        height: 80,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function setStudent(key) {
+      currentStudent = key;
+      document.getElementById('btnShreya').classList.toggle('active', key === 'shreya');
+      document.getElementById('btnAryan').classList.toggle('active', key === 'aryan');
+      updateStudentData();
+    }
+
+    // Initial render
+    window.addEventListener('DOMContentLoaded', () => {
+      updateStudentData();
+    });
+  </script>
+</body>
+</html>
