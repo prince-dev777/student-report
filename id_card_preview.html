@@ -71,7 +71,7 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      justifyContent: space-between;
+      justify-content: space-between;
       gap: 16px;
       margin-bottom: 36px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.3);
@@ -207,7 +207,7 @@
     }
 
     .top-banner-pro img {
-      max-height: 111%;
+      max-height:111%;
       width: auto;
       object-fit: contain;
     }
@@ -228,7 +228,7 @@
       background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
       display: flex;
       align-items: center;
-      justifyContent: center;
+      justify-content: center;
       text-align: center;
       border: 2px solid #f59e0b;
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
@@ -284,15 +284,22 @@
     }
 
     /* Clean Badge without Star Emoji */
+    .batch-badge-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 3px 0 6px;
+      width: 100%;
+    }
+
     .batch-badge {
       display: inline-block;
       background: linear-gradient(90deg, #1e3a8a, #2563eb);
       color: #ffffff;
       font-size: 0.54rem;
       font-weight: 800;
-      padding: 2px 10px;
+      padding: 2.5px 12px;
       border-radius: 4px;
-      margin: 1px 0 2px;
       letter-spacing: 0.4px;
       box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
     }
@@ -361,24 +368,29 @@
       display: inline-flex;
     }
 
-    /* Footer Ribbon (100% Dead Centered) */
+    /* Footer Ribbon (100% Dead Centered & Lifted Upwards) */
     .footer-ribbon-pro {
       box-sizing: border-box;
-      height: 25px;
+      height: 28px;
       width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 0 8px;
+      padding: 0 8px 3px;
       font-size: 0.62rem;
-      line-height: 1;
+      line-height: 1.2;
       color: #ffffff;
       font-weight: 800;
       letter-spacing: 0.5px;
       flex-shrink: 0;
       background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
       border-top: 1.5px solid #f59e0b;
+    }
+
+    .footer-ribbon-pro span {
+      display: inline-block;
+      transform: translateY(-1.5px);
     }
 
     /* --------------------------------------------------
@@ -580,8 +592,10 @@
               <h3 id="proStudentName" class="student-name">SHREYA MANDHATA</h3>
               
               <!-- Clean Batch Badge -->
-              <div id="proStudentCourse" class="batch-badge">
-                JEE REPEATER ( 2026-27 )
+              <div class="batch-badge-wrap">
+                <div id="proStudentCourse" class="batch-badge">
+                  JEE REPEATER ( 2026-27 )
+                </div>
               </div>
 
               <!-- Info Table (3 Essential Rows Only: No Duplicate Roll No, No Blood Group, No Session) -->
@@ -609,7 +623,7 @@
 
           <!-- Footer Ribbon (100% Dead Centered) -->
           <div class="footer-ribbon-pro">
-            CAREER XONE • से सब संभव है
+            <span>CAREER XONE • सब संभव है</span>
           </div>
         </div>
       </div>
@@ -681,7 +695,7 @@
 
           <!-- Back Footer Strip (With Brand Motto Tagline!) -->
           <div class="footer-ribbon-pro">
-            CAREER XONE • से सब संभव है
+            <span>CAREER XONE • सब संभव है</span>
           </div>
         </div>
       </div>
@@ -694,7 +708,7 @@
       <div class="feature-grid">
         <div class="feature-item">
           <h4>1. Footer Tagline 100% Centered</h4>
-          <p>CSS ka flex centering bug theek kiya — ab "CAREER XONE • से सब संभव है" bilkul dead-center me align hai.</p>
+          <p>CSS ka flex centering bug theek kiya — ab "CAREER XONE • सब संभव है" bilkul dead-center me align hai.</p>
         </div>
         <div class="feature-item">
           <h4>2. Brand Logo Aur Bada (68px)</h4>
@@ -714,7 +728,7 @@
         </div>
         <div class="feature-item">
           <h4>6. Back Footer Me Bhi Motto</h4>
-          <p>Back side footer me "VALID FOR ACADEMIC SESSION" hata kar wahan bhi "CAREER XONE • से सब संभव है" set kar diya gaya hai.</p>
+          <p>Back side footer me "VALID FOR ACADEMIC SESSION" hata kar wahan bhi "CAREER XONE • सब संभव है" set kar diya gaya hai.</p>
         </div>
       </div>
     </div>

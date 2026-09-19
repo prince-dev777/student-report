@@ -550,36 +550,92 @@ app.whenReady().then(async () => {
     return false;
   });
 
-  // 🖨️ Dedicated High-Resolution Native A4 PDF Generator
-  ipcMain.handle('print:toPDF', async (event, htmlContent, defaultName) => {
+  // ─── Embedded Font Loader (Base64 Zero-CDN Embedding) ────────
+  function loadFontBase64(filename) {
     try {
-      const printWin = new BrowserWindow({
+      const devPath = path.join(__dirname, 'assets', 'fonts', filename);
+      const appPath = path.join(app.getAppPath(), 'assets', 'fonts', filename);
+      const fp = fs.existsSync(devPath) ? devPath : fs.existsSync(appPath) ? appPath : null;
+      if (!fp) {
+        console.warn(`⚠️ Font not found: ${filename}`);
+        return null;
+      }
+      return fs.readFileSync(fp).toString('base64');
+    } catch (e) {
+      console.warn(`⚠️ Font load error: ${e.message}`);
+      return null;
+    }
+  }
+
+  function buildFontCss() {
+    const inter = loadFontBase64('Inter-ExtraBold.ttf');
+    const noto = loadFontBase64('NotoSansDevanagari-Bold.ttf');
+    let css = '';
+    if (inter) {
+      css += `@font-face{font-family:'Inter';src:url(data:font/ttf;base64,${inter}) format('truetype');font-weight:100 900;font-style:normal;}\n`;
+    }
+    if (noto) {
+      css += `@font-face{font-family:'Noto Sans Devanagari';src:url(data:font/ttf;base64,${noto}) format('truetype');font-weight:100 900;font-style:normal;}\n`;
+    }
+    return css;
+  }
+
+  // 🖨️ Dedicated High-Resolution Native A4 Vector PDF Generator (Pure Vector + Embedded Fonts)
+  ipcMain.handle('print:toPDF', async (event, payload, legacyDefaultName) => {
+    let printWin = null;
+    let tempHtml = null;
+    try {
+      let htmlContent = '';
+      let targetName = 'CareerXone_ID_Cards.pdf';
+
+      if (payload && typeof payload === 'object' && Array.isArray(payload.students)) {
+        // Structured Data Payload -> Generate Clean Vector HTML via pdfTemplate.cjs
+        const { generateIdCardPdfHtml } = require('./pdfTemplate.cjs');
+        const fontCss = buildFontCss();
+        const { students, logoBase64, defaultName, side } = payload;
+        htmlContent = await generateIdCardPdfHtml(students, logoBase64, fontCss, side || 'duplex');
+        targetName = defaultName || 'CareerXone_ID_Cards.pdf';
+      } else if (typeof payload === 'string') {
+        // Backward compatibility: Raw HTML string passed
+        htmlContent = payload;
+        targetName = legacyDefaultName || 'CareerXone_Document.pdf';
+      } else {
+        throw new Error('Invalid payload provided to print:toPDF');
+      }
+
+      printWin = new BrowserWindow({
         show: false,
-        width: 1200,
-        height: 1600,
+        width: 794,
+        height: 1123,
         webPreferences: {
           nodeIntegration: false,
           contextIsolation: true
         }
       });
 
-      await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
-      
-      // Allow fonts, styles and base64 images to settle
-      await new Promise(r => setTimeout(r, 600));
+      // Prepend UTF-8 BOM (\uFEFF) so Chromium on Windows never defaults to CJK / ANSI charset
+      tempHtml = path.join(app.getPath('temp'), `cx_print_id_cards_${Date.now()}.html`);
+      fs.writeFileSync(tempHtml, '\uFEFF' + htmlContent, 'utf8');
+      await printWin.loadFile(tempHtml);
+
+      // ⏳ Allow embedded fonts & SVG QR codes to fully settle
+      await new Promise(r => setTimeout(r, 1800));
 
       const pdfData = await printWin.webContents.printToPDF({
-        margins: { top: 0.1, bottom: 0.1, left: 0.1, right: 0.1 },
+        margins: { marginType: 'none' },
         pageSize: 'A4',
         printBackground: true,
-        preferCSSPageSize: true
+        preferCSSPageSize: true,
+        generateTaggedPDF: false,
+        displayHeaderFooter: false
       });
 
-      printWin.close();
+      try { printWin.close(); } catch(e) {}
+      printWin = null;
 
       const { filePath } = await dialog.showSaveDialog(mainWindow, {
         title: 'Save Student ID Cards PDF',
-        defaultPath: path.join(app.getPath('downloads'), defaultName || 'CareerXone_StudentIDCards.pdf'),
+        defaultPath: path.join(app.getPath('downloads'), targetName),
         filters: [{ name: 'PDF Documents (*.pdf)', extensions: ['pdf'] }]
       });
 
@@ -595,6 +651,13 @@ app.whenReady().then(async () => {
     } catch (err) {
       console.error('printToPDF error:', err);
       return { success: false, error: err.message };
+    } finally {
+      if (printWin) {
+        try { printWin.close(); } catch(e) {}
+      }
+      if (tempHtml && fs.existsSync(tempHtml)) {
+        try { fs.unlinkSync(tempHtml); } catch(e) {}
+      }
     }
   });
 

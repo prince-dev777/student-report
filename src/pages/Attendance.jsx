@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import {
   Fingerprint,
   LogIn,
@@ -881,74 +879,78 @@ export default function Attendance() {
     return filteredIdCardStudents.slice(start, start + PREVIEW_PAGE_SIZE);
   }, [filteredIdCardStudents, idCardSearch, idCardShowAll, idCardPreviewPage]);
 
-  // 📥 Dedicated High-Resolution Native A4 PDF Generator (Direct download via jsPDF)
+  // 📥 High-Res Vector PDF via Master Template (Clean JSON Payload + Base64 Embedded Fonts)
   const handleSaveAsPdf = async () => {
-    const prevShowAll = idCardShowAll;
-    const toastId = toast.loading('Preparing all ID card sheets for PDF export...');
+    const toastId = toast.loading('Preparing vector PDF...');
 
     try {
-      // 1. Temporarily expand DOM to render ALL students
-      if (!prevShowAll) {
-        setIdCardShowAll(true);
-        await new Promise((r) => setTimeout(r, 350));
+      // 1. Logo ko base64 data URL mein convert karo (Self-contained embedding)
+      let logoB64 = '';
+      try {
+        const resp = await fetch(idLogo);
+        const blob = await resp.blob();
+        logoB64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.warn('Logo conversion failed:', e);
       }
 
-      let sheetElements = Array.from(document.querySelectorAll('#printable-id-cards .a4-print-sheet'));
-      
-      // If not in duplex/sheet mode, capture the card pair container
-      if (!sheetElements || sheetElements.length === 0) {
-        const container = document.getElementById('printable-id-cards');
-        if (!container) {
-          toast.error('No ID cards found to export', { id: toastId });
-          if (!prevShowAll) setIdCardShowAll(false);
-          return;
-        }
-        sheetElements = [container];
+      // 2. Student data prepare karo (Pure JSON, Zero DOM dependency)
+      const studentData = filteredIdCardStudents.map(s => ({
+        id: s.id || '',
+        studentId: s.studentId || s.id || '',
+        name: s.name || '',
+        rollNo: s.rollNo || s.id || '',
+        photo: s.photo || '',
+        parentName: s.parentName || s.guardianName || 'N/A',
+        parentPhone: s.parentPhone || s.phone || 'N/A',
+        phone: s.phone || '',
+        className: s.class || formatBatchName(s.batch || s.targetClass || s.course, batches) || 'General',
+        batch: s.batch || '',
+        course: s.course || '',
+        targetClass: s.targetClass || ''
+      }));
+
+      if (studentData.length === 0) {
+        toast.error('No students found to export', { id: toastId });
+        return;
       }
 
-      const totalPages = sheetElements.length;
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
+      // 3. Batch filename label
+      const batchLabel = selectedIdCardBatch === 'all'
+        ? 'All_Students'
+        : selectedIdCardBatch.replace(/\s+/g, '_');
 
-      for (let i = 0; i < totalPages; i++) {
-        toast.loading(`Rendering Sheet ${i + 1} of ${totalPages} (300 DPI)...`, { id: toastId });
-        const sheet = sheetElements[i];
+      toast.loading(`Generating ${studentData.length} vector student cards...`, { id: toastId });
 
-        const canvas = await html2canvas(sheet, {
-          scale: 3, // Ultra-sharp 300-400 DPI lossless vector-like rendering
-          useCORS: true,
-          allowTaint: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          letterRendering: true,
-          windowWidth: 1200
+      // 4. Electron Native IPC call — Data bhejo, HTML aur Vector PDF wahan banega
+      if (window.electronAPI && typeof window.electronAPI.printToPDF === 'function') {
+        const result = await window.electronAPI.printToPDF({
+          students: studentData,
+          logoBase64: logoB64,
+          side: idCardSide,
+          defaultName: `CareerXone_ID_Cards_${batchLabel}.pdf`
         });
 
-        const imgData = canvas.toDataURL('image/png');
-
-        if (i > 0) {
-          pdf.addPage('a4', 'portrait');
+        if (result.success) {
+          toast.success(`✅ Vector PDF Saved! (${studentData.length} Students)`, { id: toastId });
+        } else if (result.cancelled) {
+          toast.info('PDF export cancelled', { id: toastId });
+        } else {
+          throw new Error(result.error || 'Failed to generate PDF');
         }
-
-        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+      } else {
+        // Fallback for browser mode
+        toast.dismiss(toastId);
+        handlePrintSystem();
       }
 
-      const batchName = selectedIdCardBatch === 'all' ? 'All_Students' : selectedIdCardBatch.replace(/\s+/g, '_');
-      const filename = `CareerXone_ID_Cards_${batchName}.pdf`;
-      pdf.save(filename);
-
-      toast.success(`✅ Saved ${totalPages} Page(s) PDF (${filteredIdCardStudents.length} Students) to Downloads!`, { id: toastId });
     } catch (err) {
       console.error('PDF Generation Error:', err);
-      toast.error(`❌ PDF Generation Failed: ${err.message}`, { id: toastId });
-    } finally {
-      if (!prevShowAll) {
-        setIdCardShowAll(false);
-      }
+      toast.error(`❌ ${err.message}`, { id: toastId });
     }
   };
 
@@ -4347,6 +4349,7 @@ export default function Attendance() {
                                 <div style={{ width: '100%', maxWidth: '794px' }}>
                                   {/* Screen Header Banner (OUTSIDE .a4-print-sheet) */}
                                   <div
+                                    className="a4-print-header-banner"
                                     style={{
                                       background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
                                       color: '#ffffff',
@@ -4409,6 +4412,7 @@ export default function Attendance() {
                                 <div style={{ width: '100%', maxWidth: '794px' }}>
                                   {/* Screen Header Banner (OUTSIDE .a4-print-sheet) */}
                                   <div
+                                    className="a4-print-header-banner"
                                     style={{
                                       background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                                       color: '#ffffff',

@@ -57,13 +57,13 @@ export default function StudentIdCard({
         <div
           style={{
             width: '100%',
-            height: isCompact ? '68px' : '78px',
+            height: isCompact ? '60px' : '68px',
             background: '#ffffff',
             borderBottom: '2px solid #2563eb',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '4px 10px',
+            padding: '4px 8px',
             position: 'relative',
             flexShrink: 0
           }}
@@ -75,7 +75,8 @@ export default function StudentIdCard({
               maxHeight: '100%',
               maxWidth: '96%',
               width: 'auto',
-              objectFit: 'contain'
+              objectFit: 'contain',
+              display: 'block'
             }}
           />
         </div>
@@ -96,20 +97,21 @@ export default function StudentIdCard({
               src={student.photo}
               alt={student.name}
               style={{
-                width: isCompact ? '70px' : '78px',
-                height: isCompact ? '74px' : '82px',
+                width: isCompact ? '68px' : '76px',
+                height: isCompact ? '72px' : '80px',
                 borderRadius: '10px',
                 objectFit: 'cover',
                 border: '2px solid #f59e0b',
                 boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
-                background: '#ffffff'
+                background: '#ffffff',
+                display: 'block'
               }}
             />
           ) : (
             <div
               style={{
-                width: isCompact ? '70px' : '78px',
-                height: isCompact ? '74px' : '82px',
+                width: isCompact ? '68px' : '76px',
+                height: isCompact ? '72px' : '80px',
                 borderRadius: '10px',
                 background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
                 display: 'flex',
@@ -119,7 +121,7 @@ export default function StudentIdCard({
                 border: '2px solid #f59e0b',
                 boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
                 color: '#ffffff',
-                fontSize: isCompact ? '1.35rem' : '1.55rem',
+                fontSize: isCompact ? '1.30rem' : '1.50rem',
                 fontWeight: 800,
                 letterSpacing: '2px',
                 textIndent: '2px',
@@ -132,25 +134,27 @@ export default function StudentIdCard({
 
           {/* Gold Roll Tag */}
           <div
+            className="id-card-roll-tag"
             style={{
               background: '#f59e0b',
               color: '#0f172a',
               fontSize: isCompact ? '0.44rem' : '0.48rem',
               fontWeight: 900,
-              padding: '1.5px 9px',
+              padding: '0.5px 8px 2px',
               borderRadius: '99px',
               boxShadow: '0 2px 6px rgba(0,0,0,0.20)',
-              marginTop: '-7px',
+              marginTop: '-6px',
               zIndex: 5,
               letterSpacing: '0.5px',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              lineHeight: '12px'
             }}
           >
             ROLL: {roll}
           </div>
         </div>
 
-        {/* Card Body Details */}
+        {/* Card Body Details: Balanced Vertical Flow */}
         <div
           style={{
             padding: `0 ${isCompact ? '8px' : '10px'}`,
@@ -158,76 +162,79 @@ export default function StudentIdCard({
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between'
+            justifyContent: 'space-evenly'
           }}
         >
-          <div>
-            {/* Student Name */}
-            <h3
-              style={{
-                margin: '2px 0 1px',
-                fontSize: isCompact ? '0.80rem' : '0.88rem',
-                color: '#0f172a',
-                fontWeight: 900,
-                lineHeight: 1.15,
-                textTransform: 'uppercase',
-                letterSpacing: '0.2px'
-              }}
-            >
-              {student.name}
-            </h3>
+          {/* Student Name */}
+          <h3
+            className="id-card-name"
+            style={{
+              margin: '1px 0',
+              fontSize: isCompact ? '0.76rem' : '0.84rem',
+              color: '#0f172a',
+              fontWeight: 900,
+              lineHeight: 1.15,
+              textTransform: 'uppercase',
+              letterSpacing: '0.2px'
+            }}
+          >
+            {student.name}
+          </h3>
 
-            {/* Clean Batch Badge */}
-            <div
+          {/* Clean Batch Badge (Wrapped in block container to prevent html2canvas overlap) */}
+          <div style={{ textAlign: 'center', margin: '1px 0' }}>
+            <span
+              className="id-card-batch-badge"
               style={{
                 display: 'inline-block',
                 background: 'linear-gradient(90deg, #1e3a8a, #2563eb)',
                 color: '#ffffff',
-                fontSize: isCompact ? '0.48rem' : '0.54rem',
+                fontSize: isCompact ? '0.46rem' : '0.52rem',
                 fontWeight: 800,
-                padding: '2px 10px',
+                padding: '1px 10px 3px',
                 borderRadius: '4px',
-                margin: '1px 0 2px',
                 letterSpacing: '0.4px',
+                lineHeight: '12px',
                 boxShadow: '0 2px 6px rgba(37, 99, 235, 0.2)'
               }}
             >
               {courseName.toUpperCase()}
-            </div>
+            </span>
+          </div>
 
-            {/* Info Table (3 Essential Rows Only) */}
-            <div
-              style={{
-                background: '#f8fafc',
-                borderRadius: '6px',
-                border: '1px solid #bfdbfe',
-                padding: isCompact ? '2.5px 5px' : '3px 6px',
-                textAlign: 'left',
-                fontSize: isCompact ? '0.54rem' : '0.60rem',
-                color: '#0f172a',
-                lineHeight: 1.34,
-                boxShadow: '0 1px 4px rgba(37, 99, 235, 0.06)'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', padding: '1.5px 0', borderBottom: '1px solid #e2e8f0' }}>
-                <strong style={{ color: '#475569', fontWeight: 700, minWidth: isCompact ? '50px' : '60px', flexShrink: 0 }}>Student ID:</strong>
-                <span style={{ color: '#2563eb', fontWeight: 900, fontFamily: 'monospace', fontSize: isCompact ? '0.52rem' : '0.58rem', letterSpacing: '0.5px', textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>
-                  {studentId}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', padding: '1.5px 0', borderBottom: '1px solid #e2e8f0' }}>
-                <strong style={{ color: '#475569', fontWeight: 700, minWidth: isCompact ? '50px' : '60px', flexShrink: 0 }}>Parent:</strong>
-                <span style={{ fontWeight: 700, textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{parentName}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', padding: '1.5px 0' }}>
-                <strong style={{ color: '#475569', fontWeight: 700, minWidth: isCompact ? '50px' : '60px', flexShrink: 0 }}>Contact:</strong>
-                <span style={{ fontWeight: 700, textAlign: 'right', flex: 1 }}>{contact}</span>
-              </div>
+          {/* Info Table (3 Essential Rows Only) */}
+          <div
+            className="id-card-info-table"
+            style={{
+              background: '#f8fafc',
+              borderRadius: '6px',
+              border: '1px solid #bfdbfe',
+              padding: isCompact ? '2px 6px 4px' : '2.5px 8px 5px',
+              textAlign: 'left',
+              fontSize: isCompact ? '0.52rem' : '0.58rem',
+              color: '#0f172a',
+              lineHeight: 1.34,
+              boxShadow: '0 1px 4px rgba(37, 99, 235, 0.06)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', padding: '0.5px 0 2.5px', borderBottom: '1px solid #e2e8f0', alignItems: 'center' }}>
+              <strong style={{ color: '#475569', fontWeight: 700, minWidth: isCompact ? '50px' : '58px', flexShrink: 0 }}>Student ID:</strong>
+              <span style={{ color: '#2563eb', fontWeight: 900, fontSize: isCompact ? '0.50rem' : '0.56rem', letterSpacing: '0.4px', textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>
+                {studentId}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', padding: '0.5px 0 2.5px', borderBottom: '1px solid #e2e8f0', alignItems: 'center' }}>
+              <strong style={{ color: '#475569', fontWeight: 700, minWidth: isCompact ? '50px' : '58px', flexShrink: 0 }}>Parent:</strong>
+              <span style={{ fontWeight: 700, textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{parentName}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', padding: '0.5px 0 1.5px', alignItems: 'center' }}>
+              <strong style={{ color: '#475569', fontWeight: 700, minWidth: isCompact ? '50px' : '58px', flexShrink: 0 }}>Contact:</strong>
+              <span style={{ fontWeight: 700, textAlign: 'right', flex: 1 }}>{contact}</span>
             </div>
           </div>
 
-          {/* Huge Scannable QR Code */}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '1px 0 2px' }}>
+          {/* Scannable QR Code */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '1px 0' }}>
             <div
               style={{
                 background: '#ffffff',
@@ -238,33 +245,35 @@ export default function StudentIdCard({
                 display: 'inline-flex'
               }}
             >
-              <QRCodeSVG value={String(roll || studentId)} size={isCompact ? 68 : 80} level="M" />
+              <QRCodeSVG value={String(roll || studentId)} size={isCompact ? 64 : 74} level="M" />
             </div>
           </div>
         </div>
 
         {/* Footer Ribbon (100% Dead Centered) */}
         <div
+          className="id-card-footer-ribbon"
           style={{
             boxSizing: 'border-box',
-            height: isCompact ? '23px' : '25px',
+            height: isCompact ? '22px' : '24px',
             width: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             textAlign: 'center',
-            padding: '0 8px',
-            fontSize: isCompact ? '0.55rem' : '0.62rem',
+            padding: '0 8px 1px',
+            fontSize: isCompact ? '0.54rem' : '0.60rem',
             lineHeight: 1,
             color: '#ffffff',
             fontWeight: 800,
             letterSpacing: '0.5px',
             flexShrink: 0,
             background: 'linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)',
-            borderTop: '1.5px solid #f59e0b'
+            borderTop: '1.5px solid #f59e0b',
+            fontFamily: "'Inter', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
           }}
         >
-          CAREER XONE • से सब संभव है
+          <span>CAREER XONE • सब संभव है</span>
         </div>
       </div>
     );
@@ -410,10 +419,11 @@ export default function StudentIdCard({
           letterSpacing: '0.5px',
           flexShrink: 0,
           background: 'linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)',
-          borderTop: '1.5px solid #f59e0b'
+          borderTop: '1.5px solid #f59e0b',
+          fontFamily: "'Inter', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
         }}
       >
-        CAREER XONE • से सब संभव है
+        CAREER XONE • सब संभव है
       </div>
     </div>
   );
