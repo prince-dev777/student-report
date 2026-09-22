@@ -66,7 +66,7 @@ async function verifyEverything() {
   const activePort = 5099;
   const serverProcess = spawn('node', ['server.js'], {
     cwd: serverDir,
-    env: { ...process.env, PORT: String(activePort), MONGODB_URI: 'mongodb://127.0.0.1:27018/student-report' },
+    env: { ...process.env, PORT: String(activePort), IS_AUDIT_RUN: '1', MONGODB_URI: 'mongodb://127.0.0.1:27018/student-report' },
     stdio: 'pipe'
   });
 

@@ -311,7 +311,9 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       });
 
       let isNew = false;
+      let punchDir = String(type || 'AUTO').toUpperCase();
       if (!record) {
+        if (punchDir === 'AUTO') punchDir = 'IN';
         record = new StaffAttendance({
           instituteId: staffMember.instituteId || instituteId || null,
           staffId: staffMember.staffId,
@@ -319,8 +321,8 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
           department: staffMember.department || 'General',
           designation: staffMember.designation || 'Staff',
           date: todayStr,
-          entryTime: type === 'IN' ? formattedTime : '--',
-          exitTime: type === 'OUT' ? formattedTime : '--',
+          entryTime: punchDir === 'IN' ? formattedTime : '--',
+          exitTime: punchDir === 'OUT' ? formattedTime : '--',
           status: 'present',
           deviceSN: deviceSN || 'Biomax Device',
           deviceIp: deviceIp,
@@ -329,17 +331,25 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
         });
         isNew = true;
       } else {
-        if (type === 'IN') {
+        if (punchDir === 'AUTO') {
+          if (!record.entryTime || record.entryTime === '--') {
+            punchDir = 'IN';
+          } else {
+            punchDir = 'OUT';
+          }
+        }
+        if (punchDir === 'IN') {
           if (!record.entryTime || record.entryTime === '--') {
             record.entryTime = formattedTime;
             isNew = true;
           }
-        } else if (type === 'OUT') {
+        } else if (punchDir === 'OUT') {
           record.exitTime = formattedTime;
           isNew = true;
         }
         record.status = 'present';
       }
+      type = punchDir;
 
       // Calculate Work Duration
       if (record.entryTime && record.exitTime && record.entryTime !== '--' && record.exitTime !== '--') {

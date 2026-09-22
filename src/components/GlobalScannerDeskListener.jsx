@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import { getTodayStr, formatTime } from '../utils/helpers';
+import { api } from '../utils/api';
 
 // Synthesizer Chimes
 const playScannerSound = (type = 'entry') => {
@@ -54,6 +55,26 @@ export default function GlobalScannerDeskListener() {
   const bufferRef = useRef('');
   const lastKeyTimeRef = useRef(0);
   const recentPunchesRef = useRef({});
+  const staffListRef = useRef([]);
+
+  // Fetch and cache staff members for instant 0ms scanner response
+  useEffect(() => {
+    let mounted = true;
+    const fetchStaff = async () => {
+      try {
+        const res = await api.getStaffMembers();
+        if (mounted && res?.staff) {
+          staffListRef.current = res.staff;
+        }
+      } catch (e) {}
+    };
+    fetchStaff();
+    const interval = setInterval(fetchStaff, 30000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -95,13 +116,13 @@ export default function GlobalScannerDeskListener() {
       }
     };
 
-    const processDesktopScan = (raw) => {
+    const processDesktopScan = async (raw) => {
       // 1. Clean and parse barcode / QR code format
       let extracted = raw;
       try {
         if (raw.startsWith('{') && raw.endsWith('}')) {
           const parsed = JSON.parse(raw);
-          extracted = String(parsed.rollNo || parsed.roll || parsed.id || parsed.studentId || raw);
+          extracted = String(parsed.rollNo || parsed.roll || parsed.id || parsed.studentId || parsed.staffId || raw);
         }
       } catch (err) {}
 
@@ -109,7 +130,7 @@ export default function GlobalScannerDeskListener() {
         try {
           const u = new URL(extracted);
           const parts = u.pathname.split('/').filter(Boolean);
-          extracted = u.searchParams.get('roll') || u.searchParams.get('id') || parts[parts.length - 1] || extracted;
+          extracted = u.searchParams.get('roll') || u.searchParams.get('id') || u.searchParams.get('staffId') || parts[parts.length - 1] || extracted;
         } catch (err) {}
       }
 
@@ -133,8 +154,27 @@ export default function GlobalScannerDeskListener() {
       });
 
       if (!matched) {
+        // 2b. Check if scanned code matches a Staff / Employee member
+        const matchedStaff = staffListRef.current.find((st) => {
+          if (st.isDeleted) return false;
+          const sid = String(st.staffId || '').trim().toLowerCase();
+          const id = String(st.id || '').trim().toLowerCase();
+          const phone = String(st.phone || '').trim();
+          return sid === target || id === target || phone === target;
+        }) || staffListRef.current.find((st) => {
+          if (st.isDeleted) return false;
+          const sNum = parseInt(st.staffId, 10);
+          const targetNum = parseInt(extracted, 10);
+          return !isNaN(sNum) && !isNaN(targetNum) && sNum === targetNum;
+        });
+
+        if (matchedStaff) {
+          await processStaffScan(matchedStaff);
+          return;
+        }
+
         playScannerSound('error');
-        toast.error(`❌ Student not found for Scan: "${extracted}"`, { id: 'scanner-toast' });
+        toast.error(`❌ Person not found for Scan: "${extracted}"`, { id: 'scanner-toast' });
         return;
       }
 
@@ -232,6 +272,92 @@ export default function GlobalScannerDeskListener() {
         ),
         { id: 'scanner-toast', duration: 4000 }
       );
+    };
+
+    const processStaffScan = async (staffMember) => {
+      const staffKey = 'STAFF_' + staffMember.staffId;
+      const now = Date.now();
+      const lastPunchTime = recentPunchesRef.current[staffKey] || 0;
+      if (now - lastPunchTime < 45000) {
+        const elapsed = Math.round((now - lastPunchTime) / 1000);
+        const remaining = 45 - elapsed;
+        toast(`⏳ Staff ${staffMember.name} already scanned ${elapsed}s ago! Please wait ${remaining}s.`, { icon: '⚠️', id: 'scanner-toast' });
+        return;
+      }
+
+      recentPunchesRef.current[staffKey] = now;
+
+      try {
+        const res = await api.manualStaffPunch({
+          staffId: staffMember.staffId,
+          type: 'AUTO'
+        });
+        const data = res?.data || res;
+        if (data?.success) {
+          const punchType = (data.type || 'IN').toLowerCase();
+          playScannerSound(punchType === 'in' ? 'entry' : 'exit');
+          const timeNow = data.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+          toast.custom(
+            (t) => (
+              <div
+                style={{
+                  background: '#042f2e',
+                  border: '2px solid #0d9488',
+                  borderRadius: '16px',
+                  padding: '14px 18px',
+                  color: '#ffffff',
+                  boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  minWidth: '320px',
+                  animation: t.visible ? 'custom-enter 0.3s ease' : 'custom-leave 0.3s ease'
+                }}
+              >
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: 'rgba(13, 148, 136, 0.25)',
+                  color: '#2dd4bf',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.4rem'
+                }}>
+                  🪪
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <strong style={{ fontSize: '1rem', color: '#ffffff' }}>{staffMember.name}</strong>
+                    <span style={{
+                      background: '#0d9488',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      fontSize: '0.70rem',
+                      padding: '2px 8px',
+                      borderRadius: '6px'
+                    }}>
+                      STAFF {punchType.toUpperCase()}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.80rem', color: '#99f6e4', marginTop: '2px' }}>
+                    ID: <strong>{staffMember.staffId}</strong> • Dept: <strong>{staffMember.department || 'General'}</strong> • <strong>{timeNow}</strong>
+                  </div>
+                </div>
+              </div>
+            ),
+            { id: 'scanner-toast', duration: 4500 }
+          );
+        } else {
+          playScannerSound('error');
+          toast.error(data?.error || `Failed to record punch for ${staffMember.name}`, { id: 'scanner-toast' });
+        }
+      } catch (err) {
+        playScannerSound('error');
+        toast.error(`Staff punch error: ${err.message}`, { id: 'scanner-toast' });
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);

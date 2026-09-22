@@ -242,7 +242,9 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       });
 
       let isNew = false;
+      let punchDir = String(type || 'AUTO').toUpperCase();
       if (!staffRecord) {
+        if (punchDir === 'AUTO') punchDir = 'IN';
         staffRecord = new StaffAttendance({
           instituteId: resolvedInstituteId,
           staffId: staffMember.staffId,
@@ -250,25 +252,33 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
           department: staffMember.department || 'General',
           designation: staffMember.designation || 'Staff',
           date: todayStr,
-          entryTime: type === 'IN' ? formattedTime : '--',
-          exitTime: type === 'OUT' ? formattedTime : '--',
+          entryTime: punchDir === 'IN' ? formattedTime : '--',
+          exitTime: punchDir === 'OUT' ? formattedTime : '--',
           status: 'present',
           deviceSN: deviceSN || 'Biometric Device',
           source: 'BIOMETRIC_PUSH'
         });
         isNew = true;
       } else {
-        if (type === 'IN') {
+        if (punchDir === 'AUTO') {
+          if (!staffRecord.entryTime || staffRecord.entryTime === '--') {
+            punchDir = 'IN';
+          } else {
+            punchDir = 'OUT';
+          }
+        }
+        if (punchDir === 'IN') {
           if (!staffRecord.entryTime || staffRecord.entryTime === '--') {
             staffRecord.entryTime = formattedTime;
             isNew = true;
           }
-        } else if (type === 'OUT') {
+        } else if (punchDir === 'OUT') {
           staffRecord.exitTime = formattedTime;
           isNew = true;
         }
         staffRecord.status = 'present';
       }
+      type = punchDir;
 
       await staffRecord.save();
       mirrorWrite('staffattendances', staffRecord.toObject ? staffRecord.toObject() : staffRecord);
@@ -276,7 +286,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       if (isNew && staffMember.phone) {
         try {
           await sendWhatsAppAlert({
-            instituteId: resolvedInstituteId,
+            instituteId: staffMember.instituteId || instituteId,
             studentId: staffMember.staffId || staffMember.id,
             parentPhone: staffMember.phone,
             studentName: staffMember.name,

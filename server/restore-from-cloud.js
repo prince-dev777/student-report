@@ -145,10 +145,10 @@ async function restoreFromCloud() {
         const tombFilterClauses = [
           ...(tDocIds.length > 0 || tObjectIds.length > 0 ? [{ _id: { $in: [...tDocIds, ...tObjectIds] } }] : []),
           ...(tCustomIds.length > 0 ? [{ id: { $in: tCustomIds } }] : []),
-          ...(tRollNos.length > 0 ? [{ rollNo: { $in: tRollNos } }] : []),
-          ...(tUsernames.length > 0 ? [{ username: { $in: tUsernames } }] : []),
-          ...(tStudentIds.length > 0 ? [{ studentId: { $in: tStudentIds } }] : []),
-          ...(tTestIds.length > 0 ? [{ testId: { $in: tTestIds } }] : [])
+          ...(collName === 'students' && tRollNos.length > 0 ? [{ rollNo: { $in: tRollNos } }] : []),
+          ...(collName === 'users' && tUsernames.length > 0 ? [{ username: { $in: tUsernames } }] : []),
+          ...(collName === 'students' && tStudentIds.length > 0 ? [{ studentId: { $in: tStudentIds } }] : []),
+          ...(collName === 'tests' && tTestIds.length > 0 ? [{ testId: { $in: tTestIds } }] : [])
         ];
 
         if (collTombstones.length > 0 && tombFilterClauses.length > 0) {
@@ -169,10 +169,10 @@ async function restoreFromCloud() {
           if (d.isDeleted) return false;
           if (tombstoneDocIds.has(String(d._id))) return false;
           if (d.id && tombstoneCustomIds.has(String(d.id))) return false;
-          if (d.rollNo && tombstoneRollNos.has(String(d.rollNo))) return false;
-          if (d.username && tombstoneUsernames.has(String(d.username))) return false;
-          if (d.studentId && tombstoneStudentIds.has(String(d.studentId))) return false;
-          if (d.testId && tombstoneTestIds.has(String(d.testId))) return false;
+          if (collName === 'students' && d.rollNo && tombstoneRollNos.has(String(d.rollNo))) return false;
+          if ((collName === 'users' || collName === 'students') && d.username && tombstoneUsernames.has(String(d.username))) return false;
+          if (collName === 'students' && d.studentId && tombstoneStudentIds.has(String(d.studentId))) return false;
+          if (collName === 'tests' && d.testId && tombstoneTestIds.has(String(d.testId))) return false;
           return true;
         });
 

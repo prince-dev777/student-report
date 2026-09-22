@@ -44,7 +44,6 @@ export async function mergeDuplicatesOnDb(dbInstance, dbLabel = 'DB') {
 
     const phoneRollMap = new Map();
     const nameRollMap = new Map();
-    const phoneNameMap = new Map();
 
     for (const s of allStudents) {
       const id = String(s._id);
@@ -52,6 +51,7 @@ export async function mergeDuplicatesOnDb(dbInstance, dbLabel = 'DB') {
       const cName = cleanName(s.name);
       const cPhone = cleanPhone(s.parentPhone);
 
+      // Only link records that have the EXACT SAME normalized roll number
       if (cPhone && cPhone.length === 10 && normRoll) {
         const key = `${cPhone}_${normRoll}`;
         if (phoneRollMap.has(key)) union(id, phoneRollMap.get(key));
@@ -62,12 +62,6 @@ export async function mergeDuplicatesOnDb(dbInstance, dbLabel = 'DB') {
         const key = `${cName}_${normRoll}`;
         if (nameRollMap.has(key)) union(id, nameRollMap.get(key));
         else nameRollMap.set(key, id);
-      }
-
-      if (cPhone && cPhone.length === 10 && cName && cName.length > 2) {
-        const key = `${cPhone}_${cName}`;
-        if (phoneNameMap.has(key)) union(id, phoneNameMap.get(key));
-        else phoneNameMap.set(key, id);
       }
     }
 
@@ -83,6 +77,12 @@ export async function mergeDuplicatesOnDb(dbInstance, dbLabel = 'DB') {
     let deletedCount = 0;
 
     for (const cluster of duplicateClusters) {
+      // Sibling & Unique Roll Protection Guard:
+      // If records have different roll numbers, they are distinct students (e.g. siblings sharing parent phone). NEVER MERGE!
+      const distinctRolls = new Set(cluster.map(s => normalizeRoll(s.rollNo)).filter(Boolean));
+      if (distinctRolls.size > 1) {
+        continue;
+      }
       cluster.sort((a, b) => {
         let scoreA = 0;
         let scoreB = 0;

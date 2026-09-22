@@ -822,6 +822,9 @@ export default function SMSCenter() {
               {whatsappStatus === 'ready' && (
                 <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Online</span>
               )}
+              {whatsappStatus === 'authenticated' && (
+                <span className="badge badge-warning" style={{ fontSize: '0.7rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>Syncing Session...</span>
+              )}
               {whatsappStatus === 'disconnected' && (
                 <span className="badge badge-danger" style={{ fontSize: '0.7rem' }}>Offline</span>
               )}
@@ -845,9 +848,13 @@ export default function SMSCenter() {
                     </span>
                   )}
                 </>
+              ) : whatsappStatus === 'authenticated' ? (
+                <span style={{ color: '#22c55e', fontWeight: 600 }}>
+                  ✅ Authenticated! WhatsApp is syncing encryption keys & chats in the background. Please wait...
+                </span>
               ) : 'Link your WhatsApp account to enable automated messaging.'}
             </p>
-            {whatsappStatus !== 'ready' && (
+            {whatsappStatus !== 'ready' && whatsappStatus !== 'authenticated' && (
               <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: 'var(--accent-orange)', display: 'flex', alignItems: 'flex-start', gap: '4px' }}>
                 <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
                 <span>If WhatsApp is stuck on 'Initializing...' or the QR code doesn't generate, please right-click the taskbar, open Task Manager, and end all 'Chrome' processes to fix the bug.</span>
@@ -860,6 +867,12 @@ export default function SMSCenter() {
           {whatsappStatus === 'ready' && (
             <button className="btn btn-outline" onClick={disconnectWhatsApp} disabled={loadingAction} style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}>
               <WifiOff size={16} /> Disconnect
+            </button>
+          )}
+
+          {whatsappStatus === 'authenticated' && (
+            <button className="btn btn-primary" onClick={() => setShowQrModal(true)} style={{ background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)' }}>
+              <RefreshCw size={16} className="spin" /> Syncing WhatsApp...
             </button>
           )}
           
@@ -2553,7 +2566,20 @@ export default function SMSCenter() {
               </div>
 
               <div className="modal-body" style={{ padding: '16px 24px 24px 24px' }}>
-                {pairingTab === 'qr' ? (
+                {whatsappStatus === 'authenticated' ? (
+                  <div style={{ padding: '32px 20px', textAlign: 'center' }}>
+                    <RefreshCw size={36} className="spin" style={{ color: '#22c55e', margin: '0 auto 16px' }} />
+                    <h3 style={{ margin: '0 0 8px 0', color: '#22c55e', fontSize: '1.15rem', fontWeight: 800 }}>
+                      ✅ Phone Linked Successfully!
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                      Syncing WhatsApp encryption keys & chats...
+                    </p>
+                    <p style={{ margin: '10px 0 0 0', fontSize: '0.8rem', color: 'var(--accent-orange)' }}>
+                      Please wait 10-15 seconds. Window will automatically update.
+                    </p>
+                  </div>
+                ) : pairingTab === 'qr' ? (
                   <div>
                     <p style={{ marginBottom: '14px', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
                       Open WhatsApp on phone &gt; Settings &gt; Linked Devices &gt; <strong>Link a Device</strong> &gt; Scan this QR:

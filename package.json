@@ -37,6 +37,8 @@
       "!server/__pycache__/**",
       "!server/scratch/**",
       "!server/uploads/**",
+      "!server/data/**",
+      "!server/data/.wwebjs_auth/**",
       "!server/.wwebjs_auth/**",
       "!server/.wwebjs_cache/**",
       "!server/test_*.py",

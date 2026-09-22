@@ -66,6 +66,45 @@ export function resetSentAlertLockMap() {
 }
 
 /**
+ * Generates formatted text for Attendance & Staff alerts
+ */
+export function formatAttendanceMessageText({ parentName, studentName, formattedDate, type, detail, sessionName }) {
+  const rawParent = (parentName || '').trim();
+  const pName = (rawParent && !['undefined', 'null'].includes(rawParent.toLowerCase()))
+    ? rawParent
+    : 'Parent';
+  const resolvedSessionName = (sessionName || '').trim();
+  const isStaffAlert = (typeof detail === 'string' && detail.includes('Staff Attendance')) || (resolvedSessionName && resolvedSessionName.includes('Duty'));
+
+  if (isStaffAlert) {
+    if (type === 'IN') {
+      return `Dear ${studentName}, your staff attendance check-in has been safely recorded on ${formattedDate} at ${detail}. - Career Xone`;
+    } else if (type === 'OUT') {
+      return `Dear ${studentName}, your staff attendance check-out has been safely recorded on ${formattedDate} at ${detail}. - Career Xone`;
+    } else {
+      return `Dear ${studentName}, your staff attendance status has been updated on ${formattedDate} (${detail}). - Career Xone`;
+    }
+  } else if (type === 'IN') {
+    const cleanDetail = typeof detail === 'string' ? detail.trim() : '';
+    const hasSessionInDetail = cleanDetail.toLowerCase().includes(' for ');
+    const sessionSuffix = (!hasSessionInDetail && resolvedSessionName && resolvedSessionName.toLowerCase() !== 'general')
+      ? ` for ${resolvedSessionName}`
+      : '';
+    return `Dear ${pName}, this is to inform you that your ward ${studentName} has safely arrived at the institute on ${formattedDate} at ${cleanDetail}${sessionSuffix}. - Career Xone`.replace(/\s+/g, ' ').replace(/\.\s*\./g, '.');
+  } else if (type === 'OUT') {
+    const cleanDetail = typeof detail === 'string' ? detail.trim() : '';
+    const hasSessionInDetail = cleanDetail.toLowerCase().includes(' after ') || cleanDetail.toLowerCase().includes(' for ');
+    const sessionSuffix = (!hasSessionInDetail && resolvedSessionName && resolvedSessionName.toLowerCase() !== 'general')
+      ? ` after ${resolvedSessionName}`
+      : '';
+    return `Dear ${pName}, this is to inform you that your ward ${studentName} has left the institute on ${formattedDate} at ${cleanDetail}${sessionSuffix}. - Career Xone`.replace(/\s+/g, ' ').replace(/\.\s*\./g, '.');
+  } else if (type === 'ABSENT') {
+    return `Dear ${pName}, this is to inform you that your ward ${studentName} is absent from the institute today on ${formattedDate} (${detail}). - Career Xone`;
+  }
+  return '';
+}
+
+/**
  * Sends a WhatsApp message to the specified parent phone number.
  * Logs the message details to the database (SMSLog).
  * Includes Atomic Multi-PC duplicate lock and persistent messaging check.
@@ -83,16 +122,18 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   const resolvedSessionName = sessionName || (
     typeof detail === 'string' && detail.includes(' for ')
       ? detail.split(' for ')[1]?.split(' (')[0]?.trim()
-      : (typeof detail === 'string' && detail.includes('(') && !detail.includes('(Duration:') && !detail.includes('(Staff Attendance)')
-          ? detail.split('(')[1]?.split(')')[0]?.trim()
-          : null)
+      : (typeof detail === 'string' && detail.includes(' after ')
+        ? detail.split(' after ')[1]?.split(' (')[0]?.trim()
+        : null)
   );
 
-  // 2. In-Memory Fast De-duplication Guard
+  // Today string for duplicate key
   const todayStr = new Date().toISOString().split('T')[0];
+
+  // 2. In-Memory Atomic Multi-PC Lock
   if (isDuplicateAlert(studentId, type, todayStr, resolvedSessionName)) {
-    console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented for ${studentName} (${type}) - Already sent by connected PC instance!`);
-    return { success: true, skipped: true, reason: 'Duplicate alert prevented' };
+    console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented in-memory for ${studentName} (${type})`);
+    return { success: true, skipped: true, reason: 'Duplicate alert prevented by in-memory lock' };
   }
 
   // 3. 🛡️ ATOMIC MULTI-PC DISTRIBUTED LOCK (Database-Level Guarantee)
@@ -107,7 +148,6 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       date: todayStr,
       lockedBy: os.hostname()
     });
-    recordSentAlert(studentId, type, todayStr, resolvedSessionName);
   } catch (lockErr) {
     if (lockErr.code === 11000 || lockErr.message?.includes('duplicate key')) {
       recordSentAlert(studentId, type, todayStr, resolvedSessionName);
@@ -146,26 +186,9 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   const formattedDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
 
   // Build message text based on type
-  const rawParent = (parentName || '').trim();
-  const pName = (rawParent && !['undefined', 'null'].includes(rawParent.toLowerCase()))
-    ? rawParent
-    : 'Parent';
-  const isStaffAlert = (typeof detail === 'string' && detail.includes('Staff Attendance')) || (sessionName && sessionName.includes('Duty'));
   let messageText;
-  if (isStaffAlert) {
-    if (type === 'IN') {
-      messageText = `Dear ${studentName}, your staff attendance check-in has been safely recorded on ${formattedDate} at ${detail}. - Career Xone`;
-    } else if (type === 'OUT') {
-      messageText = `Dear ${studentName}, your staff attendance check-out has been safely recorded on ${formattedDate} at ${detail}. - Career Xone`;
-    } else {
-      messageText = `Dear ${studentName}, your staff attendance status has been updated on ${formattedDate} (${detail}). - Career Xone`;
-    }
-  } else if (type === 'IN') {
-    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} has safely arrived at the institute on ${formattedDate} at ${detail}. - Career Xone`;
-  } else if (type === 'OUT') {
-    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} has left the institute on ${formattedDate} at ${detail}. - Career Xone`;
-  } else if (type === 'ABSENT') {
-    messageText = `Dear ${pName}, this is to inform you that your ward ${studentName} is absent from the institute today on ${formattedDate} (${detail}). - Career Xone`;
+  if (['IN', 'OUT', 'ABSENT'].includes(type) || (typeof detail === 'string' && detail.includes('Staff Attendance')) || (resolvedSessionName && resolvedSessionName.includes('Duty'))) {
+    messageText = formatAttendanceMessageText({ parentName, studentName, formattedDate, type, detail, sessionName: resolvedSessionName });
   } else if (type === 'TEST_RESULT' && typeof detail === 'object') {
     const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/parent';
     const percent = detail.percentage ?? (detail.totalMarks ? Math.round((Number(detail.marks) / detail.totalMarks) * 1000) / 10 : 0);

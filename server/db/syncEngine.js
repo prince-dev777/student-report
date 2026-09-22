@@ -73,15 +73,25 @@ export async function mirrorWrite(collectionName, doc) {
         { $set: repl },
         { upsert: true }
       );
-    } else if (collectionName === 'attendances' && doc.studentId && doc.date) {
+    } else if (collectionName === 'attendances') {
+      const attFilters = [];
+      if (doc.id) attFilters.push({ id: doc.id });
+      if (doc.studentId && doc.date) attFilters.push({ studentId: doc.studentId, date: doc.date });
+      if (doc._id && mongoose.Types.ObjectId.isValid(doc._id)) attFilters.push({ _id: new mongoose.Types.ObjectId(doc._id) });
       await cloudColl.updateOne(
-        { studentId: doc.studentId, date: doc.date },
+        attFilters.length > 0 ? { $or: attFilters } : { _id: doc._id },
         { $set: repl },
         { upsert: true }
       );
     } else {
+      const idFilters = [];
+      if (doc._id) {
+        if (mongoose.Types.ObjectId.isValid(doc._id)) idFilters.push({ _id: new mongoose.Types.ObjectId(doc._id) });
+        idFilters.push({ _id: doc._id });
+      }
+      if (doc.id) idFilters.push({ id: doc.id });
       await cloudColl.updateOne(
-        { _id: doc._id },
+        idFilters.length > 0 ? { $or: idFilters } : { _id: doc._id },
         { $set: repl },
         { upsert: true }
       );
@@ -188,10 +198,13 @@ export async function drainPendingTombstones() {
       if (t.docId && mongoose.Types.ObjectId.isValid(t.docId)) clauses.push({ _id: new mongoose.Types.ObjectId(t.docId) });
       if (t.docId) clauses.push({ _id: String(t.docId) });
       if (t.customId) clauses.push({ id: String(t.customId) });
-      if (t.rollNo) clauses.push({ rollNo: String(t.rollNo) });
-      if (t.username) clauses.push({ username: String(t.username) });
-      if (t.studentId) clauses.push({ studentId: String(t.studentId) });
-      if (t.testId) clauses.push({ testId: String(t.testId) });
+      if (t.collectionName === 'students') {
+        if (t.rollNo) clauses.push({ rollNo: String(t.rollNo) });
+        if (t.studentId) clauses.push({ studentId: String(t.studentId) });
+        if (t.username) clauses.push({ username: String(t.username) });
+      }
+      if (t.collectionName === 'users' && t.username) clauses.push({ username: String(t.username) });
+      if (t.collectionName === 'tests' && t.testId) clauses.push({ testId: String(t.testId) });
 
       if (clauses.length > 0) {
         await targetCloudColl.deleteMany({ $or: clauses }).catch(() => {});
@@ -203,10 +216,10 @@ export async function drainPendingTombstones() {
       collectionName: t.collectionName,
       docId: t.docId ? String(t.docId) : null,
       customId: t.customId ? String(t.customId) : null,
-      rollNo: t.rollNo ? String(t.rollNo) : null,
-      username: t.username ? String(t.username) : null,
-      studentId: t.studentId ? String(t.studentId) : null,
-      testId: t.testId ? String(t.testId) : null,
+      rollNo: t.collectionName === 'students' && t.rollNo ? String(t.rollNo) : null,
+      username: (t.collectionName === 'users' || t.collectionName === 'students') && t.username ? String(t.username) : null,
+      studentId: t.collectionName === 'students' && t.studentId ? String(t.studentId) : null,
+      testId: t.collectionName === 'tests' && t.testId ? String(t.testId) : null,
       deletedAt: t.deletedAt ? new Date(t.deletedAt) : new Date()
     }));
 
@@ -263,10 +276,10 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
     const searchKeys = {
       _ids: new Set(localDocs.map(d => String(d._id))),
       ids: new Set(localDocs.map(d => d.id).filter(Boolean)),
-      rollNos: new Set(localDocs.map(d => d.rollNo ? String(d.rollNo) : null).filter(Boolean)),
-      usernames: new Set(localDocs.map(d => d.username ? String(d.username) : null).filter(Boolean)),
-      studentIds: new Set(localDocs.map(d => d.studentId ? String(d.studentId) : null).filter(Boolean)),
-      testIds: new Set(localDocs.map(d => d.testId ? String(d.testId) : null).filter(Boolean))
+      rollNos: new Set(collectionName === 'students' ? localDocs.map(d => d.rollNo ? String(d.rollNo) : null).filter(Boolean) : []),
+      usernames: new Set((collectionName === 'users' || collectionName === 'students') ? localDocs.map(d => d.username ? String(d.username) : null).filter(Boolean) : []),
+      studentIds: new Set(collectionName === 'students' ? localDocs.map(d => d.studentId ? String(d.studentId) : null).filter(Boolean) : []),
+      testIds: new Set(collectionName === 'tests' ? localDocs.map(d => d.testId ? String(d.testId) : null).filter(Boolean) : [])
     };
 
     // Extract directly from filter clauses
@@ -280,21 +293,27 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
         if (Array.isArray(f.id?.$in)) f.id.$in.forEach(id => searchKeys.ids.add(String(id)));
         else searchKeys.ids.add(String(f.id));
       }
-      if (f.rollNo) {
-        if (Array.isArray(f.rollNo?.$in)) f.rollNo.$in.forEach(r => searchKeys.rollNos.add(String(r)));
-        else searchKeys.rollNos.add(String(f.rollNo));
+      if (collectionName === 'students') {
+        if (f.rollNo) {
+          if (Array.isArray(f.rollNo?.$in)) f.rollNo.$in.forEach(r => searchKeys.rollNos.add(String(r)));
+          else searchKeys.rollNos.add(String(f.rollNo));
+        }
+        if (f.studentId) {
+          if (Array.isArray(f.studentId?.$in)) f.studentId.$in.forEach(s => searchKeys.studentIds.add(String(s)));
+          else searchKeys.studentIds.add(String(f.studentId));
+        }
       }
-      if (f.username) {
-        if (Array.isArray(f.username?.$in)) f.username.$in.forEach(u => searchKeys.usernames.add(String(u)));
-        else searchKeys.usernames.add(String(f.username));
+      if (collectionName === 'users' || collectionName === 'students') {
+        if (f.username) {
+          if (Array.isArray(f.username?.$in)) f.username.$in.forEach(u => searchKeys.usernames.add(String(u)));
+          else searchKeys.usernames.add(String(f.username));
+        }
       }
-      if (f.studentId) {
-        if (Array.isArray(f.studentId?.$in)) f.studentId.$in.forEach(s => searchKeys.studentIds.add(String(s)));
-        else searchKeys.studentIds.add(String(f.studentId));
-      }
-      if (f.testId) {
-        if (Array.isArray(f.testId?.$in)) f.testId.$in.forEach(t => searchKeys.testIds.add(String(t)));
-        else searchKeys.testIds.add(String(f.testId));
+      if (collectionName === 'tests') {
+        if (f.testId) {
+          if (Array.isArray(f.testId?.$in)) f.testId.$in.forEach(t => searchKeys.testIds.add(String(t)));
+          else searchKeys.testIds.add(String(f.testId));
+        }
       }
       if (Array.isArray(f.$or)) f.$or.forEach(extractFilterKeys);
     };
@@ -309,10 +328,10 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
         orClauses.push({ _id: { $in: [...objIds, ...strIds] } });
       }
       if (keys.ids.size > 0) orClauses.push({ id: { $in: Array.from(keys.ids) } });
-      if (keys.rollNos.size > 0) orClauses.push({ rollNo: { $in: Array.from(keys.rollNos) } });
-      if (keys.usernames.size > 0) orClauses.push({ username: { $in: Array.from(keys.usernames) } });
-      if (keys.studentIds.size > 0) orClauses.push({ studentId: { $in: Array.from(keys.studentIds) } });
-      if (keys.testIds.size > 0) orClauses.push({ testId: { $in: Array.from(keys.testIds) } });
+      if (collectionName === 'students' && keys.rollNos.size > 0) orClauses.push({ rollNo: { $in: Array.from(keys.rollNos) } });
+      if ((collectionName === 'users' || collectionName === 'students') && keys.usernames.size > 0) orClauses.push({ username: { $in: Array.from(keys.usernames) } });
+      if (collectionName === 'students' && keys.studentIds.size > 0) orClauses.push({ studentId: { $in: Array.from(keys.studentIds) } });
+      if (collectionName === 'tests' && keys.testIds.size > 0) orClauses.push({ testId: { $in: Array.from(keys.testIds) } });
       return orClauses.length > 0 ? { $or: orClauses } : fallback;
     };
 
@@ -324,10 +343,10 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
         cloudDocs.forEach(cd => {
           if (cd._id) searchKeys._ids.add(String(cd._id));
           if (cd.id) searchKeys.ids.add(String(cd.id));
-          if (cd.rollNo) searchKeys.rollNos.add(String(cd.rollNo));
-          if (cd.username) searchKeys.usernames.add(String(cd.username));
-          if (cd.studentId) searchKeys.studentIds.add(String(cd.studentId));
-          if (cd.testId) searchKeys.testIds.add(String(cd.testId));
+          if (collectionName === 'students' && cd.rollNo) searchKeys.rollNos.add(String(cd.rollNo));
+          if ((collectionName === 'users' || collectionName === 'students') && cd.username) searchKeys.usernames.add(String(cd.username));
+          if (collectionName === 'students' && cd.studentId) searchKeys.studentIds.add(String(cd.studentId));
+          if (collectionName === 'tests' && cd.testId) searchKeys.testIds.add(String(cd.testId));
         });
       }
     } catch (e) {}
@@ -370,17 +389,25 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
         collectionName,
         docId: String(d._id),
         customId: d.id ? String(d.id) : null,
-        rollNo: d.rollNo ? String(d.rollNo) : null,
-        username: d.username ? String(d.username) : null,
-        studentId: d.studentId ? String(d.studentId) : null,
-        testId: d.testId ? String(d.testId) : null,
+        rollNo: collectionName === 'students' ? (d.rollNo ? String(d.rollNo) : null) : null,
+        username: (collectionName === 'users' || collectionName === 'students') ? (d.username ? String(d.username) : null) : null,
+        studentId: collectionName === 'students' ? (d.studentId ? String(d.studentId) : null) : null,
+        testId: collectionName === 'tests' ? (d.testId ? String(d.testId) : null) : null,
         deletedAt: new Date()
       });
     });
 
-    searchKeys.rollNos.forEach(r => addTombstone({ collectionName, docId: null, customId: null, rollNo: String(r), username: null, studentId: null, testId: null, deletedAt: new Date() }));
+    if (collectionName === 'students') {
+      searchKeys.rollNos.forEach(r => addTombstone({ collectionName, docId: null, customId: null, rollNo: String(r), username: null, studentId: null, testId: null, deletedAt: new Date() }));
+      searchKeys.studentIds.forEach(s => addTombstone({ collectionName, docId: null, customId: null, rollNo: null, username: null, studentId: String(s), testId: null, deletedAt: new Date() }));
+    }
     searchKeys.ids.forEach(id => addTombstone({ collectionName, docId: null, customId: String(id), rollNo: null, username: null, studentId: null, testId: null, deletedAt: new Date() }));
-    searchKeys.usernames.forEach(u => addTombstone({ collectionName, docId: null, customId: null, rollNo: null, username: String(u), studentId: null, testId: null, deletedAt: new Date() }));
+    if (collectionName === 'users' || collectionName === 'students') {
+      searchKeys.usernames.forEach(u => addTombstone({ collectionName, docId: null, customId: null, rollNo: null, username: String(u), studentId: null, testId: null, deletedAt: new Date() }));
+    }
+    if (collectionName === 'tests') {
+      searchKeys.testIds.forEach(t => addTombstone({ collectionName, docId: null, customId: null, rollNo: null, username: null, studentId: null, testId: String(t), deletedAt: new Date() }));
+    }
 
     // 3. Handle cascaded relations with universal multi-key deletion
     for (const rel of cascadeRelations) {
@@ -453,17 +480,23 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
             collectionName: rel.collection,
             docId: String(d._id),
             customId: d.id ? String(d.id) : null,
-            rollNo: d.rollNo ? String(d.rollNo) : null,
-            username: d.username ? String(d.username) : null,
-            studentId: d.studentId ? String(d.studentId) : null,
-            testId: d.testId ? String(d.testId) : null,
+            rollNo: rel.collection === 'students' ? (d.rollNo ? String(d.rollNo) : null) : null,
+            username: (rel.collection === 'users' || rel.collection === 'students') ? (d.username ? String(d.username) : null) : null,
+            studentId: rel.collection === 'students' ? (d.studentId ? String(d.studentId) : null) : null,
+            testId: rel.collection === 'tests' ? (d.testId ? String(d.testId) : null) : null,
             deletedAt: new Date()
           });
         });
 
-        relKeys.usernames.forEach(u => addTombstone({ collectionName: rel.collection, docId: null, customId: null, rollNo: null, username: String(u), studentId: null, testId: null, deletedAt: new Date() }));
-        relKeys.studentIds.forEach(s => addTombstone({ collectionName: rel.collection, docId: null, customId: null, rollNo: null, username: null, studentId: String(s), testId: null, deletedAt: new Date() }));
-        relKeys.testIds.forEach(t => addTombstone({ collectionName: rel.collection, docId: null, customId: null, rollNo: null, username: null, studentId: null, testId: String(t), deletedAt: new Date() }));
+        if (rel.collection === 'users' || rel.collection === 'students') {
+          relKeys.usernames.forEach(u => addTombstone({ collectionName: rel.collection, docId: null, customId: null, rollNo: null, username: String(u), studentId: null, testId: null, deletedAt: new Date() }));
+        }
+        if (rel.collection === 'students') {
+          relKeys.studentIds.forEach(s => addTombstone({ collectionName: rel.collection, docId: null, customId: null, rollNo: null, username: null, studentId: String(s), testId: null, deletedAt: new Date() }));
+        }
+        if (rel.collection === 'tests') {
+          relKeys.testIds.forEach(t => addTombstone({ collectionName: rel.collection, docId: null, customId: null, rollNo: null, username: null, studentId: null, testId: String(t), deletedAt: new Date() }));
+        }
       } catch (relErr) {
         logWarn('SYNC_DELETE', `Cascade delete notice on [${rel.collection}]: ${relErr.message}`);
       }
@@ -544,11 +577,14 @@ export async function performFullSync() {
           if (!d) return false;
           if (d._id && tDocIds.has(String(d._id))) return true;
           if (d.id && tCustomIds.has(String(d.id))) return true;
-          if (d.rollNo && tRollNos.has(String(d.rollNo))) return true;
-          if (d.username && tUsernames.has(String(d.username))) return true;
-          if (d.studentId && tStudentIds.has(String(d.studentId))) return true;
-          if (d.testId && tTestIds.has(String(d.testId))) return true;
-          if (d.parentUserId && tUsernames.has(String(d.parentUserId))) return true;
+          if (collName === 'students') {
+            if (d.rollNo && tRollNos.has(String(d.rollNo))) return true;
+            if (d.studentId && tStudentIds.has(String(d.studentId))) return true;
+            if (d.username && tUsernames.has(String(d.username))) return true;
+            if (d.parentUserId && tUsernames.has(String(d.parentUserId))) return true;
+          }
+          if (collName === 'users' && d.username && tUsernames.has(String(d.username))) return true;
+          if (collName === 'tests' && d.testId && tTestIds.has(String(d.testId))) return true;
           return false;
         };
 
@@ -559,10 +595,10 @@ export async function performFullSync() {
             { _id: { $in: Array.from(tDocIds) } }
           ] : []),
           ...(tCustomIds.size > 0 ? [{ id: { $in: Array.from(tCustomIds) } }] : []),
-          ...(tRollNos.size > 0 ? [{ rollNo: { $in: Array.from(tRollNos) } }] : []),
-          ...(tUsernames.size > 0 ? [{ username: { $in: Array.from(tUsernames) } }] : []),
-          ...(tStudentIds.size > 0 ? [{ studentId: { $in: Array.from(tStudentIds) } }] : []),
-          ...(tTestIds.size > 0 ? [{ testId: { $in: Array.from(tTestIds) } }] : [])
+          ...(collName === 'students' && tRollNos.size > 0 ? [{ rollNo: { $in: Array.from(tRollNos) } }] : []),
+          ...(collName === 'users' && tUsernames.size > 0 ? [{ username: { $in: Array.from(tUsernames) } }] : []),
+          ...(collName === 'students' && tStudentIds.size > 0 ? [{ studentId: { $in: Array.from(tStudentIds) } }] : []),
+          ...(collName === 'tests' && tTestIds.size > 0 ? [{ testId: { $in: Array.from(tTestIds) } }] : [])
         ];
 
         if (tombFilterClauses.length > 0) {
@@ -763,13 +799,27 @@ export async function performFullSync() {
                   }
                 };
               }
-              const filter = collName === 'attendances' && doc.studentId && doc.date
-                ? { studentId: doc.studentId, date: doc.date }
-                : { _id: doc._id };
+              if (collName === 'attendances') {
+                const repl = { ...doc };
+                delete repl._id;
+                const orConds = [];
+                if (doc.id) orConds.push({ id: doc.id });
+                if (doc.studentId && doc.date) orConds.push({ studentId: doc.studentId, date: doc.date });
+                if (doc._id && mongoose.Types.ObjectId.isValid(doc._id)) orConds.push({ _id: new mongoose.Types.ObjectId(doc._id) });
+                return {
+                  updateOne: {
+                    filter: orConds.length > 0 ? { $or: orConds } : { _id: doc._id },
+                    update: { $set: repl },
+                    upsert: true
+                  }
+                };
+              }
+              const repl = { ...doc };
+              delete repl._id;
               return {
-                replaceOne: {
-                  filter,
-                  replacement: doc,
+                updateOne: {
+                  filter: { _id: doc._id },
+                  update: { $set: repl },
                   upsert: true
                 }
               };
@@ -1003,11 +1053,14 @@ export async function pullAndRestoreFromCloud() {
           if (!d) return false;
           if (d._id && tDocIds.has(String(d._id))) return true;
           if (d.id && tCustomIds.has(String(d.id))) return true;
-          if (d.rollNo && tRollNos.has(String(d.rollNo))) return true;
-          if (d.username && tUsernames.has(String(d.username))) return true;
-          if (d.studentId && tStudentIds.has(String(d.studentId))) return true;
-          if (d.testId && tTestIds.has(String(d.testId))) return true;
-          if (d.parentUserId && tUsernames.has(String(d.parentUserId))) return true;
+          if (collName === 'students') {
+            if (d.rollNo && tRollNos.has(String(d.rollNo))) return true;
+            if (d.studentId && tStudentIds.has(String(d.studentId))) return true;
+            if (d.username && tUsernames.has(String(d.username))) return true;
+            if (d.parentUserId && tUsernames.has(String(d.parentUserId))) return true;
+          }
+          if (collName === 'users' && d.username && tUsernames.has(String(d.username))) return true;
+          if (collName === 'tests' && d.testId && tTestIds.has(String(d.testId))) return true;
           return false;
         };
 
@@ -1018,10 +1071,10 @@ export async function pullAndRestoreFromCloud() {
             { _id: { $in: Array.from(tDocIds) } }
           ] : []),
           ...(tCustomIds.size > 0 ? [{ id: { $in: Array.from(tCustomIds) } }] : []),
-          ...(tRollNos.size > 0 ? [{ rollNo: { $in: Array.from(tRollNos) } }] : []),
-          ...(tUsernames.size > 0 ? [{ username: { $in: Array.from(tUsernames) } }] : []),
-          ...(tStudentIds.size > 0 ? [{ studentId: { $in: Array.from(tStudentIds) } }] : []),
-          ...(tTestIds.size > 0 ? [{ testId: { $in: Array.from(tTestIds) } }] : [])
+          ...(collName === 'students' && tRollNos.size > 0 ? [{ rollNo: { $in: Array.from(tRollNos) } }] : []),
+          ...(collName === 'users' && tUsernames.size > 0 ? [{ username: { $in: Array.from(tUsernames) } }] : []),
+          ...(collName === 'students' && tStudentIds.size > 0 ? [{ studentId: { $in: Array.from(tStudentIds) } }] : []),
+          ...(collName === 'tests' && tTestIds.size > 0 ? [{ testId: { $in: Array.from(tTestIds) } }] : [])
         ];
 
         if (tombFilterClauses.length > 0) {

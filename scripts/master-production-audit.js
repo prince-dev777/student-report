@@ -223,7 +223,7 @@ async function runMasterProductionAudit() {
 
   const serverProcess = spawn('node', ['server.js'], {
     cwd: serverDir,
-    env: { ...process.env, PORT: String(TEST_PORT) },
+    env: { ...process.env, PORT: String(TEST_PORT), IS_AUDIT_RUN: '1' },
     stdio: 'pipe'
   });
 

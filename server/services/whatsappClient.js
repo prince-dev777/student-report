@@ -3,6 +3,7 @@ const { Client, LocalAuth } = pkg;
 import qrcode from 'qrcode';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import { exec, execSync } from 'child_process';
 
@@ -12,18 +13,62 @@ const __dirname = path.dirname(__filename);
 let client = null;
 let qrCodeData = null; // Stores the latest base64 QR code image
 let pairingCodeData = null; // Stores { code, phoneNumber, requestedAt }
-let clientStatus = 'disconnected'; // 'disconnected' | 'qr' | 'connecting' | 'ready' | 'auth_failure'
+let clientStatus = 'disconnected'; // 'disconnected' | 'qr' | 'connecting' | 'authenticated' | 'ready' | 'auth_failure'
 let initRetryCount = 0;
 const MAX_INIT_RETRIES = 3;
 const RETRY_DELAYS = [3000, 6000, 15000]; // exponential backoff
 
 function getAuthDataPath() {
-  return process.env.USER_DATA_PATH || path.join(__dirname, '..');
+  const appData = process.env.APPDATA || (process.platform === 'darwin' 
+    ? path.join(os.homedir(), 'Library', 'Application Support') 
+    : path.join(os.homedir(), '.config'));
+
+  // Canonical persistent storage directory in AppData/Roaming for both Dev and Production
+  const canonicalUserData = process.env.USER_DATA_PATH || path.join(appData, 'Career Xone Pro');
+  const canonicalSession = path.join(canonicalUserData, 'data', '.wwebjs_auth', 'session', 'Default', 'IndexedDB');
+  const canonicalVault = path.join(canonicalUserData, 'data', '.wwebjs_auth', 'session_vault', 'IndexedDB');
+
+  // If canonical location already has an active session, always use it directly
+  if (fs.existsSync(canonicalSession) || fs.existsSync(canonicalVault)) {
+    console.log(`[WhatsAppClient] 📁 Using canonical persistent session at: ${canonicalUserData}`);
+    return canonicalUserData;
+  }
+
+  // Check candidate directories (excluding any packed/unpacked program resources) for existing session to auto-migrate
+  const candidatePaths = [
+    path.join(appData, 'student-report'),
+    !__dirname.includes('app.asar') ? path.join(__dirname, '..') : null
+  ].filter(Boolean);
+
+  for (const cPath of candidatePaths) {
+    if (cPath === canonicalUserData) continue;
+    const idbPath = path.join(cPath, 'data', '.wwebjs_auth', 'session', 'Default', 'IndexedDB');
+    const vaultPath = path.join(cPath, 'data', '.wwebjs_auth', 'session_vault', 'IndexedDB');
+    if (fs.existsSync(idbPath) || fs.existsSync(vaultPath)) {
+      console.log(`[WhatsAppClient] 📦 Auto-migrating session from ${cPath} -> ${canonicalUserData}...`);
+      try {
+        const srcAuth = path.join(cPath, 'data', '.wwebjs_auth');
+        const dstAuth = path.join(canonicalUserData, 'data', '.wwebjs_auth');
+        fs.mkdirSync(dstAuth, { recursive: true });
+        fs.cpSync(srcAuth, dstAuth, { recursive: true, force: true });
+        clearChromiumLocks(dstAuth);
+        console.log(`[WhatsAppClient] ✅ Successfully migrated session to: ${canonicalUserData}`);
+        return canonicalUserData;
+      } catch (err) {
+        console.warn(`[WhatsAppClient] Migration notice:`, err.message);
+      }
+    }
+  }
+
+  // Fallback to canonical app directory
+  try { fs.mkdirSync(canonicalUserData, { recursive: true }); } catch (e) {}
+  return canonicalUserData;
 }
 
 export function getWhatsAppClientState() {
+  const isFunctionallyReady = (client && client.info && client.info.wid) || clientStatus === 'ready';
   return { 
-    status: clientStatus, 
+    status: isFunctionallyReady ? 'ready' : clientStatus, 
     qrCode: qrCodeData,
     pairingCode: pairingCodeData,
     info: client && client.info ? {
@@ -56,16 +101,21 @@ async function safeDeleteDir(dirPath, maxRetries = 3) {
   return false;
 }
 
-// Helper: safely remove SingletonLock, lockfile, and Chromium socket locks without deleting session credentials
+// Helper: safely remove SingletonLock, lockfile, and Chromium socket locks without deleting session credentials or LevelDB locks
 function clearChromiumLocks(dirPath) {
+  // CRITICAL: NEVER touch or delete lockfiles while Chrome is actively running!
+  if (client && clientStatus !== 'disconnected') return;
   if (!fs.existsSync(dirPath)) return;
-  const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'lockfile', 'LOCK'];
+  const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'lockfile'];
   try {
     const entries = fs.readdirSync(dirPath, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
-        clearChromiumLocks(fullPath);
+        // Never recurse into or delete inside leveldb directories
+        if (!entry.name.endsWith('.leveldb') && !entry.name.endsWith('.ldb')) {
+          clearChromiumLocks(fullPath);
+        }
       } else if (lockFiles.includes(entry.name)) {
         try {
           fs.unlinkSync(fullPath);
@@ -93,9 +143,6 @@ function backupSessionVault(dataPath) {
     const idbFiles = fs.readdirSync(idbDir);
     const hasData = idbFiles.some(f => f.endsWith('.ldb') || f.endsWith('.log'));
     if (!hasData) return;
-
-    // Remove volatile lockfiles before copying snapshot
-    clearChromiumLocks(sessionDir);
 
     fs.mkdirSync(vaultDir, { recursive: true });
 
@@ -235,12 +282,44 @@ function killLeftoverChromium() {
 }
 
 let isManualDisconnecting = false;
+let heartbeatInterval = null;
+
+function startHeartbeat() {
+  stopHeartbeat();
+  heartbeatInterval = setInterval(async () => {
+    if (!client || clientStatus !== 'ready') return;
+    try {
+      const statePromise = client.getState();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Heartbeat Timeout')), 10000)
+      );
+      const state = await Promise.race([statePromise, timeoutPromise]);
+      if (state && state !== 'CONNECTED') {
+        console.log(`[WhatsAppHeartbeat] Client reporting state: ${state}`);
+      }
+    } catch (err) {
+      // Soft notice only - NEVER forcibly destroy an active client on a momentary delay!
+      console.log(`[WhatsAppHeartbeat] Soft notice: ${err.message}`);
+    }
+  }, 60000);
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+}
 
 export async function disconnectWhatsAppClient() {
   isManualDisconnecting = true;
+  stopHeartbeat();
   if (client) {
     try {
-      await client.destroy();
+      await Promise.race([
+        client.destroy(),
+        new Promise(resolve => setTimeout(resolve, 3000))
+      ]);
       console.log('[WhatsAppClient] Client destroyed successfully.');
     } catch (err) {
       console.error('[WhatsAppClient] Error during client.destroy():', err.message);
@@ -264,21 +343,28 @@ export async function disconnectWhatsAppClient() {
   return true;
 }
 
-// Graceful shutdown before app exit (saves session state cleanly without corruption)
+// Graceful shutdown before app exit (saves session state cleanly without corruption or hanging)
 export async function gracefulShutdownWhatsAppClient() {
+  stopHeartbeat();
   if (client) {
     try {
       console.log('[WhatsAppClient] 🛑 Gracefully closing WhatsApp browser and saving session...');
       const dataPath = getAuthDataPath();
-      if (clientStatus === 'ready') {
+      const wasReady = clientStatus === 'ready' || clientStatus === 'authenticated';
+      await Promise.race([
+        client.destroy(),
+        new Promise(resolve => setTimeout(resolve, 4000))
+      ]);
+      console.log('[WhatsAppClient] ✅ WhatsApp client destroyed gracefully.');
+      client = null;
+      if (wasReady) {
+        // Safe to snapshot only after browser process has cleanly exited and closed all files!
         backupSessionVault(dataPath);
       }
-      await client.destroy();
-      console.log('[WhatsAppClient] ✅ WhatsApp client destroyed gracefully.');
     } catch (e) {
       console.warn('[WhatsAppClient] Notice during graceful shutdown:', e.message);
+      client = null;
     }
-    client = null;
   }
 }
 
@@ -339,8 +425,8 @@ export async function cancelWhatsAppPairingCode() {
 // ============================================================================
 
 export function initializeWhatsAppClient() {
-  // If already connecting or ready, do not duplicate
-  if (clientStatus === 'connecting' || clientStatus === 'ready' || clientStatus === 'qr') {
+  // If already connecting or ready or authenticated, do not duplicate
+  if (clientStatus === 'connecting' || clientStatus === 'ready' || clientStatus === 'qr' || clientStatus === 'authenticated') {
     console.log(`[WhatsAppClient] Client already in status: ${clientStatus}. Skipping initialization.`);
     return;
   }
@@ -374,14 +460,21 @@ export function initializeWhatsAppClient() {
         '--disable-infobars',
         '--window-size=1280,800',
         '--no-first-run',
+        '--no-default-browser-check',
         '--no-zygote',
         '--disable-gpu',
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
         '--disable-renderer-backgrounding',
         '--disable-ipc-flooding-protection',
-        '--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider'
-      ]
+        '--disable-hang-monitor',
+        '--disable-prompt-on-repost',
+        '--disable-session-crashed-bubble',
+        '--disable-features=CalculateNativeWinOcclusion,Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider',
+        '--force-color-profile=srgb',
+        '--mute-audio'
+      ],
+      timeout: 120000
     };
 
     // Always search for system Chrome or Edge for fast, stable Puppeteer launch
@@ -407,10 +500,15 @@ export function initializeWhatsAppClient() {
     const localAuthStrategy = new LocalAuth({
       dataPath: path.join(dataPath, 'data', '.wwebjs_auth')
     });
-    // Windows file-lock protection: Prevent unhandled EBUSY throw when Chrome still holds lockfile during logout
+    // Windows file-lock & multi-device protection: Prevent unhandled EBUSY and prevent accidental session wipe on transient disconnects
     if (typeof localAuthStrategy.logout === 'function') {
       const originalLogout = localAuthStrategy.logout.bind(localAuthStrategy);
       localAuthStrategy.logout = async function () {
+        // ONLY delete session directory if the user explicitly clicked Disconnect in the UI!
+        if (!isManualDisconnecting) {
+          console.warn('[WhatsAppClient] 🛡️ Blocked automatic session directory wipe on transient logout/sync event!');
+          return null;
+        }
         try {
           return await originalLogout();
         } catch (logoutErr) {
@@ -458,15 +556,8 @@ export function initializeWhatsAppClient() {
       pairingCodeData = null;
       initRetryCount = 0; // Reset on success
 
-      // Save a pristine snapshot of the session to the vault for permanent offline self-healing
-      setTimeout(() => {
-        try {
-          const authPath = getAuthDataPath();
-          backupSessionVault(authPath);
-        } catch (e) {
-          console.warn('[WhatsAppVault] Snapshot notice:', e.message);
-        }
-      }, 5000);
+      // Start periodic keep-alive heartbeat
+      startHeartbeat();
     });
 
     // 🤖 Hook WhatsApp Parent Auto-Reply Bot (catches incoming messages & self-test chats)
@@ -504,11 +595,15 @@ export function initializeWhatsAppClient() {
     client.on('message_create', (msg) => processMsgSafe(msg, 'message_create'));
 
     client.on('authenticated', () => {
-      console.log('[WhatsAppClient] WhatsApp Client authenticated.');
+      console.log('[WhatsAppClient] WhatsApp Client authenticated. Session active.');
+      clientStatus = 'authenticated';
+      qrCodeData = null;
+      pairingCodeData = null;
     });
 
     client.on('auth_failure', (msg) => {
       console.error('[WhatsAppClient] WhatsApp Authentication failure:', msg);
+      stopHeartbeat();
       clientStatus = 'auth_failure';
       qrCodeData = null;
       client = null;
@@ -516,21 +611,31 @@ export function initializeWhatsAppClient() {
 
     client.on('disconnected', (reason) => {
       console.log('[WhatsAppClient] WhatsApp Client disconnected. Reason:', reason);
+      stopHeartbeat();
       clientStatus = 'disconnected';
       qrCodeData = null;
       client = null;
 
-      // If this was NOT a manual disconnect and NOT an explicit logout on phone, auto-reconnect!
-      if (!isManualDisconnecting && reason !== 'LOGOUT') {
+      // If this was NOT a manual disconnect, auto-reconnect using saved session / vault!
+      if (!isManualDisconnecting) {
         const dataPath = getAuthDataPath();
         const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth');
         if (fs.existsSync(sessionDir)) {
-          console.log('[WhatsAppClient] 🔄 Transient network disconnect detected. Auto-reconnecting saved session in 5 seconds...');
-          setTimeout(() => {
-            if (clientStatus === 'disconnected') {
+          if (reason === 'LOGOUT' || reason === 'CONFLICT') {
+            console.log(`[WhatsAppClient] ⚠️ Session unlinked by WhatsApp server (${reason}). Refreshing connection for new pairing...`);
+            killLeftoverChromium().then(() => {
               initializeWhatsAppClient();
-            }
-          }, 5000);
+            });
+          } else {
+            console.log(`[WhatsAppClient] 🔄 Network/transient disconnect detected (${reason}). Auto-reconnecting saved session in 5 seconds...`);
+            setTimeout(() => {
+              if (clientStatus === 'disconnected') {
+                killLeftoverChromium().then(() => {
+                  initializeWhatsAppClient();
+                });
+              }
+            }, 5000);
+          }
         }
       }
     });
@@ -577,7 +682,8 @@ export function resetRetryCount() {
 }
 
 export async function sendWhatsAppMessageWeb(to, message, attachment = null) {
-  if (!client || clientStatus !== 'ready') {
+  const isFunctionallyReady = (client && client.info && client.info.wid) || clientStatus === 'ready';
+  if (!client || !isFunctionallyReady) {
     throw new Error(`WhatsApp client is not ready (Status: ${clientStatus})`);
   }
 

@@ -1,8 +1,11 @@
-const { app, BrowserWindow, dialog, Tray, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, Tray, Menu, ipcMain, powerMonitor } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
+
+// Set application name early so app.getPath('userData') is consistent in dev and production
+app.setName('Career Xone Pro');
 
 // Enforce single instance lock to prevent duplicate app processes & port 5000 conflicts
 const gotTheLock = app.requestSingleInstanceLock();
@@ -188,7 +191,7 @@ const splashHtml = `
       <div class="logo-text">CX</div>
     </div>
     <h1>Career Xone Pro</h1>
-    <p>Starting workspace & local servers...</p>
+    <p>Servers are starting please wait...</p>
     <div class="spinner-bar">
       <div class="spinner-inner"></div>
     </div>
@@ -516,6 +519,14 @@ async function startServer() {
 }
 
 app.whenReady().then(async () => {
+  // Handle Windows Sleep/Hibernate resume to reconnect background services cleanly
+  powerMonitor.on('resume', () => {
+    console.log('[PowerMonitor] ⚡ System resumed from sleep. Notifying background services...');
+    if (serverProcess && serverProcess.connected) {
+      try { serverProcess.send({ type: 'POWER_RESUME' }); } catch (e) {}
+    }
+  });
+
   ipcMain.handle('dialog:showOpenDialog', async (event, options = {}) => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openDirectory', 'createDirectory'],
@@ -592,8 +603,28 @@ app.whenReady().then(async () => {
         // Structured Data Payload -> Generate Clean Vector HTML via pdfTemplate.cjs
         const { generateIdCardPdfHtml } = require('./pdfTemplate.cjs');
         const fontCss = buildFontCss();
-        const { students, logoBase64, defaultName, side } = payload;
-        htmlContent = await generateIdCardPdfHtml(students, logoBase64, fontCss, side || 'duplex');
+        const { students, logoBase64, defaultName, side, cardsPerPage } = payload;
+
+        let logoSrc = '';
+        if (logoBase64 && typeof logoBase64 === 'string' && logoBase64.startsWith('data:image')) {
+          try {
+            const logoTempPath = path.join(app.getPath('temp'), 'cx_id_card_logo.png');
+            const base64Data = logoBase64.replace(/^data:image\/\w+;base64,/, '');
+            fs.writeFileSync(logoTempPath, Buffer.from(base64Data, 'base64'));
+            logoSrc = `file://${logoTempPath.replace(/\\/g, '/')}`;
+          } catch (logoErr) {
+            logoSrc = logoBase64;
+          }
+        } else if (logoBase64) {
+          logoSrc = logoBase64;
+        } else {
+          const localAsset = path.join(__dirname, 'assets/id-logo.png');
+          if (fs.existsSync(localAsset)) {
+            logoSrc = `file://${localAsset.replace(/\\/g, '/')}`;
+          }
+        }
+
+        htmlContent = await generateIdCardPdfHtml(students, logoSrc, fontCss, side || 'duplex', cardsPerPage || 4);
         targetName = defaultName || 'CareerXone_ID_Cards.pdf';
       } else if (typeof payload === 'string') {
         // Backward compatibility: Raw HTML string passed

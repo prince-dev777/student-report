@@ -173,10 +173,10 @@ async function syncToCloud() {
       const tombPurgeClauses = [
         ...(tDocIds.size > 0 || tObjectIds.length > 0 ? [{ _id: { $in: [...Array.from(tDocIds), ...tObjectIds] } }] : []),
         ...(tCustomIds.size > 0 ? [{ id: { $in: Array.from(tCustomIds) } }] : []),
-        ...(tRollNos.size > 0 ? [{ rollNo: { $in: Array.from(tRollNos) } }] : []),
-        ...(tUsernames.size > 0 ? [{ username: { $in: Array.from(tUsernames) } }] : []),
-        ...(tStudentIds.size > 0 ? [{ studentId: { $in: Array.from(tStudentIds) } }] : []),
-        ...(tTestIds.size > 0 ? [{ testId: { $in: Array.from(tTestIds) } }] : [])
+        ...(collName === 'students' && tRollNos.size > 0 ? [{ rollNo: { $in: Array.from(tRollNos) } }] : []),
+        ...(collName === 'users' && tUsernames.size > 0 ? [{ username: { $in: Array.from(tUsernames) } }] : []),
+        ...(collName === 'students' && tStudentIds.size > 0 ? [{ studentId: { $in: Array.from(tStudentIds) } }] : []),
+        ...(collName === 'tests' && tTestIds.size > 0 ? [{ testId: { $in: Array.from(tTestIds) } }] : [])
       ];
 
       if (tombPurgeClauses.length > 0) {
@@ -188,10 +188,10 @@ async function syncToCloud() {
       for (const doc of activeDocs) {
         const isTombstoned = tDocIds.has(String(doc._id)) ||
           (doc.id && tCustomIds.has(String(doc.id))) ||
-          (doc.rollNo && tRollNos.has(String(doc.rollNo))) ||
-          (doc.username && tUsernames.has(String(doc.username))) ||
-          (doc.studentId && tStudentIds.has(String(doc.studentId))) ||
-          (doc.testId && tTestIds.has(String(doc.testId)));
+          (collName === 'students' && doc.rollNo && tRollNos.has(String(doc.rollNo))) ||
+          ((collName === 'users' || collName === 'students') && doc.username && tUsernames.has(String(doc.username))) ||
+          (collName === 'students' && doc.studentId && tStudentIds.has(String(doc.studentId))) ||
+          (collName === 'tests' && doc.testId && tTestIds.has(String(doc.testId)));
         if (isTombstoned) {
           tombstonedLocalIds.push(doc._id);
         } else {

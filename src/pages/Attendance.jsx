@@ -57,6 +57,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import idLogo from '../assets/id-logo.png';
 import StudentIdCard from '../components/StudentIdCard';
+import StaffIdCard from '../components/StaffIdCard';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
@@ -158,6 +159,8 @@ export default function Attendance() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showIdCardsModal, setShowIdCardsModal] = useState(false);
+  const [idCardsModalMode, setIdCardsModalMode] = useState('student'); // 'student' | 'staff'
+  const [selectedStaffDept, setSelectedStaffDept] = useState('all');
   const [showHardwareModal, setShowHardwareModal] = useState(false);
   const [selectedIdCardBatch, setSelectedIdCardBatch] = useState('all');
   const [idCardSearch, setIdCardSearch] = useState('');
@@ -809,9 +812,53 @@ export default function Attendance() {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [students, batches]);
 
-  // Filtered students for ID card printing modal (Exact Roll Priority & 0ms Zero-Lag Indexing)
+  // Available departments for staff ID cards
+  const availableStaffDepts = useMemo(() => {
+    const set = new Set();
+    staffRoster.forEach((s) => {
+      if (s.department) set.add(s.department);
+    });
+    return Array.from(set).sort();
+  }, [staffRoster]);
+
+  // Filtered students / staff for ID card printing modal (Exact Roll/Staff ID Priority & 0ms Zero-Lag Indexing)
   const filteredIdCardStudents = useMemo(() => {
     const rawQ = idCardSearch.trim();
+
+    if (idCardsModalMode === 'staff') {
+      let pool = staffRoster;
+      if (selectedStaffDept !== 'all') {
+        const deptLower = selectedStaffDept.toLowerCase();
+        pool = pool.filter(s => (s.department || '').toLowerCase() === deptLower);
+      }
+      if (!rawQ) return pool;
+      const qLower = rawQ.toLowerCase();
+      const isNumeric = /^\d+$/.test(rawQ);
+
+      if (isNumeric) {
+        const exactMatches = pool.filter((s) => {
+          const sid = String(s.staffId || '').trim();
+          const id = String(s.id || s._id || '').trim();
+          return sid === rawQ || id === rawQ;
+        });
+        if (exactMatches.length > 0) return exactMatches;
+
+        return pool.filter((s) => {
+          const sid = String(s.staffId || '').trim();
+          const p = String(s.phone || '').trim();
+          return sid.startsWith(rawQ) || p.includes(rawQ);
+        });
+      }
+
+      return pool.filter(s => {
+        const name = (s.name || '').toLowerCase();
+        const sid = String(s.staffId || '').toLowerCase();
+        const phone = String(s.phone || '').toLowerCase();
+        const desig = (s.designation || '').toLowerCase();
+        const dept = (s.department || '').toLowerCase();
+        return name.includes(qLower) || sid.includes(qLower) || phone.includes(qLower) || desig.includes(qLower) || dept.includes(qLower);
+      });
+    }
 
     let pool = activeStudents;
     if (selectedIdCardBatch !== 'all') {
@@ -859,12 +906,12 @@ export default function Attendance() {
       const roll = String(s.rollNo || '').toLowerCase();
       return name.includes(qLower) || cls.includes(qLower) || id.includes(qLower) || roll === qLower;
     });
-  }, [activeStudents, selectedIdCardBatch, idCardSearch]);
+  }, [activeStudents, staffRoster, idCardsModalMode, selectedStaffDept, selectedIdCardBatch, idCardSearch]);
 
   // Reset page when batch or search changes
   useEffect(() => {
     setIdCardPreviewPage(1);
-  }, [selectedIdCardBatch, idCardSearch]);
+  }, [selectedIdCardBatch, selectedStaffDept, idCardsModalMode, idCardSearch]);
 
   // Preview Pagination Constants
   const PREVIEW_PAGE_SIZE = 24; // 6 sheets in 4-card mode, 4 sheets in 6-card mode
@@ -898,33 +945,60 @@ export default function Attendance() {
         console.warn('Logo conversion failed:', e);
       }
 
-      // 2. Student data prepare karo (Pure JSON, Zero DOM dependency)
-      const studentData = filteredIdCardStudents.map(s => ({
-        id: s.id || '',
-        studentId: s.studentId || s.id || '',
-        name: s.name || '',
-        rollNo: s.rollNo || s.id || '',
-        photo: s.photo || '',
-        parentName: s.parentName || s.guardianName || 'N/A',
-        parentPhone: s.parentPhone || s.phone || 'N/A',
-        phone: s.phone || '',
-        className: s.class || formatBatchName(s.batch || s.targetClass || s.course, batches) || 'General',
-        batch: s.batch || '',
-        course: s.course || '',
-        targetClass: s.targetClass || ''
-      }));
+      // 2. Student / Staff data prepare karo (Pure JSON, Zero DOM dependency)
+      const isStaffMode = idCardsModalMode === 'staff';
+      const studentData = filteredIdCardStudents.map(s => {
+        if (isStaffMode) {
+          return {
+            id: s.staffId || s.id || s._id || '',
+            studentId: s.staffId || '',
+            name: s.name || '',
+            rollNo: s.staffId || '',
+            photo: s.photo || '',
+            parentName: s.designation || 'Faculty / Staff',
+            parentPhone: s.phone || 'N/A',
+            phone: s.phone || '',
+            className: s.designation || 'Staff / Faculty',
+            batch: s.department || 'General',
+            course: s.designation || 'Staff',
+            department: s.department || 'General',
+            designation: s.designation || 'Staff / Faculty',
+            role: s.role || 'staff',
+            isStaff: true
+          };
+        }
+        return {
+          id: s.id || '',
+          studentId: s.studentId || s.id || '',
+          name: s.name || '',
+          rollNo: s.rollNo || s.id || '',
+          photo: s.photo || '',
+          parentName: s.parentName || s.guardianName || 'N/A',
+          parentPhone: s.parentPhone || s.phone || 'N/A',
+          phone: s.phone || '',
+          className: s.class || formatBatchName(s.batch || s.targetClass || s.course, batches) || 'General',
+          batch: s.batch || '',
+          course: s.course || '',
+          targetClass: s.targetClass || '',
+          isStaff: false
+        };
+      });
 
       if (studentData.length === 0) {
-        toast.error('No students found to export', { id: toastId });
+        toast.error(`No ${isStaffMode ? 'staff members' : 'students'} found to export`, { id: toastId });
         return;
       }
 
-      // 3. Batch filename label
-      const batchLabel = selectedIdCardBatch === 'all'
-        ? 'All_Students'
-        : selectedIdCardBatch.replace(/\s+/g, '_');
+      // 3. Batch / Department filename label
+      const batchLabel = isStaffMode
+        ? (selectedStaffDept === 'all' ? 'All_Departments' : selectedStaffDept.replace(/\s+/g, '_'))
+        : (selectedIdCardBatch === 'all' ? 'All_Students' : selectedIdCardBatch.replace(/\s+/g, '_'));
 
-      toast.loading(`Generating ${studentData.length} vector student cards...`, { id: toastId });
+      const defaultFilename = isStaffMode
+        ? `CareerXone_Staff_ID_Cards_${batchLabel}_${idCardCardsPerPage}perSheet.pdf`
+        : `CareerXone_ID_Cards_${batchLabel}_${idCardCardsPerPage}perSheet.pdf`;
+
+      toast.loading(`Generating ${studentData.length} vector ${isStaffMode ? 'staff' : 'student'} cards...`, { id: toastId });
 
       // 4. Electron Native IPC call — Data bhejo, HTML aur Vector PDF wahan banega
       if (window.electronAPI && typeof window.electronAPI.printToPDF === 'function') {
@@ -932,7 +1006,8 @@ export default function Attendance() {
           students: studentData,
           logoBase64: logoB64,
           side: idCardSide,
-          defaultName: `CareerXone_ID_Cards_${batchLabel}.pdf`
+          cardsPerPage: idCardCardsPerPage,
+          defaultName: defaultFilename
         });
 
         if (result.success) {
@@ -1440,6 +1515,33 @@ export default function Attendance() {
                     <span>Export CSV</span>
                   </button>
 
+                  {/* Print Staff ID Cards Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIdCardsModalMode('staff');
+                      setIdCardSearch('');
+                      setSelectedStaffDept('all');
+                      setShowIdCardsModal(true);
+                    }}
+                    className="btn btn-secondary btn-sm"
+                    style={{
+                      fontSize: '0.80rem',
+                      padding: '8px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      boxShadow: '0 2px 8px rgba(13, 148, 136, 0.35)',
+                      fontWeight: 800
+                    }}
+                  >
+                    <Printer size={14} />
+                    <span>🪪 Print Staff ID Cards</span>
+                  </button>
+
                   {/* Add Staff Button */}
                   <button
                     type="button"
@@ -1614,6 +1716,30 @@ export default function Attendance() {
                                   title="Punch OUT"
                                 >
                                   OUT
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIdCardsModalMode('staff');
+                                    setIdCardSearch(st.staffId || st.name);
+                                    setShowIdCardsModal(true);
+                                  }}
+                                  style={{
+                                    padding: '3px 8px',
+                                    borderRadius: 6,
+                                    border: '1px solid #0d9488',
+                                    background: 'rgba(13, 148, 136, 0.12)',
+                                    color: '#0d9488',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 3
+                                  }}
+                                  title="Print / View Staff ID Card"
+                                >
+                                  🪪 Card
                                 </button>
                               </div>
                             </td>
@@ -3159,7 +3285,10 @@ export default function Attendance() {
                   {/* Print QR ID Cards Button */}
                   <button
                     type="button"
-                    onClick={() => setShowIdCardsModal(true)}
+                    onClick={() => {
+                      setIdCardsModalMode('student');
+                      setShowIdCardsModal(true);
+                    }}
                     style={{
                       padding: '8px 14px',
                       borderRadius: 10,
@@ -3988,15 +4117,22 @@ export default function Attendance() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ padding: 10, borderRadius: 12, background: 'rgba(139, 92, 246, 0.25)', color: '#a78bfa' }}>
+                      <div style={{
+                        padding: 10,
+                        borderRadius: 12,
+                        background: idCardsModalMode === 'staff' ? 'rgba(13, 148, 136, 0.25)' : 'rgba(139, 92, 246, 0.25)',
+                        color: idCardsModalMode === 'staff' ? '#2dd4bf' : '#a78bfa'
+                      }}>
                         <Printer size={24} />
                       </div>
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#ffffff' }}>
-                          Print Official Student ID Cards (Front &amp; Back)
+                          {idCardsModalMode === 'staff' ? 'Print Official Staff & Faculty ID Cards (Front & Back)' : 'Print Official Student ID Cards (Front & Back)'}
                         </h3>
                         <p style={{ margin: '3px 0 0', fontSize: '0.80rem', color: '#cbd5e1', fontWeight: 500 }}>
-                          Official ID cards with photo, scannable Roll Number QR code, institute branding, and terms (A4 sheet ready)
+                          {idCardsModalMode === 'staff'
+                            ? 'Official Staff PVC ID cards with photo, scannable Staff ID QR code, designation badge, and terms (A4 sheet ready)'
+                            : 'Official ID cards with photo, scannable Roll Number QR code, institute branding, and terms (A4 sheet ready)'}
                         </p>
                       </div>
                     </div>
@@ -4081,30 +4217,94 @@ export default function Attendance() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', flex: 1 }}>
-                      {/* Batch Selector */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <label style={{ fontSize: '0.80rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em' }}>COURSE / BATCH:</label>
-                        <select
-                          value={selectedIdCardBatch}
-                          onChange={(e) => setSelectedIdCardBatch(e.target.value)}
+                      {/* Mode Switcher (Students vs Staff) */}
+                      <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIdCardsModalMode('student')}
                           style={{
-                            padding: '7px 12px',
-                            borderRadius: 8,
-                            border: '1px solid rgba(255, 255, 255, 0.25)',
-                            background: '#1e293b',
-                            color: '#ffffff',
-                            fontSize: '0.82rem',
-                            fontWeight: 700,
-                            outline: 'none',
-                            cursor: 'pointer'
+                            padding: '5px 12px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardsModalMode === 'student' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent',
+                            color: idCardsModalMode === 'student' ? '#ffffff' : '#94a3b8',
+                            boxShadow: idCardsModalMode === 'student' ? '0 2px 8px rgba(99, 102, 241, 0.3)' : 'none'
                           }}
                         >
-                          <option value="all">🎓 All Courses / Batches ({activeStudents.length} Students)</option>
-                          {availableBatches.map((b) => (
-                            <option key={b.id} value={b.id}>{b.name}</option>
-                          ))}
-                        </select>
+                          🎓 Students ({activeStudents.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIdCardsModalMode('staff')}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardsModalMode === 'staff' ? 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' : 'transparent',
+                            color: idCardsModalMode === 'staff' ? '#ffffff' : '#94a3b8',
+                            boxShadow: idCardsModalMode === 'staff' ? '0 2px 8px rgba(13, 148, 136, 0.3)' : 'none'
+                          }}
+                        >
+                          👔 Staff ({staffRoster.length})
+                        </button>
                       </div>
+
+                      {/* Course/Batch (for Students) OR Department (for Staff) Selector */}
+                      {idCardsModalMode === 'staff' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ fontSize: '0.80rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em' }}>DEPARTMENT:</label>
+                          <select
+                            value={selectedStaffDept}
+                            onChange={(e) => setSelectedStaffDept(e.target.value)}
+                            style={{
+                              padding: '7px 12px',
+                              borderRadius: 8,
+                              border: '1px solid rgba(255, 255, 255, 0.25)',
+                              background: '#1e293b',
+                              color: '#ffffff',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value="all">🏢 All Departments ({staffRoster.length} Staff)</option>
+                            {availableStaffDepts.map((dept) => (
+                              <option key={dept} value={dept}>{dept}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ fontSize: '0.80rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em' }}>COURSE / BATCH:</label>
+                          <select
+                            value={selectedIdCardBatch}
+                            onChange={(e) => setSelectedIdCardBatch(e.target.value)}
+                            style={{
+                              padding: '7px 12px',
+                              borderRadius: 8,
+                              border: '1px solid rgba(255, 255, 255, 0.25)',
+                              background: '#1e293b',
+                              color: '#ffffff',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value="all">🎓 All Courses / Batches ({activeStudents.length} Students)</option>
+                            {availableBatches.map((b) => (
+                              <option key={b.id} value={b.id}>{b.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                       {/* Search Bar */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 170, flex: 1, maxWidth: 220, position: 'relative' }}>
@@ -4113,7 +4313,7 @@ export default function Attendance() {
                           type="text"
                           value={idCardSearch}
                           onChange={(e) => setIdCardSearch(e.target.value)}
-                          placeholder="Search name / roll..."
+                          placeholder={idCardsModalMode === 'staff' ? "Search name, ID, role..." : "Search name / roll..."}
                           style={{
                             width: '100%',
                             padding: '7px 12px 7px 32px',
@@ -4200,8 +4400,8 @@ export default function Attendance() {
                         </button>
                       </div>
 
-                      {/* Cards Per Sheet Density Toggle (Only for Duplex Mode) */}
-                      {idCardSide === 'duplex' && (
+                      {/* Cards Per Sheet Density Toggle (Duplex, Front, or Back) */}
+                      {['duplex', 'front', 'back'].includes(idCardSide) && (
                         <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
                           <button
                             type="button"
@@ -4312,8 +4512,8 @@ export default function Attendance() {
                         whiteSpace: 'nowrap'
                       }}>
                         {idCardSide === 'duplex'
-                          ? `${filteredIdCardStudents.length} Students (${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage)} A4 Sheets / ${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage) * 2} Pages)`
-                          : `Showing ${filteredIdCardStudents.length} Students (${idCardSide === 'both' ? filteredIdCardStudents.length * 2 : filteredIdCardStudents.length} Cards)`}
+                          ? `${filteredIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'} (${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage)} A4 Sheets / ${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage) * 2} Pages)`
+                          : `Showing ${filteredIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'} (${idCardSide === 'both' ? filteredIdCardStudents.length * 2 : filteredIdCardStudents.length} Cards)`}
                       </div>
                     </div>
                   </div>
@@ -4362,7 +4562,7 @@ export default function Attendance() {
                                       fontWeight: 800
                                     }}
                                   >
-                                    <span>📄 SHEET {sheetIdx + 1} • PAGE {sheetIdx * 2 + 1} — FRONT FACES (STUDENTS {sheetIdx * idCardCardsPerPage + 1} TO {sheetIdx * idCardCardsPerPage + chunk.length})</span>
+                                    <span>📄 SHEET {sheetIdx + 1} • PAGE {sheetIdx * 2 + 1} — FRONT FACES ({idCardsModalMode === 'staff' ? 'STAFF' : 'STUDENTS'} {sheetIdx * idCardCardsPerPage + 1} TO {sheetIdx * idCardCardsPerPage + chunk.length})</span>
                                     <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>A4 Duplex Front Side</span>
                                   </div>
 
@@ -4397,7 +4597,11 @@ export default function Attendance() {
                                         return (
                                           <div key={slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
                                             {st ? (
-                                              <StudentIdCard student={st} side="front" isCompact={isCompact} batches={batches} />
+                                              idCardsModalMode === 'staff' ? (
+                                                <StaffIdCard staff={st} side="front" isCompact={isCompact} />
+                                              ) : (
+                                                <StudentIdCard student={st} side="front" isCompact={isCompact} batches={batches} />
+                                              )
                                             ) : (
                                               <div className="print-id-card-empty" style={{ width: cardWidth, height: cardHeight, visibility: 'hidden' }} />
                                             )}
@@ -4460,7 +4664,11 @@ export default function Attendance() {
                                         return (
                                           <div key={slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
                                             {st ? (
-                                              <StudentIdCard student={st} side="back" isCompact={isCompact} batches={batches} />
+                                              idCardsModalMode === 'staff' ? (
+                                                <StaffIdCard staff={st} side="back" isCompact={isCompact} />
+                                              ) : (
+                                                <StudentIdCard student={st} side="back" isCompact={isCompact} batches={batches} />
+                                              )
                                             ) : (
                                               <div className="print-id-card-empty" style={{ width: cardWidth, height: cardHeight, visibility: 'hidden' }} />
                                             )}
@@ -4488,7 +4696,7 @@ export default function Attendance() {
                         >
                           {displayedIdCardStudents.map((st) => (
                             <div
-                              key={st.id}
+                              key={st.id || st.staffId}
                               className="print-id-card-pair"
                               style={{
                                 display: 'flex',
@@ -4500,12 +4708,20 @@ export default function Attendance() {
                             >
                               {/* FRONT SIDE */}
                               {(idCardSide === 'both' || idCardSide === 'front') && (
-                                <StudentIdCard student={st} side="front" isCompact={false} batches={batches} />
+                                idCardsModalMode === 'staff' ? (
+                                  <StaffIdCard staff={st} side="front" isCompact={false} />
+                                ) : (
+                                  <StudentIdCard student={st} side="front" isCompact={false} batches={batches} />
+                                )
                               )}
 
                               {/* BACK SIDE (Terms & Conditions) */}
                               {(idCardSide === 'both' || idCardSide === 'back') && (
-                                <StudentIdCard student={st} side="back" isCompact={false} batches={batches} />
+                                idCardsModalMode === 'staff' ? (
+                                  <StaffIdCard staff={st} side="back" isCompact={false} />
+                                ) : (
+                                  <StudentIdCard student={st} side="back" isCompact={false} batches={batches} />
+                                )
                               )}
                             </div>
                           ))}

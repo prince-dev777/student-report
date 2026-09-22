@@ -1518,15 +1518,27 @@ app.post('/api/parent/login', authRateLimiter, async (req, res) => {
     const upcomingTests = await getUpcomingTestsForStudent(student, student.instituteId);
 
     // Fetch notices / notifications for student & institute
+    const notifStudentIds = [
+      student._id,
+      student.id,
+      String(student.rollNo),
+      ...studentIdentifiers
+    ].filter(Boolean);
+    const notifObjIds = notifStudentIds
+      .filter(id => id && mongoose.Types.ObjectId.isValid(String(id)))
+      .map(id => new mongoose.Types.ObjectId(String(id)));
+    const escapedName = student.name ? student.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+    const nameRegexClause = escapedName ? [{ message: new RegExp(`\\b${escapedName}\\b`, 'i') }] : [];
+
     const noticesRaw = await Notification.find({
-      instituteId: student.instituteId,
       $or: [
-        { studentId: student._id },
-        { studentId: null }
+        { studentId: { $in: notifObjIds } },
+        { studentId: null },
+        ...nameRegexClause
       ]
     })
       .sort({ createdAt: -1 })
-      .limit(15);
+      .limit(30);
 
     const notices = noticesRaw.map(n => ({
       id: n._id,
@@ -1650,15 +1662,27 @@ app.get('/api/parent/data', async (req, res) => {
     const upcomingTests = await getUpcomingTestsForStudent(student, student.instituteId);
 
     // Fetch notices / notifications for student & institute
+    const notifStudentIds = [
+      student._id,
+      student.id,
+      String(student.rollNo),
+      ...studentIdentifiers
+    ].filter(Boolean);
+    const notifObjIds = notifStudentIds
+      .filter(id => id && mongoose.Types.ObjectId.isValid(String(id)))
+      .map(id => new mongoose.Types.ObjectId(String(id)));
+    const escapedName = student.name ? student.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+    const nameRegexClause = escapedName ? [{ message: new RegExp(`\\b${escapedName}\\b`, 'i') }] : [];
+
     const noticesRaw = await Notification.find({
-      instituteId: student.instituteId,
       $or: [
-        { studentId: student._id },
-        { studentId: null }
+        { studentId: { $in: notifObjIds } },
+        { studentId: null },
+        ...nameRegexClause
       ]
     })
       .sort({ createdAt: -1 })
-      .limit(15);
+      .limit(30);
 
     const notices = noticesRaw.map(n => ({
       id: n._id,
@@ -1979,7 +2003,16 @@ app.get('/api/parent/data', async (req, res) => {
       status: { $in: ['Published', 'published'] }
     }).sort({ createdAt: -1 });
     const tests = await attachTestDetailsToResults(resultDocs, instituteId);
-    const notifications = await Notification.find({ studentId: student._id, instituteId }).sort({ createdAt: -1 });
+    const escapedName = student.name ? student.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+    const nameRegexClause = escapedName ? [{ message: new RegExp(`\\b${escapedName}\\b`, 'i') }] : [];
+    const notifications = await Notification.find({
+      instituteId,
+      $or: [
+        { studentId: student._id },
+        { studentId: null },
+        ...nameRegexClause
+      ]
+    }).sort({ createdAt: -1 });
     const upcomingTests = await getUpcomingTestsForStudent(student, instituteId);
 
     // Get institute info
@@ -2688,8 +2721,18 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
     let isNewEntry = false;
     let isNewExit = false;
 
+    const student = await Student.findOne({ 
+      isDeleted: { $ne: true }, 
+      $or: [
+        { id: studentId }, 
+        { rollNo: studentId },
+        ...(mongoose.Types.ObjectId.isValid(studentId) ? [{ _id: studentId }] : [])
+      ] 
+    });
+    const matchStudentKeys = student ? [student.id, String(student.rollNo), student._id?.toString()].filter(Boolean) : [studentId];
+
     // Find if already exists for this institute
-    const query = { isDeleted: { $ne: true }, studentId, date };
+    const query = { isDeleted: { $ne: true }, studentId: { $in: matchStudentKeys }, date };
     if (instId) query.instituteId = instId;
 
     let record = await Attendance.findOne(query);
@@ -2701,12 +2744,18 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
       if (exitTime) record.exitTime = exitTime;
       if (status) record.status = status;
       if (smsSent !== undefined) record.smsSent = smsSent;
+      if (student && !record.rollNo) record.rollNo = String(student.rollNo);
       await record.save();
     } else {
       if (entryTime) isNewEntry = true;
       if (exitTime) isNewExit = true;
 
-      record = new Attendance({ ...req.body, instituteId: instId });
+      record = new Attendance({ 
+        ...req.body, 
+        studentId: student ? student.id : studentId,
+        ...(student ? { rollNo: String(student.rollNo) } : {}),
+        instituteId: instId 
+      });
       await record.save();
     }
 
@@ -2716,7 +2765,6 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
         const targetInstId = instId || req.user?.instituteId;
         const queryInst = targetInstId ? { instituteId: targetInstId } : {};
         const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
-        const student = await Student.findOne({ isDeleted: { $ne: true }, id: studentId });
         const matchedSess = resolveSessionForStudent(record.entryTime, student, sessions);
         if (matchedSess) {
           record.sessionName = matchedSess.name;
@@ -2735,7 +2783,6 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
     await record.save();
 
     // Trigger WhatsApp Alerts and Notifications
-    const student = await Student.findOne({ isDeleted: { $ne: true }, id: studentId });
     if (student) {
       const resolvedInstId = instId || req.user?.instituteId || student.instituteId;
 
@@ -2761,13 +2808,14 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
         const title = 'Check-In Alert';
         const message = `${student.name} has checked IN at ${entryTime}${sessionCtx}.`;
         
-        await Notification.create({
+        const notifEntry = await Notification.create({
           instituteId: resolvedInstId,
           studentId: student._id,
           title,
           message,
           type: 'ATTENDANCE'
-        }).catch(() => {});
+        }).catch(() => null);
+        if (notifEntry) mirrorWrite('notifications', notifEntry.toObject ? notifEntry.toObject() : notifEntry).catch(() => {});
 
         if (student.parentPhone) {
           sendWhatsAppAlert({
@@ -2792,13 +2840,14 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
         const title = 'Check-Out Alert';
         const message = `${student.name} has checked OUT at ${exitTime}${sessionCtx}${durationStr}.`;
         
-        await Notification.create({
+        const notifExit = await Notification.create({
           instituteId: resolvedInstId,
           studentId: student._id,
           title,
           message,
           type: 'ATTENDANCE'
-        }).catch(() => {});
+        }).catch(() => null);
+        if (notifExit) mirrorWrite('notifications', notifExit.toObject ? notifExit.toObject() : notifExit).catch(() => {});
 
         if (student.parentPhone) {
           sendWhatsAppAlert({
@@ -2816,6 +2865,7 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
       }
     }
 
+    mirrorWrite('attendances', record.toObject ? record.toObject() : record).catch(() => {});
     triggerBackgroundCloudSync();
     res.status(200).json(record);
   } catch (err) {
@@ -5468,10 +5518,15 @@ app.listen(PORT, '0.0.0.0', () => {
   });
 
   // 🤖 Auto-initialize WhatsApp client on startup if session exists so it stays connected seamlessly
+  // Only auto-start on primary app port (5000) and NEVER during audits or test servers
   setTimeout(() => {
     try {
-      console.log('🤖 [WhatsAppClient] Auto-starting WhatsApp Web client on boot...');
-      initializeWhatsAppClient();
+      if ((String(PORT) === '5000' || !process.env.PORT) && !process.env.TEST_PORT && !process.env.IS_AUDIT_RUN) {
+        console.log('🤖 [WhatsAppClient] Auto-starting WhatsApp Web client on boot...');
+        initializeWhatsAppClient();
+      } else {
+        console.log(`ℹ️ [WhatsAppClient] Running on secondary/test port ${PORT}. WhatsApp initialization skipped.`);
+      }
     } catch (err) {
       console.warn('⚠️ [WhatsAppClient] Startup auto-init notice:', err.message);
     }
@@ -5574,3 +5629,28 @@ setInterval(async () => {
     }
   }
 }, 10 * 60 * 1000); // Check every 10 minutes
+
+// ---- ⚡ Electron IPC Signal Listener (Sleep/Wake & Clean Exit) ----
+process.on('message', async (msg) => {
+  if (msg === 'shutdown') {
+    console.log('🛑 [Server] Received graceful shutdown command from Electron.');
+    try {
+      await gracefulShutdownWhatsAppClient();
+    } catch (e) {}
+    process.exit(0);
+  } else if (msg && msg.type === 'POWER_RESUME') {
+    console.log('⚡ [Server] System woke up from sleep. Verifying WhatsApp connectivity in 4s...');
+    setTimeout(async () => {
+      try {
+        const state = getWhatsAppClientState();
+        if (state.status !== 'ready') {
+          console.log('🔄 [Server] Auto-reconnecting WhatsApp client after system sleep resume...');
+          initializeWhatsAppClient();
+        }
+      } catch (err) {
+        console.warn('⚠️ [Server] Notice during sleep recovery:', err.message);
+      }
+    }, 4000);
+  }
+});
+
