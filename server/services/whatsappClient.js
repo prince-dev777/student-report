@@ -130,36 +130,53 @@ function clearChromiumLocks(dirPath) {
 // 🛡️ SESSION VAULT (Self-Healing Backup & Automatic Integrity Restoration)
 // ============================================================================
 
-function backupSessionVault(dataPath) {
+export function backupSessionVault(dataPath, options = {}) {
   try {
     const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
     const vaultDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session_vault');
-    if (!fs.existsSync(sessionDir)) return;
+    if (!fs.existsSync(sessionDir)) return false;
 
     const idbDir = path.join(sessionDir, 'Default', 'IndexedDB', 'https_web.whatsapp.com_0.indexeddb.leveldb');
-    if (!fs.existsSync(idbDir)) return;
+    if (!fs.existsSync(idbDir)) return false;
 
     // Verify it actually has data files before snapshotting
     const idbFiles = fs.readdirSync(idbDir);
     const hasData = idbFiles.some(f => f.endsWith('.ldb') || f.endsWith('.log'));
-    if (!hasData) return;
+    if (!hasData) return false;
 
     fs.mkdirSync(vaultDir, { recursive: true });
 
-    // Copy IndexedDB
+    // CRITICAL: Filter out active lock files so live Chromium does not trigger EBUSY or lock corruption
+    const safeCopyFilter = (src) => {
+      const base = path.basename(src);
+      if (base === 'LOCK' || base === 'SingletonLock' || base === 'SingletonCookie' || base === 'SingletonSocket' || base === 'lockfile') {
+        return false;
+      }
+      return true;
+    };
+
+    // Copy IndexedDB safely
     const vaultIdb = path.join(vaultDir, 'IndexedDB');
     fs.mkdirSync(vaultIdb, { recursive: true });
-    fs.cpSync(path.join(sessionDir, 'Default', 'IndexedDB'), vaultIdb, { recursive: true, force: true });
+    fs.cpSync(path.join(sessionDir, 'Default', 'IndexedDB'), vaultIdb, { 
+      recursive: true, 
+      force: true, 
+      filter: safeCopyFilter 
+    });
 
-    // Copy Local Storage
+    // Copy Local Storage safely
     const lsDir = path.join(sessionDir, 'Default', 'Local Storage');
     if (fs.existsSync(lsDir)) {
       const vaultLs = path.join(vaultDir, 'Local Storage');
       fs.mkdirSync(vaultLs, { recursive: true });
-      fs.cpSync(lsDir, vaultLs, { recursive: true, force: true });
+      fs.cpSync(lsDir, vaultLs, { 
+        recursive: true, 
+        force: true, 
+        filter: safeCopyFilter 
+      });
     }
 
-    // Copy Local State
+    // Copy Local State safely
     const localState = path.join(sessionDir, 'Local State');
     if (fs.existsSync(localState)) {
       fs.copyFileSync(localState, path.join(vaultDir, 'Local State'));
@@ -169,16 +186,20 @@ function backupSessionVault(dataPath) {
     fs.writeFileSync(path.join(vaultDir, 'vault_meta.json'), JSON.stringify({
       timestamp: new Date().toISOString(),
       user: client?.info?.pushname || 'Authenticated WhatsApp User',
-      wid: client?.info?.wid?._serialized || ''
+      wid: client?.info?.wid?._serialized || '',
+      phone: client?.info?.wid?.user || '',
+      reason: options.reason || 'live_snapshot'
     }, null, 2));
 
-    console.log('[WhatsAppVault] 🛡️ Permanent session snapshot successfully sealed in vault!');
+    console.log(`[WhatsAppVault] 🛡️ Permanent session snapshot successfully sealed in vault! (Reason: ${options.reason || 'live_snapshot'})`);
+    return true;
   } catch (err) {
     console.warn('[WhatsAppVault] Failed to snapshot session:', err.message);
+    return false;
   }
 }
 
-function restoreSessionFromVault(dataPath) {
+export function restoreSessionFromVault(dataPath) {
   try {
     const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
     const vaultDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session_vault');
@@ -195,15 +216,25 @@ function restoreSessionFromVault(dataPath) {
     const destDefault = path.join(sessionDir, 'Default');
     fs.mkdirSync(destDefault, { recursive: true });
 
-    // Restore IndexedDB
+    // Restore IndexedDB cleanly
     const destIdb = path.join(destDefault, 'IndexedDB');
+    try {
+      if (fs.existsSync(destIdb)) {
+        fs.rmSync(destIdb, { recursive: true, force: true });
+      }
+    } catch (_) {}
     fs.mkdirSync(destIdb, { recursive: true });
     fs.cpSync(vaultIdb, destIdb, { recursive: true, force: true });
 
-    // Restore Local Storage
+    // Restore Local Storage cleanly
     const vaultLs = path.join(vaultDir, 'Local Storage');
     if (fs.existsSync(vaultLs)) {
       const destLs = path.join(destDefault, 'Local Storage');
+      try {
+        if (fs.existsSync(destLs)) {
+          fs.rmSync(destLs, { recursive: true, force: true });
+        }
+      } catch (_) {}
       fs.mkdirSync(destLs, { recursive: true });
       fs.cpSync(vaultLs, destLs, { recursive: true, force: true });
     }
@@ -283,11 +314,25 @@ function killLeftoverChromium() {
 
 let isManualDisconnecting = false;
 let heartbeatInterval = null;
+let heartbeatTicks = 0;
 
 function startHeartbeat() {
   stopHeartbeat();
+  heartbeatTicks = 0;
   heartbeatInterval = setInterval(async () => {
     if (!client || clientStatus !== 'ready') return;
+    heartbeatTicks++;
+
+    // 🛡️ Periodic auto-snapshot every 15 minutes while client is active and authenticated
+    if (heartbeatTicks % 15 === 0) {
+      try {
+        const authPath = getAuthDataPath();
+        backupSessionVault(authPath, { reason: 'periodic_15min' });
+      } catch (vaultErr) {
+        console.warn('[WhatsAppVault] Periodic snapshot notice:', vaultErr.message);
+      }
+    }
+
     try {
       const statePromise = client.getState();
       const timeoutPromise = new Promise((_, reject) => 
@@ -308,6 +353,7 @@ function stopHeartbeat() {
   if (heartbeatInterval) {
     clearInterval(heartbeatInterval);
     heartbeatInterval = null;
+    heartbeatTicks = 0;
   }
 }
 
@@ -334,10 +380,10 @@ export async function disconnectWhatsAppClient() {
 
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  // On manual disconnect, wipe both session and vault
+  // 🛡️ WHATSAPP ACTIVE SESSION PROTECTION: Wipe ONLY active session directory, NEVER session_vault!
   const dataPath = getAuthDataPath();
-  await safeDeleteDir(path.join(dataPath, 'data', '.wwebjs_auth'));
-  await safeDeleteDir(path.join(dataPath, '.wwebjs_auth'));
+  const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
+  await safeDeleteDir(sessionDir);
 
   isManualDisconnecting = false;
   return true;
@@ -359,7 +405,7 @@ export async function gracefulShutdownWhatsAppClient() {
       client = null;
       if (wasReady) {
         // Safe to snapshot only after browser process has cleanly exited and closed all files!
-        backupSessionVault(dataPath);
+        backupSessionVault(dataPath, { reason: 'graceful_shutdown' });
       }
     } catch (e) {
       console.warn('[WhatsAppClient] Notice during graceful shutdown:', e.message);
@@ -558,6 +604,15 @@ export function initializeWhatsAppClient() {
 
       // Start periodic keep-alive heartbeat
       startHeartbeat();
+
+      // 🛡️ CRITICAL FIX: Snapshot session immediately after login (delayed 8s to let IndexedDB settle on disk)
+      setTimeout(() => {
+        if (clientStatus === 'ready' || (client && client.info && client.info.wid)) {
+          const authPath = getAuthDataPath();
+          console.log('[WhatsAppVault] 🛡️ Taking immediate post-login session snapshot...');
+          backupSessionVault(authPath, { reason: 'post_login' });
+        }
+      }, 8000);
     });
 
     // 🤖 Hook WhatsApp Parent Auto-Reply Bot (catches incoming messages & self-test chats)
