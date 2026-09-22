@@ -32,6 +32,44 @@ if (Client && Client.prototype && typeof Client.prototype.inject === 'function')
   };
 }
 
+// 🛡️ Monkey-patch Client.prototype.initialize to sanitize framenavigated listeners against post_logout false positives
+if (Client && Client.prototype && typeof Client.prototype.initialize === 'function') {
+  const origInitialize = Client.prototype.initialize;
+  Client.prototype.initialize = async function () {
+    this.lastLoggedOut = false;
+    const initPromise = origInitialize.apply(this, arguments);
+    
+    // Safely hook pupPage to intercept framenavigated and strip false logout signals
+    const pageCheckInterval = setInterval(() => {
+      if (this.pupPage && !this.pupPage.isClosed()) {
+        clearInterval(pageCheckInterval);
+        try {
+          this.pupPage.removeAllListeners('framenavigated');
+          this.pupPage.on('framenavigated', async (frame) => {
+            const frameUrl = frame ? frame.url() : '';
+            // CRITICAL: Only accept LOGOUT if client was ALREADY fully authenticated with active info!
+            if (this.info && (frameUrl.includes('post_logout=1') || this.lastLoggedOut)) {
+              console.warn('[WhatsAppClient] ⚠️ Genuine user logout confirmed from phone while active.');
+              this.emit('disconnected', 'LOGOUT');
+              try {
+                await this.authStrategy.logout();
+                await this.authStrategy.beforeBrowserInitialized();
+                await this.authStrategy.afterBrowserInitialized();
+              } catch (_) {}
+              this.lastLoggedOut = false;
+            }
+            try {
+              await this.inject();
+            } catch (_) {}
+          });
+        } catch (_) {}
+      }
+    }, 100);
+
+    return initPromise;
+  };
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -802,12 +840,17 @@ export function initializeWhatsAppClient() {
 
       // If this was NOT a manual disconnect, auto-reconnect using saved session / vault!
       if (!isManualDisconnecting) {
+        // If client was never READY before, this is a transient navigation or websocket reconnect during QR scanning!
+        // DO NOT destroy session, DO NOT kill Chromium, allow handshake to complete!
+        if (!wasReady) {
+          console.warn(`[WhatsAppClient] 🛡️ Ignored transient disconnect during QR/handshake (${reason}). Allowing Chromium to complete login...`);
+          return;
+        }
+
         const dataPath = getAuthDataPath();
         const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth');
         if (fs.existsSync(sessionDir)) {
-          // CRITICAL FIX: Only treat LOGOUT as genuine user-unlinking if client was actually READY before!
-          // If disconnected fired during QR scanning or initial connecting, it's a page reload / navigation handshake, NEVER a real logout!
-          if ((reason === 'LOGOUT' || reason === 'CONFLICT') && wasReady) {
+          if (reason === 'LOGOUT' || reason === 'CONFLICT') {
             console.log(`[WhatsAppClient] ⚠️ Active session unlinked by user on phone (${reason}). Resetting session for fresh pairing...`);
             // Clear unlinked session folder so Chrome opens clean QR/Pairing screen without infinite loops
             const activeSessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
@@ -822,7 +865,7 @@ export function initializeWhatsAppClient() {
               });
             });
           } else {
-            console.log(`[WhatsAppClient] 🔄 Transient disconnect / page reload detected (${reason}). Auto-reconnecting saved session in 4 seconds...`);
+            console.log(`[WhatsAppClient] 🔄 Network disconnect detected while active (${reason}). Auto-reconnecting saved session in 4 seconds...`);
             setTimeout(() => {
               if (clientStatus === 'disconnected') {
                 killLeftoverChromium().then(() => {
