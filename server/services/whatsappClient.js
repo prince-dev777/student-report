@@ -7,6 +7,31 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 import { exec, execSync } from 'child_process';
 
+// 🛡️ Monkey-patch Client.prototype.inject to gracefully handle "Execution context was destroyed, most likely because of a navigation"
+if (Client && Client.prototype && typeof Client.prototype.inject === 'function') {
+  const origInject = Client.prototype.inject;
+  Client.prototype.inject = async function () {
+    try {
+      return await origInject.apply(this, arguments);
+    } catch (err) {
+      const msg = err ? (err.message || String(err)) : '';
+      if (msg.includes('Execution context was destroyed') || msg.includes('navigation')) {
+        console.warn('[WhatsAppClient] 🛡️ Handled transient navigation in inject():', msg);
+        await new Promise(r => setTimeout(r, 1200));
+        try {
+          if (this.pupPage && !this.pupPage.isClosed()) {
+            return await origInject.apply(this, arguments);
+          }
+        } catch (retryErr) {
+          console.warn('[WhatsAppClient] Handled secondary inject notice:', retryErr.message);
+        }
+        return;
+      }
+      throw err;
+    }
+  };
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -667,6 +692,8 @@ export function initializeWhatsAppClient() {
       },
       puppeteer: puppeteerOptions
     });
+    // Ensure lastLoggedOut is false on initialization so stale frame state never triggers bogus logout
+    client.lastLoggedOut = false;
 
     client.on('qr', async (qr) => {
       console.log('[WhatsAppClient] QR Code received. Scan it to authenticate.');
@@ -768,6 +795,7 @@ export function initializeWhatsAppClient() {
     client.on('disconnected', (reason) => {
       console.log('[WhatsAppClient] WhatsApp Client disconnected. Reason:', reason);
       stopHeartbeat();
+      const wasReady = clientStatus === 'ready';
       clientStatus = 'disconnected';
       qrCodeData = null;
       client = null;
@@ -777,8 +805,10 @@ export function initializeWhatsAppClient() {
         const dataPath = getAuthDataPath();
         const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth');
         if (fs.existsSync(sessionDir)) {
-          if (reason === 'LOGOUT' || reason === 'CONFLICT') {
-            console.log(`[WhatsAppClient] ⚠️ Session unlinked by WhatsApp server (${reason}). Resetting session for fresh pairing...`);
+          // CRITICAL FIX: Only treat LOGOUT as genuine user-unlinking if client was actually READY before!
+          // If disconnected fired during QR scanning or initial connecting, it's a page reload / navigation handshake, NEVER a real logout!
+          if ((reason === 'LOGOUT' || reason === 'CONFLICT') && wasReady) {
+            console.log(`[WhatsAppClient] ⚠️ Active session unlinked by user on phone (${reason}). Resetting session for fresh pairing...`);
             // Clear unlinked session folder so Chrome opens clean QR/Pairing screen without infinite loops
             const activeSessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
             safeDeleteDir(activeSessionDir).then(() => {
@@ -792,14 +822,14 @@ export function initializeWhatsAppClient() {
               });
             });
           } else {
-            console.log(`[WhatsAppClient] 🔄 Network/transient disconnect detected (${reason}). Auto-reconnecting saved session in 5 seconds...`);
+            console.log(`[WhatsAppClient] 🔄 Transient disconnect / page reload detected (${reason}). Auto-reconnecting saved session in 4 seconds...`);
             setTimeout(() => {
               if (clientStatus === 'disconnected') {
                 killLeftoverChromium().then(() => {
                   initializeWhatsAppClient();
                 });
               }
-            }, 5000);
+            }, 4000);
           }
         }
       }
