@@ -235,10 +235,21 @@ function mirrorVaultToSafeDestinations(vaultDir) {
   }
 }
 
-export function restoreSessionFromVault(dataPath) {
+export function restoreSessionFromVault(dataPath, options = {}) {
   try {
     const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
     let vaultDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session_vault');
+    const disconnectMarker = path.join(dataPath, 'data', '.wwebjs_auth', '.manual_disconnect');
+
+    // If user explicitly performed manual disconnect, do NOT auto-restore unless force: true
+    if (!options.force && fs.existsSync(disconnectMarker)) {
+      console.log('[WhatsAppVault] Manual disconnect marker present. Skipping auto-restore.');
+      return false;
+    }
+
+    if (options.force && fs.existsSync(disconnectMarker)) {
+      try { fs.unlinkSync(disconnectMarker); } catch (_) {}
+    }
 
     // Fallback: If canonical vault is missing, check permanent local backup or USB pendrive
     if (!fs.existsSync(path.join(vaultDir, 'IndexedDB'))) {
@@ -254,6 +265,12 @@ export function restoreSessionFromVault(dataPath) {
           try {
             fs.mkdirSync(vaultDir, { recursive: true });
             fs.cpSync(fb, vaultDir, { recursive: true, force: true });
+            if (fb !== 'C:\\CareerXone_Backups\\WhatsApp_Session_Vault') {
+              try {
+                fs.mkdirSync('C:\\CareerXone_Backups\\WhatsApp_Session_Vault', { recursive: true });
+                fs.cpSync(fb, 'C:\\CareerXone_Backups\\WhatsApp_Session_Vault', { recursive: true, force: true });
+              } catch (_) {}
+            }
             break;
           } catch (_) {}
         }
@@ -437,10 +454,23 @@ export async function disconnectWhatsAppClient() {
 
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  // 🛡️ WHATSAPP ACTIVE SESSION PROTECTION: Wipe ONLY active session directory, NEVER session_vault!
+  // 🛡️ User explicitly clicked Disconnect in UI:
+  // Wipe active session AND remove local persistent vault so local storage is cleanly freed!
   const dataPath = getAuthDataPath();
   const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
+  const vaultDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session_vault');
+  const localSafeDir = 'C:\\CareerXone_Backups\\WhatsApp_Session_Vault';
+  const disconnectMarker = path.join(dataPath, 'data', '.wwebjs_auth', '.manual_disconnect');
+
   await safeDeleteDir(sessionDir);
+  await safeDeleteDir(vaultDir);
+  await safeDeleteDir(localSafeDir);
+
+  try {
+    fs.mkdirSync(path.dirname(disconnectMarker), { recursive: true });
+    fs.writeFileSync(disconnectMarker, new Date().toISOString());
+    console.log('[WhatsAppClient] 🔒 Local storage session and vaults cleanly removed on explicit user disconnect.');
+  } catch (_) {}
 
   isManualDisconnecting = false;
   return true;
@@ -666,6 +696,13 @@ export function initializeWhatsAppClient() {
       pairingCodeData = null;
       initRetryCount = 0; // Reset on success
 
+      // Clear manual disconnect marker if present
+      try {
+        const dataPath = getAuthDataPath();
+        const disconnectMarker = path.join(dataPath, 'data', '.wwebjs_auth', '.manual_disconnect');
+        if (fs.existsSync(disconnectMarker)) fs.unlinkSync(disconnectMarker);
+      } catch (_) {}
+
       // Start periodic keep-alive heartbeat
       startHeartbeat();
 
@@ -810,6 +847,11 @@ export function initializeWhatsAppClient() {
 export function resetRetryCount() {
   initRetryCount = 0;
   lastInitFailureTime = 0;
+  try {
+    const dataPath = getAuthDataPath();
+    const disconnectMarker = path.join(dataPath, 'data', '.wwebjs_auth', '.manual_disconnect');
+    if (fs.existsSync(disconnectMarker)) fs.unlinkSync(disconnectMarker);
+  } catch (_) {}
 }
 
 // 🛡️ Mutex chain to strictly serialize concurrent WhatsApp sends across all workers (prevents Puppeteer page collision)

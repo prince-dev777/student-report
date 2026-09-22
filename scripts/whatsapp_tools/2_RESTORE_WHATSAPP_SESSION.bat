@@ -53,8 +53,15 @@ powershell -NoProfile -Command ^
     "if (Test-Path (Join-Path $backup 'Default\Local Storage')) { Copy-Item -Path (Join-Path $backup 'Default\Local Storage') -Destination $targetVault -Recurse -Force -Exclude 'LOCK','SingletonLock','SingletonCookie','SingletonSocket','lockfile'; };" ^
     "if (Test-Path (Join-Path $backup 'Local State')) { Copy-Item -Path (Join-Path $backup 'Local State') -Destination (Join-Path $targetVault 'Local State') -Force; };" ^
     "if (Test-Path (Join-Path $backup 'vault_meta.json')) { Copy-Item -Path (Join-Path $backup 'vault_meta.json') -Destination (Join-Path $targetVault 'vault_meta.json') -Force; };" ^
-    "Get-ChildItem -Path '%TARGET_AUTH%' -Recurse -Include 'SingletonLock','SingletonCookie','SingletonSocket','lockfile','LOCK' -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue;" ^
-    "Write-Host '   -> Session and Vault successfully restored and verified!';"
+    "$permLocal = 'C:\CareerXone_Backups\WhatsApp_Session_Vault';" ^
+    "New-Item -ItemType Directory -Force -Path $permLocal | Out-Null;" ^
+    "Copy-Item -Path (Join-Path $backup 'Default\IndexedDB') -Destination $permLocal -Recurse -Force -Exclude 'LOCK','SingletonLock','SingletonCookie','SingletonSocket','lockfile';" ^
+    "if (Test-Path (Join-Path $backup 'Default\Local Storage')) { Copy-Item -Path (Join-Path $backup 'Default\Local Storage') -Destination $permLocal -Recurse -Force -Exclude 'LOCK','SingletonLock','SingletonCookie','SingletonSocket','lockfile'; };" ^
+    "if (Test-Path (Join-Path $backup 'Local State')) { Copy-Item -Path (Join-Path $backup 'Local State') -Destination (Join-Path $permLocal 'Local State') -Force; };" ^
+    "if (Test-Path (Join-Path $backup 'vault_meta.json')) { Copy-Item -Path (Join-Path $backup 'vault_meta.json') -Destination (Join-Path $permLocal 'vault_meta.json') -Force; };" ^
+    "if (Test-Path (Join-Path '%TARGET_AUTH%' '.manual_disconnect')) { Remove-Item (Join-Path '%TARGET_AUTH%' '.manual_disconnect') -Force -ErrorAction SilentlyContinue; };" ^
+    "Get-ChildItem -Path '%TARGET_AUTH%' -Recurse -Include 'SingletonLock','SingletonCookie','SingletonSocket','lockfile','LOCK','.manual_disconnect' -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue;" ^
+    "Write-Host '   -> Session, Vault, and Local Permanent Storage successfully restored!';"
 
 echo.
 echo [4/4] Done!
