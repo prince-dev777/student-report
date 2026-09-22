@@ -210,8 +210,10 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
     console.log(`[WhatsAppService] ⏸️ Outbound messaging is PAUSED. Logging SMS in SMS Center as pending for ${studentName} (${type}).`);
   } else if (isWhatsAppAllowed) {
     // Route through Anti-Ban Message Queue for safe, rate-limited delivery
+    const smsLogId = `SMS${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+
     for (const phone of phoneNumbers) {
-      let formattedPhone = phone.replace(/\D/g, '');
+      let formattedPhone = phone.replace(/\D/g, '').replace(/^0+/, '');
       if (formattedPhone.length === 10) {
         formattedPhone = '91' + formattedPhone;
       }
@@ -226,7 +228,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
         if (waState && waState.status === 'ready') {
           // Queue message for rate-limited delivery (anti-ban)
           const queueResult = queueWhatsAppMessage(formattedPhone, messageText, {
-            studentName, studentId, type, sessionName: resolvedSessionName
+            studentName, studentId, type, sessionName: resolvedSessionName, logId: smsLogId
           });
           if (queueResult.queued) {
             status = 'sent'; // Will be updated to 'delivered' by the queue processor
@@ -303,7 +305,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   try {
     const log = new SMSLog({
       instituteId,
-      id: `SMS${Date.now()}`,
+      id: typeof smsLogId !== 'undefined' ? smsLogId : `SMS${Date.now()}`,
       type: type === 'WELCOME' ? 'welcome' : (type === 'ABSENT' ? 'absent' : (type === 'TEST_RESULT' ? 'test-result' : (type === 'OUT' ? 'attendance-exit' : 'attendance-entry'))),
       studentId,
       parentPhone,

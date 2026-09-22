@@ -15,6 +15,7 @@ let qrCodeData = null; // Stores the latest base64 QR code image
 let pairingCodeData = null; // Stores { code, phoneNumber, requestedAt }
 let clientStatus = 'disconnected'; // 'disconnected' | 'qr' | 'connecting' | 'authenticated' | 'ready' | 'auth_failure'
 let initRetryCount = 0;
+let lastInitFailureTime = 0;
 const MAX_INIT_RETRIES = 3;
 const RETRY_DELAYS = [3000, 6000, 15000]; // exponential backoff
 
@@ -192,6 +193,10 @@ export function backupSessionVault(dataPath, options = {}) {
     }, null, 2));
 
     console.log(`[WhatsAppVault] 🛡️ Permanent session snapshot successfully sealed in vault! (Reason: ${options.reason || 'live_snapshot'})`);
+
+    // 🛡️ MULTI-DESTINATION MIRROR: Mirror snapshot to permanent local directory & any connected USB drive
+    mirrorVaultToSafeDestinations(vaultDir);
+
     return true;
   } catch (err) {
     console.warn('[WhatsAppVault] Failed to snapshot session:', err.message);
@@ -199,10 +204,62 @@ export function backupSessionVault(dataPath, options = {}) {
   }
 }
 
+// Helper: Safely mirror session vault to permanent backup directories and connected pendrives
+function mirrorVaultToSafeDestinations(vaultDir) {
+  try {
+    // 1. Permanent PC backup directory (immune to AppData wipe or program uninstalls)
+    const localSafeDir = 'C:\\CareerXone_Backups\\WhatsApp_Session_Vault';
+    try {
+      if (!fs.existsSync(localSafeDir)) {
+        fs.mkdirSync(localSafeDir, { recursive: true });
+      }
+      fs.cpSync(vaultDir, localSafeDir, { recursive: true, force: true });
+      console.log(`[WhatsAppVault] 💾 Mirrored session vault to safe local backup: ${localSafeDir}`);
+    } catch (_) {}
+
+    // 2. Removable USB Drives (e.g. D:, E:, F:, G:)
+    const driveLetters = ['D', 'E', 'F', 'G'];
+    for (const dl of driveLetters) {
+      const driveRoot = `${dl}:\\`;
+      if (fs.existsSync(driveRoot)) {
+        const usbVaultDir = path.join(driveRoot, 'CareerXone_WhatsApp_Vault');
+        try {
+          fs.mkdirSync(usbVaultDir, { recursive: true });
+          fs.cpSync(vaultDir, usbVaultDir, { recursive: true, force: true });
+          console.log(`[WhatsAppVault] 🔌 USB Pendrive detected at ${driveRoot}. Mirrored session vault to: ${usbVaultDir}`);
+        } catch (_) {}
+      }
+    }
+  } catch (mirrorErr) {
+    console.warn('[WhatsAppVault] Multi-destination mirror notice:', mirrorErr.message);
+  }
+}
+
 export function restoreSessionFromVault(dataPath) {
   try {
     const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
-    const vaultDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session_vault');
+    let vaultDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session_vault');
+
+    // Fallback: If canonical vault is missing, check permanent local backup or USB pendrive
+    if (!fs.existsSync(path.join(vaultDir, 'IndexedDB'))) {
+      const fallbackCandidates = [
+        'C:\\CareerXone_Backups\\WhatsApp_Session_Vault',
+        'D:\\CareerXone_WhatsApp_Vault',
+        'E:\\CareerXone_WhatsApp_Vault',
+        'F:\\CareerXone_WhatsApp_Vault'
+      ];
+      for (const fb of fallbackCandidates) {
+        if (fs.existsSync(path.join(fb, 'IndexedDB'))) {
+          console.log(`[WhatsAppVault] 📦 Found session backup in external/fallback location: ${fb}. Auto-importing...`);
+          try {
+            fs.mkdirSync(vaultDir, { recursive: true });
+            fs.cpSync(fb, vaultDir, { recursive: true, force: true });
+            break;
+          } catch (_) {}
+        }
+      }
+    }
+
     if (!fs.existsSync(vaultDir)) return false;
 
     const metaFile = path.join(vaultDir, 'vault_meta.json');
@@ -280,24 +337,24 @@ function verifyAndHealSession(dataPath) {
   }
 }
 
-// Helper: kill any leftover Chromium/Chrome processes from whatsapp-web.js
+// Helper: kill any leftover Chromium/Chrome/Edge processes from whatsapp-web.js
 function killLeftoverChromium() {
   return new Promise((resolve) => {
     try {
-      const out = execSync('powershell -Command "Get-CimInstance Win32_Process -Filter \\"Name=\'chrome.exe\'\\" | Select-Object CommandLine, ProcessId | ConvertTo-Json"').toString();
+      const out = execSync('powershell -Command "Get-CimInstance Win32_Process -Filter \\"Name=\'chrome.exe\' OR Name=\'msedge.exe\'\\" | Select-Object CommandLine, ProcessId | ConvertTo-Json"').toString();
       if (!out || out.trim() === '') return resolve();
       
       const processes = JSON.parse(out);
       for (const proc of Array.isArray(processes) ? processes : [processes]) {
-        if (proc && proc.CommandLine && (proc.CommandLine.includes('wwebjs_auth') || proc.CommandLine.includes('.wwebjs_cache') || proc.CommandLine.includes('--headless'))) {
-          console.log(`[WhatsAppClient] Killing zombie headless Chrome (PID: ${proc.ProcessId})`);
+        if (proc && proc.CommandLine && (proc.CommandLine.includes('wwebjs_auth') || proc.CommandLine.includes('.wwebjs_cache'))) {
+          console.log(`[WhatsAppClient] Killing zombie headless browser (PID: ${proc.ProcessId})`);
           try {
             execSync('taskkill /F /PID ' + proc.ProcessId);
           } catch (e) {}
         }
       }
     } catch (e) {
-      console.log('[WhatsAppClient] Failed to scan/kill zombie Chrome processes:', e.message);
+      console.log('[WhatsAppClient] Failed to scan/kill zombie Chrome/Edge processes:', e.message);
     }
 
     // Clear stale locks and heal session if needed
@@ -477,11 +534,18 @@ export function initializeWhatsAppClient() {
     return;
   }
 
-  // Check retry limit
+  // Check retry limit with automatic 2-minute cooling-off recovery
   if (initRetryCount >= MAX_INIT_RETRIES) {
-    console.error(`[WhatsAppClient] Max initialization retries (${MAX_INIT_RETRIES}) reached. Stopping.`);
-    clientStatus = 'disconnected';
-    return;
+    if (Date.now() - lastInitFailureTime > 2 * 60 * 1000) {
+      console.log('[WhatsAppClient] 🔄 2-minute cooling-off window passed. Auto-resetting init retry counter for fresh attempt.');
+      initRetryCount = 0;
+      lastInitFailureTime = 0;
+    } else {
+      const waitRemaining = Math.max(1, Math.round((2 * 60 * 1000 - (Date.now() - lastInitFailureTime)) / 1000));
+      console.warn(`[WhatsAppClient] Max initialization retries (${MAX_INIT_RETRIES}) reached. Next auto-retry available in ${waitRemaining}s (or click Connect in UI).`);
+      clientStatus = 'disconnected';
+      return;
+    }
   }
 
   console.log(`[WhatsAppClient] Starting WhatsApp Web client... (attempt ${initRetryCount + 1}/${MAX_INIT_RETRIES})`);
@@ -677,9 +741,18 @@ export function initializeWhatsAppClient() {
         const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth');
         if (fs.existsSync(sessionDir)) {
           if (reason === 'LOGOUT' || reason === 'CONFLICT') {
-            console.log(`[WhatsAppClient] ⚠️ Session unlinked by WhatsApp server (${reason}). Refreshing connection for new pairing...`);
-            killLeftoverChromium().then(() => {
-              initializeWhatsAppClient();
+            console.log(`[WhatsAppClient] ⚠️ Session unlinked by WhatsApp server (${reason}). Resetting session for fresh pairing...`);
+            // Clear unlinked session folder so Chrome opens clean QR/Pairing screen without infinite loops
+            const activeSessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
+            safeDeleteDir(activeSessionDir).then(() => {
+              killLeftoverChromium().then(() => {
+                setTimeout(() => {
+                  if (clientStatus === 'disconnected') {
+                    initRetryCount = 0;
+                    initializeWhatsAppClient();
+                  }
+                }, 3000);
+              });
             });
           } else {
             console.log(`[WhatsAppClient] 🔄 Network/transient disconnect detected (${reason}). Auto-reconnecting saved session in 5 seconds...`);
@@ -700,6 +773,7 @@ export function initializeWhatsAppClient() {
       clientStatus = 'disconnected';
       client = null;
       initRetryCount++;
+      lastInitFailureTime = Date.now();
 
       // Retry with exponential backoff
       if (initRetryCount < MAX_INIT_RETRIES) {
@@ -718,7 +792,7 @@ export function initializeWhatsAppClient() {
           setTimeout(() => initializeWhatsAppClient(), delay);
         }
       } else {
-        console.error(`[WhatsAppClient] Giving up after ${MAX_INIT_RETRIES} failed attempts.`);
+        console.error(`[WhatsAppClient] Max initial retries (${MAX_INIT_RETRIES}) reached. Automatic cooling-off window (2m) active.`);
       }
     });
 
@@ -727,6 +801,7 @@ export function initializeWhatsAppClient() {
     clientStatus = 'disconnected';
     client = null;
     initRetryCount++;
+    lastInitFailureTime = Date.now();
   }
   }); // end of killLeftoverChromium
 }
@@ -734,16 +809,33 @@ export function initializeWhatsAppClient() {
 // Reset retry counter (called externally when user manually triggers re-init)
 export function resetRetryCount() {
   initRetryCount = 0;
+  lastInitFailureTime = 0;
 }
 
+// 🛡️ Mutex chain to strictly serialize concurrent WhatsApp sends across all workers (prevents Puppeteer page collision)
+let sendMutexChain = Promise.resolve();
+
 export async function sendWhatsAppMessageWeb(to, message, attachment = null) {
+  return new Promise((resolve, reject) => {
+    sendMutexChain = sendMutexChain.then(async () => {
+      try {
+        const result = await _executeSendWhatsAppMessage(to, message, attachment);
+        resolve(result);
+      } catch (err) {
+        reject(err);
+      }
+    }).catch(() => {});
+  });
+}
+
+async function _executeSendWhatsAppMessage(to, message, attachment = null) {
   const isFunctionallyReady = (client && client.info && client.info.wid) || clientStatus === 'ready';
   if (!client || !isFunctionallyReady) {
     throw new Error(`WhatsApp client is not ready (Status: ${clientStatus})`);
   }
 
-  // Format phone number: remove non-digits
-  let cleanNumber = to.replace(/\D/g, '');
+  // Format phone number: remove non-digits and strip any leading zeroes (e.g. 09876543210 -> 9876543210)
+  let cleanNumber = to.replace(/\D/g, '').replace(/^0+/, '');
   
   if (!cleanNumber || cleanNumber.length < 10) {
     throw new Error(`Invalid phone number: "${to}" (Must contain at least 10 digits)`);

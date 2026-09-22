@@ -41,7 +41,9 @@ import {
   requestWhatsAppPairingCode,
   cancelWhatsAppPairingCode,
   sendWhatsAppMessageWeb,
-  resetRetryCount
+  resetRetryCount,
+  backupSessionVault,
+  restoreSessionFromVault
 } from './services/whatsappClient.js';
 import {
   getBotConfig,
@@ -4357,6 +4359,26 @@ app.post('/api/whatsapp/cancel-pairing', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/whatsapp/backup-vault', (req, res) => {
+  try {
+    const dataPath = process.env.USER_DATA_PATH || path.join(process.env.APPDATA || '', 'Career Xone Pro');
+    const success = backupSessionVault(dataPath, { reason: 'manual_api_trigger' });
+    res.json({ success, message: success ? 'Session vault backed up successfully' : 'No active session data found to back up' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/whatsapp/restore-vault', (req, res) => {
+  try {
+    const dataPath = process.env.USER_DATA_PATH || path.join(process.env.APPDATA || '', 'Career Xone Pro');
+    const success = restoreSessionFromVault(dataPath);
+    res.json({ success, message: success ? 'Session restored from vault successfully' : 'No vault backup found to restore' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

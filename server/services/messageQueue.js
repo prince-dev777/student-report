@@ -11,14 +11,15 @@
  */
 
 import { sendWhatsAppMessageWeb, getWhatsAppClientState } from './whatsappClient.js';
+import SMSLog from '../models/SMSLog.js';
 
 // --- Configuration ---
 const CONFIG = {
-  MIN_DELAY_MS: 30000,       // 30 seconds minimum between messages (Ultra-Secure)
-  MAX_DELAY_MS: 50000,       // 50 seconds maximum between messages (Ultra-Secure)
-  BURST_LIMIT: 20,           // Max messages per burst window
+  MIN_DELAY_MS: 8000,        // 8 seconds minimum between messages (safe human pace)
+  MAX_DELAY_MS: 15000,       // 15 seconds maximum between messages
+  BURST_LIMIT: 35,           // Max messages per burst window
   BURST_WINDOW_MS: 5 * 60 * 1000,  // 5-minute burst window
-  HOURLY_CAP: 100,           // Max messages per hour
+  HOURLY_CAP: 350,           // Max 350 messages per hour (comfortably accommodates morning rush)
   MAX_RETRIES: 3,
   RETRY_DELAYS: [5000, 15000, 30000], // Exponential backoff
 };
@@ -42,22 +43,26 @@ const stats = {
  * Add a WhatsApp message to the queue.
  * @param {string} to - Phone number
  * @param {string} message - Message text
- * @param {object} metadata - Optional metadata for logging (studentName, type, etc.)
+ * @param {object} metadata - Optional metadata for logging (studentName, type, logId, etc.)
  * @returns {{ queued: boolean, position: number, reason?: string }}
  */
 export function queueWhatsAppMessage(to, message, metadata = {}) {
+  // Normalize recipient phone number: strip non-digits and leading zeroes
+  let cleanTo = String(to || '').replace(/\D/g, '').replace(/^0+/, '');
+  if (cleanTo.length === 10) cleanTo = '91' + cleanTo;
+
   // Check hourly cap
   const oneHourAgo = Date.now() - 60 * 60 * 1000;
   const hourlyCount = sentTimestamps.filter(t => t > oneHourAgo).length + queue.length;
   if (hourlyCount >= CONFIG.HOURLY_CAP) {
     stats.totalDropped++;
-    console.warn(`[MessageQueue] ⛔ HOURLY CAP (${CONFIG.HOURLY_CAP}) reached. Dropping message for ${metadata.studentName || to}`);
+    console.warn(`[MessageQueue] ⛔ HOURLY CAP (${CONFIG.HOURLY_CAP}) reached. Deferring message for ${metadata.studentName || cleanTo}`);
     return { queued: false, position: -1, reason: `Hourly cap (${CONFIG.HOURLY_CAP}) reached` };
   }
 
   const entry = {
     id: `MQ_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    to,
+    to: cleanTo,
     message,
     metadata,
     retries: 0,
@@ -69,7 +74,7 @@ export function queueWhatsAppMessage(to, message, metadata = {}) {
   stats.totalQueued++;
   stats.queueLength = queue.length;
 
-  console.log(`[MessageQueue] 📥 Queued message #${stats.totalQueued} for ${metadata.studentName || to} (${metadata.type || 'unknown'}) | Queue size: ${queue.length}`);
+  console.log(`[MessageQueue] 📥 Queued message #${stats.totalQueued} for ${metadata.studentName || cleanTo} (${metadata.type || 'unknown'}) | Queue size: ${queue.length}`);
 
   // Kick off processing if not already running
   if (!isProcessing) {
@@ -124,6 +129,16 @@ async function processQueue() {
         stats.lastSentAt = new Date().toISOString();
         sentTimestamps.push(Date.now());
 
+        // Update MongoDB SMSLog status to 'delivered'
+        if (entry.metadata.logId || entry.metadata.logDbId) {
+          try {
+            await SMSLog.findOneAndUpdate(
+              { $or: [{ id: entry.metadata.logId }, { _id: entry.metadata.logDbId }] },
+              { status: 'delivered' }
+            );
+          } catch (_) {}
+        }
+
         // Prune old timestamps (keep last 2 hours only)
         while (sentTimestamps.length > 0 && sentTimestamps[0] < Date.now() - 2 * 60 * 60 * 1000) {
           sentTimestamps.shift();
@@ -134,13 +149,23 @@ async function processQueue() {
       } catch (err) {
         entry.retries = attempt + 1;
         if (attempt < CONFIG.MAX_RETRIES) {
-          const retryDelay = CONFIG.RETRY_DELAYS[attempt] || 30000;
+          const retryDelay = CONFIG.RETRY_DELAYS[attempt] || 15000;
           console.warn(`[MessageQueue] ⚠️ Send failed (attempt ${attempt + 1}/${CONFIG.MAX_RETRIES + 1}): ${err.message}. Retrying in ${retryDelay / 1000}s...`);
           await sleep(retryDelay);
         } else {
           entry.status = 'failed';
           stats.totalFailed++;
           console.error(`[MessageQueue] ❌ FAILED after ${CONFIG.MAX_RETRIES + 1} attempts for ${entry.metadata.studentName || entry.to}: ${err.message}`);
+          
+          // Update MongoDB SMSLog status to 'failed'
+          if (entry.metadata.logId || entry.metadata.logDbId) {
+            try {
+              await SMSLog.findOneAndUpdate(
+                { $or: [{ id: entry.metadata.logId }, { _id: entry.metadata.logDbId }] },
+                { status: 'failed' }
+              );
+            } catch (_) {}
+          }
         }
       }
     }
