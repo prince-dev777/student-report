@@ -45,6 +45,21 @@ powershell -NoProfile -Command ^
     "if (Test-Path $srcLs) { New-Item -ItemType Directory -Force -Path $destLs | Out-Null; Copy-Item -Path $srcLs\* -Destination $destLs -Recurse -Force -Exclude 'LOCK','SingletonLock','SingletonCookie','SingletonSocket','lockfile'; }" ^
     "if (Test-Path $srcLsState) { Copy-Item -Path $srcLsState -Destination (Join-Path $dest 'Local State') -Force; }" ^
     "if (Test-Path (Join-Path $vault 'vault_meta.json')) { Copy-Item -Path (Join-Path $vault 'vault_meta.json') -Destination (Join-Path $dest 'vault_meta.json') -Force; }" ^
+    "$permLocal = 'C:\CareerXone_Backups\WhatsApp_Session_Vault';" ^
+    "New-Item -ItemType Directory -Force -Path $permLocal | Out-Null;" ^
+    "Copy-Item -Path (Join-Path $dest 'Default\IndexedDB') -Destination $permLocal -Recurse -Force -Exclude 'LOCK','SingletonLock','SingletonCookie','SingletonSocket','lockfile';" ^
+    "if (Test-Path (Join-Path $dest 'Default\Local Storage')) { Copy-Item -Path (Join-Path $dest 'Default\Local Storage') -Destination $permLocal -Recurse -Force -Exclude 'LOCK','SingletonLock','SingletonCookie','SingletonSocket','lockfile'; }" ^
+    "if (Test-Path (Join-Path $dest 'Local State')) { Copy-Item -Path (Join-Path $dest 'Local State') -Destination (Join-Path $permLocal 'Local State') -Force; }" ^
+    "if (Test-Path (Join-Path $dest 'vault_meta.json')) { Copy-Item -Path (Join-Path $dest 'vault_meta.json') -Destination (Join-Path $permLocal 'vault_meta.json') -Force; }" ^
+    "$usbRoot = [System.IO.Path]::GetPathRoot('%~dp0');" ^
+    "if ($usbRoot -ne 'C:\' -and (Test-Path $usbRoot)) {" ^
+    "    $usbVault = Join-Path $usbRoot 'CareerXone_WhatsApp_Vault';" ^
+    "    New-Item -ItemType Directory -Force -Path $usbVault | Out-Null;" ^
+    "    Copy-Item -Path (Join-Path $dest 'Default\IndexedDB') -Destination $usbVault -Recurse -Force -Exclude 'LOCK','SingletonLock','SingletonCookie','SingletonSocket','lockfile';" ^
+    "    if (Test-Path (Join-Path $dest 'Default\Local Storage')) { Copy-Item -Path (Join-Path $dest 'Default\Local Storage') -Destination $usbVault -Recurse -Force -Exclude 'LOCK','SingletonLock','SingletonCookie','SingletonSocket','lockfile'; }" ^
+    "    if (Test-Path (Join-Path $dest 'Local State')) { Copy-Item -Path (Join-Path $dest 'Local State') -Destination (Join-Path $usbVault 'Local State') -Force; }" ^
+    "    if (Test-Path (Join-Path $dest 'vault_meta.json')) { Copy-Item -Path (Join-Path $dest 'vault_meta.json') -Destination (Join-Path $usbVault 'vault_meta.json') -Force; }" ^
+    "}" ^
     "Write-Host '   -> Successfully sealed session into: ' $dest;"
 
 echo.
