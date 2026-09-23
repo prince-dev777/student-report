@@ -173,6 +173,7 @@ export default function Attendance() {
   const [showKioskSuggestions, setShowKioskSuggestions] = useState(false);
   const lastSeenBiometricEventIdRef = useRef(null);
   const kioskInputRef = useRef(null);
+  const lastKioskKeyTimeRef = useRef(0);
 
   // 📡 Biometric Machine Integration States
   const [biometricStatus, setBiometricStatus] = useState({
@@ -1052,8 +1053,12 @@ export default function Attendance() {
     if (e) e.preventDefault();
     let matchedStudent = studentOverride;
 
+    const raw = String(kioskCode || '').trim();
+    // Immediately clear input and suggestions so next scan never appends to previous text
+    setKioskCode('');
+    setShowKioskSuggestions(false);
+
     if (!matchedStudent) {
-      const raw = String(kioskCode || '').trim();
       if (!raw) return;
 
       // 1. Check if raw is JSON (from formatted QR cards)
@@ -1098,9 +1103,6 @@ export default function Attendance() {
       }
     }
 
-    setKioskCode('');
-    setShowKioskSuggestions(false);
-
     // 4. Anti-spam 60-second (1 min) debounce check
     const now = Date.now();
     const lastScanTime = lastScannedMap[matchedStudent.id];
@@ -1117,64 +1119,67 @@ export default function Attendance() {
 
     let determinedType = kioskMode;
     if (kioskMode === 'auto') {
-      if (!todayRecord || !todayRecord.entryTime) {
+      const punches = Array.isArray(todayRecord?.punches) ? todayRecord.punches : [];
+      const hasRound1Entry = todayRecord?.entryTime && todayRecord.entryTime !== '--';
+      const hasRound1Exit = todayRecord?.exitTime && todayRecord.exitTime !== '--';
+      const hasRound2Entry = todayRecord?.entryTime2 && todayRecord.entryTime2 !== '--';
+      const hasRound2Exit = todayRecord?.exitTime2 && todayRecord.exitTime2 !== '--';
+
+      // Robust 12-hour/24-hour time to minutes parser
+      const parseEntryTimeToMins = (tStr) => {
+        if (!tStr || tStr === '--') return null;
+        const match12 = String(tStr).trim().match(/^(\d{1,2}):(\d{1,2})(?::\d{2})?\s*(AM|PM)?$/i);
+        if (match12) {
+          let h = parseInt(match12[1], 10);
+          const m = parseInt(match12[2], 10) || 0;
+          const mod = match12[3] ? match12[3].toUpperCase() : null;
+          if (mod === 'PM' && h < 12) h += 12;
+          if (mod === 'AM' && h === 12) h = 0;
+          return h * 60 + m;
+        }
+        const parts = String(tStr).split(':');
+        if (parts.length >= 2) {
+          const h = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10) || 0;
+          if (!isNaN(h)) return h * 60 + m;
+        }
+        return null;
+      };
+
+      const cur = new Date();
+      const currentMin = cur.getHours() * 60 + cur.getMinutes();
+
+      if (!todayRecord || !hasRound1Entry) {
         determinedType = 'entry';
-      } else if (todayRecord.entryTime && !todayRecord.exitTime) {
-        // Robust 12-hour/24-hour time to minutes parser
-        const parseEntryTimeToMins = (tStr) => {
-          if (!tStr || tStr === '--') return null;
-          const match12 = String(tStr).trim().match(/^(\d{1,2}):(\d{1,2})(?::\d{2})?\s*(AM|PM)?$/i);
-          if (match12) {
-            let h = parseInt(match12[1], 10);
-            const m = parseInt(match12[2], 10) || 0;
-            const mod = match12[3] ? match12[3].toUpperCase() : null;
-            if (mod === 'PM' && h < 12) h += 12;
-            if (mod === 'AM' && h === 12) h = 0;
-            return h * 60 + m;
-          }
-          const parts = String(tStr).split(':');
-          if (parts.length >= 2) {
-            const h = parseInt(parts[0], 10);
-            const m = parseInt(parts[1], 10) || 0;
-            if (!isNaN(h)) return h * 60 + m;
-          }
-          return null;
-        };
-
-        const cur = new Date();
-        const currentMin = cur.getHours() * 60 + cur.getMinutes();
+      } else if (hasRound1Entry && !hasRound1Exit) {
+        // Checking out from Round 1
         const entryMin = parseEntryTimeToMins(todayRecord.entryTime);
-
-        // Anti-Bounce & Early Exit Guard: Require at least 15 minutes between Check-In and Check-Out
-        if (entryMin !== null && (currentMin - entryMin) < 15) {
+        if (entryMin !== null && (currentMin - entryMin) < 15 && currentMin >= entryMin) {
           if (soundEnabled) playKioskSound('error');
           toast(`⚠️ ${matchedStudent.name} already checked in at ${formatTime(todayRecord.entryTime)}! Exit allowed after 15 mins.`, { icon: 'ℹ️' });
           return;
         }
         determinedType = 'exit';
+      } else if (hasRound1Entry && hasRound1Exit && !hasRound2Entry) {
+        // Re-entry: Second Check-in!
+        determinedType = 'entry';
+      } else if (hasRound2Entry && !hasRound2Exit) {
+        // Second Check-out!
+        const entryMin2 = parseEntryTimeToMins(todayRecord.entryTime2);
+        if (entryMin2 !== null && (currentMin - entryMin2) < 15 && currentMin >= entryMin2) {
+          if (soundEnabled) playKioskSound('error');
+          toast(`⚠️ ${matchedStudent.name} checked in at ${formatTime(todayRecord.entryTime2)}! Exit allowed after 15 mins.`, { icon: 'ℹ️' });
+          return;
+        }
+        determinedType = 'exit';
       } else {
-        if (soundEnabled) playKioskSound('error');
-        toast.error(`⚠️ ${matchedStudent.name} has already completed both Entry & Exit today!`);
-        return;
+        // Round 3+
+        const lastP = punches[punches.length - 1];
+        determinedType = (lastP && lastP.type === 'IN') ? 'exit' : 'entry';
       }
     } else if (kioskMode === 'entry') {
-      if (todayRecord && todayRecord.entryTime) {
-        if (soundEnabled) playKioskSound('error');
-        toast.error(`⚠️ ${matchedStudent.name} already marked Entry today at ${formatTime(todayRecord.entryTime)}!`);
-        return;
-      }
       determinedType = 'entry';
     } else if (kioskMode === 'exit') {
-      if (!todayRecord || !todayRecord.entryTime) {
-        if (soundEnabled) playKioskSound('error');
-        toast.error(`⚠️ Cannot mark Exit. ${matchedStudent.name} has not checked in today!`);
-        return;
-      }
-      if (todayRecord.exitTime) {
-        if (soundEnabled) playKioskSound('error');
-        toast.error(`⚠️ ${matchedStudent.name} already marked Exit today at ${formatTime(todayRecord.exitTime)}!`);
-        return;
-      }
       determinedType = 'exit';
     }
 
@@ -3426,6 +3431,19 @@ export default function Attendance() {
                       ref={kioskInputRef}
                       type="text"
                       value={kioskCode}
+                      onKeyDown={(e) => {
+                        const now = Date.now();
+                        const timeDiff = now - lastKioskKeyTimeRef.current;
+                        lastKioskKeyTimeRef.current = now;
+
+                        // If a new scanner burst or fresh scan arrives after > 120ms gap and field has text,
+                        // clear previous text so the new student's roll number doesn't concatenate!
+                        if (e.key !== 'Enter' && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                          if (timeDiff > 120 && kioskCode.length > 0) {
+                            setKioskCode('');
+                          }
+                        }
+                      }}
                       onChange={(e) => {
                         setKioskCode(e.target.value);
                         setShowKioskSuggestions(true);

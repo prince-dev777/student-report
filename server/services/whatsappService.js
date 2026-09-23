@@ -6,6 +6,7 @@ import SMSLog from '../models/SMSLog.js';
 import MessageLock from '../models/MessageLock.js';
 import { getWhatsAppClientState } from './whatsappClient.js';
 import { queueWhatsAppMessage } from './messageQueue.js';
+import { mirrorWrite } from '../db/syncEngine.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,8 +39,8 @@ export function setOutboundMessagingStatus(enabled) {
 // --- Multi-PC / Peer Instance In-Memory De-duplication Lock ---
 const sentAlertLockMap = new Map();
 
-function isDuplicateAlert(studentId, type, dateStr, sessionName = null) {
-  const lockKey = `${studentId}_${type}_${dateStr}_${sessionName || 'GEN'}`;
+function isDuplicateAlert(studentId, type, dateStr, sessionName = null, round = 1) {
+  const lockKey = `${studentId}_${type}_R${round || 1}_${dateStr}_${sessionName || 'GEN'}`;
   const now = Date.now();
   if (sentAlertLockMap.has(lockKey)) {
     const timestamp = sentAlertLockMap.get(lockKey);
@@ -50,8 +51,8 @@ function isDuplicateAlert(studentId, type, dateStr, sessionName = null) {
   return false;
 }
 
-function recordSentAlert(studentId, type, dateStr, sessionName = null) {
-  const lockKey = `${studentId}_${type}_${dateStr}_${sessionName || 'GEN'}`;
+function recordSentAlert(studentId, type, dateStr, sessionName = null, round = 1) {
+  const lockKey = `${studentId}_${type}_R${round || 1}_${dateStr}_${sessionName || 'GEN'}`;
   sentAlertLockMap.set(lockKey, Date.now());
   if (sentAlertLockMap.size > 500) {
     const now = Date.now();
@@ -68,7 +69,7 @@ export function resetSentAlertLockMap() {
 /**
  * Generates formatted text for Attendance & Staff alerts
  */
-export function formatAttendanceMessageText({ parentName, studentName, formattedDate, type, detail, sessionName }) {
+export function formatAttendanceMessageText({ parentName, studentName, formattedDate, type, detail, sessionName, round = 1, roundLabel = null }) {
   const rawParent = (parentName || '').trim();
   const pName = (rawParent && !['undefined', 'null'].includes(rawParent.toLowerCase()))
     ? rawParent
@@ -90,14 +91,20 @@ export function formatAttendanceMessageText({ parentName, studentName, formatted
     const sessionSuffix = (!hasSessionInDetail && resolvedSessionName && resolvedSessionName.toLowerCase() !== 'general')
       ? ` for ${resolvedSessionName}`
       : '';
-    return `Dear ${pName}, this is to inform you that your ward ${studentName} has safely arrived at the institute on ${formattedDate} at ${cleanDetail}${sessionSuffix}. - Career Xone`.replace(/\s+/g, ' ').replace(/\.\s*\./g, '.');
+    const actionPhrase = (round > 1 && roundLabel)
+      ? `safely arrived for ${roundLabel} at the institute`
+      : 'safely arrived at the institute';
+    return `Dear ${pName}, this is to inform you that your ward ${studentName} has ${actionPhrase} on ${formattedDate} at ${cleanDetail}${sessionSuffix}. - Career Xone`.replace(/\s+/g, ' ').replace(/\.\s*\./g, '.');
   } else if (type === 'OUT') {
     const cleanDetail = typeof detail === 'string' ? detail.trim() : '';
     const hasSessionInDetail = cleanDetail.toLowerCase().includes(' after ') || cleanDetail.toLowerCase().includes(' for ');
     const sessionSuffix = (!hasSessionInDetail && resolvedSessionName && resolvedSessionName.toLowerCase() !== 'general')
       ? ` after ${resolvedSessionName}`
       : '';
-    return `Dear ${pName}, this is to inform you that your ward ${studentName} has left the institute on ${formattedDate} at ${cleanDetail}${sessionSuffix}. - Career Xone`.replace(/\s+/g, ' ').replace(/\.\s*\./g, '.');
+    const actionPhrase = (round > 1 && roundLabel)
+      ? `left the institute (${roundLabel})`
+      : 'left the institute';
+    return `Dear ${pName}, this is to inform you that your ward ${studentName} has ${actionPhrase} on ${formattedDate} at ${cleanDetail}${sessionSuffix}. - Career Xone`.replace(/\s+/g, ' ').replace(/\.\s*\./g, '.');
   } else if (type === 'ABSENT') {
     return `Dear ${pName}, this is to inform you that your ward ${studentName} is absent from the institute today on ${formattedDate} (${detail}). - Career Xone`;
   }
@@ -109,7 +116,7 @@ export function formatAttendanceMessageText({ parentName, studentName, formatted
  * Logs the message details to the database (SMSLog).
  * Includes Atomic Multi-PC duplicate lock and persistent messaging check.
  */
-export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail, sessionName = null, sessionId = null }) {
+export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail, sessionName = null, sessionId = null, round = 1, roundLabel = null }) {
   // 0. WhatsApp Whitelist: ONLY Check-in (IN), Check-out (OUT), and Test Results (TEST_RESULT) go to WhatsApp.
   //    All other types (SESSION_CONTINUE, MISSED_EXIT, PUNCH_MISSED, ABSENT, WELCOME, etc.) are logged but NOT sent via WhatsApp.
   const WHATSAPP_ALLOWED_TYPES = ['IN', 'OUT', 'TEST_RESULT'];
@@ -131,13 +138,13 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   const todayStr = new Date().toISOString().split('T')[0];
 
   // 2. In-Memory Atomic Multi-PC Lock
-  if (isDuplicateAlert(studentId, type, todayStr, resolvedSessionName)) {
-    console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented in-memory for ${studentName} (${type})`);
+  if (isDuplicateAlert(studentId, type, todayStr, resolvedSessionName, round)) {
+    console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented in-memory for ${studentName} (${type} - Round ${round || 1})`);
     return { success: true, skipped: true, reason: 'Duplicate alert prevented by in-memory lock' };
   }
 
   // 3. 🛡️ ATOMIC MULTI-PC DISTRIBUTED LOCK (Database-Level Guarantee)
-  const lockKey = `${studentId}_${type}_${todayStr}_${resolvedSessionName || 'GEN'}`;
+  const lockKey = `${studentId}_${type}_R${round || 1}_${todayStr}_${resolvedSessionName || 'GEN'}`;
   try {
     await MessageLock.create({
       lockKey,
@@ -150,8 +157,8 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
     });
   } catch (lockErr) {
     if (lockErr.code === 11000 || lockErr.message?.includes('duplicate key')) {
-      recordSentAlert(studentId, type, todayStr, resolvedSessionName);
-      console.log(`[WhatsAppService] 🛡️ ATOMIC MULTI-PC LOCK: Duplicate prevented for ${studentName} (${type} - ${resolvedSessionName || 'General'}). Another PC instance already sent/locked this message!`);
+      recordSentAlert(studentId, type, todayStr, resolvedSessionName, round);
+      console.log(`[WhatsAppService] 🛡️ ATOMIC MULTI-PC LOCK: Duplicate prevented for ${studentName} (${type} - Round ${round || 1} - ${resolvedSessionName || 'General'}). Another PC instance already sent/locked this message!`);
       return { success: true, skipped: true, reason: 'Duplicate alert prevented by Atomic Distributed Lock' };
     }
   }
@@ -166,8 +173,8 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       createdAt: { $gte: tenMinsAgo },
       status: { $in: ['delivered', 'sent'] }
     });
-    if (existingLog) {
-      recordSentAlert(studentId, type, todayStr, sessionName);
+    if (existingLog && round <= 1) {
+      recordSentAlert(studentId, type, todayStr, resolvedSessionName, round);
       console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented in DB for ${studentName} (${type}) - Already logged by peer PC!`);
       return { success: true, skipped: true, reason: 'Duplicate alert already logged' };
     }
@@ -188,7 +195,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   // Build message text based on type
   let messageText;
   if (['IN', 'OUT', 'ABSENT'].includes(type) || (typeof detail === 'string' && detail.includes('Staff Attendance')) || (resolvedSessionName && resolvedSessionName.includes('Duty'))) {
-    messageText = formatAttendanceMessageText({ parentName, studentName, formattedDate, type, detail, sessionName: resolvedSessionName });
+    messageText = formatAttendanceMessageText({ parentName, studentName, formattedDate, type, detail, sessionName: resolvedSessionName, round, roundLabel });
   } else if (type === 'TEST_RESULT' && typeof detail === 'object') {
     const portalUrl = process.env.PUBLIC_PORTAL_URL || 'https://studentreport.cxjeeneet.com/parent';
     const percent = detail.percentage ?? (detail.totalMarks ? Math.round((Number(detail.marks) / detail.totalMarks) * 1000) / 10 : 0);
@@ -316,6 +323,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       sessionId: sessionId || null
     });
     await log.save();
+    mirrorWrite('smslogs', log.toObject ? log.toObject() : log).catch(() => {});
     console.log(`[WhatsAppService] SMSLog saved successfully (Type: ${log.type}, Status: ${status}, Session: ${log.sessionName || 'General'}).`);
     return { success: status !== 'failed', status, logId: log.id, message: messageText };
   } catch (logErr) {

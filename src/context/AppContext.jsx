@@ -531,7 +531,10 @@ export function AppProvider({ children }) {
 
     let updatedRecord = null;
     if (type === 'entry') {
-      if (existing && existing.entryTime) {
+      const isFirstEntry = !existing || !existing.entryTime || existing.entryTime === '--';
+      const isSecondEntry = existing && existing.entryTime && existing.entryTime !== '--' && existing.exitTime && existing.exitTime !== '--';
+
+      if (existing && existing.entryTime && existing.entryTime !== '--' && (!existing.exitTime || existing.exitTime === '--')) {
         toast.error('Already marked entry today!');
         return;
       }
@@ -540,23 +543,25 @@ export function AppProvider({ children }) {
         studentId,
         date: today,
         status: 'present',
-        entryTime: currentTime,
+        entryTime: existing?.entryTime || currentTime,
         exitTime: existing ? existing.exitTime : null,
+        ...(isSecondEntry ? { entryTime2: currentTime, exitTime2: null } : {}),
         sessionName: customSessionName || existing?.sessionName || null,
         smsSent: true,
       };
     } else {
-      if (!existing || !existing.entryTime) {
+      if (!existing || (!existing.entryTime && !existing.entryTime2)) {
         toast.error('Entry not marked yet!');
         return;
       }
-      if (existing.exitTime) {
+      const isSecondExit = existing.entryTime2 && (!existing.exitTime2 || existing.exitTime2 === '--');
+      if (!isSecondExit && existing.exitTime && existing.exitTime !== '--' && !existing.entryTime2) {
         toast.error('Already marked exit today!');
         return;
       }
       updatedRecord = {
         ...existing,
-        exitTime: currentTime,
+        ...(isSecondExit ? { exitTime2: currentTime } : { exitTime: currentTime }),
         ...(customSessionName ? { sessionName: customSessionName } : {})
       };
     }

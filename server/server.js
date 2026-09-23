@@ -2082,7 +2082,7 @@ app.get('/api/parent/data', async (req, res) => {
     const notifications = await Notification.find({
       instituteId,
       $or: [
-        { studentId: student._id },
+        { studentId: { $in: [student._id, student.id, String(student._id), String(student.rollNo)] } },
         { studentId: null },
         ...nameRegexClause
       ]
@@ -2133,7 +2133,19 @@ app.get('/api/parent/results', async (req, res) => {
 app.get('/api/parent/notifications', async (req, res) => {
   try {
     if (req.user.role !== 'parent') return res.status(403).json({ error: 'Forbidden' });
-    const notifications = await Notification.find({ studentId: req.user.studentId, instituteId: req.user.instituteId }).sort({ createdAt: -1 });
+    const student = await Student.findById(req.user.studentId);
+    const studentKeys = student ? [student.id, String(student.rollNo), student._id?.toString(), student._id] : [req.user.studentId];
+    const escapedName = student?.name ? student.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+    const nameRegexClause = escapedName ? [{ message: new RegExp(`\\b${escapedName}\\b`, 'i') }] : [];
+
+    const notifications = await Notification.find({
+      instituteId: req.user.instituteId,
+      $or: [
+        { studentId: { $in: studentKeys } },
+        { studentId: null },
+        ...nameRegexClause
+      ]
+    }).sort({ createdAt: -1 });
     res.json(notifications);
   } catch (err) {
     res.status(500).json({ error: err.message });

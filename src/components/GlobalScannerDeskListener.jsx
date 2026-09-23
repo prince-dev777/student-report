@@ -223,7 +223,7 @@ export default function GlobalScannerDeskListener() {
       let punchType = 'entry';
       if (!todayRecord || !todayRecord.entryTime) {
         punchType = 'entry';
-      } else if (todayRecord.entryTime && !todayRecord.exitTime) {
+      } else if (todayRecord.entryTime && (!todayRecord.exitTime || todayRecord.exitTime === '--')) {
         // If entry was marked less than 2 minutes ago, prevent accidental double punch
         const [eh, em] = todayRecord.entryTime.split(':').map(Number);
         const cur = new Date();
@@ -235,10 +235,16 @@ export default function GlobalScannerDeskListener() {
           return;
         }
         punchType = 'exit';
+      } else if (todayRecord.entryTime && todayRecord.exitTime && (!todayRecord.entryTime2 || todayRecord.entryTime2 === '--')) {
+        // Second Check-in!
+        punchType = 'entry';
+      } else if (todayRecord.entryTime2 && (!todayRecord.exitTime2 || todayRecord.exitTime2 === '--')) {
+        // Second Check-out!
+        punchType = 'exit';
       } else {
-        playScannerSound('error');
-        toast.error(`⚠️ ${matched.name} already completed Entry & Exit today!`, { id: 'scanner-toast' });
-        return;
+        const punches = Array.isArray(todayRecord.punches) ? todayRecord.punches : [];
+        const lastP = punches[punches.length - 1];
+        punchType = (lastP && lastP.type === 'IN') ? 'exit' : 'entry';
       }
 
       // 5. Update timestamp and trigger mark attendance

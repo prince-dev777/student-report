@@ -26,6 +26,16 @@ import SMSLog from './models/SMSLog.js';
 import { sendWhatsAppAlert } from './services/whatsappService.js';
 import { formatDurationHuman, resolveSessionForStudent } from './services/sessionResolver.js';
 import { logInfo, logError, logWarn } from './utils/logger.js';
+import { mirrorWrite } from './db/syncEngine.js';
+
+export function getRoundLabel(type, round) {
+  if (round <= 1) {
+    return type === 'IN' ? 'Check-in' : 'Check-out';
+  }
+  const ordinals = { 2: 'Second', 3: 'Third', 4: 'Fourth', 5: 'Fifth', 6: 'Sixth' };
+  const ord = ordinals[round] || `${round}th`;
+  return type === 'IN' ? `${ord} Check-in` : `${ord} Check-out`;
+}
 
 // ----------------------------------------------------------------------------
 // 📊 In-Memory State
@@ -522,9 +532,14 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
   let record = await Attendance.findOne(attQuery);
   let effectiveType = type;
   let isNewPunch = false;
+  let round = 1;
+  let roundLabel = 'Check-in';
   const currentMins = parseTimeToMins(formattedTime);
 
   if (!record) {
+    round = 1;
+    effectiveType = 'IN';
+    roundLabel = 'Check-in';
     record = new Attendance({
       instituteId: resolvedInstituteId,
       id: `ATT_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -533,54 +548,135 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       status: 'present',
       entryTime: formattedTime,
       exitTime: '--',
-      smsSent: false
-    });
-    effectiveType = 'IN';
-    isNewPunch = true;
-  } else {
-    const entryMins = parseTimeToMins(record.entryTime);
-    const exitMins = parseTimeToMins(record.exitTime);
-
-    // 1. Anti-Bounce: If punched within 2 minutes of entry time, ignore as accidental rapid double-punch
-    if (record.entryTime && record.entryTime !== '--' && Math.abs(currentMins - entryMins) < 2) {
-      logInfo('BIOMETRIC', `⚡ Anti-Bounce: ${student.name} (Roll ${student.rollNo}) punched within 2 mins of Entry (${record.entryTime}). Ignored.`);
-      return {
-        success: true,
-        isDuplicate: true,
-        isStaff: false,
-        name: student.name,
-        rollNo: student.rollNo,
+      punches: [{
         type: 'IN',
         time: formattedTime,
-        message: 'Rapid duplicate punch ignored (Anti-Bounce)'
-      };
+        round: 1,
+        label: roundLabel,
+        sessionName: null,
+        deviceSN: deviceSN || 'Biometric Scanner',
+        timestamp: new Date()
+      }],
+      smsSent: false
+    });
+    isNewPunch = true;
+  } else {
+    if (!Array.isArray(record.punches)) {
+      record.punches = [];
     }
 
-    // 2. Anti-Bounce: If already checked OUT and punched within 2 minutes of exit time, ignore
-    if (record.exitTime && record.exitTime !== '--' && Math.abs(currentMins - exitMins) < 2) {
-      logInfo('BIOMETRIC', `⚡ Anti-Bounce: ${student.name} (Roll ${student.rollNo}) punched within 2 mins of Exit (${record.exitTime}). Ignored.`);
-      return {
-        success: true,
-        isDuplicate: true,
-        isStaff: false,
-        name: student.name,
-        rollNo: student.rollNo,
+    // Backfill punches from legacy fields if punches array is empty
+    if (record.punches.length === 0) {
+      if (record.entryTime && record.entryTime !== '--') {
+        record.punches.push({ type: 'IN', time: record.entryTime, round: 1, label: 'Check-in', timestamp: new Date() });
+      }
+      if (record.exitTime && record.exitTime !== '--') {
+        record.punches.push({ type: 'OUT', time: record.exitTime, round: 1, label: 'Check-out', timestamp: new Date() });
+      }
+      if (record.entryTime2 && record.entryTime2 !== '--') {
+        record.punches.push({ type: 'IN', time: record.entryTime2, round: 2, label: 'Second Check-in', timestamp: new Date() });
+      }
+      if (record.exitTime2 && record.exitTime2 !== '--') {
+        record.punches.push({ type: 'OUT', time: record.exitTime2, round: 2, label: 'Second Check-out', timestamp: new Date() });
+      }
+    }
+
+    const lastPunch = record.punches.length > 0 ? record.punches[record.punches.length - 1] : null;
+    const isCurrentlyIn = lastPunch && lastPunch.type === 'IN';
+
+    if (!isCurrentlyIn) {
+      // Student is currently OUT -> Next punch is IN (Check-in or Re-entry)
+      effectiveType = 'IN';
+      const inCount = record.punches.filter(p => p.type === 'IN').length;
+      round = inCount + 1;
+      roundLabel = getRoundLabel('IN', round);
+
+      // Anti-Bounce check: If last punch was within 2 minutes, ignore
+      if (lastPunch && lastPunch.time) {
+        const lastMins = parseTimeToMins(lastPunch.time);
+        if (Math.abs(currentMins - lastMins) < 2) {
+          logInfo('BIOMETRIC', `⚡ Anti-Bounce: ${student.name} (Roll ${student.rollNo}) punched within 2 mins of previous punch (${lastPunch.time}). Ignored.`);
+          return {
+            success: true,
+            isDuplicate: true,
+            isStaff: false,
+            name: student.name,
+            rollNo: student.rollNo,
+            type: 'IN',
+            time: formattedTime,
+            message: 'Rapid duplicate punch ignored (Anti-Bounce)'
+          };
+        }
+      }
+
+      if (round === 1) {
+        record.entryTime = formattedTime;
+        if (!record.exitTime) record.exitTime = '--';
+      } else if (round === 2) {
+        record.entryTime2 = formattedTime;
+        record.exitTime2 = '--';
+      }
+      record.punches.push({
+        type: 'IN',
+        time: formattedTime,
+        round,
+        label: roundLabel,
+        sessionName: record.sessionName || null,
+        deviceSN: deviceSN || 'Biometric Scanner',
+        timestamp: new Date()
+      });
+      isNewPunch = true;
+    } else {
+      // Student is currently IN -> Next punch is OUT (Check-out)
+      effectiveType = 'OUT';
+      round = lastPunch.round || 1;
+      roundLabel = getRoundLabel('OUT', round);
+      const inMins = parseTimeToMins(lastPunch.time);
+
+      // 1. Anti-Bounce: If punched within 2 minutes of entry, ignore
+      if (Math.abs(currentMins - inMins) < 2) {
+        logInfo('BIOMETRIC', `⚡ Anti-Bounce: ${student.name} (Roll ${student.rollNo}) punched within 2 mins of Entry (${lastPunch.time}). Ignored.`);
+        return {
+          success: true,
+          isDuplicate: true,
+          isStaff: false,
+          name: student.name,
+          rollNo: student.rollNo,
+          type: 'IN',
+          time: formattedTime,
+          message: 'Rapid duplicate punch ignored (Anti-Bounce)'
+        };
+      }
+
+      // 2. Minimum stay guard (15 minutes from entry)
+      if (currentMins - inMins < 15 && currentMins >= inMins) {
+        logInfo('BIOMETRIC', `ℹ️ Early exit guard: ${student.name} punched before 15 mins. Exit allowed after 15 mins.`);
+        return {
+          success: true,
+          isDuplicate: true,
+          isStaff: false,
+          name: student.name,
+          rollNo: student.rollNo,
+          type: 'IN',
+          time: formattedTime,
+          message: 'Exit allowed after 15 minutes of Check-In'
+        };
+      }
+
+      if (round === 1) {
+        record.exitTime = formattedTime;
+      } else if (round === 2) {
+        record.exitTime2 = formattedTime;
+      }
+      record.punches.push({
         type: 'OUT',
         time: formattedTime,
-        message: 'Rapid duplicate punch ignored (Anti-Bounce)'
-      };
-    }
-
-    // 3. Normal Check-In (if entry was not recorded yet)
-    if (!record.entryTime || record.entryTime === '--') {
-      record.entryTime = formattedTime;
-      effectiveType = 'IN';
-      isNewPunch = true;
-    } 
-    // 4. Valid Check-Out (if student punches after 15+ minutes from entry)
-    else if (currentMins - entryMins >= 15) {
-      record.exitTime = formattedTime;
-      effectiveType = 'OUT';
+        round,
+        label: roundLabel,
+        sessionName: record.sessionName || null,
+        deviceSN: deviceSN || 'Biometric Scanner',
+        timestamp: new Date()
+      });
       isNewPunch = true;
     }
 
@@ -617,14 +713,44 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     if (student.parentPhone) record.smsSent = true;
     await record.save();
 
-    // Trigger Parent WhatsApp Alert (Uses de-duplication lock)
-    if (student.parentPhone) {
-      const formattedDuration = formatDurationHuman(record.durationMinutes);
-      const durationStr = formattedDuration ? ` (Duration: ${formattedDuration})` : '';
-      const sessionCtx = record.sessionName 
-        ? (effectiveType === 'OUT' ? ` after ${record.sessionName}` : ` for ${record.sessionName}`)
-        : '';
+    // Mirror attendance to Cloud Atlas immediately
+    mirrorWrite('attendances', record.toObject ? record.toObject() : record).catch(() => {});
 
+    // In-App Notification creation & Cloud Mirroring
+    const notifTitle = round > 1
+      ? `${roundLabel} Alert`
+      : (effectiveType === 'IN' ? 'Check-In Alert' : 'Check-Out Alert');
+
+    const formattedDuration = formatDurationHuman(record.durationMinutes);
+    const durationStr = formattedDuration ? ` (Duration: ${formattedDuration})` : '';
+    const sessionCtx = record.sessionName 
+      ? (effectiveType === 'OUT' ? ` after ${record.sessionName}` : ` for ${record.sessionName}`)
+      : '';
+
+    const notifMsg = round > 1
+      ? `Dear Parent, ${student.name} (Roll ${student.rollNo}) has completed ${roundLabel} at ${formattedTime}${sessionCtx}${effectiveType === 'OUT' ? durationStr : ''}.`
+      : (effectiveType === 'IN'
+        ? `Dear Parent, ${student.name} (Roll ${student.rollNo}) has checked IN at ${formattedTime}${sessionCtx}.`
+        : `Dear Parent, ${student.name} (Roll ${student.rollNo}) has checked OUT at ${formattedTime}${sessionCtx}${durationStr}.`);
+
+    try {
+      const notifDoc = await Notification.create({
+        instituteId: resolvedInstituteId,
+        studentId: student._id,
+        title: notifTitle,
+        message: notifMsg,
+        type: 'ATTENDANCE',
+        isRead: false
+      });
+      if (notifDoc) {
+        mirrorWrite('notifications', notifDoc.toObject ? notifDoc.toObject() : notifDoc).catch(() => {});
+      }
+    } catch (notifErr) {
+      console.warn('[Biometric] Notification create error:', notifErr.message);
+    }
+
+    // Trigger Parent WhatsApp Alert
+    if (student.parentPhone) {
       try {
         await sendWhatsAppAlert({
           instituteId: resolvedInstituteId,
@@ -635,7 +761,9 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
           type: effectiveType,
           sessionName: record.sessionName,
           sessionId: record.sessionId,
-          detail: `${formattedTime}${sessionCtx}${effectiveType === 'OUT' ? durationStr : ''}`
+          detail: `${formattedTime}${sessionCtx}${effectiveType === 'OUT' ? durationStr : ''}`,
+          round,
+          roundLabel
         });
       } catch (err) {
         console.warn('[Biometric] WhatsApp alert warning:', err.message);
@@ -650,6 +778,8 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       rollNo: student.rollNo,
       studentId: student.id,
       type: effectiveType,
+      round,
+      roundLabel,
       time: formattedTime,
       date: todayStr,
       session: record.sessionName || 'General Session',
@@ -673,13 +803,15 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
         parentPhone: student.parentPhone
       },
       punchType: effectiveType === 'IN' ? 'entry' : 'exit',
+      round,
+      roundLabel,
       time: formattedTime,
       date: todayStr,
       sessionName: record.sessionName || 'Career Xone Regular Session',
       parentPhone: student.parentPhone
     };
 
-    logInfo('BIOMETRIC', `✅ Student Punch Recorded: ${student.name} (Roll: ${student.rollNo}) -> ${effectiveType} at ${formattedTime}`);
+    logInfo('BIOMETRIC', `✅ Student Punch Recorded: ${student.name} (Roll: ${student.rollNo}) -> ${roundLabel} (${effectiveType}) at ${formattedTime}`);
   }
 
   return {
@@ -688,6 +820,8 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     studentName: student.name,
     rollNo: student.rollNo,
     type: effectiveType,
+    round,
+    roundLabel,
     time: formattedTime,
     sessionName: record?.sessionName
   };
