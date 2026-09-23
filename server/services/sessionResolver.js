@@ -55,6 +55,9 @@ export function resolveSessionForStudent(punchTimeStr, student, sessions) {
 
     // Check time window with 45-minute early check-in buffer and 30-minute late buffer
     if (punchMin >= startMin - 45 && punchMin <= endMin + 30) {
+      const hasBatchRestrictions = (Array.isArray(sess.batchIds) && sess.batchIds.length > 0) || (sess.batchId && sess.batchId !== 'all');
+      const hasClassRestrictions = (Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) || (sess.className && sess.className !== 'all');
+
       let matchesBatch = true;
       if (Array.isArray(sess.batchIds) && sess.batchIds.length > 0) {
         matchesBatch = student && sess.batchIds.some(b => String(b).trim().toLowerCase() === String(student.batch).trim().toLowerCase());
@@ -71,27 +74,35 @@ export function resolveSessionForStudent(punchTimeStr, student, sessions) {
         matchesClass = student && cList.includes(String(student.class).trim().toLowerCase());
       }
 
-      if (matchesBatch && matchesClass) {
-        let score = 0;
-        if ((Array.isArray(sess.batchIds) && sess.batchIds.length > 0) || (sess.batchId && sess.batchId !== 'all')) score += 2;
-        if ((Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) || (sess.className && sess.className !== 'all')) score += 2;
+      // If a session has specific class or batch restrictions, non-matching students are strictly excluded
+      if (hasBatchRestrictions && !matchesBatch) continue;
+      if (hasClassRestrictions && !matchesClass) continue;
 
-        if (score > bestScore) {
-          bestScore = score;
-          bestMatch = sess;
-        }
+      let score = 0;
+      if (hasBatchRestrictions && matchesBatch) score += 2;
+      if (hasClassRestrictions && matchesClass) score += 2;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = sess;
       }
     }
   }
 
-  // Fallback: If no batch/class specific session matched in time window, pick any session whose time window matches
+  // Fallback: ONLY pick a session that has NO class restrictions and NO batch restrictions (universal session)
   if (!bestMatch) {
     for (const sess of sessions) {
       const startMin = timeStringToMinutes(sess.startTime);
       const endMin = timeStringToMinutes(sess.endTime);
       if (startMin !== null && endMin !== null && punchMin >= startMin - 45 && punchMin <= endMin + 30) {
-        bestMatch = sess;
-        break;
+        const hasBatchRestrictions = (Array.isArray(sess.batchIds) && sess.batchIds.length > 0) || (sess.batchId && sess.batchId !== 'all');
+        const hasClassRestrictions = (Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) || (sess.className && sess.className !== 'all');
+
+        // Only unrestricted universal sessions can act as fallback
+        if (!hasBatchRestrictions && !hasClassRestrictions) {
+          bestMatch = sess;
+          break;
+        }
       }
     }
   }
