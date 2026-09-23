@@ -18,6 +18,43 @@ if (!gotTheLock) {
   let splashWindow = null;
   let serverProcess;
   let mongoProcess;
+  let scannerDaemonProcess = null;
+
+  function startScannerDaemon() {
+    const daemonPath = app.isPackaged 
+      ? path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'bin', 'scanner_daemon.exe')
+      : path.join(__dirname, 'server', 'bin', 'scanner_daemon.exe');
+
+    if (fs.existsSync(daemonPath)) {
+      try {
+        scannerDaemonProcess = spawn(daemonPath, [], {
+          detached: false,
+          stdio: 'ignore',
+          windowsHide: true
+        });
+        scannerDaemonProcess.on('error', (err) => {
+          console.warn('[ScannerDaemon] Error:', err.message);
+        });
+        scannerDaemonProcess.on('exit', () => {
+          scannerDaemonProcess = null;
+        });
+      } catch (err) {
+        console.warn('[ScannerDaemon] Spawn error:', err.message);
+      }
+    }
+  }
+
+  function killScannerDaemon() {
+    if (scannerDaemonProcess) {
+      try {
+        scannerDaemonProcess.kill();
+      } catch (e) {}
+      scannerDaemonProcess = null;
+    }
+    try {
+      exec('taskkill /F /IM scanner_daemon.exe', () => {});
+    } catch (e) {}
+  }
 
   function showMainWindow() {
     if (!mainWindow) {
@@ -415,8 +452,9 @@ let tray = null;
   }
 
 async function startServer() {
-  // Kill any leftover process on port 5000 from a previous session
+  // Kill any leftover process on port 5000 or old scanner daemon
   await killPort(5000);
+  killScannerDaemon();
 
   // Path to local main server (unpacked in production for Node ESM compatibility)
   const localOmrPath = app.isPackaged 
@@ -696,6 +734,7 @@ app.whenReady().then(async () => {
   createWindow();
   createTray();
   await startServer();
+  startScannerDaemon();
 
   // Auto Updater Logic
   if (app.isPackaged) {
@@ -809,6 +848,8 @@ app.whenReady().then(async () => {
       } catch (e) {}
     }
     
+    killScannerDaemon();
+
     // Failsafe
     killMongo();
   });

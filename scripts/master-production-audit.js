@@ -81,6 +81,12 @@ async function runMasterProductionAudit() {
     reportCheck('System Python 3 Runtime for OMR Scans', fs.existsSync(omrBinPath), 'Using Standalone EXE');
   }
 
+  // 6. Hardware Scanner Background Daemon & Native Speech Engine
+  const scannerDaemonPath = path.join(serverDir, 'bin', 'scanner_daemon.exe');
+  reportCheck('Hardware Scanner Background Daemon (bin/scanner_daemon.exe)', fs.existsSync(scannerDaemonPath));
+  const speakerPath = path.join(serverDir, 'bin', 'speaker.exe');
+  reportCheck('Native Windows Speech Engine (bin/speaker.exe)', fs.existsSync(speakerPath));
+
   // ==========================================================================
   // SECTION 2: MOBILE PWA MANIFESTS & MULTI-APP PORTAL ASSETS
   // ==========================================================================

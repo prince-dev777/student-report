@@ -50,6 +50,34 @@ const playScannerSound = (type = 'entry') => {
   }
 };
 
+const speakFirstName = (fullName) => {
+  if (!fullName || typeof window === 'undefined') return;
+  try {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const rawFirst = String(fullName).trim().split(/\s+/)[0] || '';
+      const cleanFirst = rawFirst.replace(/[^a-zA-Z]/g, '');
+      const firstName = cleanFirst ? cleanFirst.charAt(0).toUpperCase() + cleanFirst.slice(1).toLowerCase() : rawFirst;
+      if (!firstName) return;
+
+      const utterance = new SpeechSynthesisUtterance(firstName);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v => 
+        (v.lang && (v.lang.includes('hi') || v.lang.includes('IN'))) ||
+        (v.name && (v.name.includes('India') || v.name.includes('Heera') || v.name.includes('Ravi')))
+      );
+      if (preferredVoice) utterance.voice = preferredVoice;
+
+      window.speechSynthesis.speak(utterance);
+    }
+  } catch (e) {
+    console.warn('TTS speech error:', e);
+  }
+};
+
 export default function GlobalScannerDeskListener() {
   const { students = [], attendance = [], markAttendance } = useApp();
   const bufferRef = useRef('');
@@ -216,7 +244,7 @@ export default function GlobalScannerDeskListener() {
       // 5. Update timestamp and trigger mark attendance
       recentPunchesRef.current[matched.id] = now;
       markAttendance(matched.id, punchType);
-      playScannerSound(punchType);
+      speakFirstName(matched.name);
 
       const timeNow = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
@@ -295,7 +323,7 @@ export default function GlobalScannerDeskListener() {
         const data = res?.data || res;
         if (data?.success) {
           const punchType = (data.type || 'IN').toLowerCase();
-          playScannerSound(punchType === 'in' ? 'entry' : 'exit');
+          speakFirstName(staffMember.name);
           const timeNow = data.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
           toast.custom(

@@ -125,6 +125,7 @@ export function AppProvider({ children }) {
 
   const { user } = useAuth();
   const initRanRef = useRef(false);
+  const netStateRef = useRef(typeof navigator !== 'undefined' && navigator.onLine ? 'online' : 'offline');
 
   const loadServerData = useCallback(async () => {
     try {
@@ -316,8 +317,10 @@ export function AppProvider({ children }) {
 
     initData();
 
-    // Auto-sync on network reconnect
+    // Auto-sync on network reconnect (only on actual transition)
     const handleOnline = async () => {
+      if (netStateRef.current === 'online') return;
+      netStateRef.current = 'online';
       console.log('🌐 Network Reconnected! Triggering Auto-Cloud Sync...');
       setIsNetworkOnline(true);
       setCloudSyncStatus('syncing');
@@ -338,6 +341,8 @@ export function AppProvider({ children }) {
     };
 
     const handleOffline = () => {
+      if (netStateRef.current === 'offline') return;
+      netStateRef.current = 'offline';
       console.log('⚡ Network Disconnected! Switched to Offline Mode.');
       setIsNetworkOnline(false);
       setCloudSyncStatus('offline');
@@ -352,15 +357,17 @@ export function AppProvider({ children }) {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Periodic network check
+    // Periodic network check (only triggers if state actually transitions)
     const netHeartbeat = setInterval(() => {
       if (typeof navigator !== 'undefined') {
         const currOnline = navigator.onLine;
-        if (!currOnline && isNetworkOnline) {
+        if (!currOnline && netStateRef.current !== 'offline') {
           handleOffline();
+        } else if (currOnline && netStateRef.current !== 'online') {
+          handleOnline();
         }
       }
-    }, 8000);
+    }, 5000);
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -842,7 +849,6 @@ export function AppProvider({ children }) {
 
     const handleOnline = () => {
       console.log('🌐 Network reconnected. Triggering instant background cloud sync...');
-      toast.success('🌐 Internet connected! Syncing data to Cloud...', { id: 'online-sync', duration: 3000 });
       triggerAutoCloudSync();
       syncInquiriesFromCloud();
     };

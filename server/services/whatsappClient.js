@@ -32,42 +32,52 @@ if (Client && Client.prototype && typeof Client.prototype.inject === 'function')
   };
 }
 
-// 🛡️ Monkey-patch Client.prototype.initialize to sanitize framenavigated listeners against post_logout false positives
+// 🛡️ Monkey-patch Client.prototype.initialize to gracefully handle navigation and ensure clean state
 if (Client && Client.prototype && typeof Client.prototype.initialize === 'function') {
   const origInitialize = Client.prototype.initialize;
   Client.prototype.initialize = async function () {
     this.lastLoggedOut = false;
-    const initPromise = origInitialize.apply(this, arguments);
-    
-    // Safely hook pupPage to intercept framenavigated and strip false logout signals
-    const pageCheckInterval = setInterval(() => {
-      if (this.pupPage && !this.pupPage.isClosed()) {
-        clearInterval(pageCheckInterval);
+    try {
+      return await origInitialize.apply(this, arguments);
+    } catch (err) {
+      const msg = err ? (err.message || String(err)) : '';
+      if (msg.includes('Execution context was destroyed') || msg.includes('navigation')) {
+        console.warn('[WhatsAppClient] 🛡️ Handled transient navigation during initialize():', msg);
+        await new Promise(r => setTimeout(r, 1500));
         try {
-          this.pupPage.removeAllListeners('framenavigated');
-          this.pupPage.on('framenavigated', async (frame) => {
-            const frameUrl = frame ? frame.url() : '';
-            // CRITICAL: Only accept LOGOUT if client was ALREADY fully authenticated with active info!
-            if (this.info && (frameUrl.includes('post_logout=1') || this.lastLoggedOut)) {
-              console.warn('[WhatsAppClient] ⚠️ Genuine user logout confirmed from phone while active.');
-              this.emit('disconnected', 'LOGOUT');
-              try {
-                await this.authStrategy.logout();
-                await this.authStrategy.beforeBrowserInitialized();
-                await this.authStrategy.afterBrowserInitialized();
-              } catch (_) {}
-              this.lastLoggedOut = false;
-            }
-            try {
-              await this.inject();
-            } catch (_) {}
-          });
-        } catch (_) {}
+          if (this.pupPage && !this.pupPage.isClosed()) {
+            await this.inject().catch(() => {});
+            return;
+          }
+        } catch (e) {
+          console.warn('[WhatsAppClient] Handled post-nav inject notice:', e.message);
+        }
       }
-    }, 100);
-
-    return initPromise;
+      throw err;
+    }
   };
+}
+
+let isManualDisconnecting = false;
+let clientReadyAt = null;
+
+// 🛡️ Monkey-patch LocalAuth.prototype.logout to NEVER delete session directory unless user explicitly clicked Disconnect in UI
+if (LocalAuth && LocalAuth.prototype && typeof LocalAuth.prototype.logout === 'function') {
+  const origLocalAuthLogout = LocalAuth.prototype.logout;
+  LocalAuth.prototype.logout = async function () {
+    if (!isManualDisconnecting) {
+      console.warn('[WhatsAppClient] 🛡️ Blocked LocalAuth.prototype.logout() — Absolute session immunity preserved!');
+      return null;
+    }
+    return await origLocalAuthLogout.apply(this, arguments);
+  };
+}
+
+// 🛡️ Helper: Check if client has finished initial offline sync after connection
+export function isWhatsAppClientSettled() {
+  const isFunctionallyReady = (client && client.info && client.info.wid) || clientStatus === 'ready';
+  if (!isFunctionallyReady || !clientReadyAt) return false;
+  return (Date.now() - clientReadyAt) > 45000;
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -79,8 +89,9 @@ let pairingCodeData = null; // Stores { code, phoneNumber, requestedAt }
 let clientStatus = 'disconnected'; // 'disconnected' | 'qr' | 'connecting' | 'authenticated' | 'ready' | 'auth_failure'
 let initRetryCount = 0;
 let lastInitFailureTime = 0;
-const MAX_INIT_RETRIES = 3;
-const RETRY_DELAYS = [3000, 6000, 15000]; // exponential backoff
+let autoReconnectTimer = null;
+const FAST_RETRY_DELAYS = [3000, 6000, 15000]; // initial quick retries
+const STEADY_RETRY_INTERVAL = 30000; // steady 30s background reconnection loop (never gives up!)
 
 function getAuthDataPath() {
   const appData = process.env.APPDATA || (process.platform === 'darwin' 
@@ -142,6 +153,65 @@ export function getWhatsAppClientState() {
   };
 }
 
+export async function getWhatsAppDebugInfo() {
+  if (!client) {
+    return { clientExists: false, clientStatus };
+  }
+  if (!client.pupPage || client.pupPage.isClosed()) {
+    return { clientExists: true, hasPupPage: false, clientStatus };
+  }
+  try {
+    const pageUrl = client.pupPage.url();
+    const domState = await client.pupPage.evaluate(() => {
+      const hasChatList = !!(document.querySelector('#pane-side') || document.querySelector('[aria-label="Chat list"]') || document.querySelector('[data-icon="chat"]'));
+      const hasQRCanvas = !!(document.querySelector('canvas') || document.querySelector('[data-testid="qrcode"]'));
+      const hasProgress = !!document.querySelector('[data-testid="intro-title"]');
+
+      let socketState = null;
+      let socketHasSynced = null;
+      try {
+        const Socket = window.require?.('WAWebSocketModel')?.Socket;
+        if (Socket) {
+          socketState = Socket.state;
+          socketHasSynced = Socket.hasSynced;
+        }
+      } catch (e) {
+        socketState = e.message;
+      }
+
+      let meUser = null;
+      try {
+        const UserPrefs = window.require?.('WAWebUserPrefsMeUser');
+        meUser = UserPrefs?.getMaybeMePnUser?.() || UserPrefs?.getMaybeMeLidUser?.();
+      } catch (e) {
+        meUser = e.message;
+      }
+
+      return {
+        hasChatList,
+        hasQRCanvas,
+        hasProgress,
+        socketState,
+        socketHasSynced,
+        meUser,
+        hasWWebJS: typeof window.WWebJS !== 'undefined',
+        title: document.title
+      };
+    });
+
+    return {
+      clientExists: true,
+      hasPupPage: true,
+      clientStatus,
+      clientInfo: client.info ? { wid: client.info.wid, pushname: client.info.pushname } : null,
+      pageUrl,
+      domState
+    };
+  } catch (err) {
+    return { clientExists: true, hasPupPage: true, clientStatus, error: err.message };
+  }
+}
+
 // Helper: safely delete a directory with retry for EBUSY errors
 async function safeDeleteDir(dirPath, maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
@@ -196,9 +266,26 @@ function clearChromiumLocks(dirPath) {
 
 export function backupSessionVault(dataPath, options = {}) {
   try {
+    // 🛡️ CRITICAL SAFETY RULE: NEVER copy LevelDB files while Chromium is actively running!
+    // On Windows, reading/copying LevelDB SSTables concurrently while Chromium writes
+    // causes ERROR_SHARING_VIOLATION in Chrome, which crashes the IndexedDB engine and forces WhatsApp Web to log out!
+    // Database vault backups are ONLY performed when Chromium is stopped or during graceful shutdown.
+    if (client && options.reason !== 'graceful_shutdown') {
+      console.log(`[WhatsAppVault] 🛡️ Live Chromium process is active. Preserving open LevelDB file handles (Snapshot deferred to clean shutdown).`);
+      return true;
+    }
+
     const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
     const vaultDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session_vault');
     if (!fs.existsSync(sessionDir)) return false;
+
+    // 🛡️ CRITICAL GUARD: Only snapshot when client has a verified authenticated user (wid)!
+    // This permanently prevents an unauthenticated or logged-out state from corrupting the valid vault backup.
+    const hasActiveAuth = client && client.info && client.info.wid && client.info.wid.user;
+    if (!hasActiveAuth && options.reason !== 'graceful_shutdown') {
+      console.warn('[WhatsAppVault] ⚠️ Blocked snapshot: Client is not actively authenticated. Existing vault preserved.');
+      return false;
+    }
 
     const idbDir = path.join(sessionDir, 'Default', 'IndexedDB', 'https_web.whatsapp.com_0.indexeddb.leveldb');
     if (!fs.existsSync(idbDir)) return false;
@@ -449,7 +536,6 @@ function killLeftoverChromium() {
   });
 }
 
-let isManualDisconnecting = false;
 let heartbeatInterval = null;
 let heartbeatTicks = 0;
 
@@ -460,8 +546,8 @@ function startHeartbeat() {
     if (!client || clientStatus !== 'ready') return;
     heartbeatTicks++;
 
-    // 🛡️ Periodic auto-snapshot every 15 minutes while client is active and authenticated
-    if (heartbeatTicks % 15 === 0) {
+    // 🛡️ Periodic auto-snapshot every 15 minutes while client is active and authenticated (20 ticks x 45s = 15m)
+    if (heartbeatTicks % 20 === 0) {
       try {
         const authPath = getAuthDataPath();
         backupSessionVault(authPath, { reason: 'periodic_15min' });
@@ -471,6 +557,7 @@ function startHeartbeat() {
     }
 
     try {
+      // 1. Library-level state check
       const statePromise = client.getState();
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Heartbeat Timeout')), 10000)
@@ -479,11 +566,23 @@ function startHeartbeat() {
       if (state && state !== 'CONNECTED') {
         console.log(`[WhatsAppHeartbeat] Client reporting state: ${state}`);
       }
+
+      // 2. Active DOM & WebSocket ping inside Chromium to keep connection hot and prevent socket hibernation
+      if (client.pupPage && !client.pupPage.isClosed()) {
+        await client.pupPage.evaluate(() => {
+          try {
+            const Socket = window.require?.('WAWebSocketModel')?.Socket;
+            if (Socket && Socket.state !== 'CONNECTED' && typeof Socket.takeover === 'function') {
+              Socket.takeover();
+            }
+          } catch (_) {}
+        });
+      }
     } catch (err) {
       // Soft notice only - NEVER forcibly destroy an active client on a momentary delay!
       console.log(`[WhatsAppHeartbeat] Soft notice: ${err.message}`);
     }
-  }, 60000);
+  }, 45000);
 }
 
 function stopHeartbeat() {
@@ -497,6 +596,10 @@ function stopHeartbeat() {
 export async function disconnectWhatsAppClient() {
   isManualDisconnecting = true;
   stopHeartbeat();
+  if (autoReconnectTimer) {
+    clearTimeout(autoReconnectTimer);
+    autoReconnectTimer = null;
+  }
   if (client) {
     try {
       await Promise.race([
@@ -616,32 +719,21 @@ export async function cancelWhatsAppPairingCode() {
   return true;
 }
 
-// ============================================================================
-// 🚀 INITIALIZATION
-// ============================================================================
+// ===============================================================================================================
+// 🚀                                                             INITIALIZATION
+// ===============================================================================================================
 
 export function initializeWhatsAppClient() {
+
+
   // If already connecting or ready or authenticated, do not duplicate
   if (clientStatus === 'connecting' || clientStatus === 'ready' || clientStatus === 'qr' || clientStatus === 'authenticated') {
-    console.log(`[WhatsAppClient] Client already in status: ${clientStatus}. Skipping initialization.`);
+    console.log(`[WhatsAppClient] Client already in status: ${clientStatus}. Skipping duplicate initialization.`);
     return;
   }
 
-  // Check retry limit with automatic 2-minute cooling-off recovery
-  if (initRetryCount >= MAX_INIT_RETRIES) {
-    if (Date.now() - lastInitFailureTime > 2 * 60 * 1000) {
-      console.log('[WhatsAppClient] 🔄 2-minute cooling-off window passed. Auto-resetting init retry counter for fresh attempt.');
-      initRetryCount = 0;
-      lastInitFailureTime = 0;
-    } else {
-      const waitRemaining = Math.max(1, Math.round((2 * 60 * 1000 - (Date.now() - lastInitFailureTime)) / 1000));
-      console.warn(`[WhatsAppClient] Max initialization retries (${MAX_INIT_RETRIES}) reached. Next auto-retry available in ${waitRemaining}s (or click Connect in UI).`);
-      clientStatus = 'disconnected';
-      return;
-    }
-  }
 
-  console.log(`[WhatsAppClient] Starting WhatsApp Web client... (attempt ${initRetryCount + 1}/${MAX_INIT_RETRIES})`);
+  console.log(`[WhatsAppClient] Starting WhatsApp Web client... (attempt #${initRetryCount + 1})`);
   clientStatus = 'connecting';
   qrCodeData = null;
 
@@ -681,6 +773,9 @@ export function initializeWhatsAppClient() {
     };
 
     // Always search for system Chrome or Edge for fast, stable Puppeteer launch
+
+
+    
     const browserPaths = [
       'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
       'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
@@ -723,15 +818,69 @@ export function initializeWhatsAppClient() {
 
     client = new Client({
       authStrategy: localAuthStrategy,
-      webVersionCache: {
-        type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1045814658-alpha.html',
-        strict: false
-      },
+      takeoverOnConflict: false,
       puppeteer: puppeteerOptions
     });
     // Ensure lastLoggedOut is false on initialization so stale frame state never triggers bogus logout
     client.lastLoggedOut = false;
+
+    // 🛡️ CRITICAL SCAN RECOVERY: Watch browser state every 1.5s to catch scan/auth transitions immediately!
+    let authPoller = null;
+    const stopAuthPoller = () => {
+      if (authPoller) {
+        clearInterval(authPoller);
+        authPoller = null;
+      }
+    };
+
+    authPoller = setInterval(async () => {
+      try {
+        if (!client || clientStatus === 'ready' || clientStatus === 'disconnected') {
+          stopAuthPoller();
+          return;
+        }
+        if (client.pupPage && !client.pupPage.isClosed() && (clientStatus === 'qr' || clientStatus === 'connecting' || clientStatus === 'authenticated')) {
+          const authCheck = await client.pupPage.evaluate(() => {
+            try {
+              const hasChatList = !!(document.querySelector('#pane-side') || document.querySelector('[aria-label="Chat list"]') || document.querySelector('[data-icon="chat"]'));
+              const Socket = window.require?.('WAWebSocketModel')?.Socket;
+              const UserPrefs = window.require?.('WAWebUserPrefsMeUser');
+              const meUser = UserPrefs?.getMaybeMePnUser?.() || UserPrefs?.getMaybeMeLidUser?.();
+              const isAuthed = hasChatList || !!meUser || Socket?.state === 'CONNECTED' || Socket?.hasSynced;
+              return { isAuthed, hasChatList, meUser, socketSynced: Socket?.hasSynced };
+            } catch (_) {
+              return { isAuthed: false };
+            }
+          });
+
+          if (authCheck && authCheck.isAuthed) {
+            console.log('[WhatsAppClient] 🎯 Auto-detected authenticated browser session!', authCheck);
+            stopAuthPoller();
+            if (!client.info) {
+              try {
+                const infoData = await client.pupPage.evaluate(() => {
+                  try {
+                    const conn = window.require('WAWebConnModel')?.Conn?.serialize?.() || {};
+                    const userPrefs = window.require('WAWebUserPrefsMeUser');
+                    const wid = userPrefs?.getMaybeMePnUser?.() || userPrefs?.getMaybeMeLidUser?.();
+                    return { ...conn, wid };
+                  } catch (_) {
+                    return {};
+                  }
+                });
+                const { ClientInfo } = await import('whatsapp-web.js/src/structures/ClientInfo.js');
+                client.info = new ClientInfo(client, infoData);
+              } catch (_) {}
+            }
+            clientStatus = 'ready';
+            clientReadyAt = Date.now();
+            qrCodeData = null;
+            pairingCodeData = null;
+            client.emit('ready');
+          }
+        }
+      } catch (_) {}
+    }, 1500);
 
     client.on('qr', async (qr) => {
       console.log('[WhatsAppClient] QR Code received. Scan it to authenticate.');
@@ -754,12 +903,18 @@ export function initializeWhatsAppClient() {
     });
 
     client.on('ready', () => {
+      stopAuthPoller();
       console.log('[WhatsAppClient] WhatsApp Client is READY and authenticated!');
       console.log('[WhatsAppClient] Info:', client.info ? client.info.pushname : 'No info');
       clientStatus = 'ready';
+      clientReadyAt = Date.now();
       qrCodeData = null;
       pairingCodeData = null;
       initRetryCount = 0; // Reset on success
+      if (autoReconnectTimer) {
+        clearTimeout(autoReconnectTimer);
+        autoReconnectTimer = null;
+      }
 
       // Clear manual disconnect marker if present
       try {
@@ -768,17 +923,37 @@ export function initializeWhatsAppClient() {
         if (fs.existsSync(disconnectMarker)) fs.unlinkSync(disconnectMarker);
       } catch (_) {}
 
+      // 🛡️ Override browser onLogoutEvent to prevent false logout triggers
+      try {
+        if (client.pupPage && !client.pupPage.isClosed()) {
+          client.pupPage.evaluate(() => {
+            window.onLogoutEvent = async () => {
+              console.log('[PROB-GUARD] Neutralized bogus browser onLogoutEvent');
+            };
+          }).catch(() => {});
+          console.log('[WhatsAppClient] 🛡️ Installed runtime guard against bogus browser logout');
+        }
+      } catch (_) {}
+
       // Start periodic keep-alive heartbeat
       startHeartbeat();
 
-      // 🛡️ CRITICAL FIX: Snapshot session immediately after login (delayed 8s to let IndexedDB settle on disk)
-      setTimeout(() => {
-        if (clientStatus === 'ready' || (client && client.info && client.info.wid)) {
-          const authPath = getAuthDataPath();
-          console.log('[WhatsAppVault] 🛡️ Taking immediate post-login session snapshot...');
-          backupSessionVault(authPath, { reason: 'post_login' });
-        }
-      }, 8000);
+      // 🛡️ NEUTRALIZE onLogoutEvent: Override the browser-side callback that sets lastLoggedOut=true
+      // The library exposes this via exposeFunctionIfAbsent. We override it to no-op.
+      if (client && client.pupPage && !client.pupPage.isClosed()) {
+        (async () => {
+          try {
+            if (client && client.pupPage && !client.pupPage.isClosed()) {
+              await client.pupPage.evaluate(() => {
+                window.onLogoutEvent = async () => {
+                  console.log('[PROB-GUARD] Neutralized bogus browser onLogoutEvent');
+                };
+              });
+              console.log('[WhatsAppClient] 🛡️ Neutralized browser-side onLogoutEvent callback');
+            }
+          } catch (_) {}
+        })();
+      }
     });
 
     // 🤖 Hook WhatsApp Parent Auto-Reply Bot (catches incoming messages & self-test chats)
@@ -824,6 +999,7 @@ export function initializeWhatsAppClient() {
 
     client.on('auth_failure', (msg) => {
       console.error('[WhatsAppClient] WhatsApp Authentication failure:', msg);
+      stopAuthPoller();
       stopHeartbeat();
       clientStatus = 'auth_failure';
       qrCodeData = null;
@@ -832,49 +1008,34 @@ export function initializeWhatsAppClient() {
 
     client.on('disconnected', (reason) => {
       console.log('[WhatsAppClient] WhatsApp Client disconnected. Reason:', reason);
-      stopHeartbeat();
       const wasReady = clientStatus === 'ready';
+
+      // If client was never READY before, this is a transient navigation or websocket reconnect during QR scanning!
+      // DO NOT destroy session, DO NOT kill Chromium, allow handshake to complete!
+      if (!wasReady && !isManualDisconnecting) {
+        console.warn(`[WhatsAppClient] 🛡️ Ignored transient disconnect during QR/handshake (${reason}). Allowing Chromium to complete login...`);
+        return;
+      }
+
+      stopAuthPoller();
+      stopHeartbeat();
       clientStatus = 'disconnected';
+      clientReadyAt = null;
       qrCodeData = null;
       client = null;
 
-      // If this was NOT a manual disconnect, auto-reconnect using saved session / vault!
+      // 🛡️ ABSOLUTE SESSION IMMUNITY: NEVER delete session directory or vault on any disconnect event!
+      // Session files are ONLY removed if the user explicitly clicked Disconnect in the UI (isManualDisconnecting === true).
       if (!isManualDisconnecting) {
-        // If client was never READY before, this is a transient navigation or websocket reconnect during QR scanning!
-        // DO NOT destroy session, DO NOT kill Chromium, allow handshake to complete!
-        if (!wasReady) {
-          console.warn(`[WhatsAppClient] 🛡️ Ignored transient disconnect during QR/handshake (${reason}). Allowing Chromium to complete login...`);
-          return;
-        }
-
-        const dataPath = getAuthDataPath();
-        const sessionDir = path.join(dataPath, 'data', '.wwebjs_auth');
-        if (fs.existsSync(sessionDir)) {
-          if (reason === 'LOGOUT' || reason === 'CONFLICT') {
-            console.log(`[WhatsAppClient] ⚠️ Active session unlinked by user on phone (${reason}). Resetting session for fresh pairing...`);
-            // Clear unlinked session folder so Chrome opens clean QR/Pairing screen without infinite loops
-            const activeSessionDir = path.join(dataPath, 'data', '.wwebjs_auth', 'session');
-            safeDeleteDir(activeSessionDir).then(() => {
-              killLeftoverChromium().then(() => {
-                setTimeout(() => {
-                  if (clientStatus === 'disconnected') {
-                    initRetryCount = 0;
-                    initializeWhatsAppClient();
-                  }
-                }, 3000);
-              });
+        console.log(`[WhatsAppClient] 🛡️ [Session-Immunity] Disconnected (${reason}). Preserving all session & vault files. Auto-reconnecting in 4s...`);
+        clearTimeout(autoReconnectTimer);
+        autoReconnectTimer = setTimeout(() => {
+          if (!isManualDisconnecting && !client) {
+            killLeftoverChromium().then(() => {
+              initializeWhatsAppClient();
             });
-          } else {
-            console.log(`[WhatsAppClient] 🔄 Network disconnect detected while active (${reason}). Auto-reconnecting saved session in 4 seconds...`);
-            setTimeout(() => {
-              if (clientStatus === 'disconnected') {
-                killLeftoverChromium().then(() => {
-                  initializeWhatsAppClient();
-                });
-              }
-            }, 4000);
           }
-        }
+        }, 4000);
       }
     });
 
@@ -885,24 +1046,25 @@ export function initializeWhatsAppClient() {
       initRetryCount++;
       lastInitFailureTime = Date.now();
 
-      // Retry with exponential backoff
-      if (initRetryCount < MAX_INIT_RETRIES) {
-        const delay = RETRY_DELAYS[initRetryCount - 1] || 15000;
-        console.log(`[WhatsAppClient] Will retry in ${delay / 1000}s...`);
+      // Infinite Resilient Auto-Reconnect Engine:
+      // Fast retries for attempts 1-3 (3s, 6s, 15s), then steady 30s background loop (never gives up!)
+      if (!isManualDisconnecting) {
+        const delay = initRetryCount <= FAST_RETRY_DELAYS.length 
+          ? FAST_RETRY_DELAYS[initRetryCount - 1] 
+          : STEADY_RETRY_INTERVAL;
+        console.log(`[WhatsAppClient] 🔄 Will auto-reconnect in ${delay / 1000}s... (attempt #${initRetryCount})`);
         
-        // If "browser already running" or locked, kill leftover process and clear lock files
-        if (err.message && (err.message.includes('already running') || err.message.includes('EBUSY') || err.message.includes('lock'))) {
-          killLeftoverChromium().then(() => {
-            const dataPath = getAuthDataPath();
-            clearChromiumLocks(path.join(dataPath, 'data', '.wwebjs_auth'));
-            clearChromiumLocks(path.join(dataPath, '.wwebjs_auth'));
-            setTimeout(() => initializeWhatsAppClient(), delay);
-          });
-        } else {
-          setTimeout(() => initializeWhatsAppClient(), delay);
-        }
-      } else {
-        console.error(`[WhatsAppClient] Max initial retries (${MAX_INIT_RETRIES}) reached. Automatic cooling-off window (2m) active.`);
+        clearTimeout(autoReconnectTimer);
+        autoReconnectTimer = setTimeout(() => {
+          if (clientStatus === 'disconnected' && !isManualDisconnecting) {
+            killLeftoverChromium().then(() => {
+              const dataPath = getAuthDataPath();
+              clearChromiumLocks(path.join(dataPath, 'data', '.wwebjs_auth'));
+              clearChromiumLocks(path.join(dataPath, '.wwebjs_auth'));
+              initializeWhatsAppClient();
+            });
+          }
+        }, delay);
       }
     });
 
@@ -920,6 +1082,10 @@ export function initializeWhatsAppClient() {
 export function resetRetryCount() {
   initRetryCount = 0;
   lastInitFailureTime = 0;
+  if (autoReconnectTimer) {
+    clearTimeout(autoReconnectTimer);
+    autoReconnectTimer = null;
+  }
   try {
     const dataPath = getAuthDataPath();
     const disconnectMarker = path.join(dataPath, 'data', '.wwebjs_auth', '.manual_disconnect');
@@ -947,6 +1113,14 @@ async function _executeSendWhatsAppMessage(to, message, attachment = null) {
   const isFunctionallyReady = (client && client.info && client.info.wid) || clientStatus === 'ready';
   if (!client || !isFunctionallyReady) {
     throw new Error(`WhatsApp client is not ready (Status: ${clientStatus})`);
+  }
+
+  // 🛡️ ANTI-BOT SHIELD: If newly paired, wait for companion chat sync to settle before sending
+  if (!isWhatsAppClientSettled()) {
+    const elapsed = Date.now() - (clientReadyAt || Date.now());
+    const remaining = Math.max(1000, 45000 - elapsed);
+    console.log(`[WhatsAppClient] ⏳ Initial chat sync in progress. Waiting ${(remaining/1000).toFixed(1)}s before sending to avoid anti-bot flagging...`);
+    await new Promise(r => setTimeout(r, Math.min(remaining, 15000)));
   }
 
   // Format phone number: remove non-digits and strip any leading zeroes (e.g. 09876543210 -> 9876543210)

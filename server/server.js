@@ -36,6 +36,7 @@ import os from 'os';
 import {
   initializeWhatsAppClient,
   getWhatsAppClientState,
+  getWhatsAppDebugInfo,
   disconnectWhatsAppClient,
   gracefulShutdownWhatsAppClient,
   requestWhatsAppPairingCode,
@@ -43,7 +44,8 @@ import {
   sendWhatsAppMessageWeb,
   resetRetryCount,
   backupSessionVault,
-  restoreSessionFromVault
+  restoreSessionFromVault,
+  isWhatsAppClientSettled
 } from './services/whatsappClient.js';
 import {
   getBotConfig,
@@ -1880,6 +1882,76 @@ app.post('/api/attendance/biometric', async (req, res) => {
     }
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- ⚡ Hardware QR / Barcode Scanner Background Webhook ----
+// Receives rapid punch events from native background daemon (scanner_daemon.exe)
+// Works 24/7 even when window is minimized, hidden to tray, or closed with 'X'!
+app.post('/api/attendance/scanner-punch', async (req, res) => {
+  try {
+    const rawInput = req.body?.code || req.body?.rollNumber;
+    if (!rawInput) {
+      return res.status(400).json({ success: false, error: 'Missing code in scanner payload' });
+    }
+
+    let extractedRoll = String(rawInput).trim();
+
+    // 1. JSON extraction if QR card encodes JSON
+    if (extractedRoll.startsWith('{') && extractedRoll.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(extractedRoll);
+        extractedRoll = String(parsed.rollNo || parsed.roll || parsed.id || parsed.studentId || parsed.staffId || extractedRoll);
+      } catch (_) {}
+    }
+
+    // 2. URL extraction if QR card encodes URL
+    if (extractedRoll.startsWith('http://') || extractedRoll.startsWith('https://')) {
+      try {
+        const u = new URL(extractedRoll);
+        const parts = u.pathname.split('/').filter(Boolean);
+        extractedRoll = u.searchParams.get('roll') || u.searchParams.get('id') || u.searchParams.get('staffId') || parts[parts.length - 1] || extractedRoll;
+      } catch (_) {}
+    }
+
+    extractedRoll = extractedRoll.trim();
+
+    console.log(`[ScannerDaemon] ⚡ Background punch received for: "${extractedRoll}" (Raw: "${rawInput}")`);
+
+    // Process punch via unified biometric/attendance engine (determines IN vs OUT, marks DB, sends WhatsApp, plays tone)
+    const punchRes = await processPunchRecord({
+      rollNumber: extractedRoll,
+      type: 'AUTO',
+      verifyType: 'QR Scanner',
+      deviceSN: 'Desktop QR Scanner'
+    });
+
+    if (punchRes && punchRes.success) {
+      triggerBackgroundCloudSync();
+      const fullName = String(punchRes.studentName || punchRes.name || '').trim();
+      const rawFirst = fullName.split(/\s+/)[0] || '';
+      const cleanFirst = rawFirst.replace(/[^a-zA-Z]/g, '');
+      const firstName = cleanFirst 
+        ? (cleanFirst.charAt(0).toUpperCase() + cleanFirst.slice(1).toLowerCase()) 
+        : rawFirst;
+
+      return res.json({ 
+        success: true, 
+        message: 'Attendance recorded successfully', 
+        name: fullName,
+        firstName: firstName,
+        type: punchRes.type,
+        time: punchRes.time
+      });
+    } else {
+      return res.status(404).json({ 
+        success: false, 
+        error: punchRes?.reason || punchRes?.error || 'Student or staff not found for code: ' + extractedRoll 
+      });
+    }
+  } catch (err) {
+    console.error('[ScannerDaemon] Error processing background punch:', err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -4329,6 +4401,15 @@ app.get('/api/whatsapp/local-status', (req, res) => {
   res.json(getWhatsAppClientState());
 });
 
+app.get('/api/whatsapp/debug-pup', async (req, res) => {
+  try {
+    const data = await getWhatsAppDebugInfo();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/whatsapp/outbound-status', (req, res) => {
   res.json({ enabled: getOutboundMessagingStatus() });
 });
@@ -4410,6 +4491,7 @@ async function pollPendingWhatsAppMessages() {
 
   const state = getWhatsAppClientState();
   if (state.status !== 'ready') return;
+  if (!isWhatsAppClientSettled()) return; // 🛡️ Anti-bot initial chat sync grace period
 
   isPolling = true;
   let batchSentCounter = 0;

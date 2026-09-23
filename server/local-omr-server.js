@@ -45,7 +45,8 @@ import {
   getWhatsAppClientState, 
   disconnectWhatsAppClient, 
   sendWhatsAppMessageWeb,
-  resetRetryCount
+  resetRetryCount,
+  isWhatsAppClientSettled
 } from './services/whatsappClient.js';
 
 const app = express();
@@ -379,7 +380,7 @@ async function pollPendingWhatsAppMessages() {
   if (process.env.WHATSAPP_PROVIDER !== 'whatsapp-web') return;
 
   const state = getWhatsAppClientState();
-  if (state.status !== 'ready') return;
+  if (state.status !== 'ready' || !isWhatsAppClientSettled()) return;
 
   isPolling = true;
 
