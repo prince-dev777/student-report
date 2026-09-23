@@ -1,0 +1,166 @@
+diff --git a/node_modules/whatsapp-web.js/src/Client.js b/node_modules/whatsapp-web.js/src/Client.js
+index 800109e..0fd0040 100644
+--- a/node_modules/whatsapp-web.js/src/Client.js
++++ b/node_modules/whatsapp-web.js/src/Client.js
+@@ -1,7 +1,9 @@
+ 'use strict';
+ 
+ const EventEmitter = require('events');
+-const puppeteer = require('puppeteer');
++const puppeteer = require('puppeteer-extra');
++const StealthPlugin = require('puppeteer-extra-plugin-stealth');
++puppeteer.use(StealthPlugin());
+ 
+ const Util = require('./util/Util');
+ const InterfaceController = require('./util/InterfaceController');
+@@ -391,23 +393,36 @@ class Client extends EventEmitter {
+             this.pupPage,
+             'onLogoutEvent',
+             async () => {
+-                this.lastLoggedOut = true;
++                let isAlive = false;
++                try {
++                    isAlive = await this.pupPage.evaluate(() => {
++                        try {
++                            const Socket = window.require?.('WAWebSocketModel')?.Socket;
++                            return Socket && (Socket.state === 'CONNECTED' || Socket.hasSynced);
++                        } catch (_) { return false; }
++                    });
++                } catch (_) {}
++                if (!isAlive) {
++                    this.lastLoggedOut = true;
++                } else {
++                    console.log('[WHATSAPP-PROB] onLogoutEvent: Socket is still active, ignoring bogus logout');
++                }
+                 await this.pupPage
+                     .waitForNavigation({ waitUntil: 'load', timeout: 5000 })
+                     .catch((_) => _);
+             },
+         );
+         await this.pupPage.evaluate(() => {
+-            window
+-                .require('WAWebSocketModel')
+-                .Socket.on('change:state', (_AppState, state) => {
+-                    window.onAuthAppStateChangedEvent(state);
+-                });
+-            window
+-                .require('WAWebSocketModel')
+-                .Socket.on('change:hasSynced', () => {
+-                    window.onAppStateHasSyncedEvent();
+-                });
++            const Socket = window.require('WAWebSocketModel').Socket;
++            Socket.on('change:state', (_AppState, state) => {
++                window.onAuthAppStateChangedEvent(state);
++            });
++            Socket.on('change:hasSynced', () => {
++                window.onAppStateHasSyncedEvent();
++            });
++            if (Socket.hasSynced) {
++                window.onAppStateHasSyncedEvent();
++            }
+             const Cmd = window.require('WAWebCmd').Cmd;
+             Cmd.on('offline_progress_update_from_bridge', () => {
+                 window.onOfflineProgressUpdateEvent(
+@@ -493,14 +508,35 @@ class Client extends EventEmitter {
+         await this.inject();
+ 
+         this.pupPage.on('framenavigated', async (frame) => {
+-            if (frame.url().includes('post_logout=1') || this.lastLoggedOut) {
++            if (this.info && (frame.url().includes('post_logout=1') || this.lastLoggedOut)) {
++                // WHATSAPP-PROB PATCH: Check WebSocket before treating as logout
++                let isRealLogout = frame.url().includes('post_logout=1');
++                if (!isRealLogout && this.lastLoggedOut) {
++                    try {
++                        const socketAlive = await this.pupPage.evaluate(() => {
++                            try {
++                                const Socket = window.require?.('WAWebSocketModel')?.Socket;
++                                return Socket && (Socket.state === 'CONNECTED' || Socket.hasSynced);
++                            } catch (_) { return false; }
++                        }).catch(() => false);
++                        if (socketAlive) {
++                            console.log('[PATCH] framenavigated: WebSocket alive, ignoring false logout');
++                            this.lastLoggedOut = false;
++                            try { await this.inject(); } catch (_) {}
++                            return;
++                        }
++                    } catch (_) {}
++                }
+                 this.emit(Events.DISCONNECTED, 'LOGOUT');
+-                await this.authStrategy.logout();
++                // PATCH: Do NOT call authStrategy.logout() — never wipe session
++                // await this.authStrategy.logout();
+                 await this.authStrategy.beforeBrowserInitialized();
+                 await this.authStrategy.afterBrowserInitialized();
+                 this.lastLoggedOut = false;
+             }
+-            await this.inject();
++            try {
++                await this.inject();
++            } catch (_) {}
+         });
+     }
+ 
+@@ -826,11 +862,13 @@ class Client extends EventEmitter {
+                     WAState.OPENING,
+                     WAState.PAIRING,
+                     WAState.TIMEOUT,
++                    WAState.UNPAIRED_IDLE,
++                    WAState.UNPAIRED,
++                    WAState.UNLAUNCHED,
++                    WAState.CONFLICT,
+                 ];
+ 
+                 if (this.options.takeoverOnConflict) {
+-                    ACCEPTED_STATES.push(WAState.CONFLICT);
+-
+                     if (state === WAState.CONFLICT) {
+                         setTimeout(() => {
+                             this.pupPage.evaluate(() =>
+@@ -843,14 +881,13 @@ class Client extends EventEmitter {
+                 }
+ 
+                 if (!ACCEPTED_STATES.includes(state)) {
+-                    /**
+-                     * Emitted when the client has been disconnected
+-                     * @event Client#disconnected
+-                     * @param {WAState|"LOGOUT"} reason reason that caused the disconnect
+-                     */
+-                    await this.authStrategy.disconnect();
+-                    this.emit(Events.DISCONNECTED, state);
+-                    this.destroy();
++                    console.log(`[WHATSAPP-PROB] AppState changed to non-standard state: ${state}`);
++                    // Only disconnect if client state is truly unrecoverable (TOS block or deprecated)
++                    if (state === WAState.DEPRECATED_VERSION || state === WAState.SMB_TOS_BLOCK || state === WAState.TOS_BLOCK) {
++                        await this.authStrategy.disconnect();
++                        this.emit(Events.DISCONNECTED, state);
++                        this.destroy();
++                    }
+                 }
+             },
+         );
+diff --git a/node_modules/whatsapp-web.js/src/authStrategies/LocalAuth.js b/node_modules/whatsapp-web.js/src/authStrategies/LocalAuth.js
+index 4cc9c4e..b5305e7 100644
+--- a/node_modules/whatsapp-web.js/src/authStrategies/LocalAuth.js
++++ b/node_modules/whatsapp-web.js/src/authStrategies/LocalAuth.js
+@@ -54,7 +54,8 @@ class LocalAuth extends BaseAuthStrategy {
+     }
+ 
+     async logout() {
+-        if (this.userDataDir) {
++        if (this.manualLogout && this.userDataDir) {
++            console.log('[WHATSAPP-PROB] LocalAuth.logout: Explicit manual logout, removing session dir');
+             await fs.promises
+                 .rm(this.userDataDir, {
+                     recursive: true,
+@@ -62,8 +63,10 @@ class LocalAuth extends BaseAuthStrategy {
+                     maxRetries: this.rmMaxRetries,
+                 })
+                 .catch((e) => {
+-                    throw new Error(e);
++                    console.warn('[WHATSAPP-PROB] LocalAuth.logout notice:', e.message);
+                 });
++        } else {
++            console.log('[WHATSAPP-PROB] 🛡️ LocalAuth.logout: Session immunity active — session files preserved');
+         }
+     }
+ }
