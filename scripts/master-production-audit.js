@@ -234,11 +234,24 @@ async function runMasterProductionAudit() {
   });
 
   let serverUp = false;
-  for (let i = 0; i < 25; i++) {
-    await new Promise(r => setTimeout(r, 300));
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 400));
     try {
       const res = await fetch(`http://127.0.0.1:${TEST_PORT}/api/health`, { signal: AbortSignal.timeout(800) });
-      if (res.ok) { serverUp = true; break; }
+      if (res.ok) {
+        const body = await res.json().catch(() => ({}));
+        if (body.db === 'connected') {
+          serverUp = true;
+          break;
+        }
+      }
+    } catch(e) {}
+  }
+  // Fallback: if server is up even if db indicator hasn't flipped
+  if (!serverUp) {
+    try {
+      const res = await fetch(`http://127.0.0.1:${TEST_PORT}/api/health`, { signal: AbortSignal.timeout(800) });
+      if (res.ok) serverUp = true;
     } catch(e) {}
   }
 
@@ -277,7 +290,14 @@ async function runMasterProductionAudit() {
       try {
         const headers = r.auth ? { 'Authorization': `Bearer ${token}` } : {};
         const res = await fetch(`http://127.0.0.1:${TEST_PORT}${r.path}`, { headers, signal: AbortSignal.timeout(25000) });
-        reportCheck(r.name, res.status >= 200 && res.status < 300, `HTTP ${res.status}`);
+        let statusMsg = `HTTP ${res.status}`;
+        if (res.status >= 400) {
+          try {
+            const errJson = await res.json();
+            if (errJson.error) statusMsg += ` (${errJson.error})`;
+          } catch(e) {}
+        }
+        reportCheck(r.name, res.status >= 200 && res.status < 300, statusMsg);
       } catch (err) {
         reportCheck(r.name, false, err.message);
       }
