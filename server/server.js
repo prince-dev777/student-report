@@ -808,7 +808,7 @@ function broadcastSSE(event, data = {}) {
 registerSSEBroadcaster(broadcastSSE);
 
 // Start Periodic Safe Cloud Sync loop (Auto-retries every 45s if offline/internet drops)
-startPeriodicSync(45000); // Auto-sync every 45 seconds
+startPeriodicSync(1800000); // Auto-sync every 30 minutes (mirrorWrite handles real-time per-event sync)
 
 // Auto JSON database snapshot every 15 mins and on startup
 setTimeout(() => { generateDatabaseSnapshot(dataPath).catch(() => {}); }, 15000);
