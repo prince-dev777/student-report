@@ -1639,31 +1639,58 @@ app.get('/api/parent/data', async (req, res) => {
     const aliasIds = await Student.find({ rollNo: student.rollNo, isDeleted: { $ne: true } }).distinct('id');
     aliasIds.forEach(aId => { if (aId && !studentIdentifiers.includes(aId)) studentIdentifiers.push(aId); });
 
-    // Fetch Attendance records for this student across all matching identifiers
-    const attendanceRecords = await Attendance.find({ 
-      isDeleted: { $ne: true }, 
-      studentId: { $in: studentIdentifiers.filter(Boolean) } 
-    })
-      .sort({ date: -1, createdAt: -1 })
-      .limit(60);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const instFilter = student.instituteId ? { instituteId: student.instituteId } : {};
 
-    // Fetch Test Results for this student
-    const rawTestResults = await TestResult.find({ 
-      isDeleted: { $ne: true },  
-      studentId: { $in: studentIdentifiers.filter(Boolean) }, 
-      status: { $in: ['Published', 'published'] }
-    })
-      .sort({ createdAt: -1 })
-      .limit(50);
+    // Fetch Attendance records and conducted dates in parallel
+    const [existingAttendance, rawTestResults, upcomingTests, conductedDates] = await Promise.all([
+      Attendance.find({ 
+        isDeleted: { $ne: true }, 
+        studentId: { $in: studentIdentifiers.filter(Boolean) } 
+      }).sort({ date: -1, createdAt: -1 }).limit(100).lean(),
+
+      TestResult.find({ 
+        isDeleted: { $ne: true },  
+        studentId: { $in: studentIdentifiers.filter(Boolean) }, 
+        status: { $in: ['Published', 'published'] }
+      }).sort({ createdAt: -1 }).limit(50).lean(),
+
+      getUpcomingTestsForStudent(student, student.instituteId),
+
+      Attendance.distinct('date', {
+        isDeleted: { $ne: true },
+        ...instFilter,
+        date: { $lte: todayStr }
+      })
+    ]);
+
+    // Synthesize absent records for conducted class dates that student missed
+    const studentDatesSet = new Set(existingAttendance.map(r => r.date));
+    const attendanceRecords = [...existingAttendance];
+
+    conductedDates.forEach(cDate => {
+      if (!studentDatesSet.has(cDate)) {
+        attendanceRecords.push({
+          id: `ABS_${cDate}_${student.rollNo || student.id}`,
+          studentId: student.id || student._id?.toString(),
+          rollNo: String(student.rollNo),
+          date: cDate,
+          status: 'absent',
+          entryTime: '--',
+          exitTime: '--',
+          durationMinutes: 0,
+          sessionName: 'Regular Class'
+        });
+      }
+    });
+
+    attendanceRecords.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     const enrichedResults = await attachTestDetailsToResults(rawTestResults, student.instituteId);
 
     const totalAtt = attendanceRecords.length;
-    const presentAtt = attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length;
-    const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
-
-    // Fetch upcoming scheduled tests for student's batch
-    const upcomingTests = await getUpcomingTestsForStudent(student, student.instituteId);
+    const presentAtt = attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present' || (a.entryTime && a.entryTime !== '--')).length;
+    const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 0;
 
     // Fetch notices / notifications for student & institute
     const notifStudentIds = [
@@ -1681,6 +1708,7 @@ app.get('/api/parent/data', async (req, res) => {
     const noticesRaw = await Notification.find({
       $or: [
         { studentId: { $in: notifObjIds } },
+        { studentId: { $in: notifStudentIds } },
         { studentId: null },
         ...nameRegexClause
       ]
@@ -2823,8 +2851,8 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
 
     let record = await Attendance.findOne(query);
     if (record) {
-      if (entryTime && !record.entryTime) isNewEntry = true;
-      if (exitTime && !record.exitTime) isNewExit = true;
+      if (entryTime && entryTime !== '--' && (!record.entryTime || record.entryTime === '--')) isNewEntry = true;
+      if (exitTime && exitTime !== '--' && (!record.exitTime || record.exitTime === '--')) isNewExit = true;
 
       if (entryTime) record.entryTime = entryTime;
       if (exitTime) record.exitTime = exitTime;
@@ -2892,7 +2920,7 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
       if (isNewEntry) {
         const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
         const title = 'Check-In Alert';
-        const message = `${student.name} has checked IN at ${entryTime}${sessionCtx}.`;
+        const message = `Dear Parent, ${student.name} (Roll ${student.rollNo}) has checked IN at ${entryTime}${sessionCtx}.`;
         
         const notifEntry = await Notification.create({
           instituteId: resolvedInstId,
@@ -2924,7 +2952,7 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
         const durationStr = formattedDuration ? ` (Duration: ${formattedDuration})` : '';
         const sessionCtx = record.sessionName ? ` after ${record.sessionName}` : '';
         const title = 'Check-Out Alert';
-        const message = `${student.name} has checked OUT at ${exitTime}${sessionCtx}${durationStr}.`;
+        const message = `Dear Parent, ${student.name} (Roll ${student.rollNo}) has checked OUT at ${exitTime}${sessionCtx}${durationStr}.`;
         
         const notifExit = await Notification.create({
           instituteId: resolvedInstId,
