@@ -2417,6 +2417,17 @@ app.post('/api/students', async (req, res) => {
       return res.status(400).json({ error: 'Roll number is required' });
     }
 
+    // 🛡️ CRITICAL GUARD: Prevent duplicate roll numbers across active students!
+    const existingStudentWithRoll = await Student.findOne({
+      isDeleted: { $ne: true },
+      rollNo: { $regex: new RegExp(`^${rollNo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    });
+    if (existingStudentWithRoll) {
+      return res.status(400).json({
+        error: `Roll number "${rollNo}" is already assigned to student "${existingStudentWithRoll.name}"!`
+      });
+    }
+
     // Support custom parentUserId, fallback to rollNo (simple) or rollNo-random
     let parentUserId = req.body.parentUserId ? String(req.body.parentUserId).trim() : '';
     if (!parentUserId) {
@@ -2582,6 +2593,18 @@ app.put('/api/students/:id', async (req, res) => {
 
     if (updateData.rollNo) {
       updateData.rollNo = String(updateData.rollNo).trim();
+      if (updateData.rollNo.toLowerCase() !== String(studentToUpdate.rollNo || '').trim().toLowerCase()) {
+        const rollConflict = await Student.findOne({
+          isDeleted: { $ne: true },
+          _id: { $ne: studentToUpdate._id },
+          rollNo: { $regex: new RegExp(`^${updateData.rollNo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+        });
+        if (rollConflict) {
+          return res.status(400).json({
+            error: `Roll number "${updateData.rollNo}" is already assigned to student "${rollConflict.name}"!`
+          });
+        }
+      }
     }
 
     // Upload new photo to Cloudinary if changed/provided

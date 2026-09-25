@@ -2,11 +2,7 @@ import mongoose from 'mongoose';
 import { logInfo, logError, logWarn } from '../utils/logger.js';
 
 function normalizeRoll(r) {
-  let str = String(r || '').trim();
-  if (str.length === 5 && str.startsWith('1')) {
-    str = str.slice(1);
-  }
-  return str;
+  return String(r || '').trim();
 }
 
 function cleanName(n) {
@@ -88,8 +84,6 @@ export async function mergeDuplicatesOnDb(dbInstance, dbLabel = 'DB') {
         let scoreB = 0;
         if (a.photo && a.photo.length > 5) scoreA += 10;
         if (b.photo && b.photo.length > 5) scoreB += 10;
-        if (String(a.rollNo).length <= 4) scoreA += 5;
-        if (String(b.rollNo).length <= 4) scoreB += 5;
         if (a.parentName) scoreA += 2;
         if (b.parentName) scoreB += 2;
         return scoreB - scoreA;
@@ -97,9 +91,9 @@ export async function mergeDuplicatesOnDb(dbInstance, dbLabel = 'DB') {
 
       const primary = cluster[0];
       const duplicates = cluster.slice(1);
-      const norm4DigitRoll = normalizeRoll(primary.rollNo) || normalizeRoll(duplicates[0].rollNo);
-      const newParentUserId = `CAREER${norm4DigitRoll}`;
-      const newParentPass = norm4DigitRoll;
+      const studentRoll = primary.rollNo || duplicates[0].rollNo;
+      const newParentUserId = primary.parentUserId || `CAREER${studentRoll}`;
+      const newParentPass = primary.parentPasswordPlain || studentRoll;
 
       const allStudentIds = new Set();
       const allRollNos = new Set();
@@ -111,7 +105,6 @@ export async function mergeDuplicatesOnDb(dbInstance, dbLabel = 'DB') {
         if (s._id) allStudentIds.add(String(s._id));
         if (s.rollNo) {
           allRollNos.add(String(s.rollNo));
-          allRollNos.add(normalizeRoll(s.rollNo));
         }
         if (s.parentUserId) oldParentUsernames.add(s.parentUserId);
       });
@@ -119,7 +112,7 @@ export async function mergeDuplicatesOnDb(dbInstance, dbLabel = 'DB') {
       duplicates.forEach(d => duplicateMongoIds.push(d._id));
 
       const updateFields = {
-        rollNo: norm4DigitRoll,
+        rollNo: studentRoll,
         parentUserId: newParentUserId,
         parentPasswordPlain: newParentPass
       };
@@ -142,9 +135,9 @@ export async function mergeDuplicatesOnDb(dbInstance, dbLabel = 'DB') {
       const rollList = Array.from(allRollNos);
 
       await Promise.allSettled([
-        attColl.updateMany({ $or: [{ studentId: { $in: idList } }, { rollNo: { $in: rollList } }] }, { $set: { studentId: primary.id, rollNo: norm4DigitRoll } }),
-        testResColl.updateMany({ $or: [{ studentId: { $in: idList } }, { rollNo: { $in: rollList } }] }, { $set: { studentId: primary.id, rollNo: norm4DigitRoll } }),
-        smsColl.updateMany({ $or: [{ studentId: { $in: idList } }, { rollNo: { $in: rollList } }] }, { $set: { studentId: primary.id, rollNo: norm4DigitRoll } })
+        attColl.updateMany({ $or: [{ studentId: { $in: idList } }, { rollNo: { $in: rollList } }] }, { $set: { studentId: primary.id, rollNo: studentRoll } }),
+        testResColl.updateMany({ $or: [{ studentId: { $in: idList } }, { rollNo: { $in: rollList } }] }, { $set: { studentId: primary.id, rollNo: studentRoll } }),
+        smsColl.updateMany({ $or: [{ studentId: { $in: idList } }, { rollNo: { $in: rollList } }] }, { $set: { studentId: primary.id, rollNo: studentRoll } })
       ]);
 
       // Delete duplicates
@@ -158,27 +151,6 @@ export async function mergeDuplicatesOnDb(dbInstance, dbLabel = 'DB') {
       }
 
       mergedCount++;
-    }
-
-    // Normalize any non-duplicate 5-digit rolls
-    const remaining5Digit = await studentColl.find({ isDeleted: { $ne: true }, rollNo: { $regex: /^1\d{4}$/ } }).toArray();
-    if (remaining5Digit.length > 0) {
-      const ops = remaining5Digit.map(s => {
-        const four = normalizeRoll(s.rollNo);
-        return {
-          updateOne: {
-            filter: { _id: s._id },
-            update: {
-              $set: {
-                rollNo: four,
-                parentUserId: `CAREER${four}`,
-                parentPasswordPlain: four
-              }
-            }
-          }
-        };
-      });
-      await studentColl.bulkWrite(ops, { ordered: false });
     }
 
     const finalTotal = await studentColl.countDocuments({ isDeleted: { $ne: true } });

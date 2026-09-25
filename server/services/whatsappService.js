@@ -117,9 +117,8 @@ export function formatAttendanceMessageText({ parentName, studentName, formatted
  * Includes Atomic Multi-PC duplicate lock and persistent messaging check.
  */
 export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, studentName, parentName, type, detail, sessionName = null, sessionId = null, round = 1, roundLabel = null }) {
-  // 0. WhatsApp Whitelist: ONLY Check-in (IN), Check-out (OUT), and Test Results (TEST_RESULT) go to WhatsApp.
-  //    All other types (SESSION_CONTINUE, MISSED_EXIT, PUNCH_MISSED, ABSENT, WELCOME, etc.) are logged but NOT sent via WhatsApp.
-  const WHATSAPP_ALLOWED_TYPES = ['IN', 'OUT', 'TEST_RESULT'];
+  // 0. WhatsApp Whitelist: Check-in (IN), Check-out (OUT), Test Results (TEST_RESULT), and Student Admission (WELCOME) go to WhatsApp.
+  const WHATSAPP_ALLOWED_TYPES = ['IN', 'OUT', 'TEST_RESULT', 'WELCOME'];
   const isWhatsAppAllowed = WHATSAPP_ALLOWED_TYPES.includes(type);
 
   // 1. Check persistent Master Messaging Switch

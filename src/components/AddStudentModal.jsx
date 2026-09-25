@@ -66,17 +66,20 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
 
   useEffect(() => {
     if (isAutoGenerate && !isEdit) {
-      // Find max roll number, starting from 17000 (5-digit standard)
-      let maxRoll = 17000;
+      // Find true max numeric roll number among existing active students
+      let maxRoll = 0;
       if (students && students.length > 0) {
         students.forEach(s => {
-          const rollInt = parseInt(s.rollNo, 10);
-          if (!isNaN(rollInt) && rollInt > maxRoll) {
-            maxRoll = rollInt;
+          if (s.isDeleted !== true) {
+            const rollInt = parseInt(s.rollNo, 10);
+            if (!isNaN(rollInt) && rollInt < 90000 && rollInt > maxRoll) {
+              maxRoll = rollInt;
+            }
           }
         });
       }
-      setForm((prev) => ({ ...prev, rollNo: (maxRoll + 1).toString() }));
+      const nextRoll = maxRoll > 0 ? (maxRoll + 1).toString() : '8506';
+      setForm((prev) => ({ ...prev, rollNo: nextRoll }));
     } else if (!isAutoGenerate && !isEdit && !studentData) {
       setForm((prev) => ({ ...prev, rollNo: '' }));
     }
@@ -171,7 +174,19 @@ export default function AddStudentModal({ isEdit, studentData, onClose, onSave }
   const validate = () => {
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = 'Name is required';
-    if (!form.rollNo.trim()) newErrors.rollNo = 'Roll number is required';
+    if (!form.rollNo.trim()) {
+      newErrors.rollNo = 'Roll number is required';
+    } else {
+      const duplicateStudent = (students || []).find(
+        s => s.isDeleted !== true &&
+             String(s.rollNo || '').trim().toLowerCase() === form.rollNo.trim().toLowerCase() &&
+             s.id !== studentData?.id &&
+             s._id !== studentData?._id
+      );
+      if (duplicateStudent) {
+        newErrors.rollNo = `Roll number "${form.rollNo.trim()}" is already assigned to "${duplicateStudent.name}"!`;
+      }
+    }
     if (!form.parentPhone.trim()) newErrors.parentPhone = 'Phone number is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
