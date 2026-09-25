@@ -5,6 +5,7 @@ import Attendance from '../models/Attendance.js';
 import Notification from '../models/Notification.js';
 import { mirrorWrite } from '../db/syncEngine.js';
 import { sendWhatsAppAlert } from './whatsappService.js';
+import { resolveSessionForStudent } from './sessionResolver.js';
 
 // Cache to prevent duplicate automated alerts within the same day
 const automatedAlertsSent = new Set();
@@ -74,6 +75,13 @@ export function startSessionScheduler() {
                 const student = await Student.findOne({ id: att.studentId, isDeleted: { $ne: true } });
                 if (!student) continue;
 
+                // 🛡️ CRITICAL CHECK: Verify student actually belongs to currentSess (e.g. JEE Repeaters are excluded from Self Study)
+                const matchedCurrent = resolveSessionForStudent(currentSess.startTime, student, [currentSess]);
+                if (!matchedCurrent) {
+                  // Student is strictly excluded from this session — do NOT rollover or assign this sessionName!
+                  continue;
+                }
+
                 // Create In-App Notification directly for Parents Mobile App
                 const pName = student.parentName || 'Parent';
                 const todayFormatted = todayStr.includes('-') ? (todayStr.split('-')[0].length === 4 ? todayStr.split('-').reverse().join('-') : todayStr) : todayStr;
@@ -135,6 +143,12 @@ export function startSessionScheduler() {
               for (const att of openAttendances) {
                 const student = await Student.findOne({ id: att.studentId, isDeleted: { $ne: true } });
                 if (!student) continue;
+
+                // 🛡️ CRITICAL CHECK: Verify student actually belongs to currentSess
+                const matchedFinal = resolveSessionForStudent(currentSess.endTime, student, [currentSess]);
+                if (!matchedFinal) {
+                  continue;
+                }
 
                 // Create In-App Notification directly for Parents Mobile App
                 const pName = student.parentName || 'Parent';

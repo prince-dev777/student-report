@@ -171,9 +171,12 @@ export default function Attendance() {
   const [lastPunch, setLastPunch] = useState(null);
   const [lastScannedMap, setLastScannedMap] = useState({});
   const [showKioskSuggestions, setShowKioskSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const lastSeenBiometricEventIdRef = useRef(null);
   const kioskInputRef = useRef(null);
   const lastKioskKeyTimeRef = useRef(0);
+  const firstBurstCharRef = useRef('');
+  const isScannerBurstRef = useRef(false);
 
   // 📡 Biometric Machine Integration States
   const [biometricStatus, setBiometricStatus] = useState({
@@ -613,6 +616,10 @@ export default function Attendance() {
       })
       .slice(0, 8);
   }, [kioskCode, activeStudents]);
+
+  useEffect(() => {
+    setActiveSuggestionIndex(0);
+  }, [kioskCode]);
 
   // Live clock
   useEffect(() => {
@@ -1229,6 +1236,11 @@ export default function Attendance() {
 
       if (!activeSession) {
         for (const sess of sessions) {
+          const hasBatchRestrictions = (Array.isArray(sess.batchIds) && sess.batchIds.length > 0) || (sess.batchId && sess.batchId !== 'all');
+          const hasClassRestrictions = (Array.isArray(sess.targetClasses) && sess.targetClasses.length > 0) || (sess.className && sess.className !== 'all');
+          // Only unrestricted universal sessions can act as fallback
+          if (hasBatchRestrictions || hasClassRestrictions) continue;
+
           const [sH, sM] = (sess.startTime || '00:00').split(':').map(Number);
           const [eH, eM] = (sess.endTime || '23:59').split(':').map(Number);
           const startMin = sH * 60 + sM;
@@ -1241,8 +1253,11 @@ export default function Attendance() {
       }
     }
 
-    // Mark attendance
-    markAttendance(matchedStudent.id, determinedType, activeSession?.name);
+    // Mark attendance - On exit, preserve existing session if present
+    const sessionToMark = determinedType === 'exit'
+      ? (todayRecord?.sessionName || activeSession?.name)
+      : activeSession?.name;
+    markAttendance(matchedStudent.id, determinedType, sessionToMark);
 
     // Audio confirmation
     if (soundEnabled) playKioskSound(determinedType);
@@ -3432,23 +3447,77 @@ export default function Attendance() {
                       type="text"
                       value={kioskCode}
                       onKeyDown={(e) => {
-                        const now = Date.now();
-                        const timeDiff = now - lastKioskKeyTimeRef.current;
-                        lastKioskKeyTimeRef.current = now;
+                        if (e.key === 'Escape') {
+                          setShowKioskSuggestions(false);
+                          return;
+                        }
 
-                        // If a new scanner burst or fresh scan arrives after > 120ms gap and field has text,
-                        // clear previous text so the new student's roll number doesn't concatenate!
-                        if (e.key !== 'Enter' && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                          if (timeDiff > 120 && kioskCode.length > 0) {
-                            setKioskCode('');
+                        if (e.key === 'ArrowDown') {
+                          if (showKioskSuggestions && kioskSuggestions.length > 0) {
+                            e.preventDefault();
+                            setActiveSuggestionIndex((prev) => (prev + 1) % kioskSuggestions.length);
+                          }
+                          return;
+                        }
+
+                        if (e.key === 'ArrowUp') {
+                          if (showKioskSuggestions && kioskSuggestions.length > 0) {
+                            e.preventDefault();
+                            setActiveSuggestionIndex((prev) => (prev - 1 + kioskSuggestions.length) % kioskSuggestions.length);
+                          }
+                          return;
+                        }
+
+                        if (e.key === 'Enter') {
+                          // If suggestions are visible and user specifically navigated to one with arrow keys
+                          if (!isScannerBurstRef.current && showKioskSuggestions && kioskSuggestions.length > 0 && activeSuggestionIndex > 0) {
+                            const selected = kioskSuggestions[activeSuggestionIndex];
+                            if (selected) {
+                              e.preventDefault();
+                              handleKioskScan(e, selected);
+                              return;
+                            }
+                          }
+                          return;
+                        }
+
+                        // Fast hardware QR/barcode scanner burst detection (< 45ms per keystroke)
+                        if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                          const now = Date.now();
+                          const timeDiff = now - lastKioskKeyTimeRef.current;
+                          lastKioskKeyTimeRef.current = now;
+
+                          if (timeDiff <= 45) {
+                            // Hardware scanner burst: suppress autocomplete dropdown flicker
+                            isScannerBurstRef.current = true;
+                            setShowKioskSuggestions(false);
+
+                            // If new burst arrives while field had leftover manual text, discard old text
+                            if (firstBurstCharRef.current && kioskCode.length > 0 && !kioskCode.startsWith(firstBurstCharRef.current)) {
+                              setKioskCode(firstBurstCharRef.current);
+                              firstBurstCharRef.current = '';
+                            }
+                          } else {
+                            // Human manual typing: NEVER clear! Let user type full roll numbers & names!
+                            firstBurstCharRef.current = e.key;
+                            isScannerBurstRef.current = false;
                           }
                         }
                       }}
                       onChange={(e) => {
-                        setKioskCode(e.target.value);
-                        setShowKioskSuggestions(true);
+                        const val = e.target.value;
+                        setKioskCode(val);
+                        if (!isScannerBurstRef.current && val.trim().length >= 1) {
+                          setShowKioskSuggestions(true);
+                        } else if (val.trim().length === 0) {
+                          setShowKioskSuggestions(false);
+                        }
                       }}
-                      onFocus={() => setShowKioskSuggestions(true)}
+                      onFocus={() => {
+                        if (!isScannerBurstRef.current && kioskCode.trim().length >= 1) {
+                          setShowKioskSuggestions(true);
+                        }
+                      }}
                       placeholder="Type student name, Roll No (e.g. 101), or flash QR..."
                       autoFocus
                       style={{
@@ -3552,10 +3621,9 @@ export default function Attendance() {
                                 borderBottom: '1px solid var(--border-color-light, #f1f5f9)',
                                 cursor: 'pointer',
                                 transition: 'background 0.15s ease',
-                                background: idx === 0 ? 'rgba(59, 130, 246, 0.05)' : 'transparent'
+                                background: idx === activeSuggestionIndex ? 'rgba(59, 130, 246, 0.12)' : 'transparent'
                               }}
-                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
-                              onMouseLeave={(e) => e.currentTarget.style.background = idx === 0 ? 'rgba(59, 130, 246, 0.05)' : 'transparent'}
+                              onMouseEnter={() => setActiveSuggestionIndex(idx)}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
                                 {s.photo ? (

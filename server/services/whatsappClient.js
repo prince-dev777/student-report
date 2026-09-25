@@ -142,10 +142,13 @@ function getAuthDataPath() {
 
 export function getWhatsAppClientState() {
   const isFunctionallyReady = (client && client.info && client.info.wid) || clientStatus === 'ready';
+  if (isFunctionallyReady && clientStatus !== 'ready') {
+    clientStatus = 'ready';
+  }
   return { 
     status: isFunctionallyReady ? 'ready' : clientStatus, 
-    qrCode: qrCodeData,
-    pairingCode: pairingCodeData,
+    qrCode: isFunctionallyReady ? null : qrCodeData,
+    pairingCode: isFunctionallyReady ? null : pairingCodeData,
     info: client && client.info ? {
       pushname: client.info.pushname,
       wid: client.info.wid
@@ -883,6 +886,11 @@ export function initializeWhatsAppClient() {
     }, 1500);
 
     client.on('qr', async (qr) => {
+      // 🛡️ CRITICAL GUARD: If client is already ready or authenticated, NEVER allow a late QR event to overwrite status!
+      if (clientStatus === 'ready' || clientStatus === 'authenticated' || (client && client.info && client.info.wid)) {
+        console.log('[WhatsAppClient] 🛡️ Ignored late QR event because client is already ready/authenticated.');
+        return;
+      }
       console.log('[WhatsAppClient] QR Code received. Scan it to authenticate.');
       clientStatus = 'qr';
       initRetryCount = 0;

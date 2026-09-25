@@ -695,17 +695,33 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
   }
 
   // Auto-match session based on punch time using central robust session resolver
-  if (record.entryTime && record.entryTime !== '--' && !record.sessionName) {
-    try {
-      const queryInst = resolvedInstituteId ? { instituteId: resolvedInstituteId } : {};
-      const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
-      const matchedSess = resolveSessionForStudent(record.entryTime, student, sessions);
-      if (matchedSess) {
-        record.sessionName = matchedSess.name;
-        record.sessionId = matchedSess.id || matchedSess._id;
+  if (record.entryTime && record.entryTime !== '--') {
+    if (!record.sessionName) {
+      try {
+        const queryInst = resolvedInstituteId ? { instituteId: resolvedInstituteId } : {};
+        const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
+        const matchedSess = resolveSessionForStudent(record.entryTime, student, sessions);
+        if (matchedSess) {
+          record.sessionName = matchedSess.name;
+          record.sessionId = matchedSess.id || matchedSess._id;
+        }
+      } catch (sessErr) {
+        console.warn('[Biometric] Session match error:', sessErr.message);
       }
-    } catch (sessErr) {
-      console.warn('[Biometric] Session match error:', sessErr.message);
+    } else if (record.sessionName && student) {
+      // 🛡️ CRITICAL GUARD: Validate that the sessionName does NOT violate batch/class exclusions
+      try {
+        const queryInst = resolvedInstituteId ? { instituteId: resolvedInstituteId } : {};
+        const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
+        const matchedSess = sessions.find(s => s.name === record.sessionName);
+        if (matchedSess) {
+          const isAllowed = resolveSessionForStudent(record.entryTime, student, [matchedSess]);
+          if (!isAllowed) {
+            record.sessionName = null;
+            record.sessionId = null;
+          }
+        }
+      } catch (_) {}
     }
   }
 

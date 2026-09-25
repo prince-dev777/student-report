@@ -8,7 +8,7 @@ const smsLogSchema = new mongoose.Schema({
   parentPhone: { type: String, required: true },
   message: { type: String, required: true },
   timestamp: { type: String, required: true },
-  status: { type: String, default: 'sent', enum: ['pending', 'sent', 'delivered', 'failed'] },
+  status: { type: String, default: 'sent', enum: ['pending', 'sent', 'delivered', 'failed', 'app-only'] },
   sessionName: { type: String, default: null },
   sessionId: { type: String, default: null },
   attachment: {

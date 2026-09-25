@@ -247,7 +247,7 @@ async function restoreFromCloud() {
         logInfo('RESTORE', `Collection [${collName}]: Restored ${docs.length} documents (${result.upsertedCount || 0} new, ${result.modifiedCount || 0} updated).`);
 
         // Purge orphaned local records for configuration collections (sessions, institutes, users)
-        if (['sessions', 'institutes', 'users', 'smslogs'].includes(collName)) {
+        if (['sessions', 'institutes', 'users'].includes(collName)) {
           const cloudIds = docs.map(d => d._id);
           const purgeRes = await localColl.deleteMany({ _id: { $nin: cloudIds } });
           if (purgeRes.deletedCount > 0) {

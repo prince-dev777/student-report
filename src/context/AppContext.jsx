@@ -562,7 +562,7 @@ export function AppProvider({ children }) {
       updatedRecord = {
         ...existing,
         ...(isSecondExit ? { exitTime2: currentTime } : { exitTime: currentTime }),
-        ...(customSessionName ? { sessionName: customSessionName } : {})
+        sessionName: existing?.sessionName || customSessionName || null
       };
     }
 

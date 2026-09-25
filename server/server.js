@@ -2884,6 +2884,19 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
           record.sessionName = matchedSess.name;
           record.sessionId = matchedSess.id || matchedSess._id;
         }
+      } else if (record.sessionName && student) {
+        // 🛡️ CRITICAL GUARD: Validate that the sessionName does NOT violate batch/class exclusions (e.g. JEE Repeaters excluded from Self Study)
+        const targetInstId = instId || req.user?.instituteId;
+        const queryInst = targetInstId ? { instituteId: targetInstId } : {};
+        const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
+        const matchedSess = sessions.find(s => s.name === record.sessionName);
+        if (matchedSess) {
+          const isAllowed = resolveSessionForStudent(record.entryTime, student, [matchedSess]);
+          if (!isAllowed) {
+            record.sessionName = null;
+            record.sessionId = null;
+          }
+        }
       }
     }
 

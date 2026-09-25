@@ -637,7 +637,7 @@ export async function performFullSync() {
         const cloudDocs = cleanCloudDocs;
 
         // 1. If Local is completely empty and Cloud has data: AUTO-PULL from Cloud (for core entities ONLY, never resurrect cleared logs)
-        const logCollections = ['smslogs', 'notifications', 'voicecalllogs'];
+        const logCollections = ['notifications', 'voicecalllogs'];
         if (activeLocalDocs.length === 0 && cloudDocs.length > 0) {
           if (logCollections.includes(collName)) {
             // If local logs were cleared, purge cloud logs as well so deleted logs never resurrect
@@ -723,6 +723,10 @@ export async function performFullSync() {
               if (cd.id) cloudMap.set(cd.id, cd);
               if (cd.name && cd.date) cloudMap.set(`TEST_${cd.name.trim().toLowerCase()}_${cd.date}`, cd);
             }
+            else if (collName === 'smslogs' && cd.id) {
+              cloudMap.set(cd.id, cd);
+              cloudMap.set(String(cd._id), cd);
+            }
             else cloudMap.set(String(cd._id), cd);
           });
 
@@ -738,6 +742,7 @@ export async function performFullSync() {
             else if (collName === 'attendances') key = `${ld.studentId}_${ld.date}`;
             else if (collName === 'students') key = ld.id;
             else if (collName === 'tests') key = ld.id;
+            else if (collName === 'smslogs' && ld.id) key = ld.id;
 
             let cloudDoc = cloudMap.get(key);
             if (!cloudDoc && collName === 'students' && ld.rollNo) {
@@ -814,6 +819,18 @@ export async function performFullSync() {
                   }
                 };
               }
+              if (collName === 'smslogs') {
+                const repl = { ...doc };
+                delete repl._id;
+                const orConds = [{ id: doc.id }, { _id: doc._id }];
+                return {
+                  updateOne: {
+                    filter: { $or: orConds },
+                    update: { $set: repl },
+                    upsert: true
+                  }
+                };
+              }
               const repl = { ...doc };
               delete repl._id;
               return {
@@ -853,6 +870,10 @@ export async function performFullSync() {
                 if (ld.id) localMap.set(ld.id, ld);
                 if (ld.name && ld.date) localMap.set(`TEST_${ld.name.trim().toLowerCase()}_${ld.date}`, ld);
               }
+              else if (collName === 'smslogs' && ld.id) {
+                localMap.set(ld.id, ld);
+                localMap.set(String(ld._id), ld);
+              }
               else localMap.set(String(ld._id), ld);
             });
 
@@ -870,6 +891,7 @@ export async function performFullSync() {
               else if (collName === 'attendances') key = `${cd.studentId}_${cd.date}`;
               else if (collName === 'students') key = cd.id;
               else if (collName === 'tests') key = cd.id;
+              else if (collName === 'smslogs' && cd.id) key = cd.id;
 
               let localDoc = localMap.get(key);
               if (!localDoc && collName === 'students' && cd.rollNo) {
@@ -936,6 +958,18 @@ export async function performFullSync() {
                     if (doc.name && doc.date) {
                       orConds.push({ name: doc.name, date: doc.date });
                     }
+                    return {
+                      updateOne: {
+                        filter: { $or: orConds },
+                        update: { $set: repl },
+                        upsert: true
+                      }
+                    };
+                  }
+                  if (collName === 'smslogs') {
+                    const repl = { ...doc };
+                    delete repl._id;
+                    const orConds = [{ id: doc.id }, { _id: doc._id }];
                     return {
                       updateOne: {
                         filter: { $or: orConds },
@@ -1160,6 +1194,18 @@ export async function pullAndRestoreFromCloud() {
                 }
               };
             }
+            if (collName === 'smslogs') {
+              const repl = { ...doc };
+              delete repl._id;
+              const orConds = [{ id: doc.id }, { _id: doc._id }];
+              return {
+                updateOne: {
+                  filter: { $or: orConds },
+                  update: { $set: repl },
+                  upsert: true
+                }
+              };
+            }
             return {
               replaceOne: {
                 filter: { _id: doc._id },
@@ -1173,7 +1219,7 @@ export async function pullAndRestoreFromCloud() {
         totalRestored += docs.length;
 
         // Purge orphaned local records for configuration collections (sessions, institutes, users)
-        if (['sessions', 'institutes', 'users', 'smslogs'].includes(collName)) {
+        if (['sessions', 'institutes', 'users'].includes(collName)) {
           const cloudIds = fixedDocs.map(d => d._id);
           const purgeRes = await localColl.deleteMany({ _id: { $nin: cloudIds } }).catch(() => ({ deletedCount: 0 }));
           if (purgeRes.deletedCount > 0) {

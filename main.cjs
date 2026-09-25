@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, Tray, Menu, ipcMain, powerMonitor } = require('electron');
+const { app, BrowserWindow, dialog, Tray, Menu, ipcMain, powerMonitor, powerSaveBlocker } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const { spawn, exec } = require('child_process');
@@ -6,6 +6,11 @@ const fs = require('fs');
 
 // Set application name early so app.getPath('userData') is consistent in dev and production
 app.setName('Career Xone Pro');
+
+// Disable Chromium background throttling so timers and sockets stay active when window is hidden or minimized
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
 // Enforce single instance lock to prevent duplicate app processes & port 5000 conflicts
 const gotTheLock = app.requestSingleInstanceLock();
@@ -274,6 +279,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: false,
+      backgroundThrottling: false,
       preload: path.join(__dirname, 'preload.cjs')
     },
     autoHideMenuBar: true,
@@ -379,6 +385,16 @@ function createWindow() {
     }
     return false;
   });
+}
+
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow();
+  } else {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  }
 }
 
 let tray = null;
@@ -557,6 +573,13 @@ async function startServer() {
 }
 
 app.whenReady().then(async () => {
+  // Prevent OS from suspending background timers/services when window is hidden
+  try {
+    powerSaveBlocker.start('prevent-app-suspension');
+  } catch (e) {
+    console.warn('[PowerSaveBlocker] Failed to start:', e.message);
+  }
+
   // Handle Windows Sleep/Hibernate resume to reconnect background services cleanly
   powerMonitor.on('resume', () => {
     console.log('[PowerMonitor] ⚡ System resumed from sleep. Notifying background services...');
