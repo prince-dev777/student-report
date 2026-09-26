@@ -2857,6 +2857,9 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
 
     let isNewEntry = false;
     let isNewExit = false;
+    let isNewEntry2 = false;
+    let isNewExit2 = false;
+    let punchTimeToResolve = req.body.entryTime2 || entryTime || req.body.exitTime2 || exitTime || null;
 
     const student = await Student.findOne({ 
       isDeleted: { $ne: true }, 
@@ -2874,18 +2877,38 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
 
     let record = await Attendance.findOne(query);
     if (record) {
-      if (entryTime && entryTime !== '--' && (!record.entryTime || record.entryTime === '--')) isNewEntry = true;
-      if (exitTime && exitTime !== '--' && (!record.exitTime || record.exitTime === '--')) isNewExit = true;
+      if (entryTime && entryTime !== '--' && (!record.entryTime || record.entryTime === '--')) {
+        isNewEntry = true;
+        punchTimeToResolve = entryTime;
+      }
+      if (exitTime && exitTime !== '--' && (!record.exitTime || record.exitTime === '--')) {
+        isNewExit = true;
+        punchTimeToResolve = exitTime;
+      }
+      if (req.body.entryTime2 && req.body.entryTime2 !== '--' && (!record.entryTime2 || record.entryTime2 === '--')) {
+        isNewEntry2 = true;
+        punchTimeToResolve = req.body.entryTime2;
+      }
+      if (req.body.exitTime2 && req.body.exitTime2 !== '--' && (!record.exitTime2 || record.exitTime2 === '--')) {
+        isNewExit2 = true;
+        punchTimeToResolve = req.body.exitTime2;
+      }
 
       if (entryTime) record.entryTime = entryTime;
       if (exitTime) record.exitTime = exitTime;
+      if (req.body.entryTime2 !== undefined) record.entryTime2 = req.body.entryTime2;
+      if (req.body.exitTime2 !== undefined) record.exitTime2 = req.body.exitTime2;
+      if (Array.isArray(req.body.punches)) record.punches = req.body.punches;
       if (status) record.status = status;
       if (smsSent !== undefined) record.smsSent = smsSent;
       if (student && !record.rollNo) record.rollNo = String(student.rollNo);
+      if (req.body.sessionName) record.sessionName = req.body.sessionName;
       await record.save();
     } else {
       if (entryTime) isNewEntry = true;
       if (exitTime) isNewExit = true;
+      if (req.body.entryTime2) isNewEntry2 = true;
+      if (req.body.exitTime2) isNewExit2 = true;
 
       record = new Attendance({ 
         ...req.body, 
@@ -2896,25 +2919,21 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
       await record.save();
     }
 
-    // --- Calculate Duration and Resolve Session ---
-    if (record.entryTime) {
-      if (!record.sessionName) {
-        const targetInstId = instId || req.user?.instituteId;
-        const queryInst = targetInstId ? { instituteId: targetInstId } : {};
-        const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
-        const matchedSess = resolveSessionForStudent(record.entryTime, student, sessions);
-        if (matchedSess) {
-          record.sessionName = matchedSess.name;
-          record.sessionId = matchedSess.id || matchedSess._id;
-        }
+    // --- Calculate Duration and Resolve Session Dynamically ---
+    const evalTime = punchTimeToResolve || record.entryTime2 || record.entryTime;
+    if (evalTime && evalTime !== '--') {
+      const targetInstId = instId || req.user?.instituteId;
+      const queryInst = targetInstId ? { instituteId: targetInstId } : {};
+      const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
+      const matchedSess = resolveSessionForStudent(evalTime, student, sessions);
+      if (matchedSess) {
+        record.sessionName = matchedSess.name;
+        record.sessionId = matchedSess.id || matchedSess._id;
       } else if (record.sessionName && student) {
-        // 🛡️ CRITICAL GUARD: Validate that the sessionName does NOT violate batch/class exclusions (e.g. JEE Repeaters excluded from Self Study)
-        const targetInstId = instId || req.user?.instituteId;
-        const queryInst = targetInstId ? { instituteId: targetInstId } : {};
-        const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
-        const matchedSess = sessions.find(s => s.name === record.sessionName);
-        if (matchedSess) {
-          const isAllowed = resolveSessionForStudent(record.entryTime, student, [matchedSess]);
+        // 🛡️ CRITICAL GUARD: Validate that the sessionName does NOT violate batch/class exclusions
+        const existingSess = sessions.find(s => s.name === record.sessionName);
+        if (existingSess) {
+          const isAllowed = resolveSessionForStudent(evalTime, student, [existingSess]);
           if (!isAllowed) {
             record.sessionName = null;
             record.sessionId = null;
@@ -2952,11 +2971,16 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
         await record.save();
       }
 
-      // 2. Entry Alert
-      if (isNewEntry) {
+      // 2. Entry Alert (Round 1 or Round 2)
+      if (isNewEntry || isNewEntry2) {
+        const round = isNewEntry2 ? 2 : 1;
+        const roundLabel = isNewEntry2 ? 'Second Check-in' : 'Check-in';
+        const currentPunchTime = isNewEntry2 ? record.entryTime2 : (entryTime || record.entryTime);
         const sessionCtx = record.sessionName ? ` for ${record.sessionName}` : '';
-        const title = 'Check-In Alert';
-        const message = `Dear Parent, ${student.name} (Roll ${student.rollNo}) has checked IN at ${entryTime}${sessionCtx}.`;
+        const title = isNewEntry2 ? `${roundLabel} Alert` : 'Check-In Alert';
+        const message = isNewEntry2
+          ? `Dear Parent, ${student.name} (Roll ${student.rollNo}) has completed ${roundLabel} at ${currentPunchTime}${sessionCtx}.`
+          : `Dear Parent, ${student.name} (Roll ${student.rollNo}) has checked IN at ${currentPunchTime}${sessionCtx}.`;
         
         const notifEntry = await Notification.create({
           instituteId: resolvedInstId,
@@ -2977,18 +3001,25 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
             type: 'IN',
             sessionName: record.sessionName,
             sessionId: record.sessionId,
-            detail: `${entryTime}${sessionCtx}`
+            detail: `${currentPunchTime}${sessionCtx}`,
+            round,
+            roundLabel
           }).catch(err => console.error('Failed to send entry WhatsApp alert:', err.message));
         }
       }
 
-      // 3. Exit Alert
-      if (isNewExit) {
+      // 3. Exit Alert (Round 1 or Round 2)
+      if (isNewExit || isNewExit2) {
+        const round = isNewExit2 ? 2 : 1;
+        const roundLabel = isNewExit2 ? 'Second Check-out' : 'Check-out';
+        const currentExitTime = isNewExit2 ? record.exitTime2 : (exitTime || record.exitTime);
         const formattedDuration = formatDurationHuman(record.durationMinutes);
         const durationStr = formattedDuration ? ` (Duration: ${formattedDuration})` : '';
         const sessionCtx = record.sessionName ? ` after ${record.sessionName}` : '';
-        const title = 'Check-Out Alert';
-        const message = `Dear Parent, ${student.name} (Roll ${student.rollNo}) has checked OUT at ${exitTime}${sessionCtx}${durationStr}.`;
+        const title = isNewExit2 ? `${roundLabel} Alert` : 'Check-Out Alert';
+        const message = isNewExit2
+          ? `Dear Parent, ${student.name} (Roll ${student.rollNo}) has completed ${roundLabel} at ${currentExitTime}${sessionCtx}${durationStr}.`
+          : `Dear Parent, ${student.name} (Roll ${student.rollNo}) has checked OUT at ${currentExitTime}${sessionCtx}${durationStr}.`;
         
         const notifExit = await Notification.create({
           instituteId: resolvedInstId,
@@ -3009,7 +3040,9 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
             type: 'OUT',
             sessionName: record.sessionName,
             sessionId: record.sessionId,
-            detail: `${exitTime}${sessionCtx}${durationStr}`
+            detail: `${currentExitTime}${sessionCtx}${durationStr}`,
+            round,
+            roundLabel
           }).catch(err => console.error('Failed to send exit WhatsApp alert:', err.message));
         }
       }

@@ -398,16 +398,24 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       record.status = 'present';
     }
 
-    // Auto-match session based on punch time
-    if (record.entryTime && record.entryTime !== '--' && !record.sessionName) {
+    // Auto-match session dynamically based on current punch time
+    if (formattedTime) {
       try {
         const sessions = await Session.find({ isDeleted: { $ne: true }, instituteId: resolvedInstituteId });
-        const matchedSess = resolveSessionForStudent(record.entryTime, student, sessions);
+        const matchedSess = resolveSessionForStudent(formattedTime, student, sessions);
         if (matchedSess) {
           record.sessionName = matchedSess.name;
           record.sessionId = matchedSess.id || matchedSess._id;
+        } else if (!record.sessionName && record.entryTime && record.entryTime !== '--') {
+          const entrySess = resolveSessionForStudent(record.entryTime, student, sessions);
+          if (entrySess) {
+            record.sessionName = entrySess.name;
+            record.sessionId = entrySess.id || entrySess._id;
+          }
         }
-      } catch (sessErr) {}
+      } catch (sessErr) {
+        console.warn('[BiometricService] Session match error:', sessErr.message);
+      }
     }
 
     // Calculate duration in minutes if both entry and exit are recorded

@@ -616,12 +616,30 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
         record.entryTime2 = formattedTime;
         record.exitTime2 = '--';
       }
+
+      // Auto-resolve active academic session specifically for this IN punch time
+      let punchSessionName = null;
+      let punchSessionId = null;
+      try {
+        const queryInst = resolvedInstituteId ? { instituteId: resolvedInstituteId } : {};
+        const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
+        const matchedSess = resolveSessionForStudent(formattedTime, student, sessions);
+        if (matchedSess) {
+          punchSessionName = matchedSess.name;
+          punchSessionId = matchedSess.id || matchedSess._id;
+          record.sessionName = matchedSess.name;
+          record.sessionId = punchSessionId;
+        }
+      } catch (sessErr) {
+        console.warn('[Biometric] Session match error on IN punch:', sessErr.message);
+      }
+
       record.punches.push({
         type: 'IN',
         time: formattedTime,
         round,
         label: roundLabel,
-        sessionName: record.sessionName || null,
+        sessionName: punchSessionName || record.sessionName || null,
         deviceSN: deviceSN || 'Biometric Scanner',
         timestamp: new Date()
       });
@@ -668,12 +686,32 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       } else if (round === 2) {
         record.exitTime2 = formattedTime;
       }
+
+      // For OUT punch: inherit corresponding round's IN session or resolve dynamically for punch time
+      let punchSessionName = (lastPunch && lastPunch.round === round && lastPunch.sessionName) ? lastPunch.sessionName : null;
+      let punchSessionId = record.sessionId;
+      if (!punchSessionName) {
+        try {
+          const queryInst = resolvedInstituteId ? { instituteId: resolvedInstituteId } : {};
+          const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
+          const matchedSess = resolveSessionForStudent(formattedTime, student, sessions);
+          if (matchedSess) {
+            punchSessionName = matchedSess.name;
+            punchSessionId = matchedSess.id || matchedSess._id;
+          }
+        } catch (_) {}
+      }
+      if (punchSessionName) {
+        record.sessionName = punchSessionName;
+        record.sessionId = punchSessionId;
+      }
+
       record.punches.push({
         type: 'OUT',
         time: formattedTime,
         round,
         label: roundLabel,
-        sessionName: record.sessionName || null,
+        sessionName: punchSessionName || record.sessionName || null,
         deviceSN: deviceSN || 'Biometric Scanner',
         timestamp: new Date()
       });
@@ -694,34 +732,28 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     } catch (durErr) {}
   }
 
-  // Auto-match session based on punch time using central robust session resolver
-  if (record.entryTime && record.entryTime !== '--') {
-    if (!record.sessionName) {
-      try {
-        const queryInst = resolvedInstituteId ? { instituteId: resolvedInstituteId } : {};
-        const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
-        const matchedSess = resolveSessionForStudent(record.entryTime, student, sessions);
-        if (matchedSess) {
-          record.sessionName = matchedSess.name;
-          record.sessionId = matchedSess.id || matchedSess._id;
-        }
-      } catch (sessErr) {
-        console.warn('[Biometric] Session match error:', sessErr.message);
-      }
-    } else if (record.sessionName && student) {
-      // 🛡️ CRITICAL GUARD: Validate that the sessionName does NOT violate batch/class exclusions
-      try {
-        const queryInst = resolvedInstituteId ? { instituteId: resolvedInstituteId } : {};
-        const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
-        const matchedSess = sessions.find(s => s.name === record.sessionName);
-        if (matchedSess) {
-          const isAllowed = resolveSessionForStudent(record.entryTime, student, [matchedSess]);
+  // Auto-match or validate session based on punch time using central robust session resolver
+  if (formattedTime) {
+    try {
+      const queryInst = resolvedInstituteId ? { instituteId: resolvedInstituteId } : {};
+      const sessions = await Session.find({ isDeleted: { $ne: true }, ...queryInst });
+      const matchedSess = resolveSessionForStudent(formattedTime, student, sessions);
+      if (matchedSess) {
+        record.sessionName = matchedSess.name;
+        record.sessionId = matchedSess.id || matchedSess._id;
+      } else if (record.sessionName && student) {
+        // 🛡️ CRITICAL GUARD: Validate that the sessionName does NOT violate batch/class exclusions
+        const existingSess = sessions.find(s => s.name === record.sessionName);
+        if (existingSess) {
+          const isAllowed = resolveSessionForStudent(formattedTime, student, [existingSess]);
           if (!isAllowed) {
             record.sessionName = null;
             record.sessionId = null;
           }
         }
-      } catch (_) {}
+      }
+    } catch (sessErr) {
+      console.warn('[Biometric] Session match error:', sessErr.message);
     }
   }
 
@@ -739,8 +771,11 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 
     const formattedDuration = formatDurationHuman(record.durationMinutes);
     const durationStr = formattedDuration ? ` (Duration: ${formattedDuration})` : '';
-    const sessionCtx = record.sessionName 
-      ? (effectiveType === 'OUT' ? ` after ${record.sessionName}` : ` for ${record.sessionName}`)
+    const activePunchSession = (record.punches && record.punches.length > 0 && record.punches[record.punches.length - 1].sessionName)
+      ? record.punches[record.punches.length - 1].sessionName
+      : (record.sessionName || null);
+    const sessionCtx = activePunchSession 
+      ? (effectiveType === 'OUT' ? ` after ${activePunchSession}` : ` for ${activePunchSession}`)
       : '';
 
     const notifMsg = round > 1
@@ -775,7 +810,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
           studentName: student.name,
           parentName: student.parentName,
           type: effectiveType,
-          sessionName: record.sessionName,
+          sessionName: activePunchSession,
           sessionId: record.sessionId,
           detail: `${formattedTime}${sessionCtx}${effectiveType === 'OUT' ? durationStr : ''}`,
           round,
@@ -798,7 +833,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       roundLabel,
       time: formattedTime,
       date: todayStr,
-      session: record.sessionName || 'General Session',
+      session: activePunchSession || record.sessionName || 'General Session',
       deviceSN: deviceSN || 'Biomax Terminal',
       timestamp: new Date().toISOString()
     };

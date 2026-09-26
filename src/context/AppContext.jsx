@@ -546,7 +546,7 @@ export function AppProvider({ children }) {
         entryTime: existing?.entryTime || currentTime,
         exitTime: existing ? existing.exitTime : null,
         ...(isSecondEntry ? { entryTime2: currentTime, exitTime2: null } : {}),
-        sessionName: customSessionName || existing?.sessionName || null,
+        sessionName: customSessionName || (isSecondEntry ? null : (existing?.sessionName || null)),
         smsSent: true,
       };
     } else {
@@ -562,7 +562,7 @@ export function AppProvider({ children }) {
       updatedRecord = {
         ...existing,
         ...(isSecondExit ? { exitTime2: currentTime } : { exitTime: currentTime }),
-        sessionName: existing?.sessionName || customSessionName || null
+        sessionName: customSessionName || (isSecondExit ? null : (existing?.sessionName || null))
       };
     }
 
