@@ -4,28 +4,59 @@ import idLogo from '../assets/id-logo.png';
 import { getInitials } from '../data/sampleData';
 
 /**
- * Career Xone - Official Staff & Employee ID Card Component
- * Standard PVC Card Size (260px x 390px) or Compact A4 Slot (230px x 355px)
- * 
- * @param {Object} props
- * @param {Object} props.staff - Employee / Staff data object
- * @param {'front'|'back'} [props.side='front'] - Front or Back of ID Card
- * @param {boolean} [props.isCompact=false] - Compact mode for 8-card A4 sheets
+ * Career Xone - Official Staff & Faculty ID Card Component
+ * Fully Responsive: Dynamically scales all inner elements (Logo, Photo, Table, QR, Footer)
+ * so content NEVER clips, overflows, or cuts off regardless of custom width/height.
  */
 export default function StaffIdCard({
   staff,
   side = 'front',
-  isCompact = false
+  isCompact = false,
+  customWidth,
+  customHeight,
+  scale = 1
 }) {
   if (!staff) return null;
 
-  const cardWidth = isCompact ? '230px' : '260px';
-  const cardHeight = isCompact ? '355px' : '390px';
-  const staffId = staff.staffId || staff.id || 'STAFF';
+  const defaultW = isCompact ? 210 : 260;
+  const defaultH = isCompact ? 320 : 390;
+
+  const targetWidthNum = customWidth ? parseFloat(customWidth) : Math.round(defaultW * (scale || 1));
+  const targetHeightNum = customHeight ? parseFloat(customHeight) : Math.round(defaultH * (scale || 1));
+
+  const cardWidth = `${targetWidthNum}px`;
+  const cardHeight = `${targetHeightNum}px`;
+
+  const h = targetHeightNum;
+  const isSmall = h < 345 || isCompact;
+  const isMini = h < 295;
+
+  // Responsive scaling calculations based on height so all content fits perfectly
+  const headerHeight = isMini ? 36 : (isSmall ? (h < 325 ? 42 : 48) : 62);
+  const photoSize = isMini ? 46 : (isSmall ? (h < 325 ? 56 : 64) : 85);
+  const photoW = photoSize;
+  const photoH = Math.round(photoSize * 1.08);
+  const initialsFontSize = isMini ? '0.95rem' : (isSmall ? '1.15rem' : '1.55rem');
+  const rollTagFontSize = isMini ? '0.36rem' : (isSmall ? '0.40rem' : '0.48rem');
+  const nameFontSize = isMini ? '0.62rem' : (isSmall ? (h < 325 ? '0.68rem' : '0.74rem') : '0.86rem');
+  const badgeFontSize = isMini ? '0.38rem' : (isSmall ? '0.42rem' : '0.50rem');
+  const tableFontSize = isMini ? '0.40rem' : (isSmall ? (h < 325 ? '0.46rem' : '0.50rem') : '0.56rem');
+  const idValueSize = isMini ? '0.40rem' : (isSmall ? (h < 325 ? '0.46rem' : '0.50rem') : '0.54rem');
+  const tablePadding = isMini ? '1px 4px 1.5px' : (isSmall ? (h < 325 ? '1.5px 5px 2px' : '2px 6px 3px') : '2.5px 8px 4px');
+  const qrBoxSize = isMini ? 32 : (isSmall ? (h < 325 ? 40 : 48) : 66);
+  const footerHeight = isMini ? 15 : (isSmall ? (h < 325 ? 17 : 19) : 23);
+  const footerFontSize = isMini ? '0.42rem' : (isSmall ? '0.48rem' : '0.58rem');
+
+  const rawId = staff.staffId || staff.id || 'STAFF';
+  const staffId = String(rawId).replace(/^#+/, '').replace(/^STAFF_/, '');
   const designation = staff.designation || 'Staff / Faculty';
   const department = staff.department || 'General';
   const contact = staff.phone || 'N/A';
   const email = staff.email || '';
+
+  const photoSrc = (typeof staff.photo === 'string' && staff.photo.trim().length > 10)
+    ? staff.photo
+    : ((typeof staff.photoUrl === 'string' && staff.photoUrl.trim().length > 10) ? staff.photoUrl : null);
 
   // ============================================================================
   // SIDE 1: FRONT SIDE
@@ -39,13 +70,13 @@ export default function StaffIdCard({
           height: cardHeight,
           boxSizing: 'border-box',
           background: '#ffffff',
-          borderRadius: '14px',
+          borderRadius: isSmall ? '10px' : '14px',
           boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          border: '2px solid #0f766e',
+          border: '2px solid #ff0000',
           position: 'relative',
           fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
         }}
@@ -54,13 +85,13 @@ export default function StaffIdCard({
         <div
           style={{
             width: '100%',
-            height: isCompact ? '60px' : '68px',
+            height: `${headerHeight}px`,
             background: '#ffffff',
-            borderBottom: '2px solid #0f766e',
+            borderBottom: '2px solid #ff0000',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '4px 8px',
+            padding: '2px 6px',
             position: 'relative',
             flexShrink: 0
           }}
@@ -84,22 +115,22 @@ export default function StaffIdCard({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            marginTop: isCompact ? '1px' : '2px',
+            marginTop: isMini ? '2px' : (isSmall ? '3px' : '5px'),
             position: 'relative',
             flexShrink: 0
           }}
         >
-          {staff.photo ? (
+          {photoSrc ? (
             <img
-              src={staff.photo}
+              src={photoSrc}
               alt={staff.name}
               style={{
-                width: isCompact ? '68px' : '76px',
-                height: isCompact ? '72px' : '80px',
-                borderRadius: '10px',
+                width: `${photoW}px`,
+                height: `${photoH}px`,
+                borderRadius: '8px',
                 objectFit: 'cover',
-                border: '2px solid #0d9488',
-                boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)',
+                border: '1.5px solid #f59e0b',
+                boxShadow: '0 3px 8px rgba(255, 0, 0, 0.20)',
                 background: '#ffffff',
                 display: 'block'
               }}
@@ -107,21 +138,20 @@ export default function StaffIdCard({
           ) : (
             <div
               style={{
-                width: isCompact ? '68px' : '76px',
-                height: isCompact ? '72px' : '80px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #134e4a 0%, #0f766e 100%)',
+                width: `${photoW}px`,
+                height: `${photoH}px`,
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #cc0000 0%, #ff0000 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                border: '2px solid #14b8a6',
-                boxShadow: '0 4px 12px rgba(15, 118, 110, 0.25)',
+                border: '1.5px solid #f59e0b',
+                boxShadow: '0 3px 8px rgba(255, 0, 0, 0.20)',
                 color: '#ffffff',
-                fontSize: isCompact ? '1.30rem' : '1.50rem',
+                fontSize: initialsFontSize,
                 fontWeight: 800,
-                letterSpacing: '2px',
-                textIndent: '2px',
+                letterSpacing: '1px',
                 lineHeight: 1
               }}
             >
@@ -129,22 +159,22 @@ export default function StaffIdCard({
             </div>
           )}
 
-          {/* Teal / Emerald Staff Pill */}
+          {/* Gold Staff ID Tag */}
           <div
             className="id-card-roll-tag"
             style={{
-              background: '#0d9488',
-              color: '#ffffff',
-              fontSize: isCompact ? '0.44rem' : '0.48rem',
+              background: '#f59e0b',
+              color: '#0f172a',
+              fontSize: rollTagFontSize,
               fontWeight: 900,
-              padding: '0.5px 8px 2px',
+              padding: '0.5px 6px 1px',
               borderRadius: '99px',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.20)',
-              marginTop: '-6px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.18)',
+              marginTop: '-5px',
               zIndex: 5,
-              letterSpacing: '0.5px',
+              letterSpacing: '0.4px',
               whiteSpace: 'nowrap',
-              lineHeight: '12px'
+              lineHeight: '10px'
             }}
           >
             STAFF ID: {staffId}
@@ -154,126 +184,132 @@ export default function StaffIdCard({
         {/* Card Body Details */}
         <div
           style={{
-            padding: `0 ${isCompact ? '8px' : '10px'}`,
+            padding: `0 ${isSmall ? '6px' : '10px'}`,
             textAlign: 'center',
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-evenly'
+            justifyContent: 'space-evenly',
+            minHeight: 0
           }}
         >
-          {/* Employee Name */}
-          <h3
-            className="id-card-name"
-            style={{
-              margin: '1px 0',
-              fontSize: isCompact ? '0.76rem' : '0.84rem',
-              color: '#0f172a',
-              fontWeight: 900,
-              lineHeight: 1.15,
-              textTransform: 'uppercase',
-              letterSpacing: '0.2px'
-            }}
-          >
-            {staff.name}
-          </h3>
-
-          {/* Designation Badge */}
-          <div style={{ textAlign: 'center', margin: '1px 0' }}>
-            <span
-              className="id-card-batch-badge"
+          {/* Employee Name & Designation Badge in a tight cohesive block */}
+          <div style={{ margin: '1px 0' }}>
+            <h3
+              className="id-card-name"
               style={{
-                display: 'inline-block',
-                background: 'linear-gradient(90deg, #115e59, #0f766e)',
-                color: '#ffffff',
-                fontSize: isCompact ? '0.46rem' : '0.52rem',
-                fontWeight: 800,
-                padding: '1px 10px 3px',
-                borderRadius: '4px',
-                letterSpacing: '0.4px',
-                lineHeight: '12px',
-                boxShadow: '0 2px 6px rgba(15, 118, 110, 0.2)'
+                margin: '0 0 2px 0',
+                fontSize: nameFontSize,
+                color: '#dc2626',
+                fontWeight: 900,
+                lineHeight: 1.15,
+                textTransform: 'uppercase',
+                letterSpacing: '0.2px'
               }}
             >
-              {designation.toUpperCase()}
-            </span>
+              {staff.name}
+            </h3>
+
+            <div style={{ textAlign: 'center', margin: '2px 0 0' }}>
+              <span
+                className="id-card-batch-badge"
+                style={{
+                  display: 'inline-block',
+                  background: 'linear-gradient(90deg, #b91c1c, #ff0000)',
+                  color: '#ffffff',
+                  fontSize: badgeFontSize,
+                  fontWeight: 800,
+                  padding: '0.5px 8px 1.5px',
+                  borderRadius: '3px',
+                  letterSpacing: '0.3px',
+                  lineHeight: '11px',
+                  boxShadow: '0 2px 4px rgba(255, 0, 0, 0.20)'
+                }}
+              >
+                {designation.toUpperCase()}
+              </span>
+            </div>
           </div>
 
-          {/* Info Table */}
+          {/* Info Table (3 Essential Rows: Staff ID, Department, Contact in Black) */}
           <div
             className="id-card-info-table"
             style={{
-              background: '#f0fdfa',
-              borderRadius: '6px',
-              border: '1px solid #99f6e4',
-              padding: isCompact ? '2px 6px 4px' : '2.5px 8px 5px',
+              background: '#f8fafc',
+              borderRadius: '5px',
+              border: '1px solid #e2e8f0',
+              padding: tablePadding,
               textAlign: 'left',
-              fontSize: isCompact ? '0.52rem' : '0.58rem',
+              fontSize: tableFontSize,
               color: '#0f172a',
-              lineHeight: 1.34,
-              boxShadow: '0 1px 4px rgba(15, 118, 110, 0.06)'
+              lineHeight: 1.25,
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', padding: '0.5px 0 2.5px', borderBottom: '1px solid #ccfbf1', alignItems: 'center' }}>
-              <strong style={{ color: '#0f766e', fontWeight: 700, minWidth: isCompact ? '50px' : '58px', flexShrink: 0 }}>Department:</strong>
-              <span style={{ fontWeight: 800, textAlign: 'right', flex: 1, wordBreak: 'break-word', color: '#134e4a' }}>
-                {department}
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '3px', padding: '0.5px 0 1.5px', borderBottom: '1px solid #e2e8f0', alignItems: 'center' }}>
+              <strong style={{ color: '#0f172a', fontWeight: 800, minWidth: isSmall ? '44px' : '56px', flexShrink: 0 }}>Staff ID:</strong>
+              <span style={{ color: '#0f172a', fontWeight: 900, fontSize: idValueSize, letterSpacing: '0.3px', textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>
+                {staffId}
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', padding: '0.5px 0 2.5px', borderBottom: '1px solid #ccfbf1', alignItems: 'center' }}>
-              <strong style={{ color: '#0f766e', fontWeight: 700, minWidth: isCompact ? '50px' : '58px', flexShrink: 0 }}>Contact:</strong>
-              <span style={{ fontWeight: 700, textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{contact}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '3px', padding: '0.5px 0 1.5px', borderBottom: '1px solid #e2e8f0', alignItems: 'center' }}>
+              <strong style={{ color: '#0f172a', fontWeight: 800, minWidth: isSmall ? '44px' : '56px', flexShrink: 0 }}>Department:</strong>
+              <span style={{ color: '#0f172a', fontWeight: 700, textAlign: 'right', flex: 1, wordBreak: 'break-word' }}>{department}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', padding: '0.5px 0 1.5px', alignItems: 'center' }}>
-              <strong style={{ color: '#0f766e', fontWeight: 700, minWidth: isCompact ? '50px' : '58px', flexShrink: 0 }}>Access Role:</strong>
-              <span style={{ fontWeight: 800, textAlign: 'right', flex: 1, color: '#0d9488', textTransform: 'uppercase' }}>
-                {staff.role || 'Staff Member'}
-              </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '3px', padding: '0.5px 0 1px', alignItems: 'center' }}>
+              <strong style={{ color: '#0f172a', fontWeight: 800, minWidth: isSmall ? '44px' : '56px', flexShrink: 0 }}>Contact:</strong>
+              <span style={{ color: '#0f172a', fontWeight: 700, textAlign: 'right', flex: 1 }}>{contact}</span>
             </div>
           </div>
 
-          {/* Scannable QR Code */}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '1px 0' }}>
+          {/* Scannable QR Code for Handheld 2D Gun & Camera */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0.5px 0' }}>
             <div
               style={{
                 background: '#ffffff',
-                padding: '2.5px',
-                borderRadius: '6px',
-                border: '1.5px solid #5eead4',
-                boxShadow: '0 2px 6px rgba(15, 118, 110, 0.12)',
+                padding: '1.5px',
+                borderRadius: '5px',
+                border: '1.5px solid #fca5a5',
+                boxShadow: '0 2px 4px rgba(220, 38, 38, 0.12)',
                 display: 'inline-flex'
               }}
             >
-              <QRCodeSVG value={String(staffId)} size={isCompact ? 64 : 74} level="M" />
+              <QRCodeSVG value={`STAFF_${staffId}`} size={qrBoxSize} level="M" />
             </div>
           </div>
         </div>
 
-        {/* Bottom Banner */}
+        {/* Footer Ribbon (Always Fully Visible & Anchored to Bottom) */}
         <div
+          className="id-card-footer-ribbon"
           style={{
+            boxSizing: 'border-box',
+            height: `${footerHeight}px`,
             width: '100%',
-            height: isCompact ? '20px' : '22px',
-            background: '#0f766e',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            textAlign: 'center',
+            padding: '0 6px',
+            fontSize: footerFontSize,
+            lineHeight: 1,
             color: '#ffffff',
-            fontSize: isCompact ? '0.40rem' : '0.44rem',
             fontWeight: 800,
-            letterSpacing: '0.5px',
+            letterSpacing: '0.4px',
             flexShrink: 0,
-            textTransform: 'uppercase'
+            background: 'linear-gradient(90deg, #991b1b 0%, #cc0000 50%, #ff0000 100%)',
+            borderTop: '1.5px solid #f59e0b',
+            fontFamily: "'Inter', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
           }}
         >
-          OFFICIAL EMPLOYEE &bull; CAREER XONE
+          <span>CAREER XONE • सब संभव है</span>
         </div>
       </div>
     );
   }
 
   // ============================================================================
-  // SIDE 2: BACK SIDE (TERMS & CONDITIONS, CAMPUS ADDRESS, SIGNATURE)
+  // SIDE 2: BACK SIDE (OFFICIAL RULES & VERIFIED GONDIA CAMPUS ADDRESS)
   // ============================================================================
   return (
     <div
@@ -283,167 +319,129 @@ export default function StaffIdCard({
         height: cardHeight,
         boxSizing: 'border-box',
         background: '#ffffff',
-        borderRadius: '14px',
+        borderRadius: isSmall ? '10px' : '14px',
         boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        border: '2px solid #0f766e',
+        border: '2px solid #ff0000',
         position: 'relative',
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
       }}
     >
-      {/* Top Header */}
+      {/* Back Header Strip */}
       <div
         style={{
-          width: '100%',
-          height: isCompact ? '26px' : '30px',
-          background: 'linear-gradient(135deg, #115e59 0%, #0f766e 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #991b1b 0%, #dc2626 100%)',
+          padding: isSmall ? '4px 6px' : '7px 10px',
+          textAlign: 'center',
           color: '#ffffff',
-          fontSize: isCompact ? '0.52rem' : '0.58rem',
-          fontWeight: 900,
-          letterSpacing: '0.8px',
-          textTransform: 'uppercase',
+          borderBottom: '2px solid #f59e0b',
           flexShrink: 0
         }}
       >
-        STAFF IDENTITY CARD &bull; TERMS
+        <h4 style={{ margin: 0, fontSize: isSmall ? '0.68rem' : '0.82rem', fontWeight: 900, letterSpacing: '0.4px', color: '#ffffff' }}>
+          STAFF &amp; FACULTY GUIDELINES
+        </h4>
+        <p style={{ margin: '1px 0 0', fontSize: isSmall ? '0.42rem' : '0.50rem', opacity: 0.9 }}>
+          Career Xone Code of Conduct
+        </p>
       </div>
 
-      {/* Back Content */}
+      {/* Guidelines List */}
       <div
         style={{
-          padding: isCompact ? '8px 10px' : '10px 14px',
+          padding: isSmall ? '4px 6px' : '8px 10px',
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          minHeight: 0
         }}
       >
-        {/* Guidelines List */}
-        <div>
-          <h4
-            style={{
-              margin: '0 0 4px 0',
-              fontSize: isCompact ? '0.54rem' : '0.60rem',
-              color: '#0f766e',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.4px'
-            }}
-          >
-            Employee Guidelines:
-          </h4>
-          <ol
-            style={{
-              margin: 0,
-              paddingLeft: '14px',
-              fontSize: isCompact ? '0.44rem' : '0.48rem',
-              color: '#334155',
-              lineHeight: 1.35,
-              fontWeight: 600
-            }}
-          >
-            <li style={{ marginBottom: '2px' }}>This card must be worn at all times while on the institute premises.</li>
-            <li style={{ marginBottom: '2px' }}>Check-in &amp; Check-out attendance must be scanned daily via biometric/scanner.</li>
-            <li style={{ marginBottom: '2px' }}>This card is non-transferable and remains property of Career Xone.</li>
-            <li>Loss of this card must be reported immediately to Admin Office.</li>
-          </ol>
-        </div>
-
-        {/* Institute Info Box */}
-        <div
+        <ul
           style={{
-            background: '#f0fdfa',
-            border: '1px solid #99f6e4',
-            borderRadius: '6px',
-            padding: isCompact ? '4px 6px' : '6px 8px',
-            fontSize: isCompact ? '0.44rem' : '0.48rem',
-            color: '#0f172a',
-            lineHeight: 1.3
-          }}
-        >
-          <div style={{ fontWeight: 800, color: '#0f766e', marginBottom: '2px' }}>
-            CAREER XONE ACADEMY
-          </div>
-          <div>Near Z.P. High School Ground, Main Road, Gondia - 441614</div>
-          <div style={{ marginTop: '2px', fontWeight: 700, color: '#047857' }}>
-            Support &amp; Helpline: +91 8538949912
-          </div>
-        </div>
-
-        {/* Authorized Signatory & Seal */}
-        <div
-          style={{
+            listStyle: 'none',
+            margin: 0,
+            padding: 0,
+            fontSize: isSmall ? '0.42rem' : '0.50rem',
+            color: '#1e293b',
+            lineHeight: isSmall ? 1.20 : 1.34,
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            paddingTop: '6px',
-            borderTop: '1px dashed #cbd5e1'
+            flexDirection: 'column',
+            gap: isSmall ? '1.5px' : '3px',
+            textAlign: 'left'
           }}
         >
-          <div style={{ textAlign: 'center' }}>
-            <div
-              style={{
-                width: isCompact ? '54px' : '62px',
-                height: isCompact ? '20px' : '24px',
-                border: '1px dashed #0d9488',
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: isCompact ? '0.36rem' : '0.40rem',
-                color: '#0d9488',
-                fontWeight: 800
-              }}
-            >
-              CX SEAL
-            </div>
-            <div style={{ fontSize: isCompact ? '0.38rem' : '0.42rem', color: '#64748b', marginTop: '2px', fontWeight: 700 }}>
-              Office Seal
-            </div>
-          </div>
+          <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span>Staff must carry this official identity card during working hours.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span>Check-in &amp; Check-out attendance must be scanned daily at the scanners.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span>This identity credential is strictly non-transferable and remains property of CX.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span>Adhere to professional excellence, academic discipline, and campus decorum.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span>Report loss or damage of card immediately to the administrative department.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span>If found, kindly return this card to Career Xone Institute front desk.</span>
+          </li>
+        </ul>
 
-          <div style={{ textAlign: 'center' }}>
-            <div
-              style={{
-                fontFamily: "'Brush Script MT', cursive, sans-serif",
-                fontSize: isCompact ? '0.85rem' : '0.95rem',
-                color: '#0f766e',
-                lineHeight: 1,
-                marginBottom: '2px'
-              }}
-            >
-              Authorized
-            </div>
-            <div style={{ fontSize: isCompact ? '0.38rem' : '0.42rem', color: '#334155', fontWeight: 800 }}>
-              Authorized Signatory
-            </div>
-          </div>
+        {/* Clean Institute Address & Helpline */}
+        <div
+          style={{
+            borderTop: '1px dashed #cbd5e1',
+            paddingTop: isSmall ? '3px' : '6px',
+            marginTop: '2px',
+            textAlign: 'center',
+            fontSize: isSmall ? '0.42rem' : '0.50rem',
+            color: '#334155',
+            fontWeight: 600,
+            lineHeight: 1.35,
+            width: '100%'
+          }}
+        >
+          Hadditoli Road, Near Ananya Hospital, Gondia, MH - 441601<br />
+          Mob: +91 96733 83561 / 91454 81323 • Email: cxjeeneet@gmail.com
         </div>
       </div>
 
-      {/* Bottom Footer Banner */}
+      {/* Back Footer Ribbon */}
       <div
         style={{
+          boxSizing: 'border-box',
+          height: `${footerHeight}px`,
           width: '100%',
-          height: isCompact ? '18px' : '20px',
-          background: '#0f766e',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          textAlign: 'center',
+          padding: '0 6px',
+          fontSize: footerFontSize,
+          lineHeight: 1,
           color: '#ffffff',
-          fontSize: isCompact ? '0.38rem' : '0.42rem',
           fontWeight: 800,
           letterSpacing: '0.4px',
-          flexShrink: 0
+          flexShrink: 0,
+          background: 'linear-gradient(90deg, #991b1b 0%, #cc0000 50%, #ff0000 100%)',
+          borderTop: '1.5px solid #f59e0b',
+          fontFamily: "'Inter', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
         }}
       >
-        IF FOUND, PLEASE RETURN TO INSTITUTE OFFICE
+        CAREER XONE • सब संभव है
       </div>
     </div>
   );

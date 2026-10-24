@@ -1,4 +1,4 @@
-// pdfTemplate.cjs - Career Xone ID Card PDF Generator (Supports 4 Cards & 6 Cards / Sheet)
+// pdfTemplate.cjs - Career Xone ID Card PDF Generator (Supports Custom Sizes, 4 Cards & 6 Cards / Sheet)
 const QRCode = require('qrcode');
 
 const FONT = "'Inter','Noto Sans Devanagari',-apple-system,'Segoe UI',Roboto,sans-serif";
@@ -9,7 +9,7 @@ function getInitials(name) {
 }
 
 // ─── FRONT CARD (exact px copy of StudentIdCard.jsx / StaffIdCard.jsx) ───
-function frontCardHTML(s, logoB64, qrSvg, isCompact = false) {
+function frontCardHTML(s, logoB64, qrSvg, isCompact = false, customW = null, customH = null) {
   const isStaff = !!s.isStaff;
   const name = (s.name || '—').toUpperCase();
   const roll = s.rollNo || s.id || (isStaff ? 'STAFF' : '—');
@@ -20,49 +20,57 @@ function frontCardHTML(s, logoB64, qrSvg, isCompact = false) {
   const department = s.department || s.batch || 'General';
   const designation = s.designation || s.className || 'Staff / Faculty';
 
-  const cardWidth = isCompact ? '230px' : '260px';
-  const cardHeight = isCompact ? '350px' : '390px';
-  const headerHeight = isCompact ? '58px' : '68px';
-  const photoW = isCompact ? '68px' : '76px';
-  const photoH = isCompact ? '72px' : '80px';
-  const photoInitialsSize = isCompact ? '20px' : '24px';
-  const rollFontSize = isCompact ? '7px' : '7.7px';
-  const nameFontSize = isCompact ? '12px' : '13.4px';
-  const courseFontSize = isCompact ? '7.4px' : '8.3px';
-  const tablePadding = isCompact ? '2px 6px 3.5px' : '2.5px 8px 5px';
-  const tableFontSize = isCompact ? '8.3px' : '9.3px';
-  const idColWidth = isCompact ? '50px' : '58px';
-  const idValueSize = isCompact ? '8.2px' : '9px';
-  const footerHeight = isCompact ? '21px' : '24px';
-  const footerFontSize = isCompact ? '8.8px' : '9.6px';
+  const cardHNum = customH ? (typeof customH === 'number' ? customH : parseInt(customH, 10)) : (isCompact ? 320 : 390);
+  const cardWNum = customW ? (typeof customW === 'number' ? customW : parseInt(customW, 10)) : (isCompact ? 210 : 260);
+  const isSmall = cardHNum < 345 || isCompact;
+  const isMini = cardHNum < 295;
 
-  const themeColor = isStaff ? '#0f766e' : '#2563eb';
-  const themeGradient = isStaff ? 'linear-gradient(135deg, #134e4a 0%, #0f766e 100%)' : 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)';
-  const badgeGradient = isStaff ? 'linear-gradient(90deg, #115e59, #0f766e)' : 'linear-gradient(90deg, #1e3a8a, #2563eb)';
-  const borderPill = isStaff ? '#0d9488' : '#f59e0b';
-  const tagBg = isStaff ? '#0d9488' : '#f59e0b';
-  const tagColor = isStaff ? '#ffffff' : '#0f172a';
+  const cardWidth = `${cardWNum}px`;
+  const cardHeight = `${cardHNum}px`;
+  const headerHeight = isMini ? '36px' : (isSmall ? (cardHNum < 325 ? '42px' : '48px') : '62px');
+  const photoSize = isMini ? 46 : (isSmall ? (cardHNum < 325 ? 56 : 64) : 85);
+  const photoW = `${photoSize}px`;
+  const photoH = `${Math.round(photoSize * 1.08)}px`;
+  const photoInitialsSize = isMini ? '15px' : (isSmall ? '19px' : '26px');
+  const rollFontSize = isMini ? '5.5px' : (isSmall ? '6.5px' : '7.6px');
+  const nameFontSize = isMini ? '9.2px' : (isSmall ? (cardHNum < 325 ? '10px' : '11px') : '13.2px');
+  const courseFontSize = isMini ? '6px' : (isSmall ? '6.8px' : '8px');
+  const tablePadding = isMini ? '1px 4px 1.5px' : (isSmall ? (cardHNum < 325 ? '1.5px 5px 2px' : '2px 6px 3px') : '2.5px 8px 4px');
+  const tableFontSize = isMini ? '6px' : (isSmall ? (cardHNum < 325 ? '6.8px' : '7.5px') : '8.8px');
+  const idColWidth = isMini ? '38px' : (isSmall ? (cardHNum < 325 ? '44px' : '48px') : '56px');
+  const idValueSize = isMini ? '6.2px' : (isSmall ? (cardHNum < 325 ? '7px' : '7.8px') : '9px');
+  const footerHeight = isMini ? '15px' : (isSmall ? (cardHNum < 325 ? '17px' : '19px') : '23px');
+  const footerFontSize = isMini ? '6.5px' : (isSmall ? '7.5px' : '8.8px');
+
+  // Theme & Color Palette: Staff uses Official Brand Red, Students use Royal Blue
+  const themeColor = isStaff ? '#ff0000' : '#2563eb';
+  const themeGradient = isStaff ? 'linear-gradient(135deg, #cc0000 0%, #ff0000 100%)' : 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)';
+  const badgeGradient = isStaff ? 'linear-gradient(90deg, #b91c1c, #ff0000)' : 'linear-gradient(90deg, #1e3a8a, #2563eb)';
+  const borderPill = '#f59e0b';
+  const tagBg = '#f59e0b';
+  const tagColor = '#0f172a';
   const tagLabel = isStaff ? `STAFF ID: ${roll}` : `ROLL: ${roll}`;
-  const tableBg = isStaff ? '#f0fdfa' : '#f8fafc';
-  const tableBorder = isStaff ? '#99f6e4' : '#bfdbfe';
+  const tableBg = '#f8fafc';
+  const tableBorder = isStaff ? '#e2e8f0' : '#bfdbfe';
 
   const photoHTML = s.photo
-    ? `<img src="${s.photo}" style="width:${photoW};height:${photoH};border-radius:9px;object-fit:cover;border:2px solid ${borderPill};box-shadow:0 4px 12px rgba(15,118,110,0.25);background:#fff;display:block;" />`
-    : `<div style="width:${photoW};height:${photoH};border-radius:9px;background:${themeGradient};display:flex;align-items:center;justify-content:center;text-align:center;border:2px solid ${borderPill};box-shadow:0 4px 12px rgba(15,118,110,0.25);color:#fff;font-size:${photoInitialsSize};font-weight:800;letter-spacing:2px;text-indent:2px;line-height:1;">${getInitials(s.name)}</div>`;
+    ? `<img src="${s.photo}" style="width:${photoW};height:${photoH};border-radius:9px;object-fit:cover;border:2px solid ${borderPill};box-shadow:0 4px 12px rgba(255,0,0,0.22);background:#fff;display:block;" />`
+    : `<div style="width:${photoW};height:${photoH};border-radius:9px;background:${themeGradient};display:flex;align-items:center;justify-content:center;text-align:center;border:2px solid ${borderPill};box-shadow:0 4px 12px rgba(255,0,0,0.22);color:#fff;font-size:${photoInitialsSize};font-weight:800;letter-spacing:2px;text-indent:2px;line-height:1;">${getInitials(s.name)}</div>`;
 
+  // Staff Table: Black labels and values (#0f172a), clean slate borders
   const infoTableContent = isStaff
     ? `
-      <div style="display:flex;justify-content:space-between;gap:4px;padding:0.5px 0 2px;border-bottom:1px solid #ccfbf1;align-items:center;">
-        <strong style="color:#0f766e;font-weight:700;min-width:${idColWidth};flex-shrink:0;">Department:</strong>
-        <span style="font-weight:800;color:#134e4a;text-align:right;flex:1;word-break:break-word;">${department}</span>
+      <div style="display:flex;justify-content:space-between;gap:4px;padding:0.5px 0 2px;border-bottom:1px solid #e2e8f0;align-items:center;">
+        <strong style="color:#0f172a;font-weight:800;min-width:${idColWidth};flex-shrink:0;">Staff ID:</strong>
+        <span style="font-weight:900;color:#0f172a;text-align:right;flex:1;word-break:break-word;font-size:${idValueSize};letter-spacing:0.4px;">${roll}</span>
       </div>
-      <div style="display:flex;justify-content:space-between;gap:4px;padding:0.5px 0 2px;border-bottom:1px solid #ccfbf1;align-items:center;">
-        <strong style="color:#0f766e;font-weight:700;min-width:${idColWidth};flex-shrink:0;">Contact:</strong>
-        <span style="font-weight:700;text-align:right;flex:1;word-break:break-word;">${contact}</span>
+      <div style="display:flex;justify-content:space-between;gap:4px;padding:0.5px 0 2px;border-bottom:1px solid #e2e8f0;align-items:center;">
+        <strong style="color:#0f172a;font-weight:800;min-width:${idColWidth};flex-shrink:0;">Department:</strong>
+        <span style="font-weight:700;color:#0f172a;text-align:right;flex:1;word-break:break-word;">${department}</span>
       </div>
       <div style="display:flex;justify-content:space-between;gap:4px;padding:0.5px 0 1px;align-items:center;">
-        <strong style="color:#0f766e;font-weight:700;min-width:${idColWidth};flex-shrink:0;">Access:</strong>
-        <span style="font-weight:800;color:#0d9488;text-align:right;flex:1;text-transform:uppercase;">${s.role || 'Staff'}</span>
+        <strong style="color:#0f172a;font-weight:800;min-width:${idColWidth};flex-shrink:0;">Contact:</strong>
+        <span style="font-weight:700;color:#0f172a;text-align:right;flex:1;">${contact}</span>
       </div>
     `
     : `
@@ -80,7 +88,13 @@ function frontCardHTML(s, logoB64, qrSvg, isCompact = false) {
       </div>
     `;
 
-  const footerText = isStaff ? 'OFFICIAL EMPLOYEE • CAREER XONE' : 'CAREER XONE • सब संभव है';
+  const footerText = 'CAREER XONE • सब संभव है';
+  const footerBg = isStaff
+    ? 'linear-gradient(90deg, #991b1b 0%, #cc0000 50%, #ff0000 100%)'
+    : 'linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)';
+
+  // Name color: Bold Red for staff (#dc2626) as requested
+  const nameColor = isStaff ? '#dc2626' : '#0f172a';
 
   return `
   <div style="width:${cardWidth};height:${cardHeight};box-sizing:border-box;background:#ffffff;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;border:2px solid ${themeColor};position:relative;font-family:${FONT};">
@@ -91,55 +105,65 @@ function frontCardHTML(s, logoB64, qrSvg, isCompact = false) {
     </div>
 
     <!-- Photo/Avatar + Roll/Staff Tag -->
-    <div style="display:flex;flex-direction:column;align-items:center;margin-top:1px;position:relative;flex-shrink:0;">
+    <div style="display:flex;flex-direction:column;align-items:center;margin-top:${isMini ? '2px' : (isSmall ? '3px' : '5px')};position:relative;flex-shrink:0;">
       ${photoHTML}
-      <div style="background:${tagBg};color:${tagColor};font-size:${rollFontSize};font-weight:900;padding:0.5px 8px 1.5px;border-radius:99px;box-shadow:0 2px 6px rgba(0,0,0,0.20);margin-top:-5px;z-index:5;letter-spacing:0.5px;white-space:nowrap;line-height:11px;">${tagLabel}</div>
+      <div style="background:${tagBg};color:${tagColor};font-size:${rollFontSize};font-weight:900;padding:1px 8px 1.5px;border-radius:99px;box-shadow:0 2px 6px rgba(0,0,0,0.20);margin-top:-5px;z-index:5;letter-spacing:0.5px;white-space:nowrap;line-height:11px;">${tagLabel}</div>
     </div>
 
     <!-- Body Details -->
     <div style="padding:0 ${isCompact ? '8px' : '10px'};text-align:center;flex:1;display:flex;flex-direction:column;justify-content:space-evenly;">
 
-      <h3 style="margin:1px 0;font-size:${nameFontSize};color:#0f172a;font-weight:900;line-height:1.15;text-transform:uppercase;letter-spacing:0.2px;">${name}</h3>
+      <div style="margin:1px 0;">
+        <h3 style="margin:0 0 2px 0;font-size:${nameFontSize};color:${nameColor};font-weight:900;line-height:1.15;text-transform:uppercase;letter-spacing:0.2px;">${name}</h3>
 
-      <div style="text-align:center;margin:1px 0;">
-        <span style="display:inline-block;background:${badgeGradient};color:#ffffff;font-size:${courseFontSize};font-weight:800;padding:1px 9px 2.5px;border-radius:4px;letter-spacing:0.4px;line-height:11px;box-shadow:0 2px 6px rgba(15,118,110,0.2);">${isStaff ? designation.toUpperCase() : course}</span>
+        <div style="text-align:center;margin:2px 0 0;">
+          <span style="display:inline-block;background:${badgeGradient};color:#ffffff;font-size:${courseFontSize};font-weight:800;padding:1px 9px 2.5px;border-radius:4px;letter-spacing:0.4px;line-height:11px;box-shadow:0 2px 6px rgba(0,0,0,0.18);">${isStaff ? designation.toUpperCase() : course}</span>
+        </div>
       </div>
 
       <!-- Info Table -->
-      <div style="background:${tableBg};border-radius:6px;border:1px solid ${tableBorder};padding:${tablePadding};text-align:left;font-size:${tableFontSize};color:#0f172a;line-height:1.32;box-shadow:0 1px 4px rgba(15,118,110,0.06);">
+      <div style="background:${tableBg};border-radius:6px;border:1px solid ${tableBorder};padding:${tablePadding};text-align:left;font-size:${tableFontSize};color:#0f172a;line-height:1.32;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
         ${infoTableContent}
       </div>
 
       <!-- QR Code -->
       <div style="display:flex;justify-content:center;align-items:center;margin:1px 0;">
-        <div style="background:#ffffff;padding:2px;border-radius:5px;border:1.5px solid ${isStaff ? '#5eead4' : '#93c5fd'};box-shadow:0 2px 6px rgba(15,118,110,0.12);display:inline-flex;">${qrSvg}</div>
+        <div style="background:#ffffff;padding:2px;border-radius:5px;border:1.5px solid ${isStaff ? '#fca5a5' : '#93c5fd'};box-shadow:0 2px 6px rgba(0,0,0,0.08);display:inline-flex;">${qrSvg}</div>
       </div>
     </div>
 
     <!-- Footer Ribbon -->
-    <div style="box-sizing:border-box;height:${footerHeight};width:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8px 1px;font-size:${footerFontSize};line-height:1;color:#ffffff;font-weight:800;letter-spacing:0.5px;flex-shrink:0;background:${isStaff ? '#0f766e' : 'linear-gradient(90deg,#1e3a8a 0%,#2563eb 100%)'};border-top:1.5px solid ${borderPill};">${footerText}</div>
+    <div style="box-sizing:border-box;height:${footerHeight};width:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8px 1px;font-size:${footerFontSize};line-height:1;color:#ffffff;font-weight:800;letter-spacing:0.5px;flex-shrink:0;background:${footerBg};border-top:1.5px solid ${borderPill};">${footerText}</div>
   </div>`;
 }
 
 // ─── BACK CARD (exact px copy with compact toggle) ───────────
-function backCardHTML(isCompact = false, isStaff = false) {
-  const cardWidth = isCompact ? '230px' : '260px';
-  const cardHeight = isCompact ? '350px' : '390px';
-  const headerPadding = isCompact ? '5px 8px' : '7px 10px';
-  const titleSize = isCompact ? '11.5px' : '13.1px';
-  const subtitleSize = isCompact ? '7px' : '8px';
-  const bodyPadding = isCompact ? '6px 8px' : '8px 10px';
-  const rulesFontSize = isCompact ? '7.3px' : '8.3px';
-  const rulesGap = isCompact ? '2px' : '3px';
-  const addressFontSize = isCompact ? '7.2px' : '8.2px';
-  const addressPaddingTop = isCompact ? '4px' : '6px';
-  const footerHeight = isCompact ? '21px' : '25px';
-  const footerFontSize = isCompact ? '8.8px' : '9.9px';
+function backCardHTML(isCompact = false, isStaff = false, customW = null, customH = null) {
+  const cardWNum = customW ? (typeof customW === 'number' ? customW : parseInt(customW, 10)) : (isCompact ? 210 : 260);
+  const cardHNum = customH ? (typeof customH === 'number' ? customH : parseInt(customH, 10)) : (isCompact ? 320 : 390);
+  const isSmall = cardHNum < 345 || isCompact;
+  const isMini = cardHNum < 295;
 
-  const themeColor = isStaff ? '#0f766e' : '#2563eb';
-  const themeHeader = isStaff ? 'linear-gradient(135deg,#115e59 0%,#0f766e 100%)' : 'linear-gradient(135deg,#1e3a8a 0%,#2563eb 100%)';
-  const borderPill = isStaff ? '#0d9488' : '#f59e0b';
-  const bulletColor = isStaff ? '#0d9488' : '#2563eb';
+  const cardWidth = `${cardWNum}px`;
+  const cardHeight = `${cardHNum}px`;
+  const headerPadding = isMini ? '3px 4px' : (isSmall ? '4px 6px' : '7px 10px');
+  const titleSize = isMini ? '8.8px' : (isSmall ? '10px' : '12.5px');
+  const subtitleSize = isMini ? '5.5px' : (isSmall ? '6.5px' : '7.8px');
+  const bodyPadding = isMini ? '3px 4px' : (isSmall ? '4px 6px' : '8px 10px');
+  const rulesFontSize = isMini ? '5.8px' : (isSmall ? (cardHNum < 325 ? '6.4px' : '7px') : '8px');
+  const rulesGap = isMini ? '1px' : (isSmall ? '1.5px' : '3px');
+  const addressFontSize = isMini ? '5.6px' : (isSmall ? (cardHNum < 325 ? '6.2px' : '6.8px') : '8px');
+  const addressPaddingTop = isMini ? '2px' : (isSmall ? '3px' : '5px');
+  const footerHeight = isMini ? '15px' : (isSmall ? (cardHNum < 325 ? '17px' : '19px') : '23px');
+  const footerFontSize = isMini ? '6.5px' : (isSmall ? '7.5px' : '8.8px');
+
+  const themeColor = isStaff ? '#ff0000' : '#2563eb';
+  const themeHeader = isStaff ? 'linear-gradient(135deg, #991b1b 0%, #dc2626 100%)' : 'linear-gradient(135deg,#1e3a8a 0%,#2563eb 100%)';
+  const borderPill = '#f59e0b';
+  const bulletColor = isStaff ? '#dc2626' : '#2563eb';
+  const footerBg = isStaff
+    ? 'linear-gradient(90deg, #991b1b 0%, #cc0000 50%, #ff0000 100%)'
+    : 'linear-gradient(90deg,#1e3a8a 0%,#2563eb 100%)';
 
   const rules = isStaff ? [
     'Employees must carry their ID card daily on campus premises.',
@@ -166,7 +190,7 @@ function backCardHTML(isCompact = false, isStaff = false) {
     </li>`
   ).join('');
 
-  const footerText = isStaff ? 'OFFICIAL EMPLOYEE • CAREER XONE' : 'CAREER XONE • सब संभव है';
+  const footerText = 'CAREER XONE • सब संभव है';
 
   return `
   <div style="width:${cardWidth};height:${cardHeight};box-sizing:border-box;background:#ffffff;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;border:2px solid ${themeColor};position:relative;font-family:${FONT};">
@@ -186,38 +210,65 @@ function backCardHTML(isCompact = false, isStaff = false) {
       </div>
     </div>
 
-    <div style="box-sizing:border-box;height:${footerHeight};width:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8px;font-size:${footerFontSize};line-height:1;color:#ffffff;font-weight:800;letter-spacing:0.5px;flex-shrink:0;background:${isStaff ? '#0f766e' : 'linear-gradient(90deg,#1e3a8a 0%,#2563eb 100%)'};border-top:1.5px solid ${borderPill};">${footerText}</div>
+    <div style="box-sizing:border-box;height:${footerHeight};width:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8px;font-size:${footerFontSize};line-height:1;color:#ffffff;font-weight:800;letter-spacing:0.5px;flex-shrink:0;background:${footerBg};border-top:1.5px solid ${borderPill};">${footerText}</div>
   </div>`;
 }
 
-// ─── MAIN GENERATOR (Supports both 4-cards and 6-cards per A4 sheet) ─────────
-async function generateIdCardPdfHtml(students, logoBase64, fontCss, mode = 'duplex', cardsPerPage = 4) {
+// ─── MAIN GENERATOR (Supports custom sizes, 4-cards & 6-cards per A4 sheet) ─────────
+async function generateIdCardPdfHtml(students, logoBase64, fontCss, mode = 'duplex', cardsPerPage = 4, customWidth = null, customHeight = null) {
   const CARDS_PER_PAGE = Number(cardsPerPage) === 6 ? 6 : 4;
   const isCompact = CARDS_PER_PAGE === 6;
-  const totalPages = Math.ceil(students.length / CARDS_PER_PAGE);
+
+  // Auto-fill slots if list has fewer items than cardsPerPage so sheet is fully filled
+  let printStudents = Array.isArray(students) ? [...students] : [];
+  if (printStudents.length > 0 && printStudents.length < CARDS_PER_PAGE) {
+    let repIdx = 0;
+    while (printStudents.length < CARDS_PER_PAGE) {
+      printStudents.push(students[repIdx % students.length]);
+      repIdx++;
+    }
+  }
+
+  // Determine effective card width and height (respecting user custom setting)
+  let cardW = customWidth ? (typeof customWidth === 'number' ? customWidth : parseInt(customWidth, 10)) : (isCompact ? 210 : 260);
+  let cardH = customHeight ? (typeof customHeight === 'number' ? customHeight : parseInt(customHeight, 10)) : (isCompact ? 320 : 390);
+
+  // Bounds check for A4 page fit (210mm x 297mm ≈ 794px x 1123px)
+  if (isCompact) {
+    cardW = Math.min(225, Math.max(160, cardW));
+    cardH = Math.min(330, Math.max(240, cardH));
+  } else {
+    cardW = Math.min(290, Math.max(180, cardW));
+    cardH = Math.min(430, Math.max(260, cardH));
+  }
+
+  const cardWidthStr = `${cardW}px`;
+  const cardHeightStr = `${cardH}px`;
+  const qrSize = cardH < 295 ? 34 : (cardH < 325 ? 40 : (cardH < 345 || isCompact ? 46 : 64));
+
+  // Horizontal and vertical grid gap
+  const horizGap = Math.max(8, Math.min(60, Math.round((734 - cardW * 2) / 2)));
+  const vertGap = isCompact ? Math.max(6, Math.min(18, Math.round(cardH * 0.032))) : Math.max(12, Math.min(30, Math.round(cardH * 0.045)));
+
+  const sheetStyle = `page-break-after:always;break-after:page;width:210mm;height:297mm;max-height:297mm;box-sizing:border-box;display:grid;grid-template-columns:repeat(2, ${cardWidthStr});gap:${vertGap}px ${horizGap}px;justify-content:center;align-content:center;padding:4mm 4mm;overflow:hidden;`;
+
+  const totalPages = Math.ceil(printStudents.length / CARDS_PER_PAGE) || 1;
   const allPages = [];
 
-  // Layout Styles:
-  // 4 Cards: 2 cols x 260px, gap 24px 36px, centered
-  // 6 Cards: 2 cols x 230px, gap 8px 30px, centered on 297mm height
-  const sheetStyle = isCompact
-    ? `page-break-after:always;break-after:page;width:210mm;height:297mm;max-height:297mm;box-sizing:border-box;display:grid;grid-template-columns:repeat(2,230px);gap:8px 30px;justify-content:center;align-content:center;padding:4mm 6mm;overflow:hidden;`
-    : `page-break-after:always;break-after:page;width:210mm;height:297mm;max-height:297mm;box-sizing:border-box;display:grid;grid-template-columns:repeat(2,260px);gap:24px 36px;justify-content:center;align-content:center;padding:10mm 8mm;overflow:hidden;`;
-
-  const cardWidth = isCompact ? '230px' : '260px';
-  const cardHeight = isCompact ? '350px' : '390px';
-  const qrSize = isCompact ? 60 : 74;
-
-  // Cache generated QR codes to avoid redundant SVG generation for large sets
+  // Cache generated QR codes
   const qrCache = new Map();
 
   for (let p = 0; p < totalPages; p++) {
-    const batch = students.slice(p * CARDS_PER_PAGE, (p + 1) * CARDS_PER_PAGE);
+    const batch = printStudents.slice(p * CARDS_PER_PAGE, (p + 1) * CARDS_PER_PAGE);
 
     // ── FRONT PAGE ──
     const frontCardList = [];
     for (let i = 0; i < CARDS_PER_PAGE; i++) {
-      const s = batch[i];
+      let s = batch[i];
+      // If still missing, fill from available students
+      if (!s && printStudents.length > 0) {
+        s = printStudents[i % printStudents.length];
+      }
       if (s) {
         const qrKey = String(s.rollNo || s.id || '');
         let qrSvg = qrCache.get(qrKey);
@@ -233,9 +284,9 @@ async function generateIdCardPdfHtml(students, logoBase64, fontCss, mode = 'dupl
             qrSvg = `<div style="width:${qrSize}px;height:${qrSize}px;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:8px;">QR</div>`;
           }
         }
-        frontCardList.push(frontCardHTML(s, logoBase64, qrSvg, isCompact));
+        frontCardList.push(frontCardHTML(s, logoBase64, qrSvg, isCompact, cardW, cardH));
       } else {
-        frontCardList.push(`<div style="width:${cardWidth};height:${cardHeight};visibility:hidden;"></div>`);
+        frontCardList.push(`<div style="width:${cardWidthStr};height:${cardHeightStr};visibility:hidden;"></div>`);
       }
     }
 
@@ -247,11 +298,14 @@ async function generateIdCardPdfHtml(students, logoBase64, fontCss, mode = 'dupl
     if (mode === 'duplex' || mode === 'back') {
       const backCardList = [];
       for (let i = 0; i < CARDS_PER_PAGE; i++) {
-        const s = batch[i];
+        let s = batch[i];
+        if (!s && printStudents.length > 0) {
+          s = printStudents[i % printStudents.length];
+        }
         if (s) {
-          backCardList.push(`<div style="transform:scaleX(-1);">${backCardHTML(isCompact, !!s.isStaff)}</div>`);
+          backCardList.push(`<div style="transform:scaleX(-1);">${backCardHTML(isCompact, !!s.isStaff, cardW, cardH)}</div>`);
         } else {
-          backCardList.push(`<div style="width:${cardWidth};height:${cardHeight};visibility:hidden;"></div>`);
+          backCardList.push(`<div style="width:${cardWidthStr};height:${cardHeightStr};visibility:hidden;"></div>`);
         }
       }
       allPages.push(`<div style="${sheetStyle}transform:scaleX(-1);">${backCardList.join('')}</div>`);

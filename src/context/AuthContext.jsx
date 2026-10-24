@@ -7,13 +7,53 @@ export const AuthContext = createContext(null);
 // Re-export useAuth so existing imports from './AuthContext' keep working
 export { useAuth } from './useAuth';
 
+function isTokenValid(token) {
+  if (!token || typeof token !== 'string') return false;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    const payload = JSON.parse(atob(parts[1]));
+    if (payload.exp && Date.now() >= payload.exp * 1000) {
+      return false;
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(localStorage.getItem('token') || null);
-  const [user, setUser] = useState(localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!token);
+  const [token, setToken] = useState(() => {
+    const stored = localStorage.getItem('token');
+    if (stored && isTokenValid(stored)) return stored;
+    if (stored) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+    return null;
+  });
+  const [user, setUser] = useState(() => {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken || !isTokenValid(storedToken)) return null;
+    return localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!token && isTokenValid(token));
 
   useEffect(() => {
-    if (token) {
+    const handleExpired = () => {
+      setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      toast.error('Login session expired. Please log in again.', { id: 'session-expired' });
+    };
+    window.addEventListener('auth-session-expired', handleExpired);
+    return () => window.removeEventListener('auth-session-expired', handleExpired);
+  }, []);
+
+  useEffect(() => {
+    if (token && isTokenValid(token)) {
       localStorage.setItem('token', token);
       setIsAuthenticated(true);
     } else {

@@ -133,7 +133,7 @@ async function syncToCloud() {
 
     const allTombstones = [...cloudTombstones, ...localTombstones];
 
-    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
+    const collections = ['users', 'institutes', 'students', 'tests', 'testresults', 'attendances', 'staffs', 'staffattendances', 'smslogs', 'sessions', 'inquiries', 'notifications', 'voicecalllogs', 'devices'];
 
     for (const collName of collections) {
       const localColl = localConn.collection(collName);
@@ -167,6 +167,7 @@ async function syncToCloud() {
       const tUsernames = new Set(collTombstones.map(t => String(t.username)).filter(Boolean));
       const tStudentIds = new Set(collTombstones.map(t => String(t.studentId)).filter(Boolean));
       const tTestIds = new Set(collTombstones.map(t => String(t.testId)).filter(Boolean));
+      const tStaffIds = new Set(collTombstones.map(t => String(t.staffId)).filter(Boolean));
 
       // Also purge matching records from cloudColl immediately
       const tObjectIds = Array.from(tDocIds).filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
@@ -176,7 +177,8 @@ async function syncToCloud() {
         ...(collName === 'students' && tRollNos.size > 0 ? [{ rollNo: { $in: Array.from(tRollNos) } }] : []),
         ...(collName === 'users' && tUsernames.size > 0 ? [{ username: { $in: Array.from(tUsernames) } }] : []),
         ...(collName === 'students' && tStudentIds.size > 0 ? [{ studentId: { $in: Array.from(tStudentIds) } }] : []),
-        ...(collName === 'tests' && tTestIds.size > 0 ? [{ testId: { $in: Array.from(tTestIds) } }] : [])
+        ...(collName === 'tests' && tTestIds.size > 0 ? [{ testId: { $in: Array.from(tTestIds) } }] : []),
+        ...((collName === 'staffs' || collName === 'staffattendances') && tStaffIds.size > 0 ? [{ staffId: { $in: Array.from(tStaffIds) } }] : [])
       ];
 
       if (tombPurgeClauses.length > 0) {
@@ -191,7 +193,8 @@ async function syncToCloud() {
           (collName === 'students' && doc.rollNo && tRollNos.has(String(doc.rollNo))) ||
           ((collName === 'users' || collName === 'students') && doc.username && tUsernames.has(String(doc.username))) ||
           (collName === 'students' && doc.studentId && tStudentIds.has(String(doc.studentId))) ||
-          (collName === 'tests' && doc.testId && tTestIds.has(String(doc.testId)));
+          (collName === 'tests' && doc.testId && tTestIds.has(String(doc.testId))) ||
+          ((collName === 'staffs' || collName === 'staffattendances') && doc.staffId && tStaffIds.has(String(doc.staffId)));
         if (isTombstoned) {
           tombstonedLocalIds.push(doc._id);
         } else {
@@ -296,7 +299,48 @@ async function syncToCloud() {
             }
           };
         });
-      } else {
+      } else if (collName === 'smslogs') {
+        // 🛡️ DUPLICATE FIX: Upsert smslogs by business `id` (SMS_xxx) to Cloud so
+        // mirror writes from multiple PCs never create cloud-side duplicates.
+        bulkOps = cleanActiveDocs.map(doc => {
+          const repl = { ...doc };
+          delete repl._id;
+          return {
+            updateOne: {
+              filter: { $or: [
+                ...(doc.id ? [{ id: doc.id }] : []),
+                { _id: doc._id }
+              ] },
+              update: { $set: repl },
+              upsert: true
+            }
+          };
+        });
+      } else if (collName === 'staffs') {
+          bulkOps = cleanActiveDocs.map(doc => {
+            const repl = { ...doc };
+            delete repl._id;
+            return {
+              updateOne: {
+                filter: { $or: [{ id: doc.id }, ...(doc.staffId ? [{ staffId: String(doc.staffId).trim() }] : []), { _id: doc._id }] },
+                update: { $set: repl },
+                upsert: true
+              }
+            };
+          });
+        } else if (collName === 'staffattendances') {
+          bulkOps = cleanActiveDocs.map(doc => {
+            const repl = { ...doc };
+            delete repl._id;
+            return {
+              updateOne: {
+                filter: { $or: [{ staffId: doc.staffId, date: doc.date }, ...(doc.id ? [{ id: doc.id }] : [])] },
+                update: { $set: repl },
+                upsert: true
+              }
+            };
+          });
+        } else {
         bulkOps = cleanActiveDocs.map(doc => ({
           replaceOne: {
             filter: { _id: doc._id },

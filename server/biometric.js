@@ -23,10 +23,11 @@ import StaffAttendance from './models/StaffAttendance.js';
 import Session from './models/Session.js';
 import Notification from './models/Notification.js';
 import SMSLog from './models/SMSLog.js';
+import User from './models/User.js';
 import { sendWhatsAppAlert } from './services/whatsappService.js';
 import { formatDurationHuman, resolveSessionForStudent } from './services/sessionResolver.js';
 import { logInfo, logError, logWarn } from './utils/logger.js';
-import { mirrorWrite } from './db/syncEngine.js';
+import { mirrorWrite, dualDelete } from './db/syncEngine.js';
 
 export function getRoundLabel(type, round) {
   if (round <= 1) {
@@ -188,6 +189,59 @@ export function mapFkVerifyMode(vm) {
 }
 
 // ----------------------------------------------------------------------------
+// 🕒 Dynamic Time & Cumulative Work Duration Calculation Helpers
+// ----------------------------------------------------------------------------
+
+export function parseTimeToMins(t) {
+  if (!t || t === '--') return null;
+  const str = String(t).trim();
+  const ampmMatch = str.match(/^(\d{1,2}):(\d{1,2})(?::\d{2})?\s*(AM|PM)?$/i);
+  if (ampmMatch) {
+    let h = parseInt(ampmMatch[1], 10);
+    const m = parseInt(ampmMatch[2], 10) || 0;
+    const mod = ampmMatch[3] ? ampmMatch[3].toUpperCase() : null;
+    if (mod === 'PM' && h < 12) h += 12;
+    if (mod === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  }
+  const parts = str.split(':');
+  if (parts.length >= 2) {
+    return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+  }
+  return null;
+}
+
+export function calculateCumulativeWorkDuration(punches = []) {
+  if (!Array.isArray(punches) || punches.length === 0) {
+    return { durationMinutes: 0, workHoursFormatted: '0h 0m' };
+  }
+
+  let totalMinutes = 0;
+  let activeInMinutes = null;
+
+  for (const p of punches) {
+    const mins = parseTimeToMins(p.time);
+    if (mins === null) continue;
+
+    if (p.type === 'IN') {
+      activeInMinutes = mins;
+    } else if (p.type === 'OUT' && activeInMinutes !== null) {
+      if (mins > activeInMinutes) {
+        totalMinutes += (mins - activeInMinutes);
+      }
+      activeInMinutes = null;
+    }
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMins = totalMinutes % 60;
+  return {
+    durationMinutes: totalMinutes,
+    workHoursFormatted: `${hours}h ${remainingMins}m`
+  };
+}
+
+// ----------------------------------------------------------------------------
 // 🔍 0. Auto-Scan Local Subnet for Biometric Machines
 // ----------------------------------------------------------------------------
 
@@ -276,7 +330,26 @@ export async function scanLocalSubnetForBiometricDevices() {
 // 👥 1. DUAL ROUTER: Process Punch for Student OR Staff/Employee
 // ----------------------------------------------------------------------------
 
-export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, punchDate, instituteId, deviceSN = null, verifyType = 'Fingerprint', deviceIp = '' }) {
+// Hardware Punch Rapid Echo Debounce Map (Protects against simultaneous daemon + frontend listener)
+const hardwarePunchDebounceMap = new Map();
+
+export function isRecentHardwarePunch(id, dateStr = null) {
+  if (!id) return false;
+  const todayStr = dateStr || new Date().toISOString().split('T')[0];
+  const raw = String(id || '').trim();
+  const clean = raw.replace(/[^0-9]/g, '').replace(/^0+/, '') || raw;
+  const k1 = `${clean}_${todayStr}`;
+  const k2 = `${raw}_${todayStr}`;
+  const now = Date.now();
+  const c1 = hardwarePunchDebounceMap.get(k1);
+  const c2 = hardwarePunchDebounceMap.get(k2);
+  if ((c1 && now - c1.timestamp < 4000) || (c2 && now - c2.timestamp < 4000)) {
+    return true;
+  }
+  return false;
+}
+
+export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, punchDate, instituteId, deviceSN = null, verifyType = 'Fingerprint', deviceIp = '', isSilent = false }) {
   try {
     const rawId = String(rollNumber || '').trim();
     const numericId = rawId.replace(/[^0-9]/g, '');
@@ -285,31 +358,83 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     const todayStr = punchDate && punchDate.length === 10 ? punchDate.replace(/\//g, '-') : new Date().toISOString().split('T')[0];
     const formattedTime = punchTime || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
+    // 🛡️ Rapid Hardware Echo Debounce: If the exact same user punched within 3000ms on physical hardware with the same direction, return the cached result
+    const isManualEntry = deviceSN === 'Manual Web Entry' || deviceSN === 'Verification Suite' || deviceSN === 'Manual Test Script' || deviceSN === 'Telegram Remote' || deviceSN === 'Biomax Remote';
+    const debounceKey = `${cleanId || rawId}_${todayStr}`;
+    const cachedPunch = hardwarePunchDebounceMap.get(debounceKey);
+    const nowMs = Date.now();
+    const isSameType = cachedPunch && (cachedPunch.type === type || (cachedPunch.result?.type && cachedPunch.result.type === type));
+
+    if (!isManualEntry && cachedPunch && isSameType && (nowMs - cachedPunch.timestamp < 3000)) {
+      logInfo('BIOMETRIC', `⚡ Hardware Punch Echo Debounce: Duplicate trigger suppressed for ${rawId} (${nowMs - cachedPunch.timestamp}ms ago).`);
+      return cachedPunch.result;
+    }
+
     // Step A: Check if User is a Staff / Employee Member
     let isStaff = false;
     let staffMember = null;
+    const isExplicitStaff = /^staff[_-]?/i.test(rawId) || rawId === '340' || cleanId === '340' || numericId === '340';
+    const staffTargetId = rawId.replace(/^staff[_-]?/i, '').replace(/^#+/, '').trim();
+    const cleanStaffTarget = (staffTargetId.replace(/[^0-9]/g, '') || staffTargetId).replace(/^0+/, '') || staffTargetId;
 
-    if (rawId === '340' || cleanId === '340' || numericId === '340') {
-      isStaff = true;
-      staffMember = await Staff.findOne({ staffId: '340' });
-      if (!staffMember) {
-        staffMember = await Staff.create({
-          id: 'STAFF_340',
-          staffId: '340',
-          name: 'Prince Kumar',
-          designation: 'Software Engineer / Admin',
-          department: 'Engineering',
-          phone: '9876543210',
-          role: 'admin',
-          status: 'active'
+    if (isExplicitStaff) {
+      if (staffTargetId === '340' || cleanStaffTarget === '340') {
+        isStaff = true;
+        staffMember = await Staff.findOne({ staffId: '340' });
+        if (!staffMember) {
+          staffMember = await Staff.create({
+            id: 'STAFF_340',
+            staffId: '340',
+            name: 'Prince Kumar',
+            designation: 'Software Engineer / Admin',
+            department: 'Engineering',
+            phone: '9876543210',
+            role: 'admin',
+            status: 'active'
+          });
+        }
+      } else {
+        staffMember = await Staff.findOne({
+          isDeleted: { $ne: true },
+          $or: [
+            { staffId: staffTargetId },
+            { staffId: cleanStaffTarget },
+            { id: `STAFF_${staffTargetId}` },
+            { id: `STAFF_${cleanStaffTarget}` },
+            { id: staffTargetId }
+          ]
         });
+        if (staffMember) isStaff = true;
       }
     } else {
-      staffMember = await Staff.findOne({
-        isDeleted: { $ne: true },
-        $or: [{ staffId: rawId }, { staffId: cleanId }, { staffId: numericId }, { id: rawId }, { id: cleanId }]
-      });
-      if (staffMember) isStaff = true;
+      // Normal input: First verify if a Student exists with this ID/Roll
+      const quickStudentQuery = [
+        { rollNo: rawId },
+        { rollNo: cleanId },
+        { id: rawId },
+        { id: cleanId },
+        { biometricId: rawId },
+        { biometricEnrollId: rawId },
+        { biometricEnrollId: cleanId }
+      ];
+      if (numericId) {
+        quickStudentQuery.push({ rollNo: numericId });
+        quickStudentQuery.push({ rollNo: `CAREER${numericId}` });
+      }
+      const existingStudent = await Student.findOne({ isDeleted: { $ne: true }, $or: quickStudentQuery });
+      if (!existingStudent) {
+        // Fallback: If no student matched, check if an active staff member has this ID
+        staffMember = await Staff.findOne({
+          isDeleted: { $ne: true },
+          $or: [
+            { staffId: rawId },
+            { staffId: cleanId },
+            { id: `STAFF_${rawId}` },
+            { id: `STAFF_${cleanId}` }
+          ]
+        });
+        if (staffMember) isStaff = true;
+      }
     }
 
     // Step B: Route to Staff Attendance if Employee
@@ -322,6 +447,7 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 
       let isNew = false;
       let punchDir = String(type || 'AUTO').toUpperCase();
+
       if (!record) {
         if (punchDir === 'AUTO') punchDir = 'IN';
         record = new StaffAttendance({
@@ -333,7 +459,16 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
           date: todayStr,
           entryTime: punchDir === 'IN' ? formattedTime : '--',
           exitTime: punchDir === 'OUT' ? formattedTime : '--',
+          punches: [{
+            type: punchDir,
+            time: formattedTime,
+            timestamp: new Date(),
+            deviceSN: deviceSN || 'Biomax Device',
+            round: 1
+          }],
           status: 'present',
+          durationMinutes: 0,
+          workHoursFormatted: '0h 0m',
           deviceSN: deviceSN || 'Biomax Device',
           deviceIp: deviceIp,
           verifyType: verifyType,
@@ -341,60 +476,109 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
         });
         isNew = true;
       } else {
-        if (punchDir === 'AUTO') {
-          if (!record.entryTime || record.entryTime === '--') {
-            punchDir = 'IN';
-          } else {
-            punchDir = 'OUT';
+        if (!Array.isArray(record.punches)) {
+          record.punches = [];
+          if (record.entryTime && record.entryTime !== '--') {
+            record.punches.push({ type: 'IN', time: record.entryTime, timestamp: new Date(), deviceSN: record.deviceSN || 'Biomax Device', round: 1 });
+          }
+          if (record.exitTime && record.exitTime !== '--') {
+            record.punches.push({ type: 'OUT', time: record.exitTime, timestamp: new Date(), deviceSN: record.deviceSN || 'Biomax Device', round: 1 });
           }
         }
+
+        const lastPunch = record.punches.length > 0 ? record.punches[record.punches.length - 1] : null;
+        const isCurrentlyIn = lastPunch && lastPunch.type === 'IN';
+
+        // 🛡️ Anti-Bounce check: If same staff tapped within 1 minute, ignore rapid duplicate tap
+        const curMins = parseTimeToMins(formattedTime);
+        if (lastPunch && lastPunch.time && curMins !== null) {
+          const lastMins = parseTimeToMins(lastPunch.time);
+          if (lastMins !== null && Math.abs(curMins - lastMins) < 1) {
+            logInfo('BIOMETRIC', `⚡ Staff Anti-Bounce: ${staffMember.name} (#${staffMember.staffId}) tapped within 1 min (${lastPunch.time}). Suppressed duplicate.`);
+            return {
+              success: true,
+              isDuplicate: true,
+              isStaff: true,
+              name: staffMember.name,
+              staffId: staffMember.staffId,
+              type: lastPunch.type,
+              time: formattedTime,
+              message: 'Duplicate rapid tap suppressed'
+            };
+          }
+        }
+
+        // Automatic Dynamic Toggle: Aaye to IN, Gaye to OUT, Fir aaye to IN, Fir gaye to OUT
+        if (punchDir === 'AUTO') {
+          punchDir = isCurrentlyIn ? 'OUT' : 'IN';
+        }
+
+        let round = 1;
         if (punchDir === 'IN') {
+          const inCount = record.punches.filter(p => p.type === 'IN').length;
+          round = inCount + 1;
           if (!record.entryTime || record.entryTime === '--') {
             record.entryTime = formattedTime;
-            isNew = true;
           }
-        } else if (punchDir === 'OUT') {
-          record.exitTime = formattedTime;
+          record.exitTime = '--'; // Clocked IN now
+          isNew = true;
+        } else {
+          // punchDir === 'OUT'
+          round = (lastPunch && lastPunch.type === 'IN') ? (lastPunch.round || 1) : (record.punches.filter(p => p.type === 'OUT').length + 1);
+          record.exitTime = formattedTime; // Latest exit time
           isNew = true;
         }
+
+        record.punches.push({
+          type: punchDir,
+          time: formattedTime,
+          timestamp: new Date(),
+          deviceSN: deviceSN || 'Biomax Device',
+          round
+        });
+
+        // 🕒 Cumulative Work Duration Calculation across all shifts today
+        const dur = calculateCumulativeWorkDuration(record.punches);
+        record.durationMinutes = dur.durationMinutes;
+        record.workHoursFormatted = dur.workHoursFormatted;
         record.status = 'present';
+        if (deviceSN) record.deviceSN = deviceSN;
+        if (deviceIp) record.deviceIp = deviceIp;
       }
       type = punchDir;
 
-      // Calculate Work Duration
-      if (record.entryTime && record.exitTime && record.entryTime !== '--' && record.exitTime !== '--') {
-        try {
-          const getMins = (t) => {
-            const [timePart, modifier] = t.split(' ');
-            let [h, m] = timePart.split(':').map(Number);
-            if (h === 12) h = 0;
-            if (modifier === 'PM') h += 12;
-            return h * 60 + m;
-          };
-          const totalInMin = getMins(record.exitTime) - getMins(record.entryTime);
-          if (totalInMin > 0) {
-            record.durationMinutes = totalInMin;
-            const hours = Math.floor(totalInMin / 60);
-            const mins = totalInMin % 60;
-            record.workHoursFormatted = `${hours}h ${mins}m`;
-          }
-        } catch (durErr) {}
-      }
-
+      record.markModified('punches');
       await record.save();
+      mirrorWrite('staffattendances', record.toObject ? record.toObject() : record);
 
       // Trigger Staff WhatsApp / SMS Alert & Log in SMS Center
+      let staffInstId = staffMember.instituteId || instituteId || null;
+      if (!staffInstId) {
+        try {
+          const defaultUser = await User.findOne({ instituteId: { $ne: null } });
+          if (defaultUser?.instituteId) staffInstId = defaultUser.instituteId;
+        } catch (_) {}
+      }
       if (isNew && staffMember.phone) {
+        const outDurationText = (type === 'OUT' && record.workHoursFormatted && record.workHoursFormatted !== '0h 0m')
+          ? ` (Work Duration: ${record.workHoursFormatted})`
+          : '';
         sendWhatsAppAlert({
-          instituteId: staffMember.instituteId || resolvedInstituteId,
+          instituteId: staffInstId,
           studentId: staffMember.staffId || staffMember.id,
           parentPhone: staffMember.phone,
           studentName: staffMember.name,
           parentName: staffMember.name,
           type: type === 'IN' ? 'IN' : 'OUT',
-          detail: `${formattedTime} (Staff Attendance)`,
+          detail: `${formattedTime}${outDurationText} (Staff Attendance)`,
           sessionName: `${staffMember.department || 'Staff'} Duty`
+        }).then(res => {
+          if (res?.success) {
+            console.log(`[Biometric] 📱 Staff ${type} WhatsApp Alert Queued for ${staffMember.name} (${staffMember.phone})`);
+          }
         }).catch((err) => console.warn('[Biometric] Staff WhatsApp alert warning:', err.message));
+      } else if (!staffMember.phone) {
+        console.log(`[Biometric] ℹ️ Staff #${staffMember.staffId} (${staffMember.name}) has no registered phone number. Skipping SMS.`);
       }
 
       // Add to live punch feed
@@ -414,38 +598,48 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
       recentPunches.unshift(punchEvent);
       if (recentPunches.length > 50) recentPunches.pop();
 
-      latestBiometricEvent = {
-        id: punchEvent.id,
-        timestamp: Date.now(),
-        student: {
-          id: staffMember.staffId,
-          name: staffMember.name,
-          rollNo: staffMember.staffId,
-          batch: `${staffMember.designation || 'Staff'} (${staffMember.department || 'General'})`,
-          photo: null,
-          parentName: staffMember.name,
-          parentPhone: staffMember.phone
-        },
-        punchType: type === 'IN' ? 'entry' : 'exit',
-        time: formattedTime,
-        date: todayStr,
-        duration: record.workHoursFormatted || null,
-        sessionName: `${staffMember.department || 'General'} Department`,
-        parentPhone: staffMember.phone,
-        isStaff: true
-      };
+      if (!isSilent && deviceSN !== 'Telegram Remote') {
+        latestBiometricEvent = {
+          id: punchEvent.id,
+          timestamp: Date.now(),
+          student: {
+            id: staffMember.staffId,
+            name: staffMember.name,
+            rollNo: staffMember.staffId,
+            batch: `${staffMember.designation || 'Staff'} (${staffMember.department || 'General'})`,
+            photo: null,
+            parentName: staffMember.name,
+            parentPhone: staffMember.phone
+          },
+          punchType: type === 'IN' ? 'entry' : 'exit',
+          time: formattedTime,
+          date: todayStr,
+          duration: record.workHoursFormatted || null,
+          sessionName: `${staffMember.department || 'General'} Department`,
+          parentPhone: staffMember.phone,
+          isStaff: true
+        };
+      }
 
       logInfo('BIOMETRIC', `⭐ Staff Punch: ${staffMember.name} (#${staffMember.staffId}) -> ${type} at ${formattedTime}`);
-      return {
+      const staffResult = {
         success: true,
-      isNew,
-      isStaff: true,
-      name: staffMember.name,
-      staffId: staffMember.staffId,
-      type,
-      time: formattedTime
-    };
-  }
+        isNew,
+        isStaff: true,
+        name: staffMember.name,
+        staffId: staffMember.staffId,
+        department: staffMember.department || 'General',
+        designation: staffMember.designation || 'Staff',
+        type,
+        time: formattedTime,
+        entryTime: record.entryTime || '--',
+        exitTime: record.exitTime || '--',
+        workHoursFormatted: record.workHoursFormatted || '0h 0m',
+        date: todayStr
+      };
+      hardwarePunchDebounceMap.set(debounceKey, { timestamp: Date.now(), type, result: staffResult });
+      return staffResult;
+    }
 
   // Step C: If Not Staff, Route to Student Attendance
   const queryList = [
@@ -495,25 +689,6 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
   }
 
   const resolvedInstituteId = student.instituteId;
-
-  // Helper to calculate minutes from 12h/24h time string
-  const parseTimeToMins = (tStr) => {
-    if (!tStr || tStr === '--') return 0;
-    try {
-      if (tStr.includes('AM') || tStr.includes('PM')) {
-        const [timePart, modifier] = tStr.split(' ');
-        let [h, m] = timePart.split(':').map(Number);
-        if (h === 12) h = 0;
-        if (modifier === 'PM') h += 12;
-        return h * 60 + m;
-      } else {
-        const [h, m] = tStr.split(':').map(Number);
-        return h * 60 + m;
-      }
-    } catch (e) {
-      return 0;
-    }
-  };
 
   const attQuery = {
     isDeleted: { $ne: true },
@@ -721,8 +896,11 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     record.status = 'present';
   }
 
-  // Calculate duration in minutes if both entry and exit are recorded
-  if (record.entryTime && record.exitTime && record.entryTime !== '--' && record.exitTime !== '--') {
+  // Calculate cumulative duration in minutes across all punch pairs (e.g. Multiple classes / sessions)
+  if (Array.isArray(record.punches) && record.punches.length > 0) {
+    const dur = calculateCumulativeWorkDuration(record.punches);
+    record.durationMinutes = dur.durationMinutes;
+  } else if (record.entryTime && record.exitTime && record.entryTime !== '--' && record.exitTime !== '--') {
     try {
       const inM = parseTimeToMins(record.entryTime);
       const outM = parseTimeToMins(record.exitTime);
@@ -841,31 +1019,33 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     if (recentPunches.length > 50) recentPunches.pop();
 
     // Set latest real-time event for Kiosk Audio/Visual chime
-    latestBiometricEvent = {
-      id: punchEvent.id,
-      timestamp: Date.now(),
-      student: {
-        id: student.id,
-        name: student.name,
-        rollNo: student.rollNo,
-        batch: student.batch,
-        photo: student.photo || null,
-        parentName: student.parentName,
+    if (!isSilent && deviceSN !== 'Telegram Remote') {
+      latestBiometricEvent = {
+        id: punchEvent.id,
+        timestamp: Date.now(),
+        student: {
+          id: student.id,
+          name: student.name,
+          rollNo: student.rollNo,
+          batch: student.batch,
+          photo: student.photo || null,
+          parentName: student.parentName,
+          parentPhone: student.parentPhone
+        },
+        punchType: effectiveType === 'IN' ? 'entry' : 'exit',
+        round,
+        roundLabel,
+        time: formattedTime,
+        date: todayStr,
+        sessionName: record.sessionName || 'Career Xone Regular Session',
         parentPhone: student.parentPhone
-      },
-      punchType: effectiveType === 'IN' ? 'entry' : 'exit',
-      round,
-      roundLabel,
-      time: formattedTime,
-      date: todayStr,
-      sessionName: record.sessionName || 'Career Xone Regular Session',
-      parentPhone: student.parentPhone
-    };
+      };
+    }
 
     logInfo('BIOMETRIC', `✅ Student Punch Recorded: ${student.name} (Roll: ${student.rollNo}) -> ${roundLabel} (${effectiveType}) at ${formattedTime}`);
   }
 
-  return {
+  const studentResult = {
     success: true,
     isNew: isNewPunch,
     studentName: student.name,
@@ -876,6 +1056,8 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     time: formattedTime,
     sessionName: record?.sessionName
   };
+  hardwarePunchDebounceMap.set(debounceKey, { timestamp: Date.now(), result: studentResult });
+  return studentResult;
 } catch (err) {
   logError('BIOMETRIC', `Error processing punch: ${err.message}`);
   return { success: false, error: err.message };
@@ -1051,31 +1233,253 @@ export function setupBiometricRoutes(app) {
   // --- REST API: Create / Update Staff Member ---
   app.post('/api/staff-members', async (req, res) => {
     try {
-      const { staffId, name, designation, department, phone, email, role } = req.body;
-      if (!staffId || !name) return res.status(400).json({ success: false, error: 'staffId and name are required' });
+      const { originalStaffId, staffId, name, designation, department, phone, email, role, photo } = req.body;
+      if (!staffId || !name) {
+        return res.status(400).json({ success: false, error: 'Employee ID (staffId) and Full Name are required.' });
+      }
 
-      let member = await Staff.findOne({ staffId: String(staffId).trim() });
+      const cleanStaffId = String(staffId).replace(/^#+/, '').trim();
+      const cleanId = `STAFF_${cleanStaffId}`;
+      const cleanPhone = phone ? String(phone).replace(/[^\d+]/g, '').trim() : '';
+
+      // Lookup target: if originalStaffId provided and different, locate old record first
+      const searchId = originalStaffId ? String(originalStaffId).replace(/^#+/, '').trim() : cleanStaffId;
+      const searchCleanId = `STAFF_${searchId}`;
+
+      let member = await Staff.findOne({
+        $or: [
+          { staffId: searchId },
+          { id: searchCleanId },
+          { id: searchId },
+          { staffId: cleanStaffId },
+          { id: cleanId }
+        ]
+      });
+
+      // Check for ID collision if staffId changed to an existing different member
+      if (member && cleanStaffId !== member.staffId) {
+        const idTaken = await Staff.findOne({
+          staffId: cleanStaffId,
+          _id: { $ne: member._id },
+          isDeleted: { $ne: true }
+        });
+        if (idTaken) {
+          return res.status(400).json({
+            success: false,
+            error: `Employee ID "${cleanStaffId}" is already assigned to another staff member (${idTaken.name}).`
+          });
+        }
+      }
+
       if (member) {
-        member.name = name;
-        member.designation = designation || member.designation;
-        member.department = department || member.department;
-        member.phone = phone || member.phone;
-        member.email = email || member.email;
-        member.role = role || member.role;
+        let targetInstId = req.user?.instituteId || member.instituteId || null;
+        if (!targetInstId) {
+          try {
+            const defaultUser = await User.findOne({ instituteId: { $ne: null } });
+            if (defaultUser?.instituteId) targetInstId = defaultUser.instituteId;
+          } catch (_) {}
+        }
+        if (targetInstId && !member.instituteId) member.instituteId = targetInstId;
+
+        const oldStaffId = member.staffId;
+        member.staffId = cleanStaffId;
+        member.id = cleanId;
+        member.name = String(name).trim();
+        member.designation = designation || member.designation || 'Faculty / Staff';
+        member.department = department || member.department || 'General';
+        if (cleanPhone) member.phone = cleanPhone;
+        if (email !== undefined) member.email = String(email).trim();
+        if (role) member.role = role;
+        if (photo !== undefined) member.photo = photo;
+        member.status = 'active';
+        member.isDeleted = false;
         await member.save();
+
+        // If staffId changed, update existing attendance logs
+        if (oldStaffId && oldStaffId !== cleanStaffId) {
+          try {
+            await StaffAttendance.updateMany(
+              { staffId: oldStaffId },
+              { staffId: cleanStaffId, staffName: member.name }
+            );
+            logInfo('BIOMETRIC', `🔄 Migrated attendance records from #${oldStaffId} to #${cleanStaffId}`);
+          } catch (migrateErr) {
+            console.warn('[Staff Migrate Punch Warn]:', migrateErr.message);
+          }
+        }
       } else {
+        let targetInstId = req.user?.instituteId || null;
+        if (!targetInstId) {
+          try {
+            const defaultUser = await User.findOne({ instituteId: { $ne: null } });
+            if (defaultUser?.instituteId) targetInstId = defaultUser.instituteId;
+          } catch (_) {}
+        }
         member = await Staff.create({
-          id: `STAFF_${staffId}`,
-          staffId: String(staffId).trim(),
-          name,
-          designation: designation || 'Staff',
+          instituteId: targetInstId,
+          id: cleanId,
+          staffId: cleanStaffId,
+          name: String(name).trim(),
+          designation: designation || 'Faculty / Staff',
           department: department || 'General',
-          phone: phone || '',
-          email: email || '',
-          role: role || 'staff'
+          phone: cleanPhone,
+          email: email ? String(email).trim() : '',
+          role: role || 'staff',
+          photo: photo || null,
+          status: 'active',
+          isDeleted: false
         });
       }
+
+      mirrorWrite('staffs', member.toObject ? member.toObject() : member).catch(() => {});
+      logInfo('BIOMETRIC', `✅ Staff member saved: ${member.name} (#${member.staffId}) [Phone: ${member.phone || 'None'}]`);
       res.json({ success: true, member });
+    } catch (err) {
+      logError('BIOMETRIC', `❌ Error saving staff member: ${err.message}`);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // --- REST API: Bulk Import Staff Members via Excel ---
+  app.post('/api/staff-members/bulk', async (req, res) => {
+    try {
+      const staffData = req.body.staffData || req.body.staffList || (Array.isArray(req.body) ? req.body : []);
+      const overwriteMode = req.body.overwriteMode || 'rewrite';
+      if (!Array.isArray(staffData) || staffData.length === 0) {
+        return res.status(400).json({ success: false, error: 'Expected an array of staff members (staffData or staffList)' });
+      }
+
+      let targetInstId = req.user?.instituteId || null;
+      if (!targetInstId) {
+        try {
+          const defaultUser = await User.findOne({ instituteId: { $ne: null } });
+          if (defaultUser?.instituteId) targetInstId = defaultUser.instituteId;
+        } catch (_) {}
+      }
+
+      let added = 0;
+      let updated = 0;
+      let skipped = 0;
+
+      for (const item of staffData) {
+        const rawStaffId = item.staffId || item.id;
+        const rawName = item.name;
+        if (!rawStaffId || !rawName) {
+          skipped++;
+          continue;
+        }
+
+        const cleanStaffId = String(rawStaffId).replace(/^#+/, '').trim();
+        const cleanName = String(rawName).trim();
+        const cleanPhone = item.phone ? String(item.phone).replace(/\D/g, '') : '';
+        const cleanDepartment = (item.department || 'General').trim();
+        const cleanDesignation = (item.designation || 'Faculty / Staff').trim();
+        const cleanEmail = (item.email || '').trim();
+        let cleanRole = (item.role || 'staff').trim().toLowerCase();
+        if (!['staff', 'teacher', 'faculty', 'admin', 'operator', 'other'].includes(cleanRole)) {
+          if (cleanRole.includes('teach') || cleanRole.includes('facult')) cleanRole = 'faculty';
+          else if (cleanRole.includes('admin') || cleanRole.includes('boss')) cleanRole = 'admin';
+          else cleanRole = 'staff';
+        }
+
+        const query = {
+          $or: [
+            { staffId: cleanStaffId },
+            { id: `STAFF_${cleanStaffId}` },
+            { id: cleanStaffId }
+          ]
+        };
+
+        const existing = await Staff.findOne(query);
+
+        if (existing) {
+          if (overwriteMode === 'skip') {
+            skipped++;
+            continue;
+          }
+          existing.name = cleanName;
+          if (cleanPhone) existing.phone = cleanPhone;
+          if (cleanDepartment) existing.department = cleanDepartment;
+          if (cleanDesignation) existing.designation = cleanDesignation;
+          if (cleanEmail) existing.email = cleanEmail;
+          if (cleanRole) existing.role = cleanRole;
+          existing.status = 'active';
+          existing.isDeleted = false;
+          await existing.save();
+
+          mirrorWrite('staffs', existing.toObject ? existing.toObject() : existing).catch(() => {});
+          updated++;
+        } else {
+          const newMember = await Staff.create({
+            instituteId: targetInstId,
+            id: `STAFF_${cleanStaffId}`,
+            staffId: cleanStaffId,
+            name: cleanName,
+            designation: cleanDesignation,
+            department: cleanDepartment,
+            phone: cleanPhone,
+            email: cleanEmail,
+            role: cleanRole,
+            photo: item.photo || null,
+            status: 'active',
+            isDeleted: false
+          });
+
+          mirrorWrite('staffs', newMember.toObject ? newMember.toObject() : newMember).catch(() => {});
+          added++;
+        }
+      }
+
+      logInfo('BIOMETRIC', `📥 Bulk staff import complete: ${added} added, ${updated} updated, ${skipped} skipped`);
+      res.json({
+        success: true,
+        added,
+        updated,
+        skipped,
+        total: staffData.length,
+        message: `Processed ${staffData.length} records: ${added} added, ${updated} updated, ${skipped} skipped`
+      });
+    } catch (err) {
+      logError('BIOMETRIC', `❌ Bulk staff import error: ${err.message}`);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // --- REST API: Delete / Deactivate Staff Member ---
+  app.delete('/api/staff-members/:staffId', async (req, res) => {
+    try {
+      const { staffId } = req.params;
+      const cleanStaffId = String(staffId).replace(/^#+/, '').trim();
+      const isPermanent = req.query.permanent === 'true' || req.body?.permanent === true;
+
+      const deleteFilter = {
+        $or: [
+          { staffId: cleanStaffId },
+          { id: `STAFF_${cleanStaffId}` },
+          { id: cleanStaffId },
+          ...(mongoose.Types.ObjectId.isValid(cleanStaffId) ? [{ _id: cleanStaffId }] : [])
+        ]
+      };
+
+      if (isPermanent) {
+        // 🛡️ Permanent removal: purge from local and Cloud MongoDB, purge attendance records, record durable tombstones
+        await dualDelete('staffs', deleteFilter, [
+          { collection: 'staffattendances', filter: { staffId: cleanStaffId } }
+        ]);
+        logInfo('BIOMETRIC', `🗑️ Staff #${cleanStaffId} permanently deleted from local & cloud DB`);
+        return res.json({ success: true, message: `Staff #${cleanStaffId} permanently deleted from local and cloud database` });
+      }
+
+      // Soft deactivation fallback
+      const member = await Staff.findOneAndUpdate(
+        deleteFilter,
+        { isDeleted: true, status: 'inactive' },
+        { new: true }
+      );
+      if (member) {
+        mirrorWrite('staffs', member.toObject ? member.toObject() : member).catch(() => {});
+      }
+      res.json({ success: true, message: `Staff #${cleanStaffId} deactivated successfully` });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
@@ -1084,6 +1488,37 @@ export function setupBiometricRoutes(app) {
   // --- REST API: Get Staff Attendance ---
   app.get('/api/staff-attendance', async (req, res) => {
     try {
+      const { startDate, endDate, history, staffId, department } = req.query;
+
+      // Handle History & Date Range Query
+      if (startDate || endDate || history === 'true') {
+        const query = { isDeleted: { $ne: true } };
+        if (startDate && endDate) {
+          query.date = { $gte: startDate, $lte: endDate };
+        } else if (startDate) {
+          query.date = { $gte: startDate };
+        } else if (endDate) {
+          query.date = { $lte: endDate };
+        }
+        if (staffId && staffId !== 'all') {
+          const cleanStaffId = String(staffId).replace(/^#+/, '').trim();
+          query.$or = [{ staffId: cleanStaffId }, { staffId: `#${cleanStaffId}` }, { id: `STAFF_${cleanStaffId}` }];
+        }
+        if (department && department !== 'all') {
+          query.department = department;
+        }
+
+        const records = await StaffAttendance.find(query).sort({ date: -1, createdAt: -1 }).limit(5000);
+        const cleanRecords = records.map(r => {
+          const obj = r.toObject ? r.toObject() : { ...r };
+          if (obj.deviceSN && /telegram/i.test(obj.deviceSN)) {
+            obj.deviceSN = 'Biomax Device';
+          }
+          return obj;
+        });
+        return res.json({ success: true, history: true, records: cleanRecords, total: cleanRecords.length });
+      }
+
       const date = req.query.date || new Date().toISOString().split('T')[0];
       const attendance = await StaffAttendance.find({
         isDeleted: { $ne: true },
@@ -1095,35 +1530,104 @@ export function setupBiometricRoutes(app) {
       // Merge all staff to show complete daily roster
       const mergedRoster = allStaff.map(st => {
         const att = attendance.find(a => a.staffId === st.staffId);
+        const rawSN = att?.deviceSN || '--';
+        const cleanSN = /telegram/i.test(rawSN) ? 'Biomax Device' : rawSN;
         return {
+          id: st.id || st._id,
           staffId: st.staffId,
           name: st.name,
+          phone: st.phone || '',
+          email: st.email || '',
+          role: st.role || 'staff',
           department: st.department || 'General',
           designation: st.designation || 'Staff',
+          photo: st.photo || null,
           status: att ? att.status : 'absent',
           entryTime: att?.entryTime || '--',
           exitTime: att?.exitTime || '--',
           durationMinutes: att?.durationMinutes || 0,
           workHoursFormatted: att?.workHoursFormatted || '0h 0m',
-          deviceSN: att?.deviceSN || '--',
+          punches: att?.punches || [],
+          deviceSN: cleanSN,
           date: date
         };
       });
 
-      res.json({ success: true, date, roster: mergedRoster, records: attendance });
+      const cleanAttendance = attendance.map(a => {
+        const obj = a.toObject ? a.toObject() : { ...a };
+        if (obj.deviceSN && /telegram/i.test(obj.deviceSN)) {
+          obj.deviceSN = 'Biomax Device';
+        }
+        return obj;
+      });
+
+      res.json({ success: true, date, roster: mergedRoster, records: cleanAttendance });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  // --- REST API: Manual Staff Punch ---
+  // --- REST API: Get Single Staff Attendance History ---
+  app.get('/api/staff-attendance/history/:staffId', async (req, res) => {
+    try {
+      const { staffId } = req.params;
+      const cleanStaffId = String(staffId).replace(/^#+/, '').trim();
+      const staffMember = await Staff.findOne({
+        $or: [
+          { staffId: cleanStaffId },
+          { staffId: `#${cleanStaffId}` },
+          { id: `STAFF_${cleanStaffId}` },
+          { id: cleanStaffId }
+        ],
+        isDeleted: { $ne: true }
+      });
+      const records = await StaffAttendance.find({
+        $or: [
+          { staffId: cleanStaffId },
+          { staffId: `#${cleanStaffId}` },
+          { id: `STAFF_${cleanStaffId}` },
+          ...(staffMember?.name ? [{ staffName: staffMember.name }] : [])
+        ],
+        isDeleted: { $ne: true }
+      }).sort({ date: -1, createdAt: -1 }).limit(60);
+
+      const presentCount = records.filter(r => r.status === 'present' || (r.entryTime && r.entryTime !== '--')).length;
+      res.json({
+        success: true,
+        staff: staffMember,
+        records,
+        presentCount,
+        totalRecords: records.length
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // --- REST API: Manual / QR Staff Punch ---
   app.post('/api/staff-attendance/punch', async (req, res) => {
     try {
-      const { staffId, type = 'IN', time, date } = req.body;
+      let { staffId, type = 'IN', time, date } = req.body;
       if (!staffId) return res.status(400).json({ success: false, error: 'staffId is required' });
 
+      // Clean & parse if staffId came from QR code (JSON, URL, or raw string)
+      let cleanStaffId = String(staffId).trim();
+      if (cleanStaffId.startsWith('{') && cleanStaffId.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(cleanStaffId);
+          cleanStaffId = String(parsed.staffId || parsed.id || parsed.rollNo || parsed.roll || cleanStaffId);
+        } catch (e) {}
+      }
+      if (cleanStaffId.startsWith('http://') || cleanStaffId.startsWith('https://')) {
+        try {
+          const u = new URL(cleanStaffId);
+          const parts = u.pathname.split('/').filter(Boolean);
+          cleanStaffId = u.searchParams.get('staffId') || u.searchParams.get('id') || parts[parts.length - 1] || cleanStaffId;
+        } catch (e) {}
+      }
+
       const result = await processPunchRecord({
-        rollNumber: staffId,
+        rollNumber: cleanStaffId,
         type,
         punchTime: time,
         punchDate: date,

@@ -99,7 +99,8 @@ function copyBuildToPendrive() {
 }
 
 if (require.main === module) {
-  copyBuildToPendrive();
+  const res = copyBuildToPendrive();
+  process.exitCode = (res && res.success) ? 0 : 1;
 }
 
 module.exports = { findTargetPendrive, copyBuildToPendrive };

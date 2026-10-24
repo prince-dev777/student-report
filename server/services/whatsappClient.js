@@ -578,6 +578,10 @@ function startHeartbeat() {
             if (Socket && Socket.state !== 'CONNECTED' && typeof Socket.takeover === 'function') {
               Socket.takeover();
             }
+            // Memory optimization: Prune status models if accumulated
+            if (window.Store && window.Store.Status && Array.isArray(window.Store.Status.models) && window.Store.Status.models.length > 50) {
+              window.Store.Status.models = window.Store.Status.models.slice(-20);
+            }
           } catch (_) {}
         });
       }
@@ -819,9 +823,24 @@ export function initializeWhatsAppClient() {
       };
     }
 
+    const localCachePath = path.join(dataPath, 'data', '.wwebjs_cache');
+    try {
+      fs.mkdirSync(localCachePath, { recursive: true });
+      const projectCache = path.join(process.cwd(), '.wwebjs_cache');
+      if (fs.existsSync(projectCache) && fs.readdirSync(localCachePath).length === 0) {
+        fs.cpSync(projectCache, localCachePath, { recursive: true });
+        console.log('[WhatsAppClient] 📦 Seeded initial local web cache from project cache.');
+      }
+    } catch (_) {}
+
     client = new Client({
       authStrategy: localAuthStrategy,
-      takeoverOnConflict: false,
+      takeoverOnConflict: true,
+      webVersionCache: {
+        type: 'local',
+        path: localCachePath,
+        strict: false
+      },
       puppeteer: puppeteerOptions
     });
     // Ensure lastLoggedOut is false on initialization so stale frame state never triggers bogus logout
@@ -1040,6 +1059,9 @@ export function initializeWhatsAppClient() {
         autoReconnectTimer = setTimeout(() => {
           if (!isManualDisconnecting && !client) {
             killLeftoverChromium().then(() => {
+              const dataPath = getAuthDataPath();
+              clearChromiumLocks(path.join(dataPath, 'data', '.wwebjs_auth'));
+              clearChromiumLocks(path.join(dataPath, '.wwebjs_auth'));
               initializeWhatsAppClient();
             });
           }

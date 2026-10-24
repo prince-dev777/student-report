@@ -4,6 +4,23 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: './',
   plugins: [react()],
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'framer-motion',
+      'lucide-react',
+      'katex',
+      'xlsx',
+      'exceljs',
+      'recharts',
+      'react-hot-toast',
+      'qrcode.react',
+      'react-select',
+      'react-zoom-pan-pinch'
+    ]
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,

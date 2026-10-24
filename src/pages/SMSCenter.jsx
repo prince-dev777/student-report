@@ -90,6 +90,12 @@ export default function SMSCenter() {
   const [selectedSmsIds, setSelectedSmsIds] = useState(new Set());
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(null); // { type: 'single'|'bulk'|'all', id?: string, count: number }
 
+  // WhatsApp Disconnect Authorization Modal State
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [disconnectPassword, setDisconnectPassword] = useState('');
+  const [disconnectError, setDisconnectError] = useState('');
+  const [disconnecting, setDisconnecting] = useState(false);
+
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
@@ -228,7 +234,15 @@ export default function SMSCenter() {
       try {
         const freshLogs = await api.getSMSLogs();
         if (isMounted && Array.isArray(freshLogs) && setSMSHistory) {
-          setSMSHistory(freshLogs);
+          // 🛡️ DUPLICATE FIX: Deduplicate by id before setting state
+          const seen = new Set();
+          const clean = freshLogs.filter(log => {
+            const key = log.id || `${log.studentId}_${log.timestamp}_${log.type}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          setSMSHistory(clean);
         }
       } catch (err) {
         // Background poll silent
@@ -414,17 +428,46 @@ export default function SMSCenter() {
     }
   };
 
-  const disconnectWhatsApp = async () => {
-    if (!window.confirm('Are you sure you want to disconnect and log out from WhatsApp?')) return;
+  const handleOpenDisconnectModal = () => {
+    setDisconnectPassword('');
+    setDisconnectError('');
+    setShowDisconnectModal(true);
+  };
+
+  const handleConfirmDisconnect = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const pwd = disconnectPassword.trim();
+    if (!pwd) {
+      setDisconnectError('Please enter the Admin Password.');
+      return;
+    }
+    if (pwd !== 'rohitjha') {
+      setDisconnectError('❌ Incorrect admin password! Disconnect denied.');
+      return;
+    }
+
+    setDisconnecting(true);
     setLoadingAction(true);
     try {
-      await fetch(`${API_BASE}/whatsapp/local-disconnect`, { method: 'POST' });
-      toast.success('WhatsApp disconnected.');
+      const res = await fetch(`${API_BASE}/whatsapp/local-disconnect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to disconnect');
+      }
+      toast.success('WhatsApp disconnected successfully.');
       setWhatsappStatus('disconnected');
       setQrCode(null);
+      setShowDisconnectModal(false);
+      setDisconnectPassword('');
     } catch (err) {
-      toast.error('Failed to disconnect');
+      setDisconnectError(err.message || 'Failed to disconnect');
+      toast.error(err.message || 'Failed to disconnect');
     } finally {
+      setDisconnecting(false);
       setLoadingAction(false);
     }
   };
@@ -471,8 +514,8 @@ export default function SMSCenter() {
       }
 
       const excelData = filteredData.map(sms => ({
-        'Student Name': getStudentName(sms.studentId),
-        'Parent Phone': sms.parentPhone,
+        'Student / Staff': getStudentName(sms.studentId, sms),
+        'Phone Number': sms.parentPhone || sms.phone || '',
         'Type': sms.type ? sms.type.toUpperCase() : 'SMS',
         'Message': sms.message,
         'Status': sms.status,
@@ -513,7 +556,16 @@ export default function SMSCenter() {
 
   // Filtered SMS history
   const filteredHistory = useMemo(() => {
-    let list = [...smsHistory];
+    // 🛡️ DUPLICATE FIX: Final dedup pass before render (absolute last safety net)
+    const dedupSeen = new Set();
+    const dedupedList = (smsHistory || []).filter(sms => {
+      const key = sms.id || `${sms.studentId}_${sms.timestamp}_${sms.type}`;
+      if (dedupSeen.has(key)) return false;
+      dedupSeen.add(key);
+      return true;
+    });
+
+    let list = [...dedupedList];
 
     if (typeFilter !== 'all') {
       list = list.filter((s) => s.type === typeFilter);
@@ -522,12 +574,16 @@ export default function SMSCenter() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter((sms) => {
-        const student = students.find((st) => st.id === sms.studentId);
-        const studentName = student ? student.name.toLowerCase() : '';
+        const student = students.find((st) => st.id === sms.studentId || st.rollNo === sms.studentId);
+        const studentName = (student ? student.name : '').toLowerCase();
+        const msg = (sms.message || '').toLowerCase();
+        const ph = String(sms.parentPhone || sms.phone || '').toLowerCase();
+        const sid = String(sms.studentId || '').toLowerCase();
         return (
           studentName.includes(q) ||
-          (sms.message && sms.message.toLowerCase().includes(q)) ||
-          (sms.parentPhone && sms.parentPhone.includes(q))
+          msg.includes(q) ||
+          ph.includes(q) ||
+          sid.includes(q)
         );
       });
     }
@@ -608,10 +664,21 @@ export default function SMSCenter() {
     setCurrentPage(1);
   };
 
-  // Get student name by id
-  const getStudentName = (studentId) => {
-    const student = (students || []).find((s) => s.id === studentId);
-    return student ? student.name : 'Unknown';
+  // Get student or recipient name by id or message preview
+  const getStudentName = (studentId, sms = null) => {
+    if (!studentId && !sms) return 'General / System';
+    const student = (students || []).find((s) => s.id === studentId || s.rollNo === studentId);
+    if (student) return student.name;
+    // Check if staff name is mentioned in message (e.g. "Dear Prince Kumar...")
+    const msg = sms?.message || '';
+    const match = msg.match(/Dear\s+([^,]+),/i);
+    if (match && match[1]) {
+      return `${match[1].trim()} (Staff)`;
+    }
+    if (studentId) {
+      return `Staff ID: ${studentId}`;
+    }
+    return 'Unknown';
   };
 
   // Send handler
@@ -865,7 +932,12 @@ export default function SMSCenter() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {whatsappStatus === 'ready' && (
-            <button className="btn btn-outline" onClick={disconnectWhatsApp} disabled={loadingAction} style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}>
+            <button
+              className="btn btn-outline"
+              onClick={handleOpenDisconnectModal}
+              disabled={loadingAction || disconnecting}
+              style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}
+            >
               <WifiOff size={16} /> Disconnect
             </button>
           )}
@@ -1190,12 +1262,12 @@ export default function SMSCenter() {
                         <span className={badge.className}>{badge.label}</span>
                       </td>
                       <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
-                        {getStudentName(sms.studentId)}
+                        {getStudentName(sms.studentId, sms)}
                       </td>
                       <td>
                         <span className="flex items-center gap-4">
                           <Phone size={13} style={{ color: 'var(--text-muted)' }} />
-                          {sms.parentPhone}
+                          {sms.parentPhone || sms.phone || '--'}
                         </span>
                       </td>
                       <td style={{ maxWidth: '320px' }}>
@@ -2445,10 +2517,10 @@ export default function SMSCenter() {
               <div className="modal-body" style={{ lineHeight: '1.6' }}>
                 <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <strong>Student:</strong> <span style={{ color: 'var(--text-secondary)' }}>{getStudentName(selectedMessage.studentId)}</span>
+                    <strong>Student / Recipient:</strong> <span style={{ color: 'var(--text-secondary)' }}>{getStudentName(selectedMessage.studentId, selectedMessage)}</span>
                   </div>
                   <div>
-                    <strong>Phone:</strong> <span style={{ color: 'var(--text-secondary)' }}>{selectedMessage.parentPhone}</span>
+                    <strong>Phone:</strong> <span style={{ color: 'var(--text-secondary)' }}>{selectedMessage.parentPhone || selectedMessage.phone || '--'}</span>
                   </div>
                 </div>
                 <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2739,6 +2811,99 @@ export default function SMSCenter() {
                   <Trash2 size={16} /> Yes, Delete
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* WhatsApp Disconnect Authorization Modal */}
+      <AnimatePresence>
+        {showDisconnectModal && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => !disconnecting && setShowDisconnectModal(false)}
+            style={{ zIndex: 1200 }}
+          >
+            <motion.div
+              className="modal-content"
+              style={{ maxWidth: '440px' }}
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                <h3 style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <WifiOff size={20} />
+                  Disconnect WhatsApp
+                </h3>
+                <button
+                  className="modal-close"
+                  onClick={() => !disconnecting && setShowDisconnectModal(false)}
+                  disabled={disconnecting}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleConfirmDisconnect}>
+                <div className="modal-body" style={{ padding: '18px 0', lineHeight: 1.5 }}>
+                  <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', color: '#ef4444', display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '14px' }}>
+                    <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <span>⚠️ <strong>Warning:</strong> Disconnecting will completely unlink your active session and require scanning the QR code again to reconnect.</span>
+                  </div>
+
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: '0 0 10px 0' }}>
+                    🔒 <strong>Admin Authorization Required:</strong><br />
+                    Please enter the Master Admin Password to disconnect WhatsApp:
+                  </p>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <input
+                      type="password"
+                      className="form-input"
+                      placeholder="Enter Admin Password"
+                      value={disconnectPassword}
+                      onChange={(e) => {
+                        setDisconnectPassword(e.target.value);
+                        setDisconnectError('');
+                      }}
+                      autoFocus
+                      disabled={disconnecting}
+                      style={{ width: '100%', fontSize: '0.95rem' }}
+                    />
+                  </div>
+
+                  {disconnectError && (
+                    <div style={{ marginTop: '8px', color: '#ef4444', fontSize: '0.82rem', fontWeight: 600 }}>
+                      {disconnectError}
+                    </div>
+                  )}
+                </div>
+
+                <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setShowDisconnectModal(false)}
+                    disabled={disconnecting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', borderColor: '#dc2626' }}
+                    disabled={disconnecting || !disconnectPassword.trim()}
+                  >
+                    {disconnecting ? <RefreshCw size={16} className="spin" /> : <WifiOff size={16} />}
+                    <span>{disconnecting ? 'Disconnecting...' : 'Confirm Disconnect'}</span>
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

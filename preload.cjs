@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openPath: (folderPath) => ipcRenderer.invoke('shell:openPath', folderPath),
   showItemInFolder: (filePath) => ipcRenderer.invoke('shell:showItemInFolder', filePath),
   printToPDF: (payload, defaultName) => ipcRenderer.invoke('print:toPDF', payload, defaultName),
+  openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
   getPathForFile: (file) => {
     try {
       if (webUtils && typeof webUtils.getPathForFile === 'function') {

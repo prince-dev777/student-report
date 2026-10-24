@@ -58,6 +58,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import idLogo from '../assets/id-logo.png';
 import StudentIdCard from '../components/StudentIdCard';
 import StaffIdCard from '../components/StaffIdCard';
+import StaffProfileModal from '../components/StaffProfileModal';
+import StaffBulkUploadModal from '../components/StaffBulkUploadModal';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
@@ -168,6 +170,78 @@ export default function Attendance() {
   const [idCardCardsPerPage, setIdCardCardsPerPage] = useState(4); // 4 (Large 2x2) or 6 (Compact 2x3)
   const [idCardPreviewPage, setIdCardPreviewPage] = useState(1);
   const [idCardShowAll, setIdCardShowAll] = useState(false);
+  const [idCardRepeatFill, setIdCardRepeatFill] = useState(false);
+
+  // 📏 ID Card Custom Sizing & Dimension Controls (Length & Width Customization)
+  const [idCardWidth, setIdCardWidth] = useState(260); // in px (e.g., 160 to 320)
+  const [idCardHeight, setIdCardHeight] = useState(390); // in px (e.g., 240 to 480)
+  const [idCardScale, setIdCardScale] = useState(100); // 60% to 125%
+  const [idCardLockRatio, setIdCardLockRatio] = useState(true);
+  const [idCardSizePreset, setIdCardSizePreset] = useState('standard'); // 'standard' | 'compact' | 'small' | 'mini' | 'custom'
+
+  const handleSizePresetChange = (preset) => {
+    setIdCardSizePreset(preset);
+    if (preset === 'standard') {
+      setIdCardWidth(260);
+      setIdCardHeight(390);
+      setIdCardScale(100);
+    } else if (preset === 'compact') {
+      setIdCardWidth(230);
+      setIdCardHeight(355);
+      setIdCardScale(88);
+    } else if (preset === 'small') {
+      setIdCardWidth(205);
+      setIdCardHeight(315);
+      setIdCardScale(79);
+    } else if (preset === 'mini') {
+      setIdCardWidth(185);
+      setIdCardHeight(280);
+      setIdCardScale(71);
+    }
+  };
+
+  const handleWidthChange = (newW) => {
+    const w = Math.max(160, Math.min(340, Number(newW) || 160));
+    setIdCardWidth(w);
+    if (idCardLockRatio) {
+      const h = Math.round(w * 1.5);
+      setIdCardHeight(h);
+      setIdCardScale(Math.round((w / 260) * 100));
+    }
+    setIdCardSizePreset('custom');
+  };
+
+  const handleHeightChange = (newH) => {
+    const h = Math.max(240, Math.min(500, Number(newH) || 240));
+    setIdCardHeight(h);
+    if (idCardLockRatio) {
+      const w = Math.round(h / 1.5);
+      setIdCardWidth(w);
+      setIdCardScale(Math.round((w / 260) * 100));
+    }
+    setIdCardSizePreset('custom');
+  };
+
+  const handleScaleChange = (newScale) => {
+    const s = Math.max(60, Math.min(125, Number(newScale) || 100));
+    setIdCardScale(s);
+    const w = Math.round(260 * (s / 100));
+    const h = Math.round(390 * (s / 100));
+    setIdCardWidth(w);
+    setIdCardHeight(h);
+    if (s === 100) setIdCardSizePreset('standard');
+    else if (s === 88 && w === 230) setIdCardSizePreset('compact');
+    else setIdCardSizePreset('custom');
+  };
+
+  const handleResetCardSize = () => {
+    setIdCardSizePreset('standard');
+    setIdCardWidth(260);
+    setIdCardHeight(390);
+    setIdCardScale(100);
+    setIdCardLockRatio(true);
+    toast.success('Card dimensions reset to Standard PVC (260 × 390 px)!');
+  };
   const [lastPunch, setLastPunch] = useState(null);
   const [lastScannedMap, setLastScannedMap] = useState({});
   const [showKioskSuggestions, setShowKioskSuggestions] = useState(false);
@@ -279,25 +353,96 @@ export default function Attendance() {
   const [staffSearch, setStaffSearch] = useState('');
   const [isStaffLoading, setIsStaffLoading] = useState(false);
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [showStaffBulkUploadModal, setShowStaffBulkUploadModal] = useState(false);
+  const [selectedStaffProfile, setSelectedStaffProfile] = useState(null);
+  const [staffPunchingId, setStaffPunchingId] = useState(null);
+
+  // ⚡ Dedicated 2D Barcode & QR Scanner Gun States for Staff
+  const [staffViewMode, setStaffViewMode] = useState('roster'); // 'roster' | 'scanner'
+  const [staffScannerCode, setStaffScannerCode] = useState('');
+  const [staffScanMode, setStaffScanMode] = useState('AUTO'); // 'AUTO' | 'IN' | 'OUT'
+  const [staffSoundEnabled, setStaffSoundEnabled] = useState(true);
+  const [staffLastPunch, setStaffLastPunch] = useState(null);
+  const [staffRecentPunches, setStaffRecentPunches] = useState([]);
+  const staffHardwareInputRef = useRef(null);
+  const staffScanCooldownMap = useRef({});
+
+  // 🔘 Clickable Badge Filters for Employee Attendance Roster
+  const [staffFilter, setStaffFilter] = useState('all'); // 'all' | 'present' | 'absent' | 'departments'
+  const [staffDeptFilter, setStaffDeptFilter] = useState('all');
+
+  // 🔘 Today's Record Type (Student vs Staff)
+  const [todayRecordType, setTodayRecordType] = useState('student'); // 'student' | 'staff'
+  const [todayStaffSearch, setTodayStaffSearch] = useState('');
+  const [todayStaffFilter, setTodayStaffFilter] = useState('all'); // 'all' | 'present' | 'absent'
+  const [todayStaffDept, setTodayStaffDept] = useState('all');
+
+  // 🔘 History Record Type (Student vs Staff)
+  const [historyRecordType, setHistoryRecordType] = useState('student'); // 'student' | 'staff'
+  const [staffHistoryStaffId, setStaffHistoryStaffId] = useState('all');
+  const [staffHistoryDept, setStaffHistoryDept] = useState('all');
+  const [staffHistoryRangeType, setStaffHistoryRangeType] = useState('7days'); // 'today' | '7days' | '30days' | 'custom'
+  const [staffHistoryStartDate, setStaffHistoryStartDate] = useState('');
+  const [staffHistoryEndDate, setStaffHistoryEndDate] = useState('');
+  const [staffHistoryStatusFilter, setStaffHistoryStatusFilter] = useState('all');
+  const [staffHistorySearch, setStaffHistorySearch] = useState('');
+  const [staffHistoryRecords, setStaffHistoryRecords] = useState([]);
+  const [isStaffHistoryLoading, setIsStaffHistoryLoading] = useState(false);
+
   const [newStaffForm, setNewStaffForm] = useState({
     staffId: '',
     name: '',
     designation: 'Faculty / Staff',
     department: 'Engineering',
     phone: '',
-    role: 'staff'
+    email: '',
+    role: 'staff',
+    photo: null
   });
+
+  // 🔍 Real-time Live Matching Suggestions for Staff Scanner Bar
+  const staffScannerSuggestions = useMemo(() => {
+    const raw = (staffScannerCode || '').replace(/^#+/, '').trim().toLowerCase();
+    if (!raw) return [];
+    return staffRoster.filter(st => {
+      const sname = (st.name || '').toLowerCase();
+      const sid = String(st.staffId || '').replace(/^#+/, '').toLowerCase();
+      const sdept = (st.department || '').toLowerCase();
+      const sdesig = (st.designation || '').toLowerCase();
+      const sphone = String(st.phone || '').toLowerCase();
+      return sid.includes(raw) || sname.includes(raw) || sdept.includes(raw) || sdesig.includes(raw) || sphone.includes(raw);
+    });
+  }, [staffScannerCode, staffRoster]);
 
   // Fetch Staff Attendance Roster
   const fetchStaffAttendance = async (date = staffDate, showToast = false) => {
     setIsStaffLoading(true);
     try {
-      const res = await api.getStaffAttendance(date);
-      const data = res?.data || res;
+      const [attRes, staffRes] = await Promise.allSettled([
+        api.getStaffAttendance(date),
+        api.getStaffMembers()
+      ]);
+      const data = attRes.status === 'fulfilled' ? (attRes.value?.data || attRes.value) : null;
+      const staffList = staffRes.status === 'fulfilled' ? (staffRes.value?.staff || staffRes.value?.data?.staff || []) : [];
+
       if (data?.success) {
-        setStaffRoster(data.roster || []);
+        const rawRoster = data.roster || [];
+        // Merge latest contact info (phone, email, role, department) from staff collection
+        const enrichedRoster = rawRoster.map(st => {
+          const matched = staffList.find(s => String(s.staffId) === String(st.staffId));
+          return {
+            ...st,
+            phone: matched?.phone || st.phone || '',
+            email: matched?.email || st.email || '',
+            department: matched?.department || st.department || 'General',
+            designation: matched?.designation || st.designation || 'Staff',
+            role: matched?.role || st.role || 'staff',
+            photo: matched?.photo || st.photo || null
+          };
+        });
+        setStaffRoster(enrichedRoster);
         if (showToast) {
-          toast.success(`✅ Employee roster refreshed (${data.roster?.length || 0} employees found)!`);
+          toast.success(`✅ Employee roster refreshed (${enrichedRoster.length} employees found)!`);
         }
       } else if (showToast) {
         toast.error(data?.error || 'Failed to refresh staff roster');
@@ -314,8 +459,12 @@ export default function Attendance() {
     fetchStaffAttendance(staffDate);
   }, [staffDate, activeTab]);
 
-  const handleManualStaffPunch = async (staffId, type) => {
-    const toastId = toast.loading(`Recording ${type} for staff #${staffId}...`);
+  // Manual Punch for Staff (Table buttons & Quick Punch)
+  const handleManualStaffPunch = async (staffId, type = 'IN') => {
+    if (!staffId) return toast.error('Staff ID is required');
+    const punchKey = `${staffId}_${type}`;
+    setStaffPunchingId(punchKey);
+    const toastId = toast.loading(`Recording ${type} for staff ${staffId}...`);
     try {
       const res = await api.manualStaffPunch({
         staffId,
@@ -324,15 +473,175 @@ export default function Attendance() {
       });
       const data = res?.data || res;
       if (data?.success) {
-        toast.success(`✅ Recorded ${type} for ${data.name || staffId}!`, { id: toastId });
-        fetchStaffAttendance(staffDate);
+        const determinedType = (data.type || type).toUpperCase();
+        if (staffSoundEnabled) {
+          playKioskSound(determinedType === 'IN' ? 'entry' : 'exit');
+        }
+        const matched = staffRoster.find(s => String(s.staffId) === String(staffId));
+        const punchResult = {
+          staff: matched || {
+            staffId: data.staffId || staffId,
+            name: data.name || `Staff ${staffId}`,
+            department: data.department || 'General',
+            designation: data.designation || 'Staff'
+          },
+          type: determinedType,
+          time: data.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          entryTime: data.entryTime,
+          exitTime: data.exitTime,
+          duration: data.workHoursFormatted || (data.durationMinutes ? `${Math.floor(data.durationMinutes / 60)}h ${data.durationMinutes % 60}m` : null),
+          timestamp: Date.now()
+        };
+        setStaffLastPunch(punchResult);
+        setStaffRecentPunches(prev => [punchResult, ...prev.slice(0, 14)]);
+
+        toast.success(`✅ Recorded ${determinedType} for ${data.name || staffId} at ${punchResult.time}!`, { id: toastId });
+        await fetchStaffAttendance(staffDate);
       } else {
-        toast.error(data?.error || 'Failed to record punch', { id: toastId });
+        if (staffSoundEnabled) playKioskSound('error');
+        toast.error(data?.error || data?.reason || 'Failed to record punch', { id: toastId });
       }
     } catch (err) {
+      if (staffSoundEnabled) playKioskSound('error');
       toast.error(`Error: ${err.message}`, { id: toastId });
+    } finally {
+      setStaffPunchingId(null);
     }
   };
+
+  // ⚡ Live Scanner Handler (Camera QR Code or 2D Gun Input)
+  const handleStaffScanSubmit = async (rawInput, forcedMode = null) => {
+    let code = String(rawInput !== undefined ? rawInput : staffScannerCode || '').trim();
+    if (!code) return;
+    setStaffScannerCode('');
+
+    // Parse JSON or URL format if scanned from QR card
+    let cleanCode = code;
+    try {
+      if (code.startsWith('{') && code.endsWith('}')) {
+        const parsed = JSON.parse(code);
+        cleanCode = String(parsed.staffId || parsed.id || parsed.rollNo || parsed.roll || code);
+      }
+    } catch (e) {}
+    if (cleanCode.startsWith('http://') || cleanCode.startsWith('https://')) {
+      try {
+        const u = new URL(cleanCode);
+        const parts = u.pathname.split('/').filter(Boolean);
+        cleanCode = u.searchParams.get('staffId') || u.searchParams.get('id') || parts[parts.length - 1] || cleanCode;
+      } catch (e) {}
+    }
+    // Clean leading 'STAFF_', '#', and trim
+    cleanCode = cleanCode.replace(/^staff[_-]?/i, '').replace(/^#+/, '').trim();
+
+    // Match in staff roster with intelligent multi-tier matching
+    const target = cleanCode.toLowerCase();
+    
+    // Tier 1: Exact staffId or exact name or exact phone
+    let matched = staffRoster.find(s => {
+      const sid = String(s.staffId || '').replace(/^#+/, '').trim().toLowerCase();
+      const sname = String(s.name || '').trim().toLowerCase();
+      const sphone = String(s.phone || '').trim();
+      return sid === target || sname === target || sphone === target;
+    });
+
+    // Tier 2: Numeric staffId match (e.g. 340 or 0340)
+    if (!matched) {
+      const tNum = parseInt(cleanCode, 10);
+      if (!isNaN(tNum)) {
+        matched = staffRoster.find(s => parseInt(String(s.staffId).replace(/^#+/, ''), 10) === tNum);
+      }
+    }
+
+    // Tier 3: Substring name match (e.g. "Prince" or "Kumar" matches "Prince Kumar")
+    if (!matched) {
+      matched = staffRoster.find(s => {
+        const sname = String(s.name || '').trim().toLowerCase();
+        return sname.includes(target) || target.includes(sname);
+      });
+    }
+
+    // Tier 4: Substring staffId or phone match
+    if (!matched) {
+      matched = staffRoster.find(s => {
+        const sid = String(s.staffId || '').replace(/^#+/, '').trim().toLowerCase();
+        const sphone = String(s.phone || '').trim();
+        return sid.includes(target) || (target.length >= 4 && sphone.includes(target));
+      });
+    }
+
+    const punchStaffId = matched?.staffId || cleanCode;
+    const staffName = matched?.name || `Staff ${punchStaffId}`;
+    const modeToUse = forcedMode || staffScanMode;
+
+    // Anti-bounce cooldown protection (15 seconds)
+    const now = Date.now();
+    const lastScanTime = staffScanCooldownMap.current[punchStaffId] || 0;
+    if (now - lastScanTime < 15000) {
+      const elapsed = Math.round((now - lastScanTime) / 1000);
+      const remaining = 15 - elapsed;
+      if (staffSoundEnabled) playKioskSound('error');
+      toast(`⏳ ${staffName} was already punched ${elapsed}s ago! Please wait ${remaining}s.`, { icon: '⚠️' });
+      return;
+    }
+
+    setStaffPunchingId(punchStaffId);
+    try {
+      const res = await api.manualStaffPunch({
+        staffId: punchStaffId,
+        type: modeToUse,
+        date: staffDate
+      });
+      const data = res?.data || res;
+      if (data?.success) {
+        staffScanCooldownMap.current[punchStaffId] = now;
+        const punchType = (data.type || 'IN').toUpperCase();
+        if (staffSoundEnabled) {
+          playKioskSound(punchType === 'IN' ? 'entry' : 'exit');
+        }
+
+        const punchResult = {
+          staff: matched || {
+            staffId: data.staffId || punchStaffId,
+            name: data.name || staffName,
+            department: data.department || 'General',
+            designation: data.designation || 'Staff'
+          },
+          type: punchType,
+          time: data.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          entryTime: data.entryTime,
+          exitTime: data.exitTime,
+          duration: data.workHoursFormatted || (data.durationMinutes ? `${Math.floor(data.durationMinutes / 60)}h ${data.durationMinutes % 60}m` : null),
+          timestamp: Date.now()
+        };
+
+        setStaffLastPunch(punchResult);
+        setStaffRecentPunches(prev => [punchResult, ...prev.slice(0, 14)]);
+        toast.success(`⚡ Staff ${punchType}: ${punchResult.staff.name} at ${punchResult.time}!`);
+        await fetchStaffAttendance(staffDate);
+      } else {
+        if (staffSoundEnabled) playKioskSound('error');
+        toast.error(data?.error || data?.reason || `No staff member found for "${cleanCode}"`);
+      }
+    } catch (err) {
+      if (staffSoundEnabled) playKioskSound('error');
+      toast.error(`Punch error: ${err.message}`);
+    } finally {
+      setStaffPunchingId(null);
+      if (staffHardwareInputRef.current) {
+        staffHardwareInputRef.current.focus();
+      }
+    }
+  };
+
+  // Auto-focus 2D Barcode Gun hardware input when scanner desk is open
+  useEffect(() => {
+    if (activeTab === 'staff' && staffViewMode === 'scanner') {
+      const timer = setTimeout(() => {
+        staffHardwareInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, staffViewMode]);
 
   const handleCleanBiometricHistory = async () => {
     if (!confirm('Are you sure you want to clean old historical backlog data? (Only today from 16:00 and Prince Kumar #340 will remain)')) return;
@@ -350,6 +659,58 @@ export default function Attendance() {
     }
   };
 
+  
+  const compressStaffImage = (file, maxWidth = 500, maxHeight = 500, quality = 0.85) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => reject(new Error('Failed to load image for compression'));
+        img.src = readerEvent.target.result;
+      };
+      reader.onerror = () => reject(new Error('Failed to read image file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleNewStaffPhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const compressed = await compressStaffImage(file, 500, 500, 0.85);
+        setNewStaffForm(prev => ({ ...prev, photo: compressed }));
+      } catch (err) {
+        console.warn('Fallback to FileReader:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setNewStaffForm(prev => ({ ...prev, photo: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
   const handleSaveStaffMember = async (e) => {
     e.preventDefault();
     if (!newStaffForm.staffId || !newStaffForm.name) {
@@ -360,9 +721,9 @@ export default function Attendance() {
       const res = await api.createStaffMember(newStaffForm);
       const data = res?.data || res;
       if (data?.success) {
-        toast.success(`✅ Added ${newStaffForm.name} (#${newStaffForm.staffId})!`, { id: toastId });
+        toast.success(`✅ Added ${newStaffForm.name} (${newStaffForm.staffId})!`, { id: toastId });
         setShowAddStaffModal(false);
-        setNewStaffForm({ staffId: '', name: '', designation: 'Faculty / Staff', department: 'Engineering', phone: '', role: 'staff' });
+        setNewStaffForm({ staffId: '', name: '', designation: 'Faculty / Staff', department: 'Engineering', phone: '', email: '', role: 'staff', photo: null });
         fetchStaffAttendance(staffDate);
       } else {
         toast.error(data?.error || 'Failed to add staff', { id: toastId });
@@ -372,20 +733,121 @@ export default function Attendance() {
     }
   };
 
-  const exportStaffAttendanceCsv = () => {
+  const exportStaffAttendanceCsv = (filterType = 'all') => {
     if (staffRoster.length === 0) return toast.error('No staff records to export');
+    
+    let targetList = staffRoster;
+    let fileSuffix = 'all';
+    let filterLabel = 'All Staff';
+
+    if (filterType === 'present') {
+      targetList = staffRoster.filter(s => s.status === 'present' || (s.entryTime && s.entryTime !== '--'));
+      fileSuffix = 'present';
+      filterLabel = 'Present Staff';
+    } else if (filterType === 'absent') {
+      targetList = staffRoster.filter(s => s.status !== 'present' && (!s.entryTime || s.entryTime === '--'));
+      fileSuffix = 'absent';
+      filterLabel = 'Absent Staff';
+    }
+
+    if (targetList.length === 0) {
+      return toast.error(`No ${filterLabel.toLowerCase()} records to export`);
+    }
+
     const headers = ['Employee ID,Name,Department,Designation,Status,Check-In,Check-Out,Duration,Device SN'];
-    const rows = staffRoster.map(r => {
-      return `"${r.staffId}","${r.name}","${r.department}","${r.designation}","${r.status}","${r.entryTime}","${r.exitTime}","${r.workHoursFormatted || '0h 0m'}","${r.deviceSN || '--'}"`;
+    const rows = targetList.map(r => {
+      const cleanSN = (r.deviceSN || 'Biomax Device')
+        .replace(/telegram\s*remote/gi, 'Biomax Device')
+        .replace(/telegram/gi, 'Biomax Device');
+      return `"${r.staffId}","${r.name}","${r.department || 'General'}","${r.designation || 'Staff'}","${r.status}","${r.entryTime || '--'}","${r.exitTime || '--'}","${r.workHoursFormatted || '0h 0m'}","${cleanSN}"`;
     });
     const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `staff_attendance_${staffDate}.csv`);
+    link.setAttribute("download", `staff_attendance_${fileSuffix}_${staffDate}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success(`📥 Exported ${targetList.length} ${filterLabel} records to Excel!`);
+  };
+
+  // Fetch Staff Attendance History with Date Range & Filters
+  const fetchStaffHistory = async () => {
+    setIsStaffHistoryLoading(true);
+    try {
+      let start = '';
+      let end = '';
+      const todayDate = new Date();
+      const formatDate = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+
+      if (staffHistoryRangeType === 'today') {
+        start = formatDate(todayDate);
+        end = formatDate(todayDate);
+      } else if (staffHistoryRangeType === '7days') {
+        const d = new Date(todayDate);
+        d.setDate(d.getDate() - 7);
+        start = formatDate(d);
+        end = formatDate(todayDate);
+      } else if (staffHistoryRangeType === '30days') {
+        const d = new Date(todayDate);
+        d.setDate(d.getDate() - 30);
+        start = formatDate(d);
+        end = formatDate(todayDate);
+      } else if (staffHistoryRangeType === 'custom') {
+        start = staffHistoryStartDate || formatDate(todayDate);
+        end = staffHistoryEndDate || formatDate(todayDate);
+      }
+
+      const res = await api.getStaffAttendance({
+        history: 'true',
+        startDate: start,
+        endDate: end,
+        staffId: staffHistoryStaffId,
+        department: staffHistoryDept
+      });
+      const data = res?.data || res;
+      if (data?.success && Array.isArray(data.records)) {
+        setStaffHistoryRecords(data.records);
+      } else {
+        setStaffHistoryRecords([]);
+      }
+    } catch (err) {
+      console.warn('Failed to load staff history:', err);
+    } finally {
+      setIsStaffHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'history' && historyRecordType === 'staff') {
+      fetchStaffHistory();
+    }
+  }, [activeTab, historyRecordType, staffHistoryRangeType, staffHistoryStartDate, staffHistoryEndDate, staffHistoryStaffId, staffHistoryDept]);
+
+  const exportStaffHistoryAttendance = () => {
+    if (staffHistoryRecords.length === 0) return toast.error('No staff history records to export');
+    const headers = ['Date,Staff ID,Name,Department,Designation,Status,Check-In,Check-Out,Duration,Device SN'];
+    const rows = staffHistoryRecords.map(r => {
+      const cleanSN = (r.deviceSN || 'Biomax Device')
+        .replace(/telegram\s*remote/gi, 'Biomax Device')
+        .replace(/telegram/gi, 'Biomax Device');
+      return `"${r.date}","${r.staffId}","${r.staffName || ''}","${r.department || ''}","${r.designation || ''}","${r.status || ''}","${r.entryTime || '--'}","${r.exitTime || '--'}","${r.workHoursFormatted || '0h 0m'}","${cleanSN}"`;
+    });
+    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `staff_history_${staffHistoryRangeType}_${getTodayStr()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`📥 Exported ${staffHistoryRecords.length} staff history records!`);
   };
 
   // Fetch Biometric Status & Listen for Live Physical Hardware Punches
@@ -927,12 +1389,27 @@ export default function Attendance() {
 
   // Displayed students for butter-smooth 60fps screen rendering
   const displayedIdCardStudents = useMemo(() => {
-    if (idCardSearch.trim() || idCardShowAll || filteredIdCardStudents.length <= PREVIEW_PAGE_SIZE) {
-      return filteredIdCardStudents;
+    let list = filteredIdCardStudents;
+    const shouldRepeat = idCardRepeatFill || (idCardCardsPerPage === 6 && list.length < 6);
+    if (shouldRepeat && list.length > 0 && list.length < idCardCardsPerPage) {
+      const repeated = [];
+      let idx = 0;
+      while (repeated.length < idCardCardsPerPage) {
+        const item = list[idx % list.length];
+        repeated.push({
+          ...item,
+          _repeatKey: `${item.staffId || item.id || idx}_rep_${repeated.length}`
+        });
+        idx++;
+      }
+      list = repeated;
+    }
+    if (idCardSearch.trim() || idCardShowAll || list.length <= PREVIEW_PAGE_SIZE) {
+      return list;
     }
     const start = (idCardPreviewPage - 1) * PREVIEW_PAGE_SIZE;
-    return filteredIdCardStudents.slice(start, start + PREVIEW_PAGE_SIZE);
-  }, [filteredIdCardStudents, idCardSearch, idCardShowAll, idCardPreviewPage]);
+    return list.slice(start, start + PREVIEW_PAGE_SIZE);
+  }, [filteredIdCardStudents, idCardSearch, idCardShowAll, idCardPreviewPage, idCardRepeatFill, idCardCardsPerPage]);
 
   // 📥 High-Res Vector PDF via Master Template (Clean JSON Payload + Base64 Embedded Fonts)
   const handleSaveAsPdf = async () => {
@@ -955,7 +1432,20 @@ export default function Attendance() {
 
       // 2. Student / Staff data prepare karo (Pure JSON, Zero DOM dependency)
       const isStaffMode = idCardsModalMode === 'staff';
-      const studentData = filteredIdCardStudents.map(s => {
+      let sourceList = filteredIdCardStudents;
+      if (idCardCardsPerPage === 6 || idCardRepeatFill) {
+        if (sourceList.length > 0 && sourceList.length < idCardCardsPerPage) {
+          const repeated = [];
+          let repIdx = 0;
+          while (repeated.length < idCardCardsPerPage) {
+            repeated.push(sourceList[repIdx % sourceList.length]);
+            repIdx++;
+          }
+          sourceList = repeated;
+        }
+      }
+
+      const studentData = sourceList.map(s => {
         if (isStaffMode) {
           return {
             id: s.staffId || s.id || s._id || '',
@@ -1010,16 +1500,21 @@ export default function Attendance() {
 
       // 4. Electron Native IPC call — Data bhejo, HTML aur Vector PDF wahan banega
       if (window.electronAPI && typeof window.electronAPI.printToPDF === 'function') {
+        const effectiveW = idCardCardsPerPage === 6 ? Math.min(225, idCardWidth) : idCardWidth;
+        const effectiveH = idCardCardsPerPage === 6 ? Math.min(330, idCardHeight) : idCardHeight;
+
         const result = await window.electronAPI.printToPDF({
           students: studentData,
           logoBase64: logoB64,
           side: idCardSide,
           cardsPerPage: idCardCardsPerPage,
-          defaultName: defaultFilename
+          defaultName: defaultFilename,
+          cardWidth: effectiveW,
+          cardHeight: effectiveH
         });
 
         if (result.success) {
-          toast.success(`✅ Vector PDF Saved! (${studentData.length} Students)`, { id: toastId });
+          toast.success(`✅ Vector PDF Saved! (${studentData.length} ${isStaffMode ? 'Staff' : 'Student'} Cards)`, { id: toastId });
         } else if (result.cancelled) {
           toast.info('PDF export cancelled', { id: toastId });
         } else {
@@ -1068,6 +1563,12 @@ export default function Attendance() {
     if (!matchedStudent) {
       if (!raw) return;
 
+      // Auto-detect Staff QR Code (e.g. STAFF_2) on Kiosk and route immediately
+      if (/^staff[_-]?/i.test(raw)) {
+        handleStaffScanSubmit(raw);
+        return;
+      }
+
       // 1. Check if raw is JSON (from formatted QR cards)
       let extractedRoll = raw;
       try {
@@ -1104,6 +1605,17 @@ export default function Attendance() {
       });
 
       if (!matchedStudent) {
+        // Fallback: Check if scanned input matches a staff member
+        const cleanStaffTarget = extractedRoll.replace(/^staff[_-]?/i, '').replace(/^#+/, '').trim().toLowerCase();
+        const matchedStaff = staffRoster.find(s => {
+          const sid = String(s.staffId || '').replace(/^#+/, '').trim().toLowerCase();
+          return sid === cleanStaffTarget;
+        });
+        if (matchedStaff) {
+          handleStaffScanSubmit(raw);
+          return;
+        }
+
         if (soundEnabled) playKioskSound('error');
         toast.error(`❌ Student not found for Roll/QR: "${extractedRoll}"`);
         return;
@@ -1290,7 +1802,6 @@ export default function Attendance() {
   const tabs = [
     { key: 'kiosk', label: '📡 Biometric Machine & Kiosk' },
     { key: 'staff', label: '👥 Employee / Staff Attendance' },
-    { key: 'mark', label: 'Manual Mark' },
     { key: 'today', label: "Today's Record" },
     { key: 'history', label: 'History' },
   ];
@@ -1301,23 +1812,43 @@ export default function Attendance() {
     exit: { opacity: 0, y: -16 },
   };
 
-  const exportTodayAttendance = () => {
-    if (todayTableData.length === 0) return;
+  const exportTodayAttendance = (filterType = 'all') => {
+    if (todayTableData.length === 0) return toast.error('No student attendance records to export');
+    
+    let targetList = todayTableData;
+    let fileSuffix = 'all';
+    let filterLabel = 'All Students';
+
+    if (filterType === 'present') {
+      targetList = todayTableData.filter(r => r.status === 'present');
+      fileSuffix = 'present';
+      filterLabel = 'Present Students';
+    } else if (filterType === 'absent') {
+      targetList = todayTableData.filter(r => r.status === 'absent');
+      fileSuffix = 'absent';
+      filterLabel = 'Absent Students';
+    }
+
+    if (targetList.length === 0) {
+      return toast.error(`No ${filterLabel.toLowerCase()} records to export`);
+    }
+
     const headers = ['Roll No,Student,Status,Entry Time,Exit Time,Duration'];
-    const rows = todayTableData.map(r => {
+    const rows = targetList.map(r => {
       const entry = r.entryTime ? formatTime(r.entryTime) : 'N/A';
       const exit = r.exitTime ? formatTime(r.exitTime) : 'N/A';
       const duration = calcDuration(r.entryTime, r.exitTime);
-      return `${r.student.rollNo},"${r.student.name}",${r.status},"${entry}","${exit}","${duration}"`;
+      return `${r.student?.rollNo || ''},"${r.student?.name || ''}",${r.status},"${entry}","${exit}","${duration}"`;
     });
     const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `attendance_today_${dateStr}.csv`);
+    link.setAttribute("download", `student_${fileSuffix}_attendance_${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success(`📥 Exported ${targetList.length} ${filterLabel} records to Excel!`);
   };
 
   // History Date Range Records
@@ -1484,7 +2015,7 @@ export default function Attendance() {
                     👥 Employee &amp; Faculty Attendance Portal
                   </h2>
                   <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                    Real-time biometric attendance tracking for teachers, admins, and staff members (Separate from students).
+                    Real-time biometric &amp; QR attendance tracking for teachers, admins, and staff members (Separate from students).
                   </p>
                 </div>
 
@@ -1524,16 +2055,39 @@ export default function Attendance() {
                     <span>Clear Old Backlog</span>
                   </button>
 
-                  {/* Export CSV Button */}
-                  <button
-                    type="button"
-                    onClick={exportStaffAttendanceCsv}
-                    className="btn btn-secondary btn-sm"
-                    style={{ fontSize: '0.80rem', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}
-                  >
-                    <Download size={14} />
-                    <span>Export CSV</span>
-                  </button>
+                  {/* Export CSV Buttons */}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => exportStaffAttendanceCsv('present')}
+                      className="btn btn-sm"
+                      style={{ fontSize: '0.78rem', padding: '7px 11px', display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+                      title="Download Present Staff Excel"
+                    >
+                      <Download size={13} />
+                      <span>Present ({staffRoster.filter(s => s.status === 'present' || s.entryTime !== '--').length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => exportStaffAttendanceCsv('absent')}
+                      className="btn btn-sm"
+                      style={{ fontSize: '0.78rem', padding: '7px 11px', display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(245, 158, 11, 0.12)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+                      title="Download Absent Staff Excel"
+                    >
+                      <Download size={13} />
+                      <span>Absent ({staffRoster.filter(s => s.status !== 'present' && s.entryTime === '--').length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => exportStaffAttendanceCsv('all')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: '0.78rem', padding: '7px 11px', display: 'flex', alignItems: 'center', gap: 5 }}
+                      title="Download All Staff CSV"
+                    >
+                      <Download size={13} />
+                      <span>All CSV</span>
+                    </button>
+                  </div>
 
                   {/* Print Staff ID Cards Button */}
                   <button
@@ -1551,15 +2105,37 @@ export default function Attendance() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 6,
-                      background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)',
+                      background: 'linear-gradient(135deg, #cc0000 0%, #ff0000 100%)',
                       color: '#ffffff',
                       border: 'none',
-                      boxShadow: '0 2px 8px rgba(13, 148, 136, 0.35)',
+                      boxShadow: '0 2px 8px rgba(220, 38, 38, 0.35)',
                       fontWeight: 800
                     }}
                   >
                     <Printer size={14} />
                     <span>🪪 Print Staff ID Cards</span>
+                  </button>
+
+                  {/* Bulk Import Staff Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowStaffBulkUploadModal(true)}
+                    className="btn btn-secondary btn-sm"
+                    style={{
+                      fontSize: '0.80rem',
+                      padding: '8px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'rgba(2, 132, 199, 0.12)',
+                      borderColor: '#0284c7',
+                      color: '#0284c7',
+                      fontWeight: 800
+                    }}
+                    title="Bulk import staff members via Excel (.xlsx / .xls)"
+                  >
+                    <FileSpreadsheet size={14} />
+                    <span>📥 Bulk Import Staff</span>
                   </button>
 
                   {/* Add Staff Button */}
@@ -1575,201 +2151,1107 @@ export default function Attendance() {
                 </div>
               </div>
 
-              {/* Staff Stats Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 20 }}>
-                <div style={{ background: 'var(--bg-color)', padding: '16px 18px', borderRadius: 14, border: '1px solid var(--border-color)' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>TOTAL EMPLOYEES</div>
-                  <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>{staffRoster.length}</div>
+              {/* View Switcher Bar & Sound Toggle */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', gap: 8, background: 'var(--bg-color)', padding: 4, borderRadius: 12, border: '1px solid var(--border-color)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setStaffViewMode('roster')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '7px 16px',
+                      borderRadius: 9,
+                      border: 'none',
+                      background: staffViewMode === 'roster' ? 'var(--surface-color)' : 'transparent',
+                      color: staffViewMode === 'roster' ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                      fontWeight: 800,
+                      fontSize: '0.84rem',
+                      cursor: 'pointer',
+                      boxShadow: staffViewMode === 'roster' ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <Users size={15} />
+                    <span>Employee Roster ({staffRoster.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStaffViewMode('scanner')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '7px 18px',
+                      borderRadius: 9,
+                      border: 'none',
+                      background: staffViewMode === 'scanner' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : 'transparent',
+                      color: staffViewMode === 'scanner' ? '#ffffff' : 'var(--text-secondary)',
+                      fontWeight: 800,
+                      fontSize: '0.84rem',
+                      cursor: 'pointer',
+                      boxShadow: staffViewMode === 'scanner' ? '0 3px 12px rgba(124, 58, 237, 0.35)' : 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <Scan size={15} />
+                    <span>⚡ 2D Scanner Gun Desk</span>
+                  </button>
                 </div>
 
-                <div style={{ background: 'var(--bg-color)', padding: '16px 18px', borderRadius: 14, border: '1px solid var(--border-color)' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>PRESENT TODAY</div>
-                  <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#10b981', marginTop: 4 }}>
-                    {staffRoster.filter(s => s.status === 'present' || s.entryTime !== '--').length}
-                  </div>
-                </div>
-
-                <div style={{ background: 'var(--bg-color)', padding: '16px 18px', borderRadius: 14, border: '1px solid var(--border-color)' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>ON LEAVE / ABSENT</div>
-                  <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f59e0b', marginTop: 4 }}>
-                    {staffRoster.filter(s => s.status !== 'present' && s.entryTime === '--').length}
-                  </div>
-                </div>
-
-                <div style={{ background: 'var(--bg-color)', padding: '16px 18px', borderRadius: 14, border: '1px solid var(--border-color)' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>DEPARTMENTS</div>
-                  <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--accent-blue)', marginTop: 4 }}>
-                    {new Set(staffRoster.map(s => s.department || 'General')).size}
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setStaffSoundEnabled(!staffSoundEnabled)}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.80rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6, color: staffSoundEnabled ? '#10b981' : 'var(--text-secondary)' }}
+                    title="Toggle Audio Beep on Scan"
+                  >
+                    {staffSoundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                    <span>{staffSoundEnabled ? 'Sound ON' : 'Muted'}</span>
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Staff Attendance Table Card */}
-            <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 18, border: '1.5px solid var(--border-color)' }}>
-              <div style={{ padding: '16px 20px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
-                  Employee Attendance Roster ({staffDate})
-                </h3>
+            {/* ========== VIEW 1: ⚡ DEDICATED 2D BARCODE & QR GUN SCANNER DESK ========== */}
+            {staffViewMode === 'scanner' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20 }}>
+                {/* Left Column: Dedicated 2D Gun Scanner Desk */}
+                <div className="card" style={{ padding: '22px', borderRadius: 18, border: '1.5px solid var(--border-color)', background: 'var(--surface-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(124, 58, 237, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7c3aed' }}>
+                        <Scan size={24} />
+                      </div>
+                      <div>
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                          Staff 2D Barcode & QR Scanner Desk
+                        </h3>
+                        <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: 0 }}>
+                          Dedicated Handheld & USB 2D Barcode Gun Scanner Receiver
+                        </p>
+                      </div>
+                    </div>
 
-                <div style={{ position: 'relative', width: 280 }}>
-                  <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                  <input
-                    type="text"
-                    value={staffSearch}
-                    onChange={(e) => setStaffSearch(e.target.value)}
-                    placeholder="Search employee name or ID..."
-                    style={{ width: '100%', padding: '7px 12px 7px 32px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.82rem', outline: 'none' }}
-                  />
-                </div>
-              </div>
+                    {/* Active 2D Gun Status Pill */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      background: 'rgba(124, 58, 237, 0.10)',
+                      padding: '6px 14px',
+                      borderRadius: 10,
+                      border: '1.5px solid rgba(124, 58, 237, 0.25)',
+                      color: '#7c3aed',
+                      fontWeight: 800,
+                      fontSize: '0.80rem'
+                    }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
+                      <Scan size={14} />
+                      <span>2D Gun Scanner Active</span>
+                    </div>
+                  </div>
 
-              <div className="table-container" style={{ margin: 0 }}>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Staff ID</th>
-                      <th>Department</th>
-                      <th>Check-In</th>
-                      <th>Check-Out</th>
-                      <th>Work Duration</th>
-                      <th>Status</th>
-                      <th>Manual Punch</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {staffRoster
-                      .filter(st => {
-                        if (!staffSearch) return true;
-                        const q = staffSearch.toLowerCase();
-                        return (st.name || '').toLowerCase().includes(q) || String(st.staffId || '').toLowerCase().includes(q);
-                      })
-                      .map((st, idx) => {
-                        const isPrince = st.staffId === '340';
-                        const isPresent = st.status === 'present' || st.entryTime !== '--';
-                        return (
-                          <tr key={idx} style={{ background: isPrince ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}>
-                            <td>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{
-                                  width: 36,
-                                  height: 36,
-                                  borderRadius: '50%',
-                                  background: isPrince ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#334155',
-                                  color: '#ffffff',
+                  {/* Punch Direction Selector */}
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: 'var(--bg-color)', padding: 4, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStaffScanMode('AUTO');
+                        staffHardwareInputRef.current?.focus();
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '7px 8px',
+                        borderRadius: 7,
+                        border: 'none',
+                        fontSize: '0.76rem',
+                        fontWeight: 800,
+                        background: staffScanMode === 'AUTO' ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : 'transparent',
+                        color: staffScanMode === 'AUTO' ? '#ffffff' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <Zap size={12} />
+                      <span>🔄 Auto (IN / OUT)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStaffScanMode('IN');
+                        staffHardwareInputRef.current?.focus();
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '7px 8px',
+                        borderRadius: 7,
+                        border: 'none',
+                        fontSize: '0.76rem',
+                        fontWeight: 800,
+                        background: staffScanMode === 'IN' ? '#10b981' : 'transparent',
+                        color: staffScanMode === 'IN' ? '#ffffff' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <LogIn size={12} />
+                      <span>🟢 Check-In Only</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStaffScanMode('OUT');
+                        staffHardwareInputRef.current?.focus();
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '7px 8px',
+                        borderRadius: 7,
+                        border: 'none',
+                        fontSize: '0.76rem',
+                        fontWeight: 800,
+                        background: staffScanMode === 'OUT' ? '#3b82f6' : 'transparent',
+                        color: staffScanMode === 'OUT' ? '#ffffff' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <LogOut size={12} />
+                      <span>🔵 Check-Out Only</span>
+                    </button>
+                  </div>
+
+                  {/* 2D Gun Hardware Input Bar (Always Auto-Focused) */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleStaffScanSubmit(staffScannerCode);
+                    }}
+                    style={{ marginBottom: 16 }}
+                  >
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        ref={staffHardwareInputRef}
+                        type="text"
+                        placeholder="🔫 Ready for Gun: Scan QR Code or Type Staff ID / Name (e.g. 340, Prince)..."
+                        value={staffScannerCode}
+                        onChange={(e) => setStaffScannerCode(e.target.value)}
+                        autoFocus
+                        style={{
+                          width: '100%',
+                          padding: '13px 95px 13px 40px',
+                          borderRadius: 12,
+                          border: '2px solid #7c3aed',
+                          background: 'rgba(124, 58, 237, 0.04)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.94rem',
+                          fontWeight: 800,
+                          outline: 'none',
+                          boxShadow: '0 0 0 3px rgba(124, 58, 237, 0.12)'
+                        }}
+                      />
+                      <Scan size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#7c3aed', pointerEvents: 'none' }} />
+                      <button
+                        type="submit"
+                        disabled={!staffScannerCode.trim() || !!staffPunchingId}
+                        style={{
+                          position: 'absolute',
+                          right: 6,
+                          top: 6,
+                          bottom: 6,
+                          padding: '0 18px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+                          color: '#ffffff',
+                          fontWeight: 800,
+                          fontSize: '0.82rem',
+                          cursor: staffScannerCode.trim() ? 'pointer' : 'not-allowed',
+                          opacity: staffScannerCode.trim() ? 1 : 0.6
+                        }}
+                      >
+                        {staffPunchingId ? '...' : '⚡ Punch'}
+                      </button>
+                    </div>
+
+                    {/* ⚡ Instant Live Matched Staff Suggestions Card */}
+                    {staffScannerCode.trim() && (
+                      <div
+                        style={{
+                          marginTop: 10,
+                          borderRadius: 14,
+                          border: '1.5px solid #a78bfa',
+                          background: 'var(--surface-color, #ffffff)',
+                          boxShadow: '0 10px 30px rgba(124, 58, 237, 0.18)',
+                          overflow: 'hidden',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <div style={{ padding: '8px 14px', background: 'rgba(124, 58, 237, 0.08)', fontSize: '0.74rem', fontWeight: 800, color: '#6d28d9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>🔍 Matching Staff Members ({staffScannerSuggestions.length})</span>
+                          <span style={{ fontSize: '0.70rem', color: '#7c3aed' }}>Press Enter or Click to Punch</span>
+                        </div>
+
+                        {staffScannerSuggestions.length > 0 ? (
+                          staffScannerSuggestions.map(st => {
+                            const isPrince = String(st.staffId) === '340';
+                            const isPresent = st.status === 'present' || (st.entryTime && st.entryTime !== '--');
+                            return (
+                              <div
+                                key={st.staffId}
+                                style={{
+                                  padding: '12px 14px',
                                   display: 'flex',
                                   alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontWeight: 800,
-                                  fontSize: '0.82rem'
-                                }}>
-                                  {getInitials(st.name)}
-                                </div>
-                                <div>
-                                  <div style={{ fontWeight: 800, fontSize: '0.90rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    {st.name}
-                                    {isPrince && (
-                                      <span style={{ background: '#3b82f6', color: '#ffffff', fontSize: '0.65rem', padding: '1px 6px', borderRadius: 10, fontWeight: 800 }}>
-                                        ⭐ You
+                                  justifyContent: 'space-between',
+                                  gap: 12,
+                                  borderBottom: '1px solid var(--border-color, #e2e8f0)',
+                                  background: isPrince ? 'rgba(59, 130, 246, 0.04)' : 'transparent',
+                                  transition: 'background 0.15s ease'
+                                }}
+                              >
+                                <div
+                                  onClick={() => handleStaffScanSubmit(st.staffId)}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flex: 1 }}
+                                >
+                                  <div
+                                    style={{
+                                      width: 36,
+                                      height: 36,
+                                      borderRadius: '50%',
+                                      background: isPrince ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#7c3aed',
+                                      color: '#fff',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontWeight: 800,
+                                      fontSize: '0.82rem'
+                                    }}
+                                  >
+                                    {getInitials(st.name)}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontWeight: 800, fontSize: '0.90rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      {st.name}
+                                      <span style={{ fontSize: '0.74rem', background: 'rgba(124, 58, 237, 0.1)', color: '#6d28d9', padding: '1px 7px', borderRadius: 6, fontWeight: 800, fontFamily: 'monospace' }}>
+                                        ID: {st.staffId}
                                       </span>
+                                      {isPrince && <span style={{ background: '#3b82f6', color: '#fff', fontSize: '0.65rem', padding: '1px 6px', borderRadius: 6, fontWeight: 800 }}>⭐ You</span>}
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                      {st.department} • {st.designation} • <span style={{ color: isPresent ? '#10b981' : '#ef4444', fontWeight: 700 }}>{isPresent ? `✓ Present (${st.entryTime})` : '✗ Absent'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStaffScanSubmit(st.staffId, 'IN')}
+                                    className="btn btn-sm"
+                                    style={{ background: '#10b981', color: '#fff', fontSize: '0.74rem', padding: '5px 11px', borderRadius: 7, fontWeight: 800 }}
+                                    title="Record Check-In"
+                                  >
+                                    ✓ IN
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStaffScanSubmit(st.staffId, 'OUT')}
+                                    className="btn btn-sm"
+                                    style={{ background: '#3b82f6', color: '#fff', fontSize: '0.74rem', padding: '5px 11px', borderRadius: 7, fontWeight: 800 }}
+                                    title="Record Check-Out"
+                                  >
+                                    ✓ OUT
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStaffScanSubmit(st.staffId, 'AUTO')}
+                                    className="btn btn-sm"
+                                    style={{ background: '#7c3aed', color: '#fff', fontSize: '0.74rem', padding: '5px 12px', borderRadius: 7, fontWeight: 800 }}
+                                    title="Smart Auto Check-In / Check-Out"
+                                  >
+                                    ⚡ Punch
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div style={{ padding: '14px 18px', fontSize: '0.82rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                            No staff found matching "<strong>{staffScannerCode}</strong>". Type staff ID (e.g. 340) or press ⚡ Punch to submit.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </form>
+
+                  {/* Dedicated 2D Gun Station Card */}
+                  <div
+                    onClick={() => staffHardwareInputRef.current?.focus()}
+                    style={{
+                      padding: '28px 20px',
+                      borderRadius: 16,
+                      background: 'rgba(124, 58, 237, 0.03)',
+                      border: '2px dashed #7c3aed',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{
+                      width: 58,
+                      height: 58,
+                      borderRadius: '50%',
+                      background: 'rgba(124, 58, 237, 0.12)',
+                      color: '#7c3aed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px',
+                      boxShadow: '0 0 20px rgba(124, 58, 237, 0.2)'
+                    }}>
+                      <Scan size={28} />
+                    </div>
+                    <h4 style={{ fontSize: '1.02rem', fontWeight: 800, margin: '0 0 6px', color: 'var(--text-primary)' }}>
+                      2D Barcode & QR Gun Scanner Mode
+                    </h4>
+                    <p style={{ fontSize: '0.80rem', color: 'var(--text-secondary)', margin: '0 0 16px', maxWidth: 420, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
+                      Point handheld 2D gun or desktop barcode/QR scanner at the staff member's ID card. The software will instantly record Check-In or Check-Out and send the WhatsApp notification.
+                    </p>
+
+                    {/* Quick Select Employee Dropdown */}
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', maxWidth: 380, margin: '0 auto' }}>
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleStaffScanSubmit(e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '9px 12px',
+                          borderRadius: 9,
+                          border: '1.5px solid var(--border-color)',
+                          background: 'var(--surface-color)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="">-- Or Quick Select Employee ({staffRoster.length}) --</option>
+                        {staffRoster.map(s => (
+                          <option key={s.staffId} value={s.staffId}>
+                            {s.staffId} - {s.name} ({s.department}) - {s.status.toUpperCase()}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Live Punch Showcase & Recent Activity */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Live Scanned Punch Celebration Card */}
+                  {staffLastPunch ? (
+                    <motion.div
+                      key={staffLastPunch.timestamp}
+                      initial={{ scale: 0.92, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      style={{
+                        background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)',
+                        borderRadius: 18,
+                        padding: '22px',
+                        color: '#ffffff',
+                        boxShadow: '0 12px 30px rgba(4, 120, 87, 0.35)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 16
+                      }}
+                    >
+                      <div style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: 16,
+                        background: 'rgba(255,255,255,0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.4rem',
+                        fontWeight: 900,
+                        border: '2px solid rgba(255,255,255,0.4)',
+                        overflow: 'hidden',
+                        flexShrink: 0
+                      }}>
+                        {getInitials(staffLastPunch.staff.name)}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          background: 'rgba(255,255,255,0.25)',
+                          padding: '3px 10px',
+                          borderRadius: 12,
+                          fontSize: '0.74rem',
+                          fontWeight: 800,
+                          marginBottom: 4
+                        }}>
+                          {staffLastPunch.type === 'IN' ? <LogIn size={13} /> : <LogOut size={13} />}
+                          <span>{staffLastPunch.type === 'IN' ? 'CHECKED IN' : 'CHECKED OUT'}</span>
+                        </div>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: '2px 0' }}>
+                          {staffLastPunch.staff.name}
+                        </h3>
+                        <div style={{ fontSize: '0.80rem', opacity: 0.9 }}>
+                          Staff ID: <strong>{staffLastPunch.staff.staffId}</strong> • {staffLastPunch.staff.designation || 'Staff'} ({staffLastPunch.staff.department || 'General'})
+                        </div>
+                        <div style={{ fontSize: '0.76rem', opacity: 0.85, marginTop: 4 }}>
+                          Time: <strong>{staffLastPunch.time}</strong> {staffLastPunch.duration ? `• Work: ${staffLastPunch.duration}` : ''} • Instant WhatsApp Alert 📱
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <div className="card" style={{ padding: '28px 20px', borderRadius: 18, border: '1.5px dashed var(--border-color)', textAlign: 'center', background: 'var(--surface-color)' }}>
+                      <QrCode size={34} color="#a855f7" style={{ margin: '0 auto 8px', opacity: 0.8 }} />
+                      <h4 style={{ fontSize: '0.98rem', fontWeight: 800, margin: '0 0 4px', color: 'var(--text-primary)' }}>
+                        Ready to Scan Staff QR Cards
+                      </h4>
+                      <p style={{ fontSize: '0.80rem', color: 'var(--text-secondary)', margin: 0 }}>
+                        Point staff QR ID card at the camera or trigger 2D barcode gun to mark check-in/out instantly.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Summary Metric Counter */}
+                  <div className="card" style={{ padding: '16px 20px', borderRadius: 16, border: '1.5px solid var(--border-color)', background: 'var(--surface-color)', display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Total Employees</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 2 }}>{staffRoster.length}</div>
+                    </div>
+                    <div style={{ width: 1, background: 'var(--border-color)' }} />
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>Checked In Today</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#10b981', marginTop: 2 }}>
+                        {staffRoster.filter(s => s.status === 'present' || s.entryTime !== '--').length}
+                      </div>
+                    </div>
+                    <div style={{ width: 1, background: 'var(--border-color)' }} />
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: '#f59e0b', fontWeight: 700 }}>Unmarked</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#f59e0b', marginTop: 2 }}>
+                        {staffRoster.filter(s => s.status !== 'present' && s.entryTime === '--').length}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Staff Punches Activity Feed */}
+                  <div className="card" style={{ padding: '16px 20px', borderRadius: 16, border: '1.5px solid var(--border-color)', background: 'var(--surface-color)', maxHeight: 260, overflowY: 'auto' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Clock size={14} color="#7c3aed" />
+                      <span>Recent Staff Punches (Today)</span>
+                    </div>
+
+                    {staffRecentPunches.length === 0 ? (
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '12px 0' }}>
+                        No scans recorded in this session yet.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {staffRecentPunches.map((p, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', borderRadius: 8, background: 'var(--bg-color)', fontSize: '0.78rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{
+                                padding: '2px 6px',
+                                borderRadius: 6,
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                background: p.type === 'IN' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                                color: p.type === 'IN' ? '#10b981' : '#3b82f6'
+                              }}>
+                                {p.type}
+                              </span>
+                              <strong style={{ color: 'var(--text-primary)' }}>{p.staff.name}</strong>
+                              <span style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>{p.staff.staffId}</span>
+                            </div>
+                            <span style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.74rem' }}>{p.time}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ========== VIEW 2: 📋 EMPLOYEE ROSTER TABLE & QUICK PUNCH ========== */}
+            {staffViewMode === 'roster' && (
+              <>
+                {/* Quick Punch Bar & Stats */}
+                <div className="card" style={{ padding: '18px 22px', background: 'var(--surface-color)', border: '1.5px solid var(--border-color)', borderRadius: 18 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 280 }}>
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <Scan size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                        <input
+                          type="text"
+                          value={staffScannerCode}
+                          onChange={(e) => setStaffScannerCode(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleStaffScanSubmit(staffScannerCode);
+                            }
+                          }}
+                          placeholder="⚡ Quick Punch: Enter Staff ID / Barcode..."
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px 8px 32px',
+                            borderRadius: 8,
+                            border: '1.5px solid var(--border-color)',
+                            background: 'var(--bg-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.84rem',
+                            fontWeight: 700,
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => handleStaffScanSubmit(staffScannerCode, 'IN')}
+                          disabled={!staffScannerCode.trim() || !!staffPunchingId}
+                          className="btn btn-sm"
+                          style={{
+                            padding: '7px 14px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: '#10b981',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            cursor: staffScannerCode.trim() ? 'pointer' : 'not-allowed',
+                            opacity: staffScannerCode.trim() ? 1 : 0.6
+                          }}
+                        >
+                          Punch IN
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStaffScanSubmit(staffScannerCode, 'OUT')}
+                          disabled={!staffScannerCode.trim() || !!staffPunchingId}
+                          className="btn btn-sm"
+                          style={{
+                            padding: '7px 14px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: '#3b82f6',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            cursor: staffScannerCode.trim() ? 'pointer' : 'not-allowed',
+                            opacity: staffScannerCode.trim() ? 1 : 0.6
+                          }}
+                        >
+                          Punch OUT
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStaffScanSubmit(staffScannerCode, 'AUTO')}
+                          disabled={!staffScannerCode.trim() || !!staffPunchingId}
+                          className="btn btn-sm"
+                          style={{
+                            padding: '7px 14px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            cursor: staffScannerCode.trim() ? 'pointer' : 'not-allowed',
+                            opacity: staffScannerCode.trim() ? 1 : 0.6
+                          }}
+                        >
+                          ⚡ Auto
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setStaffViewMode('scanner')}
+                      className="btn btn-secondary btn-sm"
+                      style={{
+                        padding: '7px 14px',
+                        fontSize: '0.80rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        borderColor: '#7c3aed',
+                        color: '#7c3aed',
+                        fontWeight: 800
+                      }}
+                    >
+                      <Scan size={14} />
+                      <span>Open 2D Scanner Gun Desk</span>
+                    </button>
+                  </div>
+
+                  {/* Staff Stats Cards (Clickable Filter Badges) */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 18 }}>
+                    {/* 1. Total Employees */}
+                    <div 
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setStaffFilter('all'); setStaffDeptFilter('all'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setStaffFilter('all'); setStaffDeptFilter('all'); } }}
+                      title="Click to view all employees"
+                      style={{ 
+                        background: staffFilter === 'all' && staffDeptFilter === 'all' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-color)', 
+                        padding: '14px 18px', 
+                        borderRadius: 14, 
+                        border: staffFilter === 'all' && staffDeptFilter === 'all' ? '2px solid #3b82f6' : '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: staffFilter === 'all' && staffDeptFilter === 'all' ? '0 4px 14px rgba(59, 130, 246, 0.2)' : 'none',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>TOTAL EMPLOYEES</div>
+                        {staffFilter === 'all' && staffDeptFilter === 'all' && (
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#3b82f6', background: 'rgba(59, 130, 246, 0.15)', padding: '2px 6px', borderRadius: 6 }}>ACTIVE</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 2 }}>{staffRoster.length}</div>
+                      <div style={{ fontSize: '0.70rem', color: '#3b82f6', marginTop: 4, fontWeight: 700 }}>🔍 Click to view all</div>
+                    </div>
+
+                    {/* 2. Present Today */}
+                    <div 
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setStaffFilter(staffFilter === 'present' ? 'all' : 'present'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setStaffFilter(staffFilter === 'present' ? 'all' : 'present'); } }}
+                      title="Click to filter present staff members"
+                      style={{ 
+                        background: staffFilter === 'present' ? 'rgba(16, 185, 129, 0.14)' : 'var(--bg-color)', 
+                        padding: '14px 18px', 
+                        borderRadius: 14, 
+                        border: staffFilter === 'present' ? '2px solid #10b981' : '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: staffFilter === 'present' ? '0 4px 14px rgba(16, 185, 129, 0.2)' : 'none',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>PRESENT TODAY</div>
+                        {staffFilter === 'present' && (
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 6px', borderRadius: 6 }}>FILTERED</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#10b981', marginTop: 2 }}>
+                        {staffRoster.filter(s => s.status === 'present' || s.entryTime !== '--').length}
+                      </div>
+                      <div style={{ fontSize: '0.70rem', color: '#10b981', marginTop: 4, fontWeight: 700 }}>
+                        {staffFilter === 'present' ? '✓ Showing present only' : '👉 Click to show present'}
+                      </div>
+                    </div>
+
+                    {/* 3. On Leave / Absent */}
+                    <div 
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setStaffFilter(staffFilter === 'absent' ? 'all' : 'absent'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setStaffFilter(staffFilter === 'absent' ? 'all' : 'absent'); } }}
+                      title="Click to filter absent/on-leave staff members"
+                      style={{ 
+                        background: staffFilter === 'absent' ? 'rgba(245, 158, 11, 0.14)' : 'var(--bg-color)', 
+                        padding: '14px 18px', 
+                        borderRadius: 14, 
+                        border: staffFilter === 'absent' ? '2px solid #f59e0b' : '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: staffFilter === 'absent' ? '0 4px 14px rgba(245, 158, 11, 0.2)' : 'none',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>ON LEAVE / ABSENT</div>
+                        {staffFilter === 'absent' && (
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 6px', borderRadius: 6 }}>FILTERED</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f59e0b', marginTop: 2 }}>
+                        {staffRoster.filter(s => s.status !== 'present' && s.entryTime === '--').length}
+                      </div>
+                      <div style={{ fontSize: '0.70rem', color: '#f59e0b', marginTop: 4, fontWeight: 700 }}>
+                        {staffFilter === 'absent' ? '✓ Showing absent only' : '👉 Click to show absent'}
+                      </div>
+                    </div>
+
+                    {/* 4. Departments */}
+                    <div 
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setStaffFilter(staffFilter === 'departments' ? 'all' : 'departments'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setStaffFilter(staffFilter === 'departments' ? 'all' : 'departments'); } }}
+                      title="Click to view and filter by departments"
+                      style={{ 
+                        background: staffFilter === 'departments' || staffDeptFilter !== 'all' ? 'rgba(139, 92, 246, 0.14)' : 'var(--bg-color)', 
+                        padding: '14px 18px', 
+                        borderRadius: 14, 
+                        border: staffFilter === 'departments' || staffDeptFilter !== 'all' ? '2px solid #8b5cf6' : '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: staffFilter === 'departments' || staffDeptFilter !== 'all' ? '0 4px 14px rgba(139, 92, 246, 0.2)' : 'none',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>DEPARTMENTS</div>
+                        {(staffFilter === 'departments' || staffDeptFilter !== 'all') && (
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.15)', padding: '2px 6px', borderRadius: 6 }}>
+                            {staffDeptFilter !== 'all' ? staffDeptFilter : 'FILTER'}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--accent-blue)', marginTop: 2 }}>
+                        {new Set(staffRoster.map(s => s.department || 'General')).size}
+                      </div>
+                      <div style={{ fontSize: '0.70rem', color: '#8b5cf6', marginTop: 4, fontWeight: 700 }}>
+                        {staffDeptFilter !== 'all' ? `Dept: ${staffDeptFilter}` : '👉 Click for department list'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Department Chips Filter Bar (Active when Departments clicked or Dept filter applied) */}
+                  {(staffFilter === 'departments' || staffDeptFilter !== 'all') && (
+                    <div style={{ marginTop: 14, padding: '12px 16px', background: 'var(--bg-color)', borderRadius: 12, border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          🏢 Filter by Department:
+                        </span>
+                        {staffDeptFilter !== 'all' && (
+                          <button
+                            type="button"
+                            onClick={() => setStaffDeptFilter('all')}
+                            style={{ border: 'none', background: 'transparent', color: '#ef4444', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}
+                          >
+                            ✖ Clear Department Filter
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => setStaffDeptFilter('all')}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: 20,
+                            border: 'none',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: staffDeptFilter === 'all' ? 'var(--accent-blue)' : 'var(--surface-color)',
+                            color: staffDeptFilter === 'all' ? '#fff' : 'var(--text-secondary)'
+                          }}
+                        >
+                          All ({staffRoster.length})
+                        </button>
+                        {Array.from(new Set(staffRoster.map(s => s.department || 'General').filter(Boolean))).sort().map(dept => {
+                          const count = staffRoster.filter(s => (s.department || 'General') === dept).length;
+                          const isSel = staffDeptFilter.toLowerCase() === dept.toLowerCase();
+                          return (
+                            <button
+                              key={dept}
+                              type="button"
+                              onClick={() => setStaffDeptFilter(isSel ? 'all' : dept)}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: 20,
+                                border: 'none',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                background: isSel ? '#8b5cf6' : 'var(--surface-color)',
+                                color: isSel ? '#fff' : 'var(--text-secondary)',
+                                boxShadow: isSel ? '0 2px 6px rgba(139, 92, 246, 0.3)' : 'none'
+                              }}
+                            >
+                              {dept} ({count})
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Staff Attendance Table Card */}
+                <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 18, border: '1.5px solid var(--border-color)' }}>
+                  <div style={{ padding: '16px 20px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
+                        Employee Attendance Roster ({staffDate})
+                      </h3>
+                      {(staffFilter !== 'all' || staffDeptFilter !== 'all') && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-blue)' }}>
+                            Showing: {staffFilter === 'present' ? 'Present Staff' : staffFilter === 'absent' ? 'Absent Staff' : ''} {staffDeptFilter !== 'all' ? `(${staffDeptFilter})` : ''}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => { setStaffFilter('all'); setStaffDeptFilter('all'); }}
+                            style={{ border: 'none', background: 'transparent', color: '#ef4444', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}
+                          >
+                            ✖ Clear Filter
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => exportStaffAttendanceCsv('present')}
+                          className="btn btn-sm"
+                          style={{ fontSize: '0.78rem', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+                          title="Download Present Staff Excel"
+                        >
+                          <Download size={13} />
+                          <span>Present Excel</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => exportStaffAttendanceCsv('absent')}
+                          className="btn btn-sm"
+                          style={{ fontSize: '0.78rem', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(245, 158, 11, 0.12)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+                          title="Download Absent Staff Excel"
+                        >
+                          <Download size={13} />
+                          <span>Absent Excel</span>
+                        </button>
+                      </div>
+
+                      <div style={{ position: 'relative', width: 240 }}>
+                        <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                        <input
+                          type="text"
+                          value={staffSearch}
+                          onChange={(e) => setStaffSearch(e.target.value)}
+                          placeholder="Search employee name or ID..."
+                          style={{ width: '100%', padding: '7px 12px 7px 32px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.82rem', outline: 'none' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="table-container" style={{ margin: 0 }}>
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Staff ID</th>
+                          <th>Department</th>
+                          <th>Check-In</th>
+                          <th>Check-Out</th>
+                          <th>Work Duration</th>
+                          <th>Status</th>
+                          <th>Manual Punch</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {staffRoster
+                          .filter(st => {
+                            // 1. Text Search Filter
+                            if (staffSearch) {
+                              const q = staffSearch.replace(/^#+/, '').trim().toLowerCase();
+                              if (q) {
+                                const sname = (st.name || '').toLowerCase();
+                                const sid = String(st.staffId || '').replace(/^#+/, '').toLowerCase();
+                                const sdept = (st.department || '').toLowerCase();
+                                const sdesig = (st.designation || '').toLowerCase();
+                                const sphone = String(st.phone || '').toLowerCase();
+                                if (!sname.includes(q) && !sid.includes(q) && !sdept.includes(q) && !sdesig.includes(q) && !sphone.includes(q)) return false;
+                              }
+                            }
+                            // 2. Status Badge Filter (Present / Absent)
+                            const isPresent = st.status === 'present' || st.entryTime !== '--';
+                            if (staffFilter === 'present' && !isPresent) return false;
+                            if (staffFilter === 'absent' && isPresent) return false;
+                            // 3. Department Filter
+                            if (staffDeptFilter !== 'all') {
+                              const sdept = st.department || 'General';
+                              if (sdept.toLowerCase() !== staffDeptFilter.toLowerCase()) return false;
+                            }
+                            return true;
+                          })
+                          .map((st, idx) => {
+                            const isPrince = st.staffId === '340';
+                            const isPresent = st.status === 'present' || st.entryTime !== '--';
+                            const isPunchingIn = staffPunchingId === `${st.staffId}_IN`;
+                            const isPunchingOut = staffPunchingId === `${st.staffId}_OUT`;
+
+                            return (
+                              <tr
+                                key={idx}
+                                onClick={() => setSelectedStaffProfile(st)}
+                                style={{ background: isPrince ? 'rgba(59, 130, 246, 0.05)' : 'transparent', cursor: 'pointer' }}
+                                title="Click to view full staff profile and records"
+                              >
+                                <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <div style={{
+                                      width: 36,
+                                      height: 36,
+                                      borderRadius: '50%',
+                                      background: isPrince ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#334155',
+                                      color: '#ffffff',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontWeight: 800,
+                                      fontSize: '0.82rem',
+                                      overflow: 'hidden'
+                                    }}>
+                                      {st.photo ? (
+                                        <img src={st.photo} alt={st.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      ) : (
+                                        getInitials(st.name)
+                                      )}
+                                    </div>
+                                    <div>
+                                      <div style={{ fontWeight: 800, fontSize: '0.90rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        {st.name}
+                                        {isPrince && (
+                                          <span style={{ background: '#3b82f6', color: '#ffffff', fontSize: '0.65rem', padding: '1px 6px', borderRadius: 10, fontWeight: 800 }}>
+                                            ⭐ You
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                        {st.designation || 'Faculty'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td>
+                                  <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.86rem' }}>
+                                    {st.staffId}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                                    {st.department || 'General'}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={{ color: st.entryTime !== '--' ? '#10b981' : 'var(--text-secondary)', fontWeight: 700, fontSize: '0.86rem' }}>
+                                    {st.entryTime}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={{ color: st.exitTime !== '--' ? '#3b82f6' : (st.entryTime !== '--' ? '#10b981' : 'var(--text-secondary)'), fontWeight: 700, fontSize: '0.86rem' }}>
+                                    {st.exitTime !== '--' ? st.exitTime : (st.entryTime !== '--' ? '🟢 Active IN' : '--')}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div>
+                                    <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>
+                                      {st.workHoursFormatted || '0h 0m'}
+                                    </span>
+                                    {st.punches && st.punches.filter(p => p.type === 'IN').length > 1 && (
+                                      <div style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700 }}>
+                                        {st.punches.filter(p => p.type === 'IN').length} Shifts
+                                      </div>
                                     )}
                                   </div>
-                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                                    {st.designation || 'Faculty'}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td>
-                              <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.86rem' }}>
-                                #{st.staffId}
-                              </span>
-                            </td>
-                            <td>
-                              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                                {st.department || 'General'}
-                              </span>
-                            </td>
-                            <td>
-                              <span style={{ color: st.entryTime !== '--' ? '#10b981' : 'var(--text-secondary)', fontWeight: 700, fontSize: '0.86rem' }}>
-                                {st.entryTime}
-                              </span>
-                            </td>
-                            <td>
-                              <span style={{ color: st.exitTime !== '--' ? '#3b82f6' : 'var(--text-secondary)', fontWeight: 700, fontSize: '0.86rem' }}>
-                                {st.exitTime}
-                              </span>
-                            </td>
-                            <td>
-                              <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>
-                                {st.workHoursFormatted || '0h 0m'}
-                              </span>
-                            </td>
-                            <td>
-                              <span style={{
-                                padding: '4px 10px',
-                                borderRadius: 14,
-                                fontSize: '0.74rem',
-                                fontWeight: 800,
-                                background: isPresent ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                                color: isPresent ? '#10b981' : '#ef4444',
-                                border: `1px solid ${isPresent ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-                              }}>
-                                {isPresent ? 'PRESENT' : 'ABSENT'}
-                              </span>
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', gap: 6 }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleManualStaffPunch(st.staffId, 'IN')}
-                                  style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #10b981', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}
-                                  title="Punch IN"
-                                >
-                                  IN
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleManualStaffPunch(st.staffId, 'OUT')}
-                                  style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #3b82f6', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}
-                                  title="Punch OUT"
-                                >
-                                  OUT
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setIdCardsModalMode('staff');
-                                    setIdCardSearch(st.staffId || st.name);
-                                    setShowIdCardsModal(true);
-                                  }}
-                                  style={{
-                                    padding: '3px 8px',
-                                    borderRadius: 6,
-                                    border: '1px solid #0d9488',
-                                    background: 'rgba(13, 148, 136, 0.12)',
-                                    color: '#0d9488',
-                                    fontSize: '0.72rem',
+                                </td>
+                                <td>
+                                  <span style={{
+                                    padding: '4px 10px',
+                                    borderRadius: 14,
+                                    fontSize: '0.74rem',
                                     fontWeight: 800,
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 3
-                                  }}
-                                  title="Print / View Staff ID Card"
-                                >
-                                  🪪 Card
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                                    background: isPresent ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                    color: isPresent ? '#10b981' : '#ef4444',
+                                    border: `1px solid ${isPresent ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                                  }}>
+                                    {isPresent ? 'PRESENT' : 'ABSENT'}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <button
+                                      type="button"
+                                      disabled={isPunchingIn || isPunchingOut}
+                                      onClick={() => handleManualStaffPunch(st.staffId, 'IN')}
+                                      style={{
+                                        padding: '4px 10px',
+                                        borderRadius: 6,
+                                        border: '1px solid #10b981',
+                                        background: isPunchingIn ? '#10b981' : 'rgba(16, 185, 129, 0.12)',
+                                        color: isPunchingIn ? '#ffffff' : '#10b981',
+                                        fontSize: '0.74rem',
+                                        fontWeight: 800,
+                                        cursor: isPunchingIn || isPunchingOut ? 'not-allowed' : 'pointer',
+                                        opacity: isPunchingIn ? 0.7 : 1,
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                      title="Record Check-In"
+                                    >
+                                      {isPunchingIn ? '...' : (st.entryTime && st.entryTime !== '--' ? '✓ IN' : 'IN')}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={isPunchingIn || isPunchingOut}
+                                      onClick={() => handleManualStaffPunch(st.staffId, 'OUT')}
+                                      style={{
+                                        padding: '4px 10px',
+                                        borderRadius: 6,
+                                        border: '1px solid #3b82f6',
+                                        background: isPunchingOut ? '#3b82f6' : 'rgba(59, 130, 246, 0.12)',
+                                        color: isPunchingOut ? '#ffffff' : '#3b82f6',
+                                        fontSize: '0.74rem',
+                                        fontWeight: 800,
+                                        cursor: isPunchingIn || isPunchingOut ? 'not-allowed' : 'pointer',
+                                        opacity: isPunchingOut ? 0.7 : 1,
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                      title="Record Check-Out"
+                                    >
+                                      {isPunchingOut ? '...' : (st.exitTime && st.exitTime !== '--' ? '✓ OUT' : 'OUT')}
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Add Staff Modal */}
             {showAddStaffModal && (
@@ -1810,9 +3292,129 @@ export default function Attendance() {
                   </div>
 
                   <form onSubmit={handleSaveStaffMember} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                    {/* 📸 Profile Photo Upload Box */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 16,
+                      padding: '12px 16px',
+                      borderRadius: 14,
+                      background: 'var(--bg-color, #f8fafc)',
+                      border: '1.5px dashed var(--border-color, #cbd5e1)'
+                    }}>
+                      <div style={{ position: 'relative', width: 62, height: 62, flexShrink: 0 }}>
+                        {newStaffForm.photo ? (
+                          <img
+                            src={newStaffForm.photo}
+                            alt="Staff Preview"
+                            style={{
+                              width: 62,
+                              height: 62,
+                              borderRadius: 14,
+                              objectFit: 'cover',
+                              border: '2px solid #2563eb',
+                              display: 'block'
+                            }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: 62,
+                            height: 62,
+                            borderRadius: 14,
+                            background: 'rgba(37, 99, 235, 0.1)',
+                            color: '#2563eb',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '1.5px dashed #3b82f6'
+                          }}>
+                            <Camera size={20} />
+                            <span style={{ fontSize: '0.60rem', fontWeight: 700, marginTop: 2 }}>Photo</span>
+                          </div>
+                        )}
+                        <label
+                          htmlFor="new-staff-photo-input"
+                          style={{
+                            position: 'absolute',
+                            bottom: -4,
+                            right: -4,
+                            background: '#2563eb',
+                            color: '#ffffff',
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                            border: '2px solid #ffffff'
+                          }}
+                          title="Upload Profile Photo"
+                        >
+                          <Camera size={12} />
+                          <input
+                            id="new-staff-photo-input"
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={handleNewStaffPhotoUpload}
+                          />
+                        </label>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                          Staff Profile Photo (Optional)
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                          Printed directly on Official PVC ID card and kiosk profile.
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                          <label
+                            htmlFor="new-staff-photo-input"
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 6,
+                              background: '#2563eb',
+                              color: '#ffffff',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4
+                            }}
+                          >
+                            <Camera size={11} />
+                            {newStaffForm.photo ? 'Change Photo' : 'Upload Photo'}
+                          </label>
+                          {newStaffForm.photo && (
+                            <button
+                              type="button"
+                              onClick={() => setNewStaffForm(prev => ({ ...prev, photo: null }))}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: 6,
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                color: '#ef4444',
+                                border: '1px solid rgba(239, 68, 68, 0.25)',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
                     <div>
                       <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: 6, color: 'var(--text-primary)' }}>
-                        Employee / Biometric User ID *
+                        Staff / Biometric User ID *
                       </label>
                       <input
                         type="text"
@@ -1908,13 +3510,36 @@ export default function Attendance() {
 
                     <div>
                       <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: 6, color: 'var(--text-primary)' }}>
-                        Mobile Phone Number
+                        Mobile Phone Number (For WhatsApp / SMS Alerts)
                       </label>
                       <input
-                        type="text"
-                        placeholder="e.g. 9876543210"
+                        type="tel"
+                        placeholder="e.g. 9876543210 (For Check-In / Out WhatsApp SMS)"
                         value={newStaffForm.phone}
                         onChange={(e) => setNewStaffForm({ ...newStaffForm, phone: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: 10,
+                          border: '1.5px solid var(--border-color, #cbd5e1)',
+                          background: 'var(--bg-color, #f8fafc)',
+                          color: 'var(--text-primary, #0f172a)',
+                          fontSize: '0.88rem',
+                          fontWeight: 600,
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: 6, color: 'var(--text-primary)' }}>
+                        Official Email Address (Optional - For Internal Communications)
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="e.g. staff@careerxone.com"
+                        value={newStaffForm.email || ''}
+                        onChange={(e) => setNewStaffForm({ ...newStaffForm, email: e.target.value })}
                         style={{
                           width: '100%',
                           padding: '10px 14px',
@@ -1941,266 +3566,37 @@ export default function Attendance() {
                 </div>
               </div>
             )}
-          </motion.div>
-        )}
 
-        {/* ========== TAB 1: Mark Attendance ========== */}
-        {activeTab === 'mark' && (
-          <motion.div
-            key="mark"
-            variants={tabVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.3 }}
-          >
-            <div className="grid-2">
-              {/* Left: Biometric Scanner */}
-              <motion.div
-                className="card"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <div className="card-header">
-                  <div>
-                    <div className="card-title flex items-center gap-8">
-                      <Fingerprint size={18} />
-                      Biometric Scanner
-                    </div>
-                    <div className="card-subtitle">Simulate fingerprint attendance</div>
-                  </div>
-                  <div className="badge badge-info">
-                    <Clock size={12} /> LIVE
-                  </div>
-                </div>
+            {/* Staff Profile Modal */}
+            {selectedStaffProfile && (
+              <StaffProfileModal
+                staff={selectedStaffProfile}
+                onClose={() => setSelectedStaffProfile(null)}
+                onStaffUpdated={(updatedMember) => {
+                  if (updatedMember) {
+                    setSelectedStaffProfile(prev => ({ ...prev, ...updatedMember }));
+                  }
+                  fetchStaffAttendance(staffDate);
+                }}
+                onStaffDeleted={() => {
+                  setSelectedStaffProfile(null);
+                  fetchStaffAttendance(staffDate);
+                }}
+                onManualPunch={(sid, type) => {
+                  handleManualStaffPunch(sid, type);
+                  fetchStaffAttendance(staffDate);
+                }}
+              />
+            )}
 
-                <div className="scanner-container">
-                  {/* Live Clock */}
-                  <div className="text-center mb-16">
-                    <div style={{ fontSize: '1.8rem', fontFamily: "'Outfit', sans-serif", fontWeight: 800, color: 'var(--text-primary)' }}>
-                      {clockStr}
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-tertiary)' }}>{dateStr}</div>
-                  </div>
-
-                  {/* Scanner Ring */}
-                  <div className={`scanner-ring ${scannerState}`}>
-                    <Fingerprint size={64} className="scanner-fingerprint" />
-                    <div className="scan-line" />
-                  </div>
-
-                  {/* Scanner Status */}
-                  <div className="text-center mt-16" style={{ minHeight: 24 }}>
-                    {scannerState === 'scanning' && (
-                      <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        style={{ color: 'var(--accent-blue)', fontSize: '0.85rem', fontWeight: 600 }}
-                      >
-                        Scanning fingerprint...
-                      </motion.span>
-                    )}
-                    {scannerState === 'success' && (
-                      <motion.span
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        style={{ color: 'var(--accent-green)', fontSize: '0.85rem', fontWeight: 600 }}
-                      >
-                        ✅ Attendance Marked Successfully!
-                      </motion.span>
-                    )}
-                  </div>
-
-                  {/* Student Selector */}
-                  <div className="w-full mt-24" style={{ position: 'relative', zIndex: 50 }}>
-                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', marginBottom: '6px', display: 'block' }}>
-                      Select Student
-                    </label>
-                    <SearchableStudentSelect
-                      value={selectedStudent}
-                      onChange={setSelectedStudent}
-                      students={activeStudents}
-                      includeAllOption={false}
-                      placeholder="🔍 Search student by name / roll number..."
-                    />
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-12 mt-16 w-full">
-                    <button
-                      className="btn btn-success flex-1"
-                      onClick={() => handleScan('entry')}
-                      disabled={!selectedStudent || scannerState !== 'default'}
-                    >
-                      <LogIn size={18} />
-                      Mark Entry
-                    </button>
-                    <button
-                      className="btn btn-danger flex-1"
-                      onClick={() => handleScan('exit')}
-                      disabled={!selectedStudent || scannerState !== 'default'}
-                      style={scannerState !== 'default' ? {} : { background: 'rgba(239, 68, 68, 0.12)' }}
-                    >
-                      <LogOut size={18} />
-                      Mark Exit
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Right: Quick Status */}
-              <motion.div
-                className="card"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <div className="card-header">
-                  <div>
-                    <div className="card-title flex items-center gap-8">
-                      <Users size={18} />
-                      Today's Summary
-                    </div>
-                    <div className="card-subtitle">{dateStr}</div>
-                  </div>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="stat-cards-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                  <motion.div
-                    className="stat-card green"
-                    style={{ cursor: 'pointer', border: attendanceFilter === 'present' ? '2px solid var(--accent-green)' : undefined }}
-                    onClick={() => setAttendanceFilter('present')}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.25 }}
-                  >
-                    <div className="stat-card-top">
-                      <div className="stat-card-icon green">
-                        <UserCheck size={20} />
-                      </div>
-                    </div>
-                    <div className="stat-card-value">{stats.present}</div>
-                    <div className="stat-card-label">Present</div>
-                  </motion.div>
-
-                  <motion.div
-                    className="stat-card orange"
-                    style={{ cursor: 'pointer', border: attendanceFilter === 'late' ? '2px solid var(--accent-orange)' : undefined }}
-                    onClick={() => setAttendanceFilter('late')}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <div className="stat-card-top">
-                      <div className="stat-card-icon orange">
-                        <AlertTriangle size={20} />
-                      </div>
-                    </div>
-                    <div className="stat-card-value">{stats.late}</div>
-                    <div className="stat-card-label">Late</div>
-                  </motion.div>
-
-                  <motion.div
-                    className="stat-card"
-                    style={{ cursor: 'pointer', border: attendanceFilter === 'absent' ? '2px solid var(--accent-red)' : undefined, borderTopColor: 'var(--accent-red)' }}
-                    onClick={() => setAttendanceFilter('absent')}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.35 }}
-                  >
-                    <div className="stat-card-top">
-                      <div className="stat-card-icon" style={{ background: 'rgba(239, 68, 68, 0.12)', color: 'var(--accent-red-light)' }}>
-                        <UserX size={20} />
-                      </div>
-                    </div>
-                    <div className="stat-card-value">{stats.absent}</div>
-                    <div className="stat-card-label">Absent</div>
-                  </motion.div>
-
-                  <motion.div
-                    className="stat-card blue"
-                    style={{ cursor: 'pointer', border: attendanceFilter === 'all' ? '2px solid var(--accent-blue)' : undefined }}
-                    onClick={() => setAttendanceFilter('all')}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <div className="stat-card-top">
-                      <div className="stat-card-icon blue">
-                        <CheckCircle2 size={20} />
-                      </div>
-                    </div>
-                    <div className="stat-card-value" style={{ fontSize: '2rem' }}>{stats.percentage}%</div>
-                    <div className="stat-card-label">Attendance</div>
-                  </motion.div>
-                </div>
-
-                {/* Today's Present Students List */}
-                <div className="mt-16">
-                  <h4 style={{ fontSize: '0.88rem', marginBottom: 12, color: 'var(--text-secondary)' }}>
-                    Students: {attendanceFilter.toUpperCase()} ({filteredTodayStudents.length})
-                  </h4>
-                  <div style={{ maxHeight: 280, overflowY: 'auto', paddingRight: '5px' }}>
-                    {filteredTodayStudents.length === 0 ? (
-                      <div className="empty-state" style={{ padding: '24px 12px' }}>
-                        <p>No students match this filter.</p>
-                      </div>
-                    ) : (
-                      <div className="activity-feed">
-                        {filteredTodayStudents.map((rec, idx) => (
-                          <motion.div
-                            key={rec.student.id}
-                            className="activity-item"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: idx * 0.05 }}
-                          >
-                            {rec.student.photo ? (
-                              <img 
-                                src={rec.student.photo} 
-                                alt={rec.student.name} 
-                                className="student-avatar" 
-                                style={{ objectFit: 'cover', border: '1px solid var(--border-color)' }} 
-                              />
-                            ) : (
-                              <div className={`student-avatar ${getAvatarClass(idx)}`}>
-                                {getInitials(rec.student.name)}
-                              </div>
-                            )}
-                            <div className="flex-1">
-                              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                {rec.student.name}
-                              </div>
-                              <div className="flex items-center gap-8" style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: 2 }}>
-                                {rec.entryTime ? (
-                                  <>
-                                    <span>
-                                      <LogIn size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
-                                      {formatTime(rec.entryTime)}
-                                    </span>
-                                    <span>
-                                      <LogOut size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
-                                      {rec.exitTime ? formatTime(rec.exitTime) : 'Still in'}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span>No Entry Record</span>
-                                )}
-                              </div>
-                            </div>
-                            <span className={`badge ${rec.status === 'late' ? 'badge-late' : rec.status === 'absent' ? 'badge-info' : 'badge-present'}`} style={{background: rec.status === 'absent' ? 'rgba(239, 68, 68, 0.12)' : '', color: rec.status === 'absent' ? 'var(--accent-red)' : ''}}>
-                              {rec.status}
-                            </span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            </div>
+            {/* Staff Bulk Upload Modal */}
+            <StaffBulkUploadModal
+              isOpen={showStaffBulkUploadModal}
+              onClose={() => setShowStaffBulkUploadModal(false)}
+              onSuccess={() => {
+                fetchStaffAttendance(staffDate);
+              }}
+            />
           </motion.div>
         )}
 
@@ -2227,16 +3623,141 @@ export default function Attendance() {
                     Today's Attendance Record
                   </div>
                   <div className="card-subtitle">
-                    {dateStr} • {stats.present + stats.late} of {activeStudents.length} present ({stats.percentage}% rate)
+                    {todayRecordType === 'student'
+                      ? `${dateStr} • ${stats.present + stats.late} of ${activeStudents.length} students present (${stats.percentage}% rate)`
+                      : `${dateStr} • ${staffRoster.filter(s => s.status === 'present' || s.entryTime !== '--').length} of ${staffRoster.length} staff present (${staffRoster.length > 0 ? Math.round((staffRoster.filter(s => s.status === 'present' || s.entryTime !== '--').length / staffRoster.length) * 100) : 0}% rate)`}
                   </div>
                 </div>
-                <div className="flex gap-12 items-center flex-wrap">
-                  <button onClick={exportTodayAttendance} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '36px', padding: '0 14px', fontSize: '0.85rem', fontWeight: 600 }}>
-                    <Download size={15} /> Download Excel
+
+                {/* Student vs Staff Toggle Buttons */}
+                <div style={{ display: 'inline-flex', background: 'var(--bg-color)', padding: 4, borderRadius: 12, border: '1px solid var(--border-color)', gap: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => setTodayRecordType('student')}
+                    style={{
+                      padding: '6px 16px',
+                      borderRadius: 8,
+                      border: 'none',
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: todayRecordType === 'student' ? 'var(--surface-color)' : 'transparent',
+                      color: todayRecordType === 'student' ? '#3b82f6' : 'var(--text-secondary)',
+                      boxShadow: todayRecordType === 'student' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>🎓 Student Today</span>
+                    <span style={{ fontSize: '0.72rem', background: todayRecordType === 'student' ? '#3b82f6' : 'var(--border-color)', color: todayRecordType === 'student' ? '#fff' : 'var(--text-secondary)', padding: '1px 7px', borderRadius: 10 }}>
+                      {activeStudents.length}
+                    </span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setTodayRecordType('staff')}
+                    style={{
+                      padding: '6px 16px',
+                      borderRadius: 8,
+                      border: 'none',
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: todayRecordType === 'staff' ? 'var(--surface-color)' : 'transparent',
+                      color: todayRecordType === 'staff' ? '#8b5cf6' : 'var(--text-secondary)',
+                      boxShadow: todayRecordType === 'staff' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>👥 Staff Today</span>
+                    <span style={{ fontSize: '0.72rem', background: todayRecordType === 'staff' ? '#8b5cf6' : 'var(--border-color)', color: todayRecordType === 'staff' ? '#fff' : 'var(--text-secondary)', padding: '1px 7px', borderRadius: 10 }}>
+                      {staffRoster.length}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="flex gap-8 items-center flex-wrap">
+                  {todayRecordType === 'student' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => exportTodayAttendance('present')}
+                        className="btn btn-sm"
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, height: '34px', padding: '0 12px', fontSize: '0.80rem', fontWeight: 700, background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', border: '1.5px solid rgba(16, 185, 129, 0.35)' }}
+                        title="Download Present Students Excel"
+                      >
+                        <Download size={14} />
+                        <span>Present Excel ({todayTableData.filter(r => r.status === 'present').length})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => exportTodayAttendance('absent')}
+                        className="btn btn-sm"
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, height: '34px', padding: '0 12px', fontSize: '0.80rem', fontWeight: 700, background: 'rgba(239, 68, 68, 0.10)', color: '#ef4444', border: '1.5px solid rgba(239, 68, 68, 0.35)' }}
+                        title="Download Absent Students Excel"
+                      >
+                        <Download size={14} />
+                        <span>Absent Excel ({todayTableData.filter(r => r.status === 'absent').length})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => exportTodayAttendance('all')}
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, height: '34px', padding: '0 12px', fontSize: '0.80rem', fontWeight: 600 }}
+                        title="Download All Students Today Excel"
+                      >
+                        <Download size={14} />
+                        <span>All Students ({todayTableData.length})</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => exportStaffAttendanceCsv('present')}
+                        className="btn btn-sm"
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, height: '34px', padding: '0 12px', fontSize: '0.80rem', fontWeight: 700, background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', border: '1.5px solid rgba(16, 185, 129, 0.35)' }}
+                        title="Download Present Staff Excel"
+                      >
+                        <Download size={14} />
+                        <span>Present Excel ({staffRoster.filter(s => s.status === 'present' || s.entryTime !== '--').length})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => exportStaffAttendanceCsv('absent')}
+                        className="btn btn-sm"
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, height: '34px', padding: '0 12px', fontSize: '0.80rem', fontWeight: 700, background: 'rgba(245, 158, 11, 0.12)', color: '#d97706', border: '1.5px solid rgba(245, 158, 11, 0.35)' }}
+                        title="Download Absent Staff Excel"
+                      >
+                        <Download size={14} />
+                        <span>Absent Excel ({staffRoster.filter(s => s.status !== 'present' && s.entryTime === '--').length})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => exportStaffAttendanceCsv('all')}
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, height: '34px', padding: '0 12px', fontSize: '0.80rem', fontWeight: 600 }}
+                        title="Download All Staff Excel"
+                      >
+                        <Download size={14} color="#8b5cf6" />
+                        <span>All Staff ({staffRoster.length})</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
+              {todayRecordType === 'student' && (
+                <>
               {/* Filter & Search Bar */}
               <div style={{
                 padding: '12px 16px',
@@ -2593,6 +4114,261 @@ export default function Attendance() {
                   )}
                 </div>
               )}
+                </>
+              )}
+
+                {/* Staff Today Record View */}
+                {todayRecordType === 'staff' && (
+                  <div>
+                    {/* Staff Today Filter & Search Bar */}
+                    <div style={{
+                      padding: '12px 16px',
+                      background: 'var(--surface-color, #f8fafc)',
+                      borderBottom: '1px solid var(--border-color, #e2e8f0)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '12px'
+                    }}>
+                      {/* Status Badges Filter */}
+                      <div className="flex gap-8 items-center flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setTodayStaffFilter('all')}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: 'pointer',
+                            background: todayStaffFilter === 'all' ? '#8b5cf6' : 'var(--bg-color)',
+                            color: todayStaffFilter === 'all' ? '#ffffff' : 'var(--text-secondary)',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          All ({staffRoster.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTodayStaffFilter('present')}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: 'pointer',
+                            background: todayStaffFilter === 'present' ? '#10b981' : 'rgba(16, 185, 129, 0.12)',
+                            color: todayStaffFilter === 'present' ? '#ffffff' : '#10b981',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          Present ({staffRoster.filter(s => s.status === 'present' || s.entryTime !== '--').length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTodayStaffFilter('absent')}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: 'pointer',
+                            background: todayStaffFilter === 'absent' ? '#f59e0b' : 'rgba(245, 158, 11, 0.12)',
+                            color: todayStaffFilter === 'absent' ? '#ffffff' : '#f59e0b',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          Absent / On Leave ({staffRoster.filter(s => s.status !== 'present' && s.entryTime === '--').length})
+                        </button>
+                      </div>
+
+                      {/* Department Filter & Search Bar */}
+                      <div className="flex gap-12 items-center flex-wrap">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Department:</span>
+                          <select
+                            value={todayStaffDept}
+                            onChange={(e) => setTodayStaffDept(e.target.value)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: 8,
+                              border: '1px solid var(--border-color)',
+                              background: 'var(--bg-color)',
+                              color: 'var(--text-primary)',
+                              fontSize: '0.80rem',
+                              fontWeight: 600,
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value="all">All Departments ({new Set(staffRoster.map(s => s.department || 'General')).size})</option>
+                            {Array.from(new Set(staffRoster.map(s => s.department || 'General').filter(Boolean))).sort().map(d => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div style={{ position: 'relative', width: 220 }}>
+                          <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                          <input
+                            type="text"
+                            value={todayStaffSearch}
+                            onChange={(e) => setTodayStaffSearch(e.target.value)}
+                            placeholder="Search staff name or ID..."
+                            style={{
+                              width: '100%',
+                              padding: '6px 12px 6px 32px',
+                              borderRadius: 8,
+                              border: '1px solid var(--border-color)',
+                              background: 'var(--bg-color)',
+                              color: 'var(--text-primary)',
+                              fontSize: '0.80rem',
+                              outline: 'none'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Staff Table */}
+                    <div className="table-container" style={{ margin: 0 }}>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Staff Member</th>
+                            <th>Staff ID</th>
+                            <th>Department</th>
+                            <th>Designation</th>
+                            <th>Status</th>
+                            <th>Entry Time</th>
+                            <th>Exit Time</th>
+                            <th>Duration</th>
+                            <th>Device / Terminal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {staffRoster
+                            .filter(st => {
+                              // Search
+                              if (todayStaffSearch) {
+                                const q = todayStaffSearch.replace(/^#+/, '').trim().toLowerCase();
+                                const sname = (st.name || '').toLowerCase();
+                                const sid = String(st.staffId || '').replace(/^#+/, '').toLowerCase();
+                                const sdept = (st.department || '').toLowerCase();
+                                const sphone = String(st.phone || '').toLowerCase();
+                                if (!sname.includes(q) && !sid.includes(q) && !sdept.includes(q) && !sphone.includes(q)) return false;
+                              }
+                              // Status
+                              const isPresent = st.status === 'present' || st.entryTime !== '--';
+                              if (todayStaffFilter === 'present' && !isPresent) return false;
+                              if (todayStaffFilter === 'absent' && isPresent) return false;
+                              // Department
+                              if (todayStaffDept !== 'all') {
+                                const sdept = st.department || 'General';
+                                if (sdept.toLowerCase() !== todayStaffDept.toLowerCase()) return false;
+                              }
+                              return true;
+                            })
+                            .map((st, idx) => {
+                              const isPresent = st.status === 'present' || st.entryTime !== '--';
+                              const isPrince = String(st.staffId) === '340';
+                              const hasPhoto = typeof st.photo === 'string' && st.photo.trim().length > 10;
+                              const cleanSN = (st.deviceSN || 'Biomax Device')
+                                .replace(/telegram\s*remote/gi, 'Biomax Device')
+                                .replace(/telegram/gi, 'Biomax Device');
+                              return (
+                                <tr 
+                                  key={st.staffId || idx}
+                                  onClick={() => setSelectedStaffProfile(st)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Click to view full staff profile and records"
+                                >
+                                  <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                      <div style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: '50%',
+                                        background: isPrince ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#334155',
+                                        color: '#ffffff',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontWeight: 800,
+                                        fontSize: '0.80rem',
+                                        overflow: 'hidden',
+                                        flexShrink: 0,
+                                        border: '1.5px solid var(--border-color)'
+                                      }}>
+                                        {hasPhoto ? (
+                                          <img src={st.photo} alt={st.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                          getInitials(st.name)
+                                        )}
+                                      </div>
+                                      <div>
+                                        <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                          {st.name}
+                                          {isPrince && (
+                                            <span style={{ background: '#3b82f6', color: '#ffffff', fontSize: '0.65rem', padding: '1px 6px', borderRadius: 10, fontWeight: 800 }}>
+                                              ⭐ You
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>{st.phone || 'No phone'}</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <span style={{ fontWeight: 700, color: 'var(--accent-blue)', background: 'rgba(59, 130, 246, 0.08)', padding: '2px 8px', borderRadius: 6, fontSize: '0.78rem' }}>
+                                      #{st.staffId}
+                                    </span>
+                                  </td>
+                                  <td style={{ fontSize: '0.82rem', fontWeight: 600 }}>{st.department || 'General'}</td>
+                                  <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{st.designation || 'Staff'}</td>
+                                  <td>
+                                    <span style={{
+                                      padding: '3px 10px',
+                                      borderRadius: 12,
+                                      fontSize: '0.74rem',
+                                      fontWeight: 800,
+                                      background: isPresent ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                      color: isPresent ? '#10b981' : '#ef4444'
+                                    }}>
+                                      {isPresent ? 'PRESENT' : 'ABSENT'}
+                                    </span>
+                                  </td>
+                                  <td style={{ fontSize: '0.84rem', fontWeight: 600, color: st.entryTime !== '--' ? '#10b981' : 'var(--text-secondary)' }}>
+                                    {st.entryTime || '--'}
+                                  </td>
+                                  <td style={{ fontSize: '0.84rem', fontWeight: 600, color: st.exitTime !== '--' ? 'var(--accent-blue)' : (st.entryTime !== '--' ? '#10b981' : 'var(--text-secondary)') }}>
+                                    {st.exitTime !== '--' ? st.exitTime : (st.entryTime !== '--' ? '🟢 Active IN' : '--')}
+                                  </td>
+                                  <td style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                    <div>
+                                      <span>{st.workHoursFormatted || '0h 0m'}</span>
+                                      {st.punches && st.punches.filter(p => p.type === 'IN').length > 1 && (
+                                        <div style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700 }}>
+                                          {st.punches.filter(p => p.type === 'IN').length} Shifts
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                    {cleanSN}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
             </motion.div>
           </motion.div>
         )}
@@ -2622,29 +4398,106 @@ export default function Attendance() {
                     Attendance History & Reports
                   </div>
                   <div className="card-subtitle" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    Select custom date range (From Date to To Date) or calendar view to analyze and export records.
+                    {historyRecordType === 'student' 
+                      ? 'Select custom date range (From Date to To Date) or calendar view to analyze and export student records.'
+                      : 'Comprehensive attendance logs and historical records for all staff, teachers, and employees.'}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <button 
+
+                {/* Student vs Staff Toggle Buttons */}
+                <div style={{ display: 'inline-flex', background: 'var(--bg-color)', padding: 4, borderRadius: 12, border: '1px solid var(--border-color)', gap: 4 }}>
+                  <button
                     type="button"
-                    onClick={() => { if (typeof refreshAttendance === 'function') refreshAttendance(); toast.success('🔄 Attendance records refreshed!'); }}
-                    className="btn btn-secondary" 
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontWeight: 600 }}
+                    onClick={() => setHistoryRecordType('student')}
+                    style={{
+                      padding: '6px 16px',
+                      borderRadius: 8,
+                      border: 'none',
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: historyRecordType === 'student' ? 'var(--surface-color)' : 'transparent',
+                      color: historyRecordType === 'student' ? '#3b82f6' : 'var(--text-secondary)',
+                      boxShadow: historyRecordType === 'student' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
                   >
-                    <RefreshCw size={15} /> Refresh Records
+                    <span>🎓 Student History</span>
                   </button>
-                  <button 
-                    onClick={exportHistoryAttendance} 
-                    className="btn btn-secondary" 
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontWeight: 600 }}
-                    title="Download Attendance Report in Excel format"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHistoryRecordType('staff');
+                      fetchStaffHistory();
+                    }}
+                    style={{
+                      padding: '6px 16px',
+                      borderRadius: 8,
+                      border: 'none',
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: historyRecordType === 'staff' ? 'var(--surface-color)' : 'transparent',
+                      color: historyRecordType === 'staff' ? '#8b5cf6' : 'var(--text-secondary)',
+                      boxShadow: historyRecordType === 'staff' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
                   >
-                    <Download size={16} color="#10b981" /> Download Excel
+                    <span>👥 Staff History</span>
                   </button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {historyRecordType === 'student' ? (
+                    <>
+                      <button 
+                        type="button"
+                        onClick={() => { if (typeof refreshAttendance === 'function') refreshAttendance(); toast.success('🔄 Attendance records refreshed!'); }}
+                        className="btn btn-secondary" 
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontWeight: 600 }}
+                      >
+                        <RefreshCw size={15} /> Refresh Records
+                      </button>
+                      <button 
+                        onClick={exportHistoryAttendance} 
+                        className="btn btn-secondary" 
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontWeight: 600 }}
+                        title="Download Attendance Report in Excel format"
+                      >
+                        <Download size={16} color="#10b981" /> Download Excel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button 
+                        type="button"
+                        onClick={() => { fetchStaffHistory(); toast.success('🔄 Staff history refreshed!'); }}
+                        className="btn btn-secondary" 
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontWeight: 600 }}
+                      >
+                        <RefreshCw size={15} className={isStaffHistoryLoading ? 'spin' : ''} /> Refresh Staff History
+                      </button>
+                      <button 
+                        onClick={exportStaffHistoryAttendance} 
+                        className="btn btn-secondary" 
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontWeight: 600 }}
+                        title="Download Staff Attendance History in Excel/CSV format"
+                      >
+                        <Download size={16} color="#8b5cf6" /> Download Staff Excel
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
+              {historyRecordType === 'student' && (
+                <>
               {/* Filter Controls Bar */}
               <div className="card mb-20" style={{ background: 'var(--surface-color, #f8fafc)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color-light)', position: 'relative', zIndex: 100 }}>
                 <div className="flex items-center justify-between flex-wrap gap-12">
@@ -2966,6 +4819,301 @@ export default function Attendance() {
                   </table>
                 </div>
               )}
+                </>
+              )}
+
+                {/* Staff Attendance History View */}
+                {historyRecordType === 'staff' && (
+                  <div>
+                    {/* Filter Controls Bar */}
+                    <div className="card mb-20" style={{ background: 'var(--surface-color, #f8fafc)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color-light)', position: 'relative', zIndex: 100 }}>
+                      <div className="flex items-center justify-between flex-wrap gap-12">
+                        {/* Select Staff Dropdown */}
+                        <div style={{ minWidth: '240px', flex: '1 1 240px' }}>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                            Select Staff Member:
+                          </label>
+                          <select
+                            value={staffHistoryStaffId}
+                            onChange={(e) => setStaffHistoryStaffId(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              borderRadius: 8,
+                              border: '1px solid var(--border-color)',
+                              background: 'var(--bg-color)',
+                              color: 'var(--text-primary)',
+                              fontSize: '0.84rem',
+                              fontWeight: 600,
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="all">🌟 All Staff Members ({staffRoster.length})</option>
+                            {staffRoster.map(s => (
+                              <option key={s.staffId} value={s.staffId}>
+                                #{s.staffId} - {s.name} ({s.department || 'General'})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Department Dropdown */}
+                        <div style={{ minWidth: '180px', flex: '1 1 180px' }}>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                            Department:
+                          </label>
+                          <select
+                            value={staffHistoryDept}
+                            onChange={(e) => setStaffHistoryDept(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              borderRadius: 8,
+                              border: '1px solid var(--border-color)',
+                              background: 'var(--bg-color)',
+                              color: 'var(--text-primary)',
+                              fontSize: '0.84rem',
+                              fontWeight: 600,
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="all">🏢 All Departments</option>
+                            {Array.from(new Set(staffRoster.map(s => s.department || 'General').filter(Boolean))).sort().map(d => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Date Range Selection Pills */}
+                        <div style={{ flex: '2 1 300px' }}>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                            Date Selection Mode:
+                          </label>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {[
+                              { id: 'today', label: 'Today' },
+                              { id: '7days', label: '7 Days' },
+                              { id: '30days', label: '1 Month' },
+                              { id: 'custom', label: 'Custom Range' },
+                            ].map((pill) => (
+                              <button
+                                key={pill.id}
+                                type="button"
+                                className={`btn btn-sm ${staffHistoryRangeType === pill.id ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setStaffHistoryRangeType(pill.id)}
+                                style={{ borderRadius: '20px', padding: '5px 12px', fontSize: '0.8rem', fontWeight: staffHistoryRangeType === pill.id ? 700 : 500 }}
+                              >
+                                {pill.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Status Filter */}
+                        <div style={{ minWidth: '140px' }}>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                            Status:
+                          </label>
+                          <div className="flex items-center gap-1">
+                            {['all', 'present', 'absent'].map(st => (
+                              <button
+                                key={st}
+                                type="button"
+                                onClick={() => setStaffHistoryStatusFilter(st)}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: 14,
+                                  border: 'none',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  background: staffHistoryStatusFilter === st ? '#8b5cf6' : 'var(--bg-color)',
+                                  color: staffHistoryStatusFilter === st ? '#fff' : 'var(--text-secondary)'
+                                }}
+                              >
+                                {st.toUpperCase()}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Custom Date Pickers */}
+                      {staffHistoryRangeType === 'custom' && (
+                        <div style={{ display: 'flex', gap: 16, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: '0.80rem', fontWeight: 600 }}>From:</span>
+                            <input
+                              type="date"
+                              value={staffHistoryStartDate}
+                              onChange={(e) => setStaffHistoryStartDate(e.target.value)}
+                              style={{ padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: '0.80rem', fontWeight: 600 }}>To:</span>
+                            <input
+                              type="date"
+                              value={staffHistoryEndDate}
+                              onChange={(e) => setStaffHistoryEndDate(e.target.value)}
+                              style={{ padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stats Overview */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 18 }}>
+                      <div style={{ background: 'var(--bg-color)', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>TOTAL LOGGED RECORDS</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 2 }}>{staffHistoryRecords.length}</div>
+                      </div>
+                      <div style={{ background: 'var(--bg-color)', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>PRESENT RECORDS</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#10b981', marginTop: 2 }}>
+                          {staffHistoryRecords.filter(r => r.status === 'present' || (r.entryTime && r.entryTime !== '--')).length}
+                        </div>
+                      </div>
+                      <div style={{ background: 'var(--bg-color)', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>ABSENT RECORDS</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f59e0b', marginTop: 2 }}>
+                          {staffHistoryRecords.filter(r => r.status !== 'present' && (!r.entryTime || r.entryTime === '--')).length}
+                        </div>
+                      </div>
+                      <div style={{ background: 'var(--bg-color)', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>ATTENDANCE RATE</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--accent-blue)', marginTop: 2 }}>
+                          {staffHistoryRecords.length > 0 
+                            ? Math.round((staffHistoryRecords.filter(r => r.status === 'present' || (r.entryTime && r.entryTime !== '--')).length / staffHistoryRecords.length) * 100)
+                            : 0}%
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* History Table */}
+                    <div className="table-container" style={{ margin: 0 }}>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Staff Member</th>
+                            <th>Staff ID</th>
+                            <th>Department</th>
+                            <th>Designation</th>
+                            <th>Status</th>
+                            <th>Check-In</th>
+                            <th>Check-Out</th>
+                            <th>Duration</th>
+                            <th>Device</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {isStaffHistoryLoading ? (
+                            <tr>
+                              <td colSpan={10} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                                <RefreshCw className="spin" size={20} style={{ display: 'inline-block', marginRight: 8 }} />
+                                Loading staff history records...
+                              </td>
+                            </tr>
+                          ) : staffHistoryRecords.length === 0 ? (
+                            <tr>
+                              <td colSpan={10} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                                No staff attendance records found for the selected filter and range.
+                              </td>
+                            </tr>
+                          ) : (
+                            staffHistoryRecords
+                              .filter(r => {
+                                if (staffHistoryStatusFilter === 'present') return r.status === 'present' || (r.entryTime && r.entryTime !== '--');
+                                if (staffHistoryStatusFilter === 'absent') return r.status !== 'present' && (!r.entryTime || r.entryTime === '--');
+                                return true;
+                              })
+                              .map((r, idx) => {
+                                const isPresent = r.status === 'present' || (r.entryTime && r.entryTime !== '--');
+                                const cleanStaffId = String(r.staffId || '').replace(/^#+/, '');
+                                const matchedStaff = staffRoster.find(s => String(s.staffId).replace(/^#+/, '') === cleanStaffId);
+                                const photo = r.photo || matchedStaff?.photo;
+                                const isPrince = cleanStaffId === '340';
+                                const cleanSN = (r.deviceSN || 'Biomax Device')
+                                  .replace(/telegram\s*remote/gi, 'Biomax Device')
+                                  .replace(/telegram/gi, 'Biomax Device');
+                                return (
+                                  <tr 
+                                    key={r.id || idx}
+                                    onClick={() => matchedStaff && setSelectedStaffProfile(matchedStaff)}
+                                    style={{ cursor: matchedStaff ? 'pointer' : 'default' }}
+                                    title={matchedStaff ? "Click to view staff profile" : ""}
+                                  >
+                                    <td style={{ fontWeight: 700, fontSize: '0.84rem' }}>{r.date}</td>
+                                    <td>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <div style={{
+                                          width: 32,
+                                          height: 32,
+                                          borderRadius: '50%',
+                                          background: isPrince ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#334155',
+                                          color: '#ffffff',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          fontWeight: 800,
+                                          fontSize: '0.76rem',
+                                          overflow: 'hidden',
+                                          flexShrink: 0,
+                                          border: '1px solid var(--border-color)'
+                                        }}>
+                                          {photo ? (
+                                            <img src={photo} alt={r.staffName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                          ) : (
+                                            getInitials(r.staffName || 'Staff')
+                                          )}
+                                        </div>
+                                        <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--text-primary)' }}>
+                                          {r.staffName || 'Staff Member'}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <span style={{ fontWeight: 700, color: 'var(--accent-blue)', background: 'rgba(59, 130, 246, 0.08)', padding: '2px 8px', borderRadius: 6, fontSize: '0.78rem' }}>
+                                        #{r.staffId}
+                                      </span>
+                                    </td>
+                                    <td style={{ fontSize: '0.82rem', fontWeight: 600 }}>{r.department || 'General'}</td>
+                                    <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{r.designation || 'Staff'}</td>
+                                    <td>
+                                      <span style={{
+                                        padding: '3px 10px',
+                                        borderRadius: 12,
+                                        fontSize: '0.74rem',
+                                        fontWeight: 800,
+                                        background: isPresent ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                        color: isPresent ? '#10b981' : '#ef4444'
+                                      }}>
+                                        {isPresent ? 'PRESENT' : 'ABSENT'}
+                                      </span>
+                                    </td>
+                                    <td style={{ fontSize: '0.84rem', fontWeight: 600, color: r.entryTime !== '--' ? '#10b981' : 'var(--text-secondary)' }}>
+                                      {r.entryTime || '--'}
+                                    </td>
+                                    <td style={{ fontSize: '0.84rem', fontWeight: 600, color: r.exitTime !== '--' ? 'var(--accent-blue)' : 'var(--text-secondary)' }}>
+                                      {r.exitTime || '--'}
+                                    </td>
+                                    <td style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                      {r.workHoursFormatted || '0h 0m'}
+                                    </td>
+                                    <td style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                      {cleanSN}
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
             </motion.div>
           </motion.div>
         )}
@@ -3971,6 +6119,8 @@ export default function Attendance() {
                       </motion.div>
                     )}
                   </AnimatePresence>
+
+        
                 </div>
 
                 {/* Today Attendance Mini-Counters */}
@@ -4153,672 +6303,6 @@ export default function Attendance() {
             </div>
 
             {/* ---------------------------------------------------------------- */}
-            {/* 🪪 MODAL: PRINTABLE OFFICIAL STUDENT ID CARDS (FRONT & BACK)   */}
-            {/* ---------------------------------------------------------------- */}
-            {showIdCardsModal && (
-              <div
-                className="id-cards-modal-overlay"
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: 'rgba(0, 0, 0, 0.75)',
-                  backdropFilter: 'blur(8px)',
-                  zIndex: 9999,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 20
-                }}
-              >
-                <div
-                  className="id-cards-modal-card"
-                  style={{
-                    background: '#0f172a',
-                    borderRadius: 20,
-                    width: '100%',
-                    maxWidth: 1080,
-                    maxHeight: '92vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    border: '1.5px solid rgba(255, 255, 255, 0.18)',
-                    boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
-                    overflow: 'hidden'
-                  }}
-                >
-                  {/* Modal Header */}
-                  <div
-                    className="id-cards-modal-header"
-                    style={{
-                      padding: '18px 24px',
-                      background: '#1e293b',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      flexWrap: 'wrap',
-                      gap: 12
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{
-                        padding: 10,
-                        borderRadius: 12,
-                        background: idCardsModalMode === 'staff' ? 'rgba(13, 148, 136, 0.25)' : 'rgba(139, 92, 246, 0.25)',
-                        color: idCardsModalMode === 'staff' ? '#2dd4bf' : '#a78bfa'
-                      }}>
-                        <Printer size={24} />
-                      </div>
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#ffffff' }}>
-                          {idCardsModalMode === 'staff' ? 'Print Official Staff & Faculty ID Cards (Front & Back)' : 'Print Official Student ID Cards (Front & Back)'}
-                        </h3>
-                        <p style={{ margin: '3px 0 0', fontSize: '0.80rem', color: '#cbd5e1', fontWeight: 500 }}>
-                          {idCardsModalMode === 'staff'
-                            ? 'Official Staff PVC ID cards with photo, scannable Staff ID QR code, designation badge, and terms (A4 sheet ready)'
-                            : 'Official ID cards with photo, scannable Roll Number QR code, institute branding, and terms (A4 sheet ready)'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <button
-                        type="button"
-                        onClick={handleSaveAsPdf}
-                        style={{
-                          padding: '9px 18px',
-                          borderRadius: 10,
-                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                          color: '#ffffff',
-                          border: 'none',
-                          fontWeight: 800,
-                          fontSize: '0.86rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
-                        }}
-                      >
-                        <Download size={16} />
-                        <span>📥 Save as PDF (A4)</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handlePrintSystem}
-                        style={{
-                          padding: '9px 16px',
-                          borderRadius: 10,
-                          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                          color: '#ffffff',
-                          border: 'none',
-                          fontWeight: 800,
-                          fontSize: '0.86rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)'
-                        }}
-                      >
-                        <Printer size={16} />
-                        <span>🖨️ Print Dialog</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowIdCardsModal(false)}
-                        style={{
-                          padding: '8px 10px',
-                          borderRadius: 10,
-                          border: '1px solid rgba(255, 255, 255, 0.2)',
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          color: '#ffffff',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <X size={18} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Filter & Side Selector Toolbar */}
-                  <div
-                    className="id-cards-modal-toolbar"
-                    style={{
-                      padding: '12px 24px',
-                      background: '#0f172a',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 14,
-                      flexWrap: 'wrap'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', flex: 1 }}>
-                      {/* Mode Switcher (Students vs Staff) */}
-                      <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
-                        <button
-                          type="button"
-                          onClick={() => setIdCardsModalMode('student')}
-                          style={{
-                            padding: '5px 12px',
-                            borderRadius: 6,
-                            border: 'none',
-                            fontSize: '0.78rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            background: idCardsModalMode === 'student' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent',
-                            color: idCardsModalMode === 'student' ? '#ffffff' : '#94a3b8',
-                            boxShadow: idCardsModalMode === 'student' ? '0 2px 8px rgba(99, 102, 241, 0.3)' : 'none'
-                          }}
-                        >
-                          🎓 Students ({activeStudents.length})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIdCardsModalMode('staff')}
-                          style={{
-                            padding: '5px 12px',
-                            borderRadius: 6,
-                            border: 'none',
-                            fontSize: '0.78rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            background: idCardsModalMode === 'staff' ? 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' : 'transparent',
-                            color: idCardsModalMode === 'staff' ? '#ffffff' : '#94a3b8',
-                            boxShadow: idCardsModalMode === 'staff' ? '0 2px 8px rgba(13, 148, 136, 0.3)' : 'none'
-                          }}
-                        >
-                          👔 Staff ({staffRoster.length})
-                        </button>
-                      </div>
-
-                      {/* Course/Batch (for Students) OR Department (for Staff) Selector */}
-                      {idCardsModalMode === 'staff' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <label style={{ fontSize: '0.80rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em' }}>DEPARTMENT:</label>
-                          <select
-                            value={selectedStaffDept}
-                            onChange={(e) => setSelectedStaffDept(e.target.value)}
-                            style={{
-                              padding: '7px 12px',
-                              borderRadius: 8,
-                              border: '1px solid rgba(255, 255, 255, 0.25)',
-                              background: '#1e293b',
-                              color: '#ffffff',
-                              fontSize: '0.82rem',
-                              fontWeight: 700,
-                              outline: 'none',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <option value="all">🏢 All Departments ({staffRoster.length} Staff)</option>
-                            {availableStaffDepts.map((dept) => (
-                              <option key={dept} value={dept}>{dept}</option>
-                            ))}
-                          </select>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <label style={{ fontSize: '0.80rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em' }}>COURSE / BATCH:</label>
-                          <select
-                            value={selectedIdCardBatch}
-                            onChange={(e) => setSelectedIdCardBatch(e.target.value)}
-                            style={{
-                              padding: '7px 12px',
-                              borderRadius: 8,
-                              border: '1px solid rgba(255, 255, 255, 0.25)',
-                              background: '#1e293b',
-                              color: '#ffffff',
-                              fontSize: '0.82rem',
-                              fontWeight: 700,
-                              outline: 'none',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <option value="all">🎓 All Courses / Batches ({activeStudents.length} Students)</option>
-                            {availableBatches.map((b) => (
-                              <option key={b.id} value={b.id}>{b.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      {/* Search Bar */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 170, flex: 1, maxWidth: 220, position: 'relative' }}>
-                        <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: 10, pointerEvents: 'none' }} />
-                        <input
-                          type="text"
-                          value={idCardSearch}
-                          onChange={(e) => setIdCardSearch(e.target.value)}
-                          placeholder={idCardsModalMode === 'staff' ? "Search name, ID, role..." : "Search name / roll..."}
-                          style={{
-                            width: '100%',
-                            padding: '7px 12px 7px 32px',
-                            borderRadius: 8,
-                            border: '1px solid rgba(255, 255, 255, 0.25)',
-                            background: '#1e293b',
-                            color: '#ffffff',
-                            fontSize: '0.82rem',
-                            outline: 'none',
-                            boxSizing: 'border-box'
-                          }}
-                        />
-                      </div>
-
-                      {/* Side Switcher Buttons */}
-                      <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
-                        <button
-                          type="button"
-                          onClick={() => setIdCardSide('duplex')}
-                          style={{
-                            padding: '5px 11px',
-                            borderRadius: 6,
-                            border: 'none',
-                            fontSize: '0.76rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            background: idCardSide === 'duplex' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
-                            color: idCardSide === 'duplex' ? '#ffffff' : '#94a3b8',
-                            boxShadow: idCardSide === 'duplex' ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none'
-                          }}
-                        >
-                          📄 Duplex A4 (Front ➔ Back Sheets)
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setIdCardSide('both')}
-                          style={{
-                            padding: '5px 10px',
-                            borderRadius: 6,
-                            border: 'none',
-                            fontSize: '0.76rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            background: idCardSide === 'both' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
-                            color: idCardSide === 'both' ? '#ffffff' : '#94a3b8'
-                          }}
-                        >
-                          🎴 Side-by-Side (Pairs)
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setIdCardSide('front')}
-                          style={{
-                            padding: '5px 10px',
-                            borderRadius: 6,
-                            border: 'none',
-                            fontSize: '0.76rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            background: idCardSide === 'front' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
-                            color: idCardSide === 'front' ? '#ffffff' : '#94a3b8'
-                          }}
-                        >
-                          🪪 Front Only
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setIdCardSide('back')}
-                          style={{
-                            padding: '5px 10px',
-                            borderRadius: 6,
-                            border: 'none',
-                            fontSize: '0.76rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            background: idCardSide === 'back' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
-                            color: idCardSide === 'back' ? '#ffffff' : '#94a3b8'
-                          }}
-                        >
-                          📜 Back Only
-                        </button>
-                      </div>
-
-                      {/* Cards Per Sheet Density Toggle (Duplex, Front, or Back) */}
-                      {['duplex', 'front', 'back'].includes(idCardSide) && (
-                        <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
-                          <button
-                            type="button"
-                            onClick={() => setIdCardCardsPerPage(4)}
-                            style={{
-                              padding: '5px 10px',
-                              borderRadius: 6,
-                              border: 'none',
-                              fontSize: '0.74rem',
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                              background: idCardCardsPerPage === 4 ? '#3b82f6' : 'transparent',
-                              color: idCardCardsPerPage === 4 ? '#ffffff' : '#94a3b8'
-                            }}
-                          >
-                            📑 4 Cards / Sheet (Large 2×2)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setIdCardCardsPerPage(6)}
-                            style={{
-                              padding: '5px 10px',
-                          borderRadius: 6,
-                              border: 'none',
-                              fontSize: '0.74rem',
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                              background: idCardCardsPerPage === 6 ? '#3b82f6' : 'transparent',
-                              color: idCardCardsPerPage === 6 ? '#ffffff' : '#94a3b8'
-                            }}
-                          >
-                            📑 6 Cards / Sheet (Compact 2×3)
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Pagination Controls for Ultra-Fast Zero-Lag Screen Rendering */}
-                      {totalIdCardPages > 1 && !idCardSearch.trim() && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1e293b', padding: '3px 8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
-                          <button
-                            type="button"
-                            disabled={idCardPreviewPage <= 1 || idCardShowAll}
-                            onClick={() => setIdCardPreviewPage(p => Math.max(1, p - 1))}
-                            style={{
-                              padding: '3px 8px',
-                              borderRadius: 4,
-                              border: 'none',
-                              background: idCardPreviewPage > 1 && !idCardShowAll ? '#3b82f6' : '#334155',
-                              color: '#ffffff',
-                              fontSize: '0.72rem',
-                              fontWeight: 800,
-                              cursor: idCardPreviewPage > 1 && !idCardShowAll ? 'pointer' : 'not-allowed'
-                            }}
-                          >
-                            ◀ Prev
-                          </button>
-                          
-                          <span style={{ fontSize: '0.74rem', color: '#e2e8f0', fontWeight: 700 }}>
-                            {idCardShowAll ? 'All Cards Rendered' : `Page ${idCardPreviewPage} / ${totalIdCardPages} (${displayedIdCardStudents.length} Cards)`}
-                          </span>
-
-                          <button
-                            type="button"
-                            disabled={idCardPreviewPage >= totalIdCardPages || idCardShowAll}
-                            onClick={() => setIdCardPreviewPage(p => Math.min(totalIdCardPages, p + 1))}
-                            style={{
-                              padding: '3px 8px',
-                              borderRadius: 4,
-                              border: 'none',
-                              background: idCardPreviewPage < totalIdCardPages && !idCardShowAll ? '#3b82f6' : '#334155',
-                              color: '#ffffff',
-                              fontSize: '0.72rem',
-                              fontWeight: 800,
-                              cursor: idCardPreviewPage < totalIdCardPages && !idCardShowAll ? 'pointer' : 'not-allowed'
-                            }}
-                          >
-                            Next ▶
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setIdCardShowAll(!idCardShowAll)}
-                            style={{
-                              padding: '3px 8px',
-                              borderRadius: 4,
-                              border: 'none',
-                              background: idCardShowAll ? '#10b981' : '#475569',
-                              color: '#ffffff',
-                              fontSize: '0.70rem',
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                              marginLeft: 4
-                            }}
-                          >
-                            {idCardShowAll ? '⚡ Fast View' : '👁️ View All'}
-                          </button>
-                        </div>
-                      )}
-
-                      <div style={{
-                        fontSize: '0.80rem',
-                        fontWeight: 800,
-                        color: '#60a5fa',
-                        background: 'rgba(59, 130, 246, 0.18)',
-                        border: '1px solid rgba(59, 130, 246, 0.35)',
-                        padding: '5px 12px',
-                        borderRadius: 20,
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {idCardSide === 'duplex'
-                          ? `${filteredIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'} (${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage)} A4 Sheets / ${Math.ceil(filteredIdCardStudents.length / idCardCardsPerPage) * 2} Pages)`
-                          : `Showing ${filteredIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'} (${idCardSide === 'both' ? filteredIdCardStudents.length * 2 : filteredIdCardStudents.length} Cards)`}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ID Cards Printable Sheet Grid */}
-                  <div style={{ flex: 1, overflowY: 'auto', padding: 24, background: '#090d16' }}>
-                    <div id="printable-id-cards">
-                      {/* ================= MODE 1: DUPLEX A4 SHEETS ================= */}
-                      {idCardSide === 'duplex' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 36, alignItems: 'center' }}>
-                          {Array.from({ length: Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage) }).map((_, sheetIdx) => {
-                            const chunk = displayedIdCardStudents.slice(sheetIdx * idCardCardsPerPage, sheetIdx * idCardCardsPerPage + idCardCardsPerPage);
-                            
-                            // Mirrored chunk for horizontal flip on 2-column grid
-                            const rows = idCardCardsPerPage / 2;
-                            const mirroredChunk = [];
-                            for (let r = 0; r < rows; r++) {
-                              const s1 = chunk[r * 2] || null;
-                              const s2 = chunk[r * 2 + 1] || null;
-                              mirroredChunk.push(s2);
-                              mirroredChunk.push(s1);
-                            }
-
-                            const isCompact = idCardCardsPerPage === 6;
-                            const cardWidth = isCompact ? '230px' : '260px';
-                            const cardHeight = isCompact ? '355px' : '390px';
-                            const gridCols = isCompact ? 'repeat(2, 230px)' : 'repeat(2, 260px)';
-                            const gridGap = isCompact ? '14px 36px' : '18px 40px';
-
-                            return (
-                              <div key={sheetIdx} style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center', width: '100%' }}>
-                                {/* Front Sheet Container */}
-                                <div style={{ width: '100%', maxWidth: '794px' }}>
-                                  {/* Screen Header Banner (OUTSIDE .a4-print-sheet) */}
-                                  <div
-                                    className="a4-print-header-banner"
-                                    style={{
-                                      background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-                                      color: '#ffffff',
-                                      padding: '8px 16px',
-                                      borderRadius: '10px 10px 0 0',
-                                      display: 'flex',
-                                      justifyContent: 'space-between',
-                                      alignItems: 'center',
-                                      fontSize: '0.82rem',
-                                      fontWeight: 800
-                                    }}
-                                  >
-                                    <span>📄 SHEET {sheetIdx + 1} • PAGE {sheetIdx * 2 + 1} — FRONT FACES ({idCardsModalMode === 'staff' ? 'STAFF' : 'STUDENTS'} {sheetIdx * idCardCardsPerPage + 1} TO {sheetIdx * idCardCardsPerPage + chunk.length})</span>
-                                    <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>A4 Duplex Front Side</span>
-                                  </div>
-
-                                  {/* Page A: FRONT SHEET (PURE A4 PRINT CONTENT) */}
-                                  <div
-                                    className="a4-print-sheet"
-                                    style={{
-                                      background: '#ffffff',
-                                      borderRadius: '0 0 12px 12px',
-                                      padding: '24px 30px',
-                                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-                                      width: '100%',
-                                      minHeight: '1123px',
-                                      boxSizing: 'border-box',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      justifyContent: 'center',
-                                      alignItems: 'center'
-                                    }}
-                                  >
-                                    <div
-                                      className="a4-print-grid"
-                                      style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: gridCols,
-                                        gap: gridGap,
-                                        justifyContent: 'center'
-                                      }}
-                                    >
-                                      {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
-                                        const st = chunk[slotIdx] || null;
-                                        return (
-                                          <div key={slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
-                                            {st ? (
-                                              idCardsModalMode === 'staff' ? (
-                                                <StaffIdCard staff={st} side="front" isCompact={isCompact} />
-                                              ) : (
-                                                <StudentIdCard student={st} side="front" isCompact={isCompact} batches={batches} />
-                                              )
-                                            ) : (
-                                              <div className="print-id-card-empty" style={{ width: cardWidth, height: cardHeight, visibility: 'hidden' }} />
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Back Sheet Container */}
-                                <div style={{ width: '100%', maxWidth: '794px' }}>
-                                  {/* Screen Header Banner (OUTSIDE .a4-print-sheet) */}
-                                  <div
-                                    className="a4-print-header-banner"
-                                    style={{
-                                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                                      color: '#ffffff',
-                                      padding: '8px 16px',
-                                      borderRadius: '10px 10px 0 0',
-                                      display: 'flex',
-                                      justifyContent: 'space-between',
-                                      alignItems: 'center',
-                                      fontSize: '0.82rem',
-                                      fontWeight: 800
-                                    }}
-                                  >
-                                    <span>📜 SHEET {sheetIdx + 1} • PAGE {sheetIdx * 2 + 2} — BACK FACES (TERMS &amp; CONDITIONS — MIRRORED DUPLEX ALIGNED)</span>
-                                    <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>A4 Duplex Back (Reverse Side)</span>
-                                  </div>
-
-                                  {/* Page B: BACK SHEET (PURE A4 PRINT CONTENT) */}
-                                  <div
-                                    className="a4-print-sheet"
-                                    style={{
-                                      background: '#ffffff',
-                                      borderRadius: '0 0 12px 12px',
-                                      padding: '24px 30px',
-                                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-                                      width: '100%',
-                                      minHeight: '1123px',
-                                      boxSizing: 'border-box',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      justifyContent: 'center',
-                                      alignItems: 'center'
-                                    }}
-                                  >
-                                    <div
-                                      className="a4-print-grid"
-                                      style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: gridCols,
-                                        gap: gridGap,
-                                        justifyContent: 'center'
-                                      }}
-                                    >
-                                      {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
-                                        const st = mirroredChunk[slotIdx] || null;
-                                        return (
-                                          <div key={slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
-                                            {st ? (
-                                              idCardsModalMode === 'staff' ? (
-                                                <StaffIdCard staff={st} side="back" isCompact={isCompact} />
-                                              ) : (
-                                                <StudentIdCard student={st} side="back" isCompact={isCompact} batches={batches} />
-                                              )
-                                            ) : (
-                                              <div className="print-id-card-empty" style={{ width: cardWidth, height: cardHeight, visibility: 'hidden' }} />
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* ================= MODES 2, 3, 4: PAIRS / FRONT ONLY / BACK ONLY ================= */}
-                      {idCardSide !== 'duplex' && (
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: 24,
-                            justifyContent: 'center'
-                          }}
-                        >
-                          {displayedIdCardStudents.map((st) => (
-                            <div
-                              key={st.id || st.staffId}
-                              className="print-id-card-pair"
-                              style={{
-                                display: 'flex',
-                                gap: 20,
-                                flexWrap: 'wrap',
-                                justifyContent: 'center',
-                                alignItems: 'flex-start'
-                              }}
-                            >
-                              {/* FRONT SIDE */}
-                              {(idCardSide === 'both' || idCardSide === 'front') && (
-                                idCardsModalMode === 'staff' ? (
-                                  <StaffIdCard staff={st} side="front" isCompact={false} />
-                                ) : (
-                                  <StudentIdCard student={st} side="front" isCompact={false} batches={batches} />
-                                )
-                              )}
-
-                              {/* BACK SIDE (Terms & Conditions) */}
-                              {(idCardSide === 'both' || idCardSide === 'back') && (
-                                idCardsModalMode === 'staff' ? (
-                                  <StaffIdCard staff={st} side="back" isCompact={false} />
-                                ) : (
-                                  <StudentIdCard student={st} side="back" isCompact={false} batches={batches} />
-                                )
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* ---------------------------------------------------------------- */}
             {/* 🛒 MODAL: RECOMMENDED SCANNER HARDWARE GUIDE                    */}
             {/* ---------------------------------------------------------------- */}
@@ -5249,6 +6733,1106 @@ export default function Attendance() {
             )}
 
             {/* Print CSS Injection */}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+{/* 🪪 ROOT-LEVEL ID CARDS PRINT MODAL (ACCESSIBLE FROM ALL TABS) */}
+            {/* 🪪 MODAL: PRINTABLE OFFICIAL STUDENT ID CARDS (FRONT & BACK)   */}
+            {/* ---------------------------------------------------------------- */}
+            {showIdCardsModal && (
+              <div
+                className="id-cards-modal-overlay"
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.85)',
+                  backdropFilter: 'blur(10px)',
+                  zIndex: 9999,
+                  display: 'flex',
+                  alignItems: 'stretch',
+                  justifyContent: 'stretch',
+                  padding: 0
+                }}
+              >
+                <div
+                  className="id-cards-modal-card"
+                  style={{
+                    background: '#0f172a',
+                    borderRadius: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    maxWidth: '100vw',
+                    maxHeight: '100vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    border: 'none',
+                    boxShadow: 'none',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {/* Modal Header */}
+                  <div
+                    className="id-cards-modal-header"
+                    style={{
+                      padding: '18px 70px 18px 24px',
+                      background: '#1e293b',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 12,
+                      position: 'relative'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{
+                        padding: 10,
+                        borderRadius: 12,
+                        background: idCardsModalMode === 'staff' ? 'rgba(220, 38, 38, 0.22)' : 'rgba(139, 92, 246, 0.25)',
+                        color: idCardsModalMode === 'staff' ? '#ef4444' : '#a78bfa'
+                      }}>
+                        <Printer size={24} />
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#ffffff' }}>
+                          {idCardsModalMode === 'staff' ? 'Print Official Staff & Faculty ID Cards (Front & Back)' : 'Print Official Student ID Cards (Front & Back)'}
+                        </h3>
+                        <p style={{ margin: '3px 0 0', fontSize: '0.80rem', color: '#cbd5e1', fontWeight: 500 }}>
+                          {idCardsModalMode === 'staff'
+                            ? 'Official Staff PVC ID cards with photo, scannable Staff ID QR code, designation badge, and terms (A4 sheet ready)'
+                            : 'Official ID cards with photo, scannable Roll Number QR code, institute branding, and terms (A4 sheet ready)'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button
+                        type="button"
+                        onClick={handleSaveAsPdf}
+                        style={{
+                          padding: '9px 18px',
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontWeight: 800,
+                          fontSize: '0.86rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+                        }}
+                      >
+                        <Download size={16} />
+                        <span>📥 Save as PDF (A4)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handlePrintSystem}
+                        style={{
+                          padding: '9px 16px',
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontWeight: 800,
+                          fontSize: '0.86rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)'
+                        }}
+                      >
+                        <Printer size={16} />
+                        <span>🖨️ Print Dialog</span>
+                      </button>
+                    </div>
+
+                    {/* Dedicated Extreme Top-Right Close (X) Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowIdCardsModal(false)}
+                      style={{
+                        position: 'absolute',
+                        top: 14,
+                        right: 18,
+                        width: 38,
+                        height: 38,
+                        borderRadius: '50%',
+                        border: '1.5px solid rgba(239, 68, 68, 0.5)',
+                        background: 'rgba(239, 68, 68, 0.15)',
+                        color: '#f87171',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                        zIndex: 20
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#ef4444';
+                        e.currentTarget.style.color = '#ffffff';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                        e.currentTarget.style.color = '#f87171';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                      title="Close (Esc)"
+                    >
+                      <X size={20} strokeWidth={2.5} />
+                    </button>
+                  </div>
+
+                  {/* Filter & Side Selector Toolbar */}
+                  <div
+                    className="id-cards-modal-toolbar"
+                    style={{
+                      padding: '12px 24px',
+                      background: '#0f172a',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 14,
+                      flexWrap: 'wrap'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', flex: 1 }}>
+                      {/* Mode Switcher (Students vs Staff) */}
+                      <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIdCardsModalMode('student')}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardsModalMode === 'student' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent',
+                            color: idCardsModalMode === 'student' ? '#ffffff' : '#94a3b8',
+                            boxShadow: idCardsModalMode === 'student' ? '0 2px 8px rgba(99, 102, 241, 0.3)' : 'none'
+                          }}
+                        >
+                          🎓 Students ({activeStudents.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIdCardsModalMode('staff')}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardsModalMode === 'staff' ? 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' : 'transparent',
+                            color: idCardsModalMode === 'staff' ? '#ffffff' : '#94a3b8',
+                            boxShadow: idCardsModalMode === 'staff' ? '0 2px 8px rgba(13, 148, 136, 0.3)' : 'none'
+                          }}
+                        >
+                          👔 Staff ({staffRoster.length})
+                        </button>
+                      </div>
+
+                      {/* Course/Batch (for Students) OR Department (for Staff) Selector */}
+                      {idCardsModalMode === 'staff' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ fontSize: '0.80rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em' }}>DEPARTMENT:</label>
+                          <select
+                            value={selectedStaffDept}
+                            onChange={(e) => setSelectedStaffDept(e.target.value)}
+                            style={{
+                              padding: '7px 12px',
+                              borderRadius: 8,
+                              border: '1px solid rgba(255, 255, 255, 0.25)',
+                              background: '#1e293b',
+                              color: '#ffffff',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value="all">🏢 All Departments ({staffRoster.length} Staff)</option>
+                            {availableStaffDepts.map((dept) => (
+                              <option key={dept} value={dept}>{dept}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ fontSize: '0.80rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em' }}>COURSE / BATCH:</label>
+                          <select
+                            value={selectedIdCardBatch}
+                            onChange={(e) => setSelectedIdCardBatch(e.target.value)}
+                            style={{
+                              padding: '7px 12px',
+                              borderRadius: 8,
+                              border: '1px solid rgba(255, 255, 255, 0.25)',
+                              background: '#1e293b',
+                              color: '#ffffff',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value="all">🎓 All Courses / Batches ({activeStudents.length} Students)</option>
+                            {availableBatches.map((b) => (
+                              <option key={b.id} value={b.id}>{b.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Search Bar */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 170, flex: 1, maxWidth: 220, position: 'relative' }}>
+                        <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: 10, pointerEvents: 'none' }} />
+                        <input
+                          type="text"
+                          value={idCardSearch}
+                          onChange={(e) => setIdCardSearch(e.target.value)}
+                          placeholder={idCardsModalMode === 'staff' ? "Search name, ID, role..." : "Search name / roll..."}
+                          style={{
+                            width: '100%',
+                            padding: '7px 12px 7px 32px',
+                            borderRadius: 8,
+                            border: '1px solid rgba(255, 255, 255, 0.25)',
+                            background: '#1e293b',
+                            color: '#ffffff',
+                            fontSize: '0.82rem',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+
+                      {/* Side Switcher Buttons */}
+                      <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIdCardSide('duplex')}
+                          style={{
+                            padding: '5px 11px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.76rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardSide === 'duplex' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
+                            color: idCardSide === 'duplex' ? '#ffffff' : '#94a3b8',
+                            boxShadow: idCardSide === 'duplex' ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none'
+                          }}
+                        >
+                          📄 Duplex A4 (Front ➔ Back Sheets)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIdCardSide('both')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.76rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardSide === 'both' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
+                            color: idCardSide === 'both' ? '#ffffff' : '#94a3b8'
+                          }}
+                        >
+                          🎴 Side-by-Side (Pairs)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIdCardSide('front')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.76rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardSide === 'front' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
+                            color: idCardSide === 'front' ? '#ffffff' : '#94a3b8'
+                          }}
+                        >
+                          🪪 Front Only
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIdCardSide('back')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.76rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardSide === 'back' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
+                            color: idCardSide === 'back' ? '#ffffff' : '#94a3b8'
+                          }}
+                        >
+                          📜 Back Only
+                        </button>
+                      </div>
+
+                      {/* Cards Per Sheet Density Toggle (Duplex, Front, or Back) */}
+                      {['duplex', 'front', 'back'].includes(idCardSide) && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIdCardCardsPerPage(4);
+                                if (idCardWidth < 230 || idCardHeight < 340) {
+                                  handleSizePresetChange('standard');
+                                }
+                              }}
+                              style={{
+                                padding: '5px 10px',
+                                borderRadius: 6,
+                                border: 'none',
+                                fontSize: '0.74rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                background: idCardCardsPerPage === 4 ? '#3b82f6' : 'transparent',
+                                color: idCardCardsPerPage === 4 ? '#ffffff' : '#94a3b8'
+                              }}
+                            >
+                              📑 4 Cards / Sheet (Large 2×2)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIdCardCardsPerPage(6);
+                                setIdCardRepeatFill(true);
+                                if (idCardWidth > 225 || idCardHeight > 330) {
+                                  handleSizePresetChange('small');
+                                }
+                              }}
+                              style={{
+                                padding: '5px 10px',
+                                borderRadius: 6,
+                                border: 'none',
+                                fontSize: '0.74rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                background: idCardCardsPerPage === 6 ? '#3b82f6' : 'transparent',
+                                color: idCardCardsPerPage === 6 ? '#ffffff' : '#94a3b8'
+                              }}
+                            >
+                              📑 6 Cards / Sheet (Compact 2×3)
+                            </button>
+                          </div>
+
+                          {/* 🔁 Repeat Fill Button to fill all 6 slots when staff count < 6 */}
+                          {filteredIdCardStudents.length > 0 && filteredIdCardStudents.length < idCardCardsPerPage && (
+                            <button
+                              type="button"
+                              onClick={() => setIdCardRepeatFill(!idCardRepeatFill)}
+                              style={{
+                                padding: '5px 12px',
+                                borderRadius: 8,
+                                border: idCardRepeatFill ? '1.5px solid #10b981' : '1px solid rgba(255, 255, 255, 0.22)',
+                                fontSize: '0.74rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                background: idCardRepeatFill ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                                color: idCardRepeatFill ? '#34d399' : '#e2e8f0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                transition: 'all 0.2s ease'
+                              }}
+                              title="Repeat staff to fill all 6 slots on the A4 sheet for testing/printing"
+                            >
+                              <span>{idCardRepeatFill ? '✅ All 6 Slots Filled (Repeat Mode)' : '🔁 Fill All 6 Slots (Repeat Staff)'}</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Pagination Controls for Ultra-Fast Zero-Lag Screen Rendering */}
+                      {totalIdCardPages > 1 && !idCardSearch.trim() && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1e293b', padding: '3px 8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
+                          <button
+                            type="button"
+                            disabled={idCardPreviewPage <= 1 || idCardShowAll}
+                            onClick={() => setIdCardPreviewPage(p => Math.max(1, p - 1))}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 4,
+                              border: 'none',
+                              background: idCardPreviewPage > 1 && !idCardShowAll ? '#3b82f6' : '#334155',
+                              color: '#ffffff',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              cursor: idCardPreviewPage > 1 && !idCardShowAll ? 'pointer' : 'not-allowed'
+                            }}
+                          >
+                            ◀ Prev
+                          </button>
+                          
+                          <span style={{ fontSize: '0.74rem', color: '#e2e8f0', fontWeight: 700 }}>
+                            {idCardShowAll ? 'All Cards Rendered' : `Page ${idCardPreviewPage} / ${totalIdCardPages} (${displayedIdCardStudents.length} Cards)`}
+                          </span>
+
+                          <button
+                            type="button"
+                            disabled={idCardPreviewPage >= totalIdCardPages || idCardShowAll}
+                            onClick={() => setIdCardPreviewPage(p => Math.min(totalIdCardPages, p + 1))}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 4,
+                              border: 'none',
+                              background: idCardPreviewPage < totalIdCardPages && !idCardShowAll ? '#3b82f6' : '#334155',
+                              color: '#ffffff',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              cursor: idCardPreviewPage < totalIdCardPages && !idCardShowAll ? 'pointer' : 'not-allowed'
+                            }}
+                          >
+                            Next ▶
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setIdCardShowAll(!idCardShowAll)}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 4,
+                              border: 'none',
+                              background: idCardShowAll ? '#10b981' : '#475569',
+                              color: '#ffffff',
+                              fontSize: '0.70rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              marginLeft: 4
+                            }}
+                          >
+                            {idCardShowAll ? '⚡ Fast View' : '👁️ View All'}
+                          </button>
+                        </div>
+                      )}
+
+                      <div style={{
+                        fontSize: '0.80rem',
+                        fontWeight: 800,
+                        color: '#60a5fa',
+                        background: 'rgba(59, 130, 246, 0.18)',
+                        border: '1px solid rgba(59, 130, 246, 0.35)',
+                        padding: '5px 12px',
+                        borderRadius: 20,
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {idCardSide === 'duplex'
+                          ? `${displayedIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'}${idCardRepeatFill ? ' (Repeat Fill)' : ''} (${Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage)} A4 Sheets / ${Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage) * 2} Pages)`
+                          : `Showing ${displayedIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'}${idCardRepeatFill ? ' (Repeat Fill)' : ''} (${idCardSide === 'both' ? displayedIdCardStudents.length * 2 : displayedIdCardStudents.length} Cards)`}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 📏 Secondary Toolbar: ID Card Size & Dimensions Customization Bar */}
+                  <div
+                    className="id-cards-modal-size-toolbar"
+                    style={{
+                      padding: '8px 24px',
+                      background: '#131d31',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 14,
+                      flexWrap: 'wrap'
+                    }}
+                  >
+                    {/* Left: Size Presets */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.04em' }}>
+                        📏 CARD SIZE:
+                      </span>
+                      <div style={{ display: 'flex', background: '#0b1120', padding: 2, borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)' }}>
+                        {[
+                          { id: 'standard', label: '🌟 Standard PVC', sub: '260×390' },
+                          { id: 'compact', label: '📏 Compact A4', sub: '230×355' },
+                          { id: 'small', label: '🪪 Pocket Size', sub: '205×315' },
+                          { id: 'mini', label: '🤏 Mini Badge', sub: '185×280' },
+                          { id: 'custom', label: '⚙️ Custom', sub: `${idCardWidth}×${idCardHeight}` }
+                        ].map(p => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => handleSizePresetChange(p.id)}
+                            style={{
+                              padding: '4px 9px',
+                              borderRadius: 6,
+                              border: 'none',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              background: idCardSizePreset === p.id ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'transparent',
+                              color: idCardSizePreset === p.id ? '#ffffff' : '#94a3b8',
+                              boxShadow: idCardSizePreset === p.id ? '0 2px 6px rgba(2, 132, 199, 0.35)' : 'none'
+                            }}
+                            title={`${p.label} (${p.sub}px)`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Middle: Length (Height) and Width numeric controls */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                      {/* Width Control */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <label style={{ fontSize: '0.74rem', fontWeight: 800, color: '#cbd5e1' }}>
+                          ↔️ Width:
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', background: '#0b1120', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', padding: '2px 6px' }}>
+                          <input
+                            type="number"
+                            min="160"
+                            max="340"
+                            step="5"
+                            value={idCardWidth}
+                            onChange={(e) => handleWidthChange(e.target.value)}
+                            style={{
+                              width: 48,
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#38bdf8',
+                              fontSize: '0.80rem',
+                              fontWeight: 800,
+                              textAlign: 'center',
+                              outline: 'none'
+                            }}
+                          />
+                          <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700 }}>px</span>
+                        </div>
+                        <span style={{ fontSize: '0.66rem', color: '#94a3b8', fontWeight: 600 }}>
+                          (~{(idCardWidth / 3.78).toFixed(1)} mm)
+                        </span>
+                      </div>
+
+                      {/* Height / Length Control */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <label style={{ fontSize: '0.74rem', fontWeight: 800, color: '#cbd5e1' }}>
+                          ↕️ Length:
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', background: '#0b1120', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', padding: '2px 6px' }}>
+                          <input
+                            type="number"
+                            min="240"
+                            max="500"
+                            step="5"
+                            value={idCardHeight}
+                            onChange={(e) => handleHeightChange(e.target.value)}
+                            style={{
+                              width: 48,
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#38bdf8',
+                              fontSize: '0.80rem',
+                              fontWeight: 800,
+                              textAlign: 'center',
+                              outline: 'none'
+                            }}
+                          />
+                          <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700 }}>px</span>
+                        </div>
+                        <span style={{ fontSize: '0.66rem', color: '#94a3b8', fontWeight: 600 }}>
+                          (~{(idCardHeight / 3.78).toFixed(1)} mm)
+                        </span>
+                      </div>
+
+                      {/* Lock Ratio Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIdCardLockRatio(!idCardLockRatio)}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          background: idCardLockRatio ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.18)',
+                          color: idCardLockRatio ? '#34d399' : '#f87171',
+                          fontSize: '0.70rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}
+                        title={idCardLockRatio ? 'Aspect Ratio Locked (Width & Length scale together)' : 'Aspect Ratio Unlocked (Change Width & Length independently)'}
+                      >
+                        {idCardLockRatio ? '🔗 Locked' : '🔓 Free'}
+                      </button>
+                    </div>
+
+                    {/* Right: Scale Slider & Reset */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <label style={{ fontSize: '0.72rem', fontWeight: 800, color: '#cbd5e1' }}>
+                          🔍 {idCardScale}%
+                        </label>
+                        <input
+                          type="range"
+                          min="60"
+                          max="125"
+                          step="1"
+                          value={idCardScale}
+                          onChange={(e) => handleScaleChange(e.target.value)}
+                          style={{ width: 75, cursor: 'pointer', accentColor: '#0284c7' }}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleResetCardSize}
+                        style={{
+                          padding: '3px 7px',
+                          borderRadius: 6,
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          background: '#334155',
+                          color: '#ffffff',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                        title="Reset to standard 260px × 390px"
+                      >
+                        ↺ Reset
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ID Cards Printable Sheet Grid */}
+                  <div style={{ flex: 1, overflowY: 'auto', padding: 24, background: '#090d16' }}>
+                    <div id="printable-id-cards">
+                      {/* ================= MODE 1: DUPLEX A4 SHEETS ================= */}
+                      {idCardSide === 'duplex' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 36, alignItems: 'center' }}>
+                          {Array.from({ length: Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage) }).map((_, sheetIdx) => {
+                            const chunk = displayedIdCardStudents.slice(sheetIdx * idCardCardsPerPage, sheetIdx * idCardCardsPerPage + idCardCardsPerPage);
+                            
+                            // Mirrored chunk for horizontal flip on 2-column grid
+                            const rows = idCardCardsPerPage / 2;
+                            const mirroredChunk = [];
+                            for (let r = 0; r < rows; r++) {
+                              const s1 = chunk[r * 2] || null;
+                              const s2 = chunk[r * 2 + 1] || null;
+                              mirroredChunk.push(s2);
+                              mirroredChunk.push(s1);
+                            }
+
+                            const isCompact = idCardCardsPerPage === 6;
+                            // When 6 cards per sheet is chosen, auto-scale dimensions so 3 rows × 2 columns easily fit standard A4 sheet
+                            const effectiveWidth = idCardCardsPerPage === 6 ? Math.min(225, idCardWidth) : idCardWidth;
+                            const effectiveHeight = idCardCardsPerPage === 6 ? Math.min(330, idCardHeight) : idCardHeight;
+                            const cardWidth = `${effectiveWidth}px`;
+                            const cardHeight = `${effectiveHeight}px`;
+                            const gridCols = `repeat(2, ${effectiveWidth}px)`;
+                            const gridGap = `${Math.max(6, Math.min(20, Math.round(effectiveHeight * 0.035)))}px ${Math.max(12, Math.min(60, Math.round((734 - effectiveWidth * 2) / 2)))}px`;
+
+                            return (
+                              <div key={sheetIdx} style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center', width: '100%' }}>
+                                {/* Front Sheet Container */}
+                                <div style={{ width: '100%', maxWidth: '794px' }}>
+                                  {/* Screen Header Banner (OUTSIDE .a4-print-sheet) */}
+                                  <div
+                                    className="a4-print-header-banner"
+                                    style={{
+                                      background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                                      color: '#ffffff',
+                                      padding: '8px 16px',
+                                      borderRadius: '10px 10px 0 0',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      fontSize: '0.82rem',
+                                      fontWeight: 800
+                                    }}
+                                  >
+                                    <span>📄 SHEET {sheetIdx + 1} • PAGE {sheetIdx * 2 + 1} — FRONT FACES ({idCardsModalMode === 'staff' ? 'STAFF' : 'STUDENTS'} {sheetIdx * idCardCardsPerPage + 1} TO {sheetIdx * idCardCardsPerPage + chunk.length})</span>
+                                    <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>A4 Duplex Front Side</span>
+                                  </div>
+
+                                  {/* Page A: FRONT SHEET (PURE A4 PRINT CONTENT) */}
+                                  <div
+                                    className="a4-print-sheet"
+                                    style={{
+                                      background: '#ffffff',
+                                      borderRadius: '0 0 12px 12px',
+                                      padding: '24px 30px',
+                                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                                      width: '100%',
+                                      minHeight: '1123px',
+                                      boxSizing: 'border-box',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      justifyContent: 'center',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <div
+                                      className="a4-print-grid"
+                                      style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: gridCols,
+                                        gap: gridGap,
+                                        justifyContent: 'center'
+                                      }}
+                                    >
+                                      {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
+                                        const st = chunk[slotIdx] || null;
+                                        return (
+                                          <div key={st?._repeatKey || slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
+                                            {st ? (
+                                              idCardsModalMode === 'staff' ? (
+                                                <StaffIdCard staff={st} side="front" isCompact={isCompact} customWidth={effectiveWidth} customHeight={effectiveHeight} />
+                                              ) : (
+                                                <StudentIdCard student={st} side="front" isCompact={isCompact} batches={batches} customWidth={effectiveWidth} customHeight={effectiveHeight} />
+                                              )
+                                            ) : (
+                                              <div
+                                                className="print-id-card-empty"
+                                                style={{
+                                                  width: cardWidth,
+                                                  height: cardHeight,
+                                                  border: '2px dashed #94a3b8',
+                                                  borderRadius: 12,
+                                                  background: '#f8fafc',
+                                                  display: 'flex',
+                                                  flexDirection: 'column',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  gap: 6,
+                                                  color: '#64748b',
+                                                  padding: 12,
+                                                  textAlign: 'center',
+                                                  boxSizing: 'border-box'
+                                                }}
+                                              >
+                                                <span style={{ fontSize: '1.6rem' }}>🪪</span>
+                                                <span style={{ fontWeight: 800, fontSize: '0.80rem', color: '#1e293b' }}>
+                                                  Slot {slotIdx + 1} of {idCardCardsPerPage} (Empty)
+                                                </span>
+                                                <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                                                  {idCardsModalMode === 'staff'
+                                                    ? `Database has ${filteredIdCardStudents.length} staff member${filteredIdCardStudents.length === 1 ? '' : 's'}`
+                                                    : 'Slot ready'}
+                                                </span>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setIdCardRepeatFill(true)}
+                                                  style={{
+                                                    marginTop: 4,
+                                                    padding: '3px 8px',
+                                                    borderRadius: 5,
+                                                    border: '1px solid #3b82f6',
+                                                    background: 'rgba(59, 130, 246, 0.1)',
+                                                    color: '#2563eb',
+                                                    fontSize: '0.70rem',
+                                                    fontWeight: 800,
+                                                    cursor: 'pointer'
+                                                  }}
+                                                >
+                                                  🔁 Fill 6 Cards
+                                                </button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Back Sheet Container */}
+                                <div style={{ width: '100%', maxWidth: '794px' }}>
+                                  {/* Screen Header Banner (OUTSIDE .a4-print-sheet) */}
+                                  <div
+                                    className="a4-print-header-banner"
+                                    style={{
+                                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                                      color: '#ffffff',
+                                      padding: '8px 16px',
+                                      borderRadius: '10px 10px 0 0',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      fontSize: '0.82rem',
+                                      fontWeight: 800
+                                    }}
+                                  >
+                                    <span>📜 SHEET {sheetIdx + 1} • PAGE {sheetIdx * 2 + 2} — BACK FACES (TERMS &amp; CONDITIONS — MIRRORED DUPLEX ALIGNED)</span>
+                                    <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>A4 Duplex Back (Reverse Side)</span>
+                                  </div>
+
+                                  {/* Page B: BACK SHEET (PURE A4 PRINT CONTENT) */}
+                                  <div
+                                    className="a4-print-sheet"
+                                    style={{
+                                      background: '#ffffff',
+                                      borderRadius: '0 0 12px 12px',
+                                      padding: '24px 30px',
+                                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                                      width: '100%',
+                                      minHeight: '1123px',
+                                      boxSizing: 'border-box',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      justifyContent: 'center',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <div
+                                      className="a4-print-grid"
+                                      style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: gridCols,
+                                        gap: gridGap,
+                                        justifyContent: 'center'
+                                      }}
+                                    >
+                                      {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
+                                        const st = mirroredChunk[slotIdx] || null;
+                                        return (
+                                          <div key={st?._repeatKey || slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
+                                            {st ? (
+                                              idCardsModalMode === 'staff' ? (
+                                                <StaffIdCard staff={st} side="back" isCompact={isCompact} customWidth={effectiveWidth} customHeight={effectiveHeight} />
+                                              ) : (
+                                                <StudentIdCard student={st} side="back" isCompact={isCompact} batches={batches} customWidth={effectiveWidth} customHeight={effectiveHeight} />
+                                              )
+                                            ) : (
+                                              <div
+                                                className="print-id-card-empty"
+                                                style={{
+                                                  width: cardWidth,
+                                                  height: cardHeight,
+                                                  border: '2px dashed #94a3b8',
+                                                  borderRadius: 12,
+                                                  background: '#f8fafc',
+                                                  display: 'flex',
+                                                  flexDirection: 'column',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  gap: 6,
+                                                  color: '#64748b',
+                                                  padding: 12,
+                                                  textAlign: 'center',
+                                                  boxSizing: 'border-box'
+                                                }}
+                                              >
+                                                <span style={{ fontSize: '1.6rem' }}>📜</span>
+                                                <span style={{ fontWeight: 800, fontSize: '0.80rem', color: '#1e293b' }}>
+                                                  Slot {slotIdx + 1} of {idCardCardsPerPage} (Empty Back)
+                                                </span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* ================= MODES 2 & 3: FRONT ONLY OR BACK ONLY A4 SHEETS ================= */}
+                      {(idCardSide === 'front' || idCardSide === 'back') && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 36, alignItems: 'center' }}>
+                          {Array.from({ length: Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage) }).map((_, sheetIdx) => {
+                            const chunk = displayedIdCardStudents.slice(sheetIdx * idCardCardsPerPage, sheetIdx * idCardCardsPerPage + idCardCardsPerPage);
+                            const isCompact = idCardCardsPerPage === 6;
+                            // When 6 cards per sheet is chosen, auto-scale dimensions so 3 rows × 2 columns easily fit standard A4 sheet
+                            const effectiveWidth = idCardCardsPerPage === 6 ? Math.min(225, idCardWidth) : idCardWidth;
+                            const effectiveHeight = idCardCardsPerPage === 6 ? Math.min(330, idCardHeight) : idCardHeight;
+                            const cardWidth = `${effectiveWidth}px`;
+                            const cardHeight = `${effectiveHeight}px`;
+                            const gridCols = `repeat(2, ${effectiveWidth}px)`;
+                            const gridGap = `${Math.max(6, Math.min(20, Math.round(effectiveHeight * 0.035)))}px ${Math.max(12, Math.min(60, Math.round((734 - effectiveWidth * 2) / 2)))}px`;
+
+                            return (
+                              <div key={sheetIdx} style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center', width: '100%' }}>
+                                <div style={{ width: '100%', maxWidth: '794px' }}>
+                                  <div
+                                    className="a4-print-header-banner"
+                                    style={{
+                                      background: idCardSide === 'front' ? 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' : 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                                      color: '#ffffff',
+                                      padding: '8px 16px',
+                                      borderRadius: '10px 10px 0 0',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      fontSize: '0.82rem',
+                                      fontWeight: 800
+                                    }}
+                                  >
+                                    <span>{idCardSide === 'front' ? '📄' : '📜'} SHEET {sheetIdx + 1} — {idCardSide === 'front' ? 'FRONT FACES' : 'BACK FACES'} ({idCardsModalMode === 'staff' ? 'STAFF' : 'STUDENTS'} {sheetIdx * idCardCardsPerPage + 1} TO {Math.min(filteredIdCardStudents.length, sheetIdx * idCardCardsPerPage + idCardCardsPerPage)})</span>
+                                    <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>{idCardCardsPerPage} Cards / Sheet ({idCardSide === 'front' ? 'Front Side' : 'Back Side'})</span>
+                                  </div>
+
+                                  <div
+                                    className="a4-print-sheet"
+                                    style={{
+                                      background: '#ffffff',
+                                      borderRadius: '0 0 12px 12px',
+                                      padding: '24px 30px',
+                                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                                      width: '100%',
+                                      minHeight: '1123px',
+                                      boxSizing: 'border-box',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      justifyContent: 'center',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <div
+                                      className="a4-print-grid"
+                                      style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: gridCols,
+                                        gap: gridGap,
+                                        justifyContent: 'center'
+                                      }}
+                                    >
+                                      {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
+                                        const st = chunk[slotIdx] || null;
+                                        return (
+                                          <div key={st?._repeatKey || slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
+                                            {st ? (
+                                              idCardsModalMode === 'staff' ? (
+                                                <StaffIdCard staff={st} side={idCardSide} isCompact={isCompact} customWidth={effectiveWidth} customHeight={effectiveHeight} />
+                                              ) : (
+                                                <StudentIdCard student={st} side={idCardSide} isCompact={isCompact} batches={batches} customWidth={effectiveWidth} customHeight={effectiveHeight} />
+                                              )
+                                            ) : (
+                                              <div
+                                                className="print-id-card-empty"
+                                                style={{
+                                                  width: cardWidth,
+                                                  height: cardHeight,
+                                                  border: '2px dashed #94a3b8',
+                                                  borderRadius: 12,
+                                                  background: '#f8fafc',
+                                                  display: 'flex',
+                                                  flexDirection: 'column',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  gap: 6,
+                                                  color: '#64748b',
+                                                  padding: 12,
+                                                  textAlign: 'center',
+                                                  boxSizing: 'border-box'
+                                                }}
+                                              >
+                                                <span style={{ fontSize: '1.6rem' }}>🪪</span>
+                                                <span style={{ fontWeight: 800, fontSize: '0.80rem', color: '#1e293b' }}>
+                                                  Slot {slotIdx + 1} of {idCardCardsPerPage} (Empty)
+                                                </span>
+                                                <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                                                  {idCardsModalMode === 'staff'
+                                                    ? `Database has ${filteredIdCardStudents.length} staff member${filteredIdCardStudents.length === 1 ? '' : 's'}`
+                                                    : 'Slot ready'}
+                                                </span>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setIdCardRepeatFill(true)}
+                                                  style={{
+                                                    marginTop: 4,
+                                                    padding: '3px 8px',
+                                                    borderRadius: 5,
+                                                    border: '1px solid #3b82f6',
+                                                    background: 'rgba(59, 130, 246, 0.1)',
+                                                    color: '#2563eb',
+                                                    fontSize: '0.70rem',
+                                                    fontWeight: 800,
+                                                    cursor: 'pointer'
+                                                  }}
+                                                >
+                                                  🔁 Fill 6 Cards
+                                                </button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* ================= MODE 4: BOTH (PAIRS PREVIEW) ================= */}
+                      {idCardSide === 'both' && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 24,
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {displayedIdCardStudents.map((st) => (
+                            <div
+                              key={st.id || st.staffId}
+                              className="print-id-card-pair"
+                              style={{
+                                display: 'flex',
+                                gap: 20,
+                                flexWrap: 'wrap',
+                                justifyContent: 'center',
+                                alignItems: 'flex-start'
+                              }}
+                            >
+                              {idCardsModalMode === 'staff' ? (
+                                <>
+                                  <StaffIdCard staff={st} side="front" isCompact={false} customWidth={idCardWidth} customHeight={idCardHeight} />
+                                  <StaffIdCard staff={st} side="back" isCompact={false} customWidth={idCardWidth} customHeight={idCardHeight} />
+                                </>
+                              ) : (
+                                <>
+                                  <StudentIdCard student={st} side="front" isCompact={false} batches={batches} customWidth={idCardWidth} customHeight={idCardHeight} />
+                                  <StudentIdCard student={st} side="back" isCompact={false} batches={batches} customWidth={idCardWidth} customHeight={idCardHeight} />
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+
             <style>{`
               @media print {
                 @page {
@@ -5344,7 +7928,7 @@ export default function Attendance() {
                 }
                 .a4-print-grid {
                   display: grid !important;
-                  grid-template-columns: repeat(2, 94mm) !important;
+                  grid-template-columns: repeat(2, auto) !important;
                   gap: 4mm 6mm !important;
                   justify-content: center !important;
                   align-content: start !important;
@@ -5366,6 +7950,11 @@ export default function Attendance() {
                   -webkit-print-color-adjust: exact !important;
                   print-color-adjust: exact !important;
                 }
+                .print-id-card-wrapper {
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                  display: inline-block !important;
+                }
                 .print-id-card {
                   page-break-inside: avoid !important;
                   break-inside: avoid !important;
@@ -5374,14 +7963,17 @@ export default function Attendance() {
                   -webkit-print-color-adjust: exact !important;
                   print-color-adjust: exact !important;
                 }
+                .print-id-card.print-staff-id-card,
+                .print-id-card.print-staff-id-card-back {
+                  border: 2px solid #cc0000 !important;
+                }
                 .print-id-card-empty {
                   visibility: hidden !important;
+                  border: none !important;
+                  background: transparent !important;
                 }
               }
             `}</style>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

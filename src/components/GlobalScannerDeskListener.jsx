@@ -165,9 +165,35 @@ export default function GlobalScannerDeskListener() {
       extracted = String(extracted).trim();
       if (!extracted) return;
 
-      const target = extracted.toLowerCase();
+      // 1. Check if scan explicitly belongs to Staff (e.g. "STAFF_2")
+      const isStaffExplicit = /^staff[_-]?/i.test(extracted);
+      const cleanStaffTarget = extracted.replace(/^staff[_-]?/i, '').replace(/^#+/, '').trim().toLowerCase();
 
-      // 2. Match student in database
+      if (isStaffExplicit) {
+        const matchedStaff = staffListRef.current.find((st) => {
+          if (st.isDeleted) return false;
+          const sid = String(st.staffId || '').replace(/^#+/, '').trim().toLowerCase();
+          const id = String(st.id || '').trim().toLowerCase();
+          return sid === cleanStaffTarget || id === cleanStaffTarget || id === `staff_${cleanStaffTarget}`;
+        }) || staffListRef.current.find((st) => {
+          if (st.isDeleted) return false;
+          const sNum = parseInt(String(st.staffId).replace(/^#+/, ''), 10);
+          const targetNum = parseInt(cleanStaffTarget, 10);
+          return !isNaN(sNum) && !isNaN(targetNum) && sNum === targetNum;
+        });
+
+        if (matchedStaff) {
+          await processStaffScan(matchedStaff);
+          return;
+        } else {
+          playScannerSound('error');
+          toast.error(`❌ Staff member not found for ID: "${cleanStaffTarget}"`, { id: 'scanner-toast' });
+          return;
+        }
+      }
+
+      // 2. Otherwise normal input -> Match student in database first
+      const target = extracted.toLowerCase();
       const matched = students.find((s) => {
         if (s.isDeleted || s.status === 'inactive') return false;
         const r = String(s.rollNo || '').trim().toLowerCase();
@@ -182,17 +208,17 @@ export default function GlobalScannerDeskListener() {
       });
 
       if (!matched) {
-        // 2b. Check if scanned code matches a Staff / Employee member
+        // 2b. Fallback: If not found as student, check if scanned code matches an active Staff member
         const matchedStaff = staffListRef.current.find((st) => {
           if (st.isDeleted) return false;
-          const sid = String(st.staffId || '').trim().toLowerCase();
+          const sid = String(st.staffId || '').replace(/^#+/, '').trim().toLowerCase();
           const id = String(st.id || '').trim().toLowerCase();
           const phone = String(st.phone || '').trim();
-          return sid === target || id === target || phone === target;
+          return sid === cleanStaffTarget || id === cleanStaffTarget || phone === target;
         }) || staffListRef.current.find((st) => {
           if (st.isDeleted) return false;
-          const sNum = parseInt(st.staffId, 10);
-          const targetNum = parseInt(extracted, 10);
+          const sNum = parseInt(String(st.staffId).replace(/^#+/, ''), 10);
+          const targetNum = parseInt(cleanStaffTarget, 10);
           return !isNaN(sNum) && !isNaN(targetNum) && sNum === targetNum;
         });
 
@@ -358,9 +384,15 @@ export default function GlobalScannerDeskListener() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.4rem'
+                  fontSize: '1.4rem',
+                  overflow: 'hidden',
+                  border: '1.5px solid #2dd4bf'
                 }}>
-                  🪪
+                  {staffMember.photo ? (
+                    <img src={staffMember.photo} alt={staffMember.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    '🪪'
+                  )}
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

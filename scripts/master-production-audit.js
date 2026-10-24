@@ -232,6 +232,8 @@ async function runMasterProductionAudit() {
     env: { ...process.env, PORT: String(TEST_PORT), IS_AUDIT_RUN: '1' },
     stdio: 'pipe'
   });
+  serverProcess.stdout.resume();
+  serverProcess.stderr.resume();
 
   let serverUp = false;
   for (let i = 0; i < 30; i++) {
@@ -274,7 +276,7 @@ async function runMasterProductionAudit() {
       { name: 'Test Results & Performance Stats API', path: '/api/tests', method: 'GET', auth: true },
       { name: 'Academic Sessions API', path: '/api/sessions', method: 'GET', auth: true },
       { name: 'Admission Inquiries API', path: '/api/inquiries', method: 'GET', auth: true },
-      { name: 'SMS & WhatsApp Logs API', path: '/api/sms-logs', method: 'GET', auth: true },
+      { name: 'SMS & WhatsApp Logs API', path: '/api/sms-logs?limit=25', method: 'GET', auth: true },
       { name: 'Biometric Status API', path: '/api/biometric/status', method: 'GET', auth: true },
       { name: 'Biometric Network & Static IP API', path: '/api/biometric/network-status', method: 'GET', auth: true },
       { name: 'Recent Biometric Punches API', path: '/api/biometric/recent-punches', method: 'GET', auth: true },

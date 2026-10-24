@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "botToken": "8839798696:AAHnc973JZ-5BEDse0SQWeRmJUll6oZaeY8",
+  "users": {
+    "prince": {
+      "staffId": "1",
+      "name": "Prince Kumar",
+      "phone": "8538949912",
+      "chatId": "6333495869",
+      "username": "saware01"
+    },
+    "rahul": {
+      "staffId": "2",
+      "name": "Rahul Titarmare",
+      "phone": "9270875415",
+      "chatId": "679610147",
+      "username": "rahulsir67"
+    }
+  }
+}

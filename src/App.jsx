@@ -14,21 +14,27 @@ const lazyWithRetry = (componentImport) =>
     try {
       return await componentImport();
     } catch (error) {
-      console.warn('⚠️ Dynamic import failed, retrying...', error);
-      await new Promise((resolve) => setTimeout(resolve, 350));
+      console.warn('⚠️ Dynamic import initial attempt failed, retrying in 300ms...', error);
+      await new Promise((resolve) => setTimeout(resolve, 300));
       try {
         return await componentImport();
       } catch (retryError) {
-        console.error('🚨 Dynamic import second attempt failed, refreshing view:', retryError);
-        const retryKey = 'lazy_retry_' + (window.location.hash || window.location.pathname);
-        const alreadyRetried = sessionStorage.getItem(retryKey);
-        if (!alreadyRetried) {
-          sessionStorage.setItem(retryKey, 'true');
-          window.location.reload();
-          return new Promise(() => {});
+        console.warn('⚠️ Dynamic import second attempt failed, final retry in 700ms...', retryError);
+        await new Promise((resolve) => setTimeout(resolve, 700));
+        try {
+          return await componentImport();
+        } catch (finalError) {
+          console.error('🚨 Dynamic import failed after 3 attempts, performing hard reload:', finalError);
+          const retryKey = 'lazy_retry_' + (window.location.hash || window.location.pathname);
+          const alreadyRetried = sessionStorage.getItem(retryKey);
+          if (!alreadyRetried) {
+            sessionStorage.setItem(retryKey, 'true');
+            window.location.reload();
+            return new Promise(() => {});
+          }
+          sessionStorage.removeItem(retryKey);
+          throw finalError;
         }
-        sessionStorage.removeItem(retryKey);
-        throw retryError;
       }
     }
   });

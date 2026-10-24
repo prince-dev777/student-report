@@ -73,6 +73,21 @@ function deduplicateSessions(sessionList) {
   return clean;
 }
 
+function deduplicateSMSLogs(smsList) {
+  if (!Array.isArray(smsList)) return [];
+  const seen = new Set();
+  const clean = [];
+  for (const sms of smsList) {
+    if (!sms || sms.isDeleted) continue;
+    // Use business id (SMS_xxx) as primary key, fallback to composite key
+    const key = sms.id || `${sms.studentId}_${sms.timestamp}_${sms.type}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    clean.push(sms);
+  }
+  return clean;
+}
+
 export function AppProvider({ children }) {
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -174,7 +189,7 @@ export function AppProvider({ children }) {
       }
 
       if (Array.isArray(serverSMS)) {
-        setSMSHistory(serverSMS);
+        setSMSHistory(deduplicateSMSLogs(serverSMS));
       }
 
       if (Array.isArray(cleanSessions)) {
@@ -231,6 +246,13 @@ export function AppProvider({ children }) {
       }
     }
   }, [loadServerData]);
+
+  // When user logs in or auth state changes, immediately load server data
+  useEffect(() => {
+    if (user && user.username) {
+      loadServerData();
+    }
+  }, [user?.username, loadServerData]);
 
   // Sync / Load data on startup
   useEffect(() => {
@@ -921,7 +943,7 @@ export function AppProvider({ children }) {
     try {
       const serverSMS = await api.getSMSLogs();
       if (Array.isArray(serverSMS)) {
-        setSMSHistory(serverSMS);
+        setSMSHistory(deduplicateSMSLogs(serverSMS));
       }
     } catch (e) {
       console.warn('[AppContext] Failed to refresh SMS logs:', e.message);

@@ -287,6 +287,19 @@ function createWindow() {
     icon: path.join(__dirname, app.isPackaged ? 'dist' : 'public', 'logo.jpg'),
   });
 
+  // Handle any window.open / target="_blank" cleanly by delegating to system browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:'))) {
+        const { shell } = require('electron');
+        shell.openExternal(url);
+      }
+    } catch (e) {
+      console.warn('setWindowOpenHandler error:', e);
+    }
+    return { action: 'deny' };
+  });
+
   const revealMainWindow = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     if (mainWindow.isVisible()) return;
@@ -622,6 +635,19 @@ app.whenReady().then(async () => {
     return false;
   });
 
+  ipcMain.handle('shell:openExternal', async (event, url) => {
+    try {
+      if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:'))) {
+        const { shell } = require('electron');
+        await shell.openExternal(url);
+        return true;
+      }
+    } catch (e) {
+      console.warn('shell.openExternal error:', e);
+    }
+    return false;
+  });
+
   // ─── Embedded Font Loader (Base64 Zero-CDN Embedding) ────────
   function loadFontBase64(filename) {
     try {
@@ -662,9 +688,12 @@ app.whenReady().then(async () => {
 
       if (payload && typeof payload === 'object' && Array.isArray(payload.students)) {
         // Structured Data Payload -> Generate Clean Vector HTML via pdfTemplate.cjs
+        try {
+          delete require.cache[require.resolve('./pdfTemplate.cjs')];
+        } catch (e) {}
         const { generateIdCardPdfHtml } = require('./pdfTemplate.cjs');
         const fontCss = buildFontCss();
-        const { students, logoBase64, defaultName, side, cardsPerPage } = payload;
+        const { students, logoBase64, defaultName, side, cardsPerPage, cardWidth, cardHeight } = payload;
 
         let logoSrc = '';
         if (logoBase64 && typeof logoBase64 === 'string' && logoBase64.startsWith('data:image')) {
@@ -685,7 +714,7 @@ app.whenReady().then(async () => {
           }
         }
 
-        htmlContent = await generateIdCardPdfHtml(students, logoSrc, fontCss, side || 'duplex', cardsPerPage || 4);
+        htmlContent = await generateIdCardPdfHtml(students, logoSrc, fontCss, side || 'duplex', cardsPerPage || 4, cardWidth, cardHeight);
         targetName = defaultName || 'CareerXone_ID_Cards.pdf';
       } else if (typeof payload === 'string') {
         // Backward compatibility: Raw HTML string passed

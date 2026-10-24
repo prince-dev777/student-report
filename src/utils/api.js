@@ -130,6 +130,14 @@ async function apiRequest(endpoint, options = {}) {
       }
     }
 
+    if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.dispatchEvent(new CustomEvent('auth-session-expired'));
+      }
+    }
+
     if (!endpoint.includes('/logs/client-error')) {
       reportClientError({
         errorType: 'API_FAILURE',
@@ -187,6 +195,8 @@ export const api = {
   },
   getSettings: () => apiRequest('/settings'),
   updateSettings: (data) => apiRequest('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  getDeviceNode: () => apiRequest('/device-node'),
+  updateDeviceNode: (data) => apiRequest('/device-node', { method: 'PUT', body: JSON.stringify(data) }),
   parentLogin: (data) => apiRequest('/parent/login', { method: 'POST', body: JSON.stringify(data) }),
   regenerateParentCredentials: (id) => apiRequest(`/students/${id}/regenerate-parent`, { method: 'POST' }),
   
@@ -338,14 +348,24 @@ export const api = {
     apiRequest('/biometric/reset-dhcp', { method: 'POST', body: JSON.stringify(data) }),
 
   // 👥 Staff / Employee Attendance Control Center
-  getStaffAttendance: (date) =>
-    apiRequest(`/staff-attendance${date ? `?date=${date}` : ''}`),
+  getStaffAttendance: (dateOrParams) => {
+    if (!dateOrParams) return apiRequest('/staff-attendance');
+    if (typeof dateOrParams === 'string') return apiRequest(`/staff-attendance?date=${encodeURIComponent(dateOrParams)}`);
+    const q = new URLSearchParams(dateOrParams).toString();
+    return apiRequest(`/staff-attendance?${q}`);
+  },
+  getStaffAttendanceHistory: (staffId) =>
+    apiRequest(`/staff-attendance/history/${staffId}`),
   manualStaffPunch: (data) =>
     apiRequest('/staff-attendance/punch', { method: 'POST', body: JSON.stringify(data) }),
   getStaffMembers: () =>
     apiRequest('/staff-members'),
   createStaffMember: (data) =>
     apiRequest('/staff-members', { method: 'POST', body: JSON.stringify(data) }),
+  deleteStaffMember: (staffId, permanent = true) =>
+    apiRequest(`/staff-members/${staffId}?permanent=${permanent}`, { method: 'DELETE' }),
+  addStaffBulk: (staffData, overwriteMode = 'rewrite') =>
+    apiRequest('/staff-members/bulk', { method: 'POST', body: JSON.stringify({ staffData, overwriteMode }) }),
 
   // WhatsApp Parent Auto-Reply Bot
   getWhatsAppBotConfig: () => 
@@ -412,3 +432,5 @@ export const api = {
   clearClientErrorLogs: () =>
     apiRequest('/logs/client-errors', { method: 'DELETE' }),
 };
+
+export default api;

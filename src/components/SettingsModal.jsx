@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { X, Upload, Check, Lock, Image as ImageIcon, Sparkles, Sliders, ShieldCheck, RefreshCw, Smartphone, Key } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Upload, Check, Lock, Image as ImageIcon, Sparkles, Sliders, ShieldCheck, RefreshCw, Smartphone, Key, Monitor } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,35 @@ export default function SettingsModal({ onClose }) {
   const [inquiryPasscode, setInquiryPasscode] = useState(() => localStorage.getItem('inquiry_passcode') || '9999');
   const [isLoading, setIsLoading] = useState(false);
   const [syncingCloud, setSyncingCloud] = useState(false);
+
+  const [deviceNode, setDeviceNode] = useState({
+    deviceName: '',
+    deviceRole: 'master',
+    isMasterMessagingNode: true,
+    masterHostname: 'PRINCE',
+    hostname: '',
+    localIp: ''
+  });
+
+  useEffect(() => {
+    // 1. Instantly load from localStorage
+    try {
+      const saved = localStorage.getItem('device_node_config');
+      if (saved) {
+        setDeviceNode(prev => ({ ...prev, ...JSON.parse(saved) }));
+      }
+    } catch (_) {}
+
+    // 2. Load from server silently with graceful fallback
+    api.getDeviceNode().then(res => {
+      if (res && res.hostname) {
+        setDeviceNode(prev => ({ ...prev, ...res }));
+        try { localStorage.setItem('device_node_config', JSON.stringify(res)); } catch (_) {}
+      }
+    }).catch(() => {
+      // Quietly keep local settings if backend endpoint is refreshing
+    });
+  }, []);
   
   const fileInputRef = useRef(null);
 
@@ -91,6 +120,21 @@ export default function SettingsModal({ onClose }) {
         updateUser({ logo: response.logo });
       }
 
+      // Save Device Node configuration
+      if (deviceNode.deviceName) {
+        try {
+          localStorage.setItem('device_node_config', JSON.stringify(deviceNode));
+          await api.updateDeviceNode({
+            deviceName: deviceNode.deviceName,
+            deviceRole: deviceNode.deviceRole,
+            isMasterMessagingNode: deviceNode.deviceRole === 'master',
+            masterHostname: deviceNode.masterHostname
+          });
+        } catch (_) {
+          // Quietly saved in localStorage
+        }
+      }
+
       toast.success(response.message || 'Settings updated successfully!');
       onClose();
     } catch (err) {
@@ -106,7 +150,7 @@ export default function SettingsModal({ onClose }) {
 
   return (
     <div className="modal-overlay" onClick={handleOverlayClick} style={{ zIndex: 99999 }}>
-      <div className="modal-content" style={{ maxWidth: '580px', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="modal-content" style={{ maxWidth: '620px', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}>
         
         {/* Header */}
         <div className="modal-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
@@ -122,16 +166,19 @@ export default function SettingsModal({ onClose }) {
         {/* Tab Navigation */}
         <div style={{
           display: 'flex',
-          gap: '4px',
+          gap: '6px',
           padding: '8px 16px',
           background: 'var(--bg-secondary)',
           borderBottom: '1px solid var(--border-color)',
-          overflowX: 'auto'
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
+          scrollbarWidth: 'none'
         }}>
           {[
             { id: 'general', label: '🎨 Appearance', icon: Sparkles },
             { id: 'profile', label: '🏢 Profile & Logo', icon: ImageIcon },
             { id: 'security', label: '🔐 Passcodes & Auth', icon: Key },
+            { id: 'device', label: '💻 Multi-PC Setup', icon: Monitor },
             { id: 'cloud', label: '☁️ Cloud & Sync', icon: RefreshCw }
           ].map(tab => (
             <button
@@ -139,7 +186,7 @@ export default function SettingsModal({ onClose }) {
               type="button"
               onClick={() => setActiveTab(tab.id)}
               style={{
-                padding: '6px 12px',
+                padding: '7px 12px',
                 borderRadius: '8px',
                 border: 'none',
                 cursor: 'pointer',
@@ -148,6 +195,8 @@ export default function SettingsModal({ onClose }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
                 background: activeTab === tab.id ? 'var(--accent-blue)' : 'transparent',
                 color: activeTab === tab.id ? '#ffffff' : 'var(--text-secondary)',
                 transition: 'all 0.15s ease'
@@ -403,6 +452,159 @@ export default function SettingsModal({ onClose }) {
                     <span>{syncingCloud ? 'Synchronizing with Cloud...' : 'Trigger Full Two-Way Sync Now'}</span>
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* TAB 5: MULTI-PC ROLE & HARDWARE SETUP */}
+            {activeTab === 'device' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                
+                {/* System Node Identity Banner */}
+                <div style={{
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  background: deviceNode.isMasterNow ? 'rgba(16, 185, 129, 0.08)' : 'rgba(59, 130, 246, 0.08)',
+                  border: `1.5px solid ${deviceNode.isMasterNow ? 'rgba(16, 185, 129, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '1.1rem' }}>{deviceNode.isMasterNow ? '👑' : '💻'}</span>
+                      <strong style={{ fontSize: '0.92rem', color: deviceNode.isMasterNow ? '#059669' : '#2563eb' }}>
+                        {deviceNode.isMasterNow ? 'Primary Attendance & Messaging Node' : 'Client Workstation Node'}
+                      </strong>
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      PC Hostname: <code style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{deviceNode.hostname || 'PRINCE'}</code> • Local IP: <code>{deviceNode.localIp || '127.0.0.1'}</code>
+                    </div>
+                  </div>
+                  <span style={{
+                    padding: '3px 10px',
+                    borderRadius: '20px',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    background: deviceNode.isMasterNow ? '#10b981' : '#3b82f6',
+                    color: '#ffffff'
+                  }}>
+                    {deviceNode.isMasterNow ? 'ACTIVE MASTER' : 'CLIENT MODE'}
+                  </span>
+                </div>
+
+                {/* Friendly Name Input */}
+                <div style={{ padding: '14px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                    💻 This Computer's Name & Purpose (Institute Tag)
+                  </label>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 10px 0' }}>
+                    Give this PC an identifiable name so you know its exact role (e.g. <b>Attendance PC</b>, <b>Test Result PC</b>, <b>Front-Desk Reception</b>, <b>Manager Laptop</b>).
+                  </p>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={deviceNode.deviceName || ''}
+                    onChange={(e) => setDeviceNode({ ...deviceNode, deviceName: e.target.value })}
+                    placeholder="e.g. Attendance PC, Test Result PC, Reception Desk"
+                    style={{ height: '38px', fontSize: '0.88rem', fontWeight: 600 }}
+                  />
+                </div>
+
+                {/* Function Mode Selector */}
+                <div style={{ padding: '14px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                    ⚙️ Machine Role in Multi-PC Network
+                  </label>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 12px 0' }}>
+                    To prevent duplicate WhatsApp messages across multiple institute PCs, only <b>one computer</b> should be designated as the Master Messaging Node.
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {/* Master Option */}
+                    <div
+                      onClick={() => setDeviceNode({ ...deviceNode, deviceRole: 'master', isMasterMessagingNode: true, masterHostname: deviceNode.hostname || 'PRINCE' })}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '10px',
+                        border: deviceNode.deviceRole === 'master' ? '2px solid #10b981' : '1px solid var(--border-color)',
+                        background: deviceNode.deviceRole === 'master' ? 'rgba(16, 185, 129, 0.06)' : 'var(--bg-card)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px'
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="deviceRoleRadio"
+                        checked={deviceNode.deviceRole === 'master'}
+                        onChange={() => {}}
+                        style={{ marginTop: '3px' }}
+                      />
+                      <div>
+                        <strong style={{ fontSize: '0.86rem', color: 'var(--text-primary)', display: 'block' }}>
+                          🟢 Master Attendance & Messaging Node (Recommended for Main PC)
+                        </strong>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'block', marginTop: '2px' }}>
+                          Primary node for outbound WhatsApp parent notifications, staff alerts, and Biometric device synchronization.
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Client Option */}
+                    <div
+                      onClick={() => setDeviceNode({ ...deviceNode, deviceRole: 'client', isMasterMessagingNode: false })}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '10px',
+                        border: deviceNode.deviceRole === 'client' ? '2px solid #3b82f6' : '1px solid var(--border-color)',
+                        background: deviceNode.deviceRole === 'client' ? 'rgba(59, 130, 246, 0.06)' : 'var(--bg-card)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px'
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="deviceRoleRadio"
+                        checked={deviceNode.deviceRole === 'client'}
+                        onChange={() => {}}
+                        style={{ marginTop: '3px' }}
+                      />
+                      <div>
+                        <strong style={{ fontSize: '0.86rem', color: 'var(--text-primary)', display: 'block' }}>
+                          🔵 Client Workstation Mode (For Other Institute PCs)
+                        </strong>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'block', marginTop: '2px' }}>
+                          For student admissions, test results entry, fee receipts, inquiries, and viewing reports. Skips outbound WhatsApp sending (handled by Master PC).
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Designated Master Hostname if client */}
+                  {deviceNode.deviceRole === 'client' && (
+                    <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px dashed var(--border-color)' }}>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                        Designated Master PC Hostname:
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={deviceNode.masterHostname || ''}
+                        onChange={(e) => setDeviceNode({ ...deviceNode, masterHostname: e.target.value })}
+                        placeholder="e.g. PRINCE"
+                        style={{ height: '34px', fontSize: '0.82rem' }}
+                      />
+                      <span style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
+                        This tells the workstation which PC handles outbound messages on the network.
+                      </span>
+                    </div>
+                  )}
+                </div>
+
               </div>
             )}
 

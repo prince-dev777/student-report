@@ -19,7 +19,9 @@ export const ALL_COLLECTIONS = [
   'inquiries',
   'notifications',
   'voicecalllogs',
-  'devices'
+  'devices',
+  'staffs',
+  'staffattendances'
 ];
 
 export async function generateDatabaseSnapshot(dataPath) {

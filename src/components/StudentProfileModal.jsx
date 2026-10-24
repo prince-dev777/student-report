@@ -4,14 +4,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, User, Phone, MapPin, Calendar, CheckCircle2, 
   AlertTriangle, BookOpen, Clock, Mail, LineChart, BarChart2,
-  CreditCard, Printer, GraduationCap, Layers
+  CreditCard, Printer, GraduationCap, Layers, Eye, ZoomIn, ZoomOut
 } from 'lucide-react';
 import { 
   LineChart as ReLineChart, Line, XAxis, YAxis, Tooltip, 
   ResponsiveContainer, CartesianGrid 
 } from 'recharts';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { getAvatarClass, getInitials } from '../data/sampleData';
 import { formatDate, formatTime, calcAttendancePercent, formatBatchName } from '../utils/helpers';
+import { getMediaUrl } from '../utils/api';
 import { useApp } from '../context/AppContext';
 import StudentIdCard from './StudentIdCard';
 
@@ -25,6 +27,7 @@ export default function StudentProfileModal({
 }) {
   const { students, batches, regenerateParentCredentials } = useApp();
   const [regenPassword, setRegenPassword] = useState('');
+  const [selectedOmrImage, setSelectedOmrImage] = useState(null);
 
   const student = useMemo(() => {
     return students.find((s) => s.id === initialStudent.id) || initialStudent;
@@ -64,7 +67,7 @@ export default function StudentProfileModal({
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [attendance, student.id]);
 
-  // Filter test results for this student
+  // Filter test results for this student (chronological order for performance graph)
   const studentResults = useMemo(() => {
     return testResults
       .filter((r) => r.studentId === student.id)
@@ -77,8 +80,18 @@ export default function StudentProfileModal({
           date: testDetails ? testDetails.date : 'N/A'
         };
       })
-      .sort((a, b) => a.date.localeCompare(b.date)); // chronological order for line chart
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '')); // chronological order for line chart
   }, [testResults, tests, student.id]);
+
+  // Sort test results descending by date (most recent test first) for table display
+  const sortedStudentResults = useMemo(() => {
+    return [...studentResults].sort((a, b) => {
+      const timeA = new Date(a.date).getTime() || 0;
+      const timeB = new Date(b.date).getTime() || 0;
+      if (timeA !== timeB) return timeB - timeA;
+      return (b.date || '').localeCompare(a.date || '');
+    });
+  }, [studentResults]);
 
   // Filter SMS logs for this student
   const studentSMS = useMemo(() => {
@@ -425,7 +438,7 @@ export default function StudentProfileModal({
                     )}
 
                     <div className="table-container">
-                      {studentResults.length > 0 ? (
+                      {sortedStudentResults.length > 0 ? (
                         <table className="data-table">
                           <thead>
                             <tr>
@@ -439,8 +452,8 @@ export default function StudentProfileModal({
                             </tr>
                           </thead>
                           <tbody>
-                            {studentResults.map((res) => (
-                              <tr key={res.id}>
+                            {sortedStudentResults.map((res) => (
+                              <tr key={res.id || res._id}>
                                 <td>{formatDate(res.date)}</td>
                                 <td><strong>{res.testName}</strong></td>
                                 <td>
@@ -459,15 +472,23 @@ export default function StudentProfileModal({
                                 </td>
                                 <td>
                                   {res.omrSheetImage ? (
-                                    <a 
-                                      href={`${window.location.protocol}//${window.location.hostname}:5000${res.omrSheetImage}`}
-                                      target="_blank" 
-                                      rel="noreferrer" 
-                                      className="btn btn-ghost btn-xs text-accent"
-                                      style={{ padding: '2px 6px', fontSize: '0.75rem', textDecoration: 'none' }}
+                                    <button 
+                                      type="button"
+                                      onClick={() => setSelectedOmrImage({
+                                        url: getMediaUrl(res.omrSheetImage),
+                                        filename: res.omrOriginalFilename || res.filename || (res.omrSheetImage ? res.omrSheetImage.split('/').pop().split('?')[0] : 'Scanned_OMR.jpg'),
+                                        rollNo: student.rollNo,
+                                        studentName: student.name,
+                                        testName: res.testName,
+                                        date: res.date
+                                      })}
+                                      className="btn btn-ghost btn-xs text-accent flex items-center gap-1"
+                                      style={{ padding: '2px 8px', fontSize: '0.75rem', cursor: 'pointer', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '6px' }}
+                                      title="View Scanned OMR Sheet"
                                     >
-                                      View OMR
-                                    </a>
+                                      <Eye size={13} />
+                                      <span>View OMR</span>
+                                    </button>
                                   ) : (
                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>N/A</span>
                                   )}
@@ -609,6 +630,143 @@ export default function StudentProfileModal({
             </div>
           </motion.div>
       </div>
+
+      {/* Interactive OMR Viewer Modal */}
+      {selectedOmrImage && (
+        <div 
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.88)',
+            backdropFilter: 'blur(8px)', zIndex: 999999, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', padding: '16px'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedOmrImage(null);
+          }}
+        >
+          <TransformWrapper
+            initialScale={1}
+            minScale={0.5}
+            maxScale={4}
+            centerOnInit
+            limitToBounds={false}
+            wheel={{ step: 0.005 }}
+            pinch={{ step: 1 }}
+            panning={{ velocityDisabled: true }}
+          >
+            {({ zoomIn, zoomOut, resetTransform, state }) => {
+              const omrUrl = typeof selectedOmrImage === 'object' && selectedOmrImage !== null ? selectedOmrImage.url : selectedOmrImage;
+              const omrFilename = typeof selectedOmrImage === 'object' && selectedOmrImage !== null ? selectedOmrImage.filename : '';
+              const omrRollNo = typeof selectedOmrImage === 'object' && selectedOmrImage !== null ? selectedOmrImage.rollNo : '';
+              const omrStudentName = typeof selectedOmrImage === 'object' && selectedOmrImage !== null ? selectedOmrImage.studentName : '';
+              const omrTestName = typeof selectedOmrImage === 'object' && selectedOmrImage !== null ? selectedOmrImage.testName : '';
+
+              return (
+                <div 
+                  style={{ 
+                    background: 'var(--bg-primary, #ffffff)', 
+                    borderRadius: '18px', 
+                    padding: '18px', 
+                    maxWidth: '900px', 
+                    width: '90vw', 
+                    textAlign: 'center', 
+                    border: '1px solid var(--border-color, #e2e8f0)', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    maxHeight: '90vh',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', minWidth: 0, flex: 1, paddingRight: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: '100%' }}>
+                        <span style={{ fontSize: '1.1rem' }}>📄</span>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {omrFilename || (omrTestName ? `${omrTestName} - OMR` : 'Scanned OMR Sheet')}
+                        </h4>
+                      </div>
+                      {(omrRollNo || omrStudentName || omrTestName) && (
+                        <p style={{ margin: '2px 0 0 24px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          {omrRollNo ? <>Roll No: <strong style={{ color: 'var(--text-primary)' }}>{omrRollNo}</strong></> : null}
+                          {omrStudentName ? <span style={{ marginLeft: '8px' }}>| Student: <strong>{omrStudentName}</strong></span> : null}
+                          {omrTestName ? <span style={{ marginLeft: '8px' }}>| Test: <strong>{omrTestName}</strong></span> : null}
+                        </p>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                      <button type="button" className="btn btn-sm btn-ghost" onClick={() => zoomOut()} title="Zoom Out"><ZoomOut size={16} /></button>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, minWidth: '40px' }}>{Math.round(state.scale * 100)}%</span>
+                      <button type="button" className="btn btn-sm btn-ghost" onClick={() => zoomIn()} title="Zoom In"><ZoomIn size={16} /></button>
+                      <button type="button" className="btn btn-sm btn-ghost" style={{ marginLeft: '4px' }} onClick={() => resetTransform()} title="Reset Zoom">Reset</button>
+                      <button 
+                        type="button" 
+                        className="modal-close" 
+                        style={{ marginLeft: '8px' }} 
+                        onClick={() => setSelectedOmrImage(null)}
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div style={{ flex: 1, minHeight: '350px', overflow: 'hidden', borderRadius: '10px', background: '#0b0f19', border: '1px solid var(--border-color, #334155)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab' }}>
+                    <TransformComponent wrapperStyle={{ width: '100%', height: '100%', maxHeight: '68vh' }} contentStyle={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      <img 
+                        src={omrUrl} 
+                        alt="OMR Sheet" 
+                        style={{ maxWidth: '100%', maxHeight: '68vh', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+                        draggable={false}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          if (e.target.parentElement) {
+                            e.target.parentElement.innerHTML = `
+                              <div style="padding: 40px 20px; text-align: center; color: #94a3b8;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px;">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                  <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                                <p style="font-weight: 600; font-size: 1rem; margin: 0 0 6px; color: #f1f5f9;">OMR Sheet Unavailable</p>
+                                <p style="font-size: 0.85rem; margin: 0; color: #94a3b8;">The image could not be loaded from storage.<br/>Please verify server connection or re-scan.</p>
+                              </div>`;
+                          }
+                        }}
+                      />
+                    </TransformComponent>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                    {omrUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.electronAPI?.openExternal) {
+                            window.electronAPI.openExternal(omrUrl);
+                          } else {
+                            window.open(omrUrl, '_blank');
+                          }
+                        }}
+                        className="btn btn-secondary btn-sm"
+                        style={{ flex: 1 }}
+                      >
+                        Open Full Image
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOmrImage(null)}
+                      className="btn btn-primary btn-sm"
+                      style={{ flex: 2 }}
+                    >
+                      Close Preview
+                    </button>
+                  </div>
+                </div>
+              );
+            }}
+          </TransformWrapper>
+        </div>
+      )}
     </AnimatePresence>,
     document.body
   );

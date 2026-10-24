@@ -7,6 +7,7 @@ import MessageLock from '../models/MessageLock.js';
 import { getWhatsAppClientState } from './whatsappClient.js';
 import { queueWhatsAppMessage } from './messageQueue.js';
 import { mirrorWrite } from '../db/syncEngine.js';
+import { isCurrentMachineMaster } from './deviceNodeService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,8 +40,18 @@ export function setOutboundMessagingStatus(enabled) {
 // --- Multi-PC / Peer Instance In-Memory De-duplication Lock ---
 const sentAlertLockMap = new Map();
 
-function isDuplicateAlert(studentId, type, dateStr, sessionName = null, round = 1) {
-  const lockKey = `${studentId}_${type}_R${round || 1}_${dateStr}_${sessionName || 'GEN'}`;
+export function getLockKey(studentId, type, dateStr, sessionName = null, round = 1, detail = null) {
+  const effectiveRound = Number(round) || 1;
+  const testSuffix = (type === 'TEST_RESULT' && typeof detail === 'object' && (detail.testId || detail.id || detail.testName))
+    ? `_${detail.testId || detail.id || detail.testName}`
+    : '';
+  // Note: We intentionally do NOT include sessionName in the lockKey so that discrepancies in session name
+  // between daemon punches and UI punches never bypass duplicate locks for the same round/day!
+  return `${studentId}_${type}${testSuffix}_R${effectiveRound}_${dateStr}`;
+}
+
+function isDuplicateAlert(studentId, type, dateStr, sessionName = null, round = 1, detail = null) {
+  const lockKey = getLockKey(studentId, type, dateStr, sessionName, round, detail);
   const now = Date.now();
   if (sentAlertLockMap.has(lockKey)) {
     const timestamp = sentAlertLockMap.get(lockKey);
@@ -51,8 +62,8 @@ function isDuplicateAlert(studentId, type, dateStr, sessionName = null, round = 
   return false;
 }
 
-function recordSentAlert(studentId, type, dateStr, sessionName = null, round = 1) {
-  const lockKey = `${studentId}_${type}_R${round || 1}_${dateStr}_${sessionName || 'GEN'}`;
+function recordSentAlert(studentId, type, dateStr, sessionName = null, round = 1, detail = null) {
+  const lockKey = getLockKey(studentId, type, dateStr, sessionName, round, detail);
   sentAlertLockMap.set(lockKey, Date.now());
   if (sentAlertLockMap.size > 500) {
     const now = Date.now();
@@ -78,12 +89,18 @@ export function formatAttendanceMessageText({ parentName, studentName, formatted
   const isStaffAlert = (typeof detail === 'string' && detail.includes('Staff Attendance')) || (resolvedSessionName && resolvedSessionName.includes('Duty'));
 
   if (isStaffAlert) {
+    const cleanTime = typeof detail === 'string'
+      ? detail.replace(/\(Staff Attendance[^)]*\)/gi, '').replace(/\(Work Duration:[^)]*\)/gi, '').trim()
+      : detail;
+    const durationMatch = typeof detail === 'string' && detail.match(/Work Duration:\s*([^)]+)/i);
+    const durationSuffix = durationMatch ? ` (Total Work Hours: ${durationMatch[1].trim()})` : '';
+
     if (type === 'IN') {
-      return `Dear ${studentName}, your staff attendance check-in has been safely recorded on ${formattedDate} at ${detail}. - Career Xone`;
+      return `Dear ${studentName}, your staff attendance check-in has been safely recorded on ${formattedDate} at ${cleanTime}. - Career Xone`;
     } else if (type === 'OUT') {
-      return `Dear ${studentName}, your staff attendance check-out has been safely recorded on ${formattedDate} at ${detail}. - Career Xone`;
+      return `Dear ${studentName}, your staff attendance check-out has been safely recorded on ${formattedDate} at ${cleanTime}${durationSuffix}. - Career Xone`;
     } else {
-      return `Dear ${studentName}, your staff attendance status has been updated on ${formattedDate} (${detail}). - Career Xone`;
+      return `Dear ${studentName}, your staff attendance status has been updated on ${formattedDate} at ${cleanTime}. - Career Xone`;
     }
   } else if (type === 'IN') {
     const cleanDetail = typeof detail === 'string' ? detail.trim() : '';
@@ -121,7 +138,13 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   const WHATSAPP_ALLOWED_TYPES = ['IN', 'OUT', 'TEST_RESULT', 'WELCOME'];
   const isWhatsAppAllowed = WHATSAPP_ALLOWED_TYPES.includes(type);
 
-  // 1. Check persistent Master Messaging Switch
+  // 1. Check if this machine is designated Master Node
+  if (!isCurrentMachineMaster()) {
+    console.log(`[WhatsAppService] ℹ️ Outbound WhatsApp skipped: Current PC (${os.hostname()}) is in Client Node mode. Only Master PC sends messages.`);
+    return { success: true, skipped: true, reason: 'Client Node: Outbound messaging handled by Master PC' };
+  }
+
+  // 1b. Check persistent Master Messaging Switch
   const isMessagingPaused = !getOutboundMessagingStatus();
 
   // Extract / standardize sessionName from detail if not provided
@@ -135,15 +158,18 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
 
   // Today string for duplicate key
   const todayStr = new Date().toISOString().split('T')[0];
+  const effectiveRound = Number(round) || 1;
 
-  // 2. In-Memory Atomic Multi-PC Lock
-  if (isDuplicateAlert(studentId, type, todayStr, resolvedSessionName, round)) {
-    console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented in-memory for ${studentName} (${type} - Round ${round || 1})`);
+  // 2. In-Memory Atomic Multi-PC Lock (Synchronously check & acquire immediately)
+  if (isDuplicateAlert(studentId, type, todayStr, resolvedSessionName, effectiveRound, detail)) {
+    console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented in-memory for ${studentName} (${type} - Round ${effectiveRound})`);
     return { success: true, skipped: true, reason: 'Duplicate alert prevented by in-memory lock' };
   }
+  // Acquire lock synchronously right now to block any concurrent request arriving within milliseconds!
+  recordSentAlert(studentId, type, todayStr, resolvedSessionName, effectiveRound, detail);
 
   // 3. 🛡️ ATOMIC MULTI-PC DISTRIBUTED LOCK (Database-Level Guarantee)
-  const lockKey = `${studentId}_${type}_R${round || 1}_${todayStr}_${resolvedSessionName || 'GEN'}`;
+  const lockKey = getLockKey(studentId, type, todayStr, resolvedSessionName, effectiveRound, detail);
   try {
     await MessageLock.create({
       lockKey,
@@ -156,8 +182,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
     });
   } catch (lockErr) {
     if (lockErr.code === 11000 || lockErr.message?.includes('duplicate key')) {
-      recordSentAlert(studentId, type, todayStr, resolvedSessionName, round);
-      console.log(`[WhatsAppService] 🛡️ ATOMIC MULTI-PC LOCK: Duplicate prevented for ${studentName} (${type} - Round ${round || 1} - ${resolvedSessionName || 'General'}). Another PC instance already sent/locked this message!`);
+      console.log(`[WhatsAppService] 🛡️ ATOMIC MULTI-PC LOCK: Duplicate prevented for ${studentName} (${type} - Round ${effectiveRound} - ${resolvedSessionName || 'General'}). Another PC instance already sent/locked this message!`);
       return { success: true, skipped: true, reason: 'Duplicate alert prevented by Atomic Distributed Lock' };
     }
   }
@@ -172,8 +197,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
       createdAt: { $gte: tenMinsAgo },
       status: { $in: ['delivered', 'sent'] }
     });
-    if (existingLog && round <= 1) {
-      recordSentAlert(studentId, type, todayStr, resolvedSessionName, round);
+    if (existingLog && effectiveRound <= 1) {
       console.log(`[WhatsAppService] 🛡️ Duplicate alert prevented in DB for ${studentName} (${type}) - Already logged by peer PC!`);
       return { success: true, skipped: true, reason: 'Duplicate alert already logged' };
     }
@@ -238,7 +262,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
           });
           if (queueResult.queued) {
             status = 'sent'; // Will be updated to 'delivered' by the queue processor
-            recordSentAlert(studentId, type, todayStr);
+            recordSentAlert(studentId, type, todayStr, resolvedSessionName, effectiveRound, detail);
             console.log(`[WhatsAppService] ✅ Queued WhatsApp message (position: ${queueResult.position}) for ${formattedPhone}`);
           } else {
             status = 'pending';

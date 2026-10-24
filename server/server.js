@@ -60,6 +60,7 @@ import {
   stopBiometricAutoSync,
   getBiometricStatus,
   processPunchRecord,
+  isRecentHardwarePunch,
   scanLocalSubnetForBiometricDevices,
   recordAdmsActivity,
   getLocalNetworkIp,
@@ -73,6 +74,8 @@ import {
 } from './services/voiceAiService.js';
 import { compilePdf } from './services/testSeriesPdfService.js';
 import { startSessionScheduler } from './services/sessionScheduler.js';
+import { startTelegramAttendanceBot, stopTelegramAttendanceBot, getTelegramBotStatus } from './services/telegramAttendanceService.js';
+import { getDeviceNodeConfig, saveDeviceNodeConfig, isCurrentMachineMaster, getLocalIpAddress } from './services/deviceNodeService.js';
 import { logInfo, logError, getRecentLogs, getLogsDir } from './utils/logger.js';
 import { 
   performFullSync, 
@@ -283,6 +286,9 @@ setupBiometricRoutes(app);
 
 // ⏰ Start Automated Session Rollover & Missed-Exit Monitor
 startSessionScheduler();
+
+// 🤖 Start Telegram Remote Attendance Bot Service
+startTelegramAttendanceBot();
 
 // 🔄 24/7 Keep-Alive Self-Ping Service (Keeps Cloud Server awake)
 const CLOUD_APP_URL = process.env.CLOUD_APP_URL || process.env.VITE_API_BASE_URL?.replace('/api', '') || '';
@@ -948,7 +954,7 @@ app.post('/api/auth/login', authRateLimiter, async (req, res) => {
       const token = jwt.sign(
         { id: user._id, username: user.username, instituteId: user.instituteId._id, instituteName: user.instituteId.name },
         JWT_SECRET,
-        { expiresIn: '30d' }
+        { expiresIn: '365d' }
       );
       res.json({ token, username: user.username, instituteName: user.instituteId.name, logo: user.instituteId.logo });
     } else {
@@ -1112,6 +1118,50 @@ app.get('/api/settings', protect, async (req, res) => {
       staffPasscode: institute.staffPasscode || '1234',
       teacherPasscode: institute.teacherPasscode || institute.staffPasscode || '1234',
       inquiryPasscode: institute.inquiryPasscode || institute.staffPasscode || '1234'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- 💻 Multi-PC Node & Hardware Role Configuration ----
+app.get('/api/device-node', protect, (req, res) => {
+  try {
+    const config = getDeviceNodeConfig();
+    res.json({
+      success: true,
+      ...config,
+      hostname: os.hostname(),
+      localIp: getLocalIpAddress(),
+      isMasterNow: isCurrentMachineMaster()
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/device-node', protect, (req, res) => {
+  try {
+    const { deviceName, deviceRole, isMasterMessagingNode, masterHostname } = req.body;
+    const updated = saveDeviceNodeConfig({
+      deviceName: deviceName || 'Workstation PC',
+      deviceRole: deviceRole || 'client',
+      isMasterMessagingNode: !!isMasterMessagingNode,
+      masterHostname: (masterHostname || 'PRINCE').trim()
+    });
+
+    // Dynamic start/stop of Telegram long-polling based on master status
+    if (isCurrentMachineMaster()) {
+      startTelegramAttendanceBot();
+    } else {
+      stopTelegramAttendanceBot();
+    }
+
+    res.json({
+      success: true,
+      message: 'PC Role & Settings saved successfully!',
+      config: updated,
+      isMasterNow: isCurrentMachineMaster()
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1826,6 +1876,11 @@ app.get('/api/whatsapp/bot-logs', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// 🤖 Telegram Remote Attendance Bot Status & Test API
+app.get('/api/telegram-attendance/status', (req, res) => {
+  res.json({ success: true, ...getTelegramBotStatus() });
 });
 
 // 🤖 WhatsApp Bot Simulator (Direct Live AI Test)
@@ -2875,7 +2930,13 @@ app.post('/api/attendance', authenticateToken, async (req, res) => {
     const query = { isDeleted: { $ne: true }, studentId: { $in: matchStudentKeys }, date };
     if (instId) query.instituteId = instId;
 
+    // 🛡️ Rapid Hardware Echo Debounce (Suppresses simultaneous scanner daemon + UI keystroke hits)
+    const isHardwareEcho = (student && (isRecentHardwarePunch(student.id, date) || isRecentHardwarePunch(student.rollNo, date))) || isRecentHardwarePunch(studentId, date);
     let record = await Attendance.findOne(query);
+    if (isHardwareEcho && record) {
+      console.log(`[Attendance] 🛡️ Hardware punch echo suppressed for student ${student ? student.name : studentId}. Returning existing punch record.`);
+      return res.json(record);
+    }
     if (record) {
       if (entryTime && entryTime !== '--' && (!record.entryTime || record.entryTime === '--')) {
         isNewEntry = true;
@@ -4200,7 +4261,32 @@ app.put('/api/notifications/:id/read', async (req, res) => {
 // ---- 📱 SMS Logs API ----
 app.get('/api/sms-logs', async (req, res) => {
   try {
-    const logs = await SMSLog.find({ isDeleted: { $ne: true },  instituteId: req.user.instituteId }).sort({ createdAt: -1 });
+    let instFilter = {};
+    if (req.user?.instituteId) {
+      const isValidOid = mongoose.Types.ObjectId.isValid(req.user.instituteId) && String(new mongoose.Types.ObjectId(req.user.instituteId)) === String(req.user.instituteId);
+      if (isValidOid) {
+        instFilter = {
+          $or: [
+            { instituteId: req.user.instituteId },
+            { instituteId: null },
+            { instituteId: { $exists: false } }
+          ]
+        };
+      }
+    }
+    const limit = req.query.limit ? Math.max(1, Math.min(1000, parseInt(req.query.limit, 10))) : 0;
+    let query = SMSLog.find({ isDeleted: { $ne: true }, ...instFilter }).sort({ createdAt: -1 });
+    if (limit > 0) query = query.limit(limit);
+    const raw = await query;
+    // 🛡️ DUPLICATE FIX: Deduplicate by business id before sending to frontend
+    const seen = new Set();
+    const logs = [];
+    for (const log of raw) {
+      const key = log.id || `${log.studentId}_${log.timestamp}_${log.type}`;
+      if (key && seen.has(key)) continue;
+      if (key) seen.add(key);
+      logs.push(log);
+    }
     res.json(logs);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -4502,6 +4588,13 @@ app.post('/api/whatsapp/local-initialize', (req, res) => {
 });
 
 app.post('/api/whatsapp/local-disconnect', async (req, res) => {
+  const { password } = req.body || {};
+  if (password !== 'rohitjha') {
+    return res.status(403).json({
+      success: false,
+      error: 'Authorization failed: Incorrect admin password. Disconnect rejected.'
+    });
+  }
   const success = await disconnectWhatsAppClient();
   res.json({ success, message: success ? 'Disconnected' : 'Not connected' });
 });
@@ -5744,6 +5837,52 @@ app.listen(PORT, '0.0.0.0', () => {
       console.warn('⚠️ [WhatsAppClient] Startup auto-init notice:', err.message);
     }
   }, 3000);
+
+  // 🧹 ONE-TIME BOOT CLEANUP: Remove already-accumulated duplicate smslogs from local MongoDB
+  // (Boss's PC may have duplicate records from before this fix was deployed)
+  setTimeout(async () => {
+    if (process.env.TEST_PORT || process.env.IS_AUDIT_RUN) return;
+    try {
+      const mongoose = await import('mongoose');
+      const localDb = mongoose.default.connection.db;
+      if (!localDb) return;
+      const coll = localDb.collection('smslogs');
+      // Group by business id and keep only the most recent doc per id
+      const allDocs = await coll.find({ isDeleted: { $ne: true } }).toArray();
+      const seen = new Map(); // id -> doc with latest updatedAt/createdAt
+      for (const doc of allDocs) {
+        const key = doc.id || null;
+        if (!key) continue; // no business id, skip
+        const existing = seen.get(key);
+        const docTime = new Date(doc.updatedAt || doc.createdAt || 0).getTime();
+        const existTime = existing ? new Date(existing.updatedAt || existing.createdAt || 0).getTime() : -1;
+        if (!existing || docTime >= existTime) {
+          seen.set(key, doc);
+        }
+      }
+      // Find all ids that have more than one record
+      const idCounts = new Map();
+      for (const doc of allDocs) {
+        if (!doc.id) continue;
+        idCounts.set(doc.id, (idCounts.get(doc.id) || 0) + 1);
+      }
+      const dupIds = [...idCounts.entries()].filter(([, c]) => c > 1).map(([id]) => id);
+      if (dupIds.length === 0) {
+        console.log('[SMS-DEDUP] ✅ No duplicate smslogs found in local DB. All clean.');
+        return;
+      }
+      let totalDeleted = 0;
+      for (const smsId of dupIds) {
+        const keepDoc = seen.get(smsId);
+        if (!keepDoc) continue;
+        const res = await coll.deleteMany({ id: smsId, _id: { $ne: keepDoc._id } });
+        totalDeleted += res.deletedCount;
+      }
+      console.log(`[SMS-DEDUP] 🧹 Boot cleanup: Removed ${totalDeleted} duplicate smslog records from local DB (kept latest per id). Affected ids: ${dupIds.length}`);
+    } catch (dedupErr) {
+      console.warn('[SMS-DEDUP] Boot cleanup notice:', dedupErr.message);
+    }
+  }, 8000);
 
   // Self-ping service to prevent free-tier spin down (every 10 minutes)
   // Only activate when running as a cloud server (not inside Electron desktop)

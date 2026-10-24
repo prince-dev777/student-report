@@ -348,6 +348,13 @@ app.post('/api/whatsapp/local-initialize', (req, res) => {
 });
 
 app.post('/api/whatsapp/local-disconnect', async (req, res) => {
+  const { password } = req.body || {};
+  if (password !== 'rohitjha') {
+    return res.status(403).json({
+      success: false,
+      error: 'Authorization failed: Incorrect admin password. Disconnect rejected.'
+    });
+  }
   const success = await disconnectWhatsAppClient();
   res.json({ success, message: success ? 'WhatsApp client disconnected.' : 'Failed to disconnect.' });
 });
@@ -466,6 +473,13 @@ app.post('/api/whatsapp/local-initialize', (req, res) => {
 });
 
 app.post('/api/whatsapp/local-disconnect', async (req, res) => {
+  const { password } = req.body || {};
+  if (password !== 'rohitjha') {
+    return res.status(403).json({
+      success: false,
+      error: 'Authorization failed: Incorrect admin password. Disconnect rejected.'
+    });
+  }
   const success = await disconnectWhatsAppClient();
   res.json({ success, message: success ? 'Disconnected' : 'Not connected' });
 });
