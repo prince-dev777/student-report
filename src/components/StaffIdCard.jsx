@@ -76,9 +76,9 @@ export default function StaffIdCard({
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          border: '2px solid #ff0000',
+          border: '2px solid #2563eb',
           position: 'relative',
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          fontFamily: "'Arial', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
         }}
       >
         {/* Top Banner with Brand Logo */}
@@ -87,7 +87,7 @@ export default function StaffIdCard({
             width: '100%',
             height: `${headerHeight}px`,
             background: '#ffffff',
-            borderBottom: '2px solid #ff0000',
+            borderBottom: '2px solid #2563eb',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -130,7 +130,7 @@ export default function StaffIdCard({
                 borderRadius: '8px',
                 objectFit: 'cover',
                 border: '1.5px solid #f59e0b',
-                boxShadow: '0 3px 8px rgba(255, 0, 0, 0.20)',
+                boxShadow: '0 3px 8px rgba(37, 99, 235, 0.15)',
                 background: '#ffffff',
                 display: 'block'
               }}
@@ -141,13 +141,13 @@ export default function StaffIdCard({
                 width: `${photoW}px`,
                 height: `${photoH}px`,
                 borderRadius: '8px',
-                background: 'linear-gradient(135deg, #cc0000 0%, #ff0000 100%)',
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
                 border: '1.5px solid #f59e0b',
-                boxShadow: '0 3px 8px rgba(255, 0, 0, 0.20)',
+                boxShadow: '0 3px 8px rgba(37, 99, 235, 0.15)',
                 color: '#ffffff',
                 fontSize: initialsFontSize,
                 fontWeight: 800,
@@ -193,7 +193,7 @@ export default function StaffIdCard({
             minHeight: 0
           }}
         >
-          {/* Employee Name & Designation Badge in a tight cohesive block */}
+          {/* Employee Name & Designation Badge in Red */}
           <div style={{ margin: '1px 0' }}>
             <h3
               className="id-card-name"
@@ -215,7 +215,7 @@ export default function StaffIdCard({
                 className="id-card-batch-badge"
                 style={{
                   display: 'inline-block',
-                  background: 'linear-gradient(90deg, #b91c1c, #ff0000)',
+                  background: 'linear-gradient(90deg, #dc2626 0%, #ef4444 100%)',
                   color: '#ffffff',
                   fontSize: badgeFontSize,
                   fontWeight: 800,
@@ -223,7 +223,7 @@ export default function StaffIdCard({
                   borderRadius: '3px',
                   letterSpacing: '0.3px',
                   lineHeight: '11px',
-                  boxShadow: '0 2px 4px rgba(255, 0, 0, 0.20)'
+                  boxShadow: '0 2px 4px rgba(220, 38, 38, 0.20)'
                 }}
               >
                 {designation.toUpperCase()}
@@ -237,7 +237,7 @@ export default function StaffIdCard({
             style={{
               background: '#f8fafc',
               borderRadius: '5px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid #bfdbfe',
               padding: tablePadding,
               textAlign: 'left',
               fontSize: tableFontSize,
@@ -269,8 +269,8 @@ export default function StaffIdCard({
                 background: '#ffffff',
                 padding: '1.5px',
                 borderRadius: '5px',
-                border: '1.5px solid #fca5a5',
-                boxShadow: '0 2px 4px rgba(220, 38, 38, 0.12)',
+                border: '1.5px solid #93c5fd',
+                boxShadow: '0 2px 4px rgba(37, 99, 235, 0.12)',
                 display: 'inline-flex'
               }}
             >
@@ -297,9 +297,9 @@ export default function StaffIdCard({
             fontWeight: 800,
             letterSpacing: '0.4px',
             flexShrink: 0,
-            background: 'linear-gradient(90deg, #991b1b 0%, #cc0000 50%, #ff0000 100%)',
+            background: 'linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)',
             borderTop: '1.5px solid #f59e0b',
-            fontFamily: "'Inter', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
+            fontFamily: "'Arial', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
           }}
         >
           <span>CAREER XONE • सब संभव है</span>
@@ -325,15 +325,15 @@ export default function StaffIdCard({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        border: '2px solid #ff0000',
+        border: '2px solid #2563eb',
         position: 'relative',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        fontFamily: "'Arial', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
       }}
     >
       {/* Back Header Strip */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #991b1b 0%, #dc2626 100%)',
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
           padding: isSmall ? '4px 6px' : '7px 10px',
           textAlign: 'center',
           color: '#ffffff',
@@ -375,27 +375,27 @@ export default function StaffIdCard({
           }}
         >
           <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span style={{ color: '#2563eb', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
             <span>Staff must carry this official identity card during working hours.</span>
           </li>
           <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span style={{ color: '#2563eb', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
             <span>Check-in &amp; Check-out attendance must be scanned daily at the scanners.</span>
           </li>
           <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span style={{ color: '#2563eb', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
             <span>This identity credential is strictly non-transferable and remains property of CX.</span>
           </li>
           <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span style={{ color: '#2563eb', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
             <span>Adhere to professional excellence, academic discipline, and campus decorum.</span>
           </li>
           <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span style={{ color: '#2563eb', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
             <span>Report loss or damage of card immediately to the administrative department.</span>
           </li>
           <li style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
-            <span style={{ color: '#dc2626', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
+            <span style={{ color: '#2563eb', fontSize: '0.40rem', marginTop: '1px' }}>◆</span>
             <span>If found, kindly return this card to Career Xone Institute front desk.</span>
           </li>
         </ul>
@@ -436,9 +436,9 @@ export default function StaffIdCard({
           fontWeight: 800,
           letterSpacing: '0.4px',
           flexShrink: 0,
-          background: 'linear-gradient(90deg, #991b1b 0%, #cc0000 50%, #ff0000 100%)',
+          background: 'linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)',
           borderTop: '1.5px solid #f59e0b',
-          fontFamily: "'Inter', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
+          fontFamily: "'Arial', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
         }}
       >
         CAREER XONE • सब संभव है

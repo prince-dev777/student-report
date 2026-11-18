@@ -74,7 +74,6 @@ import {
 } from './services/voiceAiService.js';
 import { compilePdf } from './services/testSeriesPdfService.js';
 import { startSessionScheduler } from './services/sessionScheduler.js';
-import { startTelegramAttendanceBot, stopTelegramAttendanceBot, getTelegramBotStatus } from './services/telegramAttendanceService.js';
 import { getDeviceNodeConfig, saveDeviceNodeConfig, isCurrentMachineMaster, getLocalIpAddress } from './services/deviceNodeService.js';
 import { logInfo, logError, getRecentLogs, getLogsDir } from './utils/logger.js';
 import { 
@@ -286,9 +285,6 @@ setupBiometricRoutes(app);
 
 // ⏰ Start Automated Session Rollover & Missed-Exit Monitor
 startSessionScheduler();
-
-// 🤖 Start Telegram Remote Attendance Bot Service
-startTelegramAttendanceBot();
 
 // 🔄 24/7 Keep-Alive Self-Ping Service (Keeps Cloud Server awake)
 const CLOUD_APP_URL = process.env.CLOUD_APP_URL || process.env.VITE_API_BASE_URL?.replace('/api', '') || '';
@@ -764,7 +760,7 @@ mongoose.connect(MONGODB_URI)
 
             // Fallback: if we can't match it, default to their rollNo
             if (!plainText) {
-              plainText = student.rollNo;
+              plainText = String(student.rollNo || student.enrollmentNo || '1234');
               const salt = await bcrypt.genSalt(10);
               student.parentPasswordHash = await bcrypt.hash(plainText, salt);
             }
@@ -773,7 +769,7 @@ mongoose.connect(MONGODB_URI)
             await student.save();
           } else {
             // No hash, default to rollNo
-            const plainText = student.rollNo;
+            const plainText = String(student.rollNo || student.enrollmentNo || '1234');
             const salt = await bcrypt.genSalt(10);
             student.parentPasswordHash = await bcrypt.hash(plainText, salt);
             student.parentPasswordPlain = plainText;
@@ -1149,13 +1145,6 @@ app.put('/api/device-node', protect, (req, res) => {
       isMasterMessagingNode: !!isMasterMessagingNode,
       masterHostname: (masterHostname || 'PRINCE').trim()
     });
-
-    // Dynamic start/stop of Telegram long-polling based on master status
-    if (isCurrentMachineMaster()) {
-      startTelegramAttendanceBot();
-    } else {
-      stopTelegramAttendanceBot();
-    }
 
     res.json({
       success: true,
@@ -1878,11 +1867,6 @@ app.get('/api/whatsapp/bot-logs', (req, res) => {
   }
 });
 
-// 🤖 Telegram Remote Attendance Bot Status & Test API
-app.get('/api/telegram-attendance/status', (req, res) => {
-  res.json({ success: true, ...getTelegramBotStatus() });
-});
-
 // 🤖 WhatsApp Bot Simulator (Direct Live AI Test)
 app.post('/api/whatsapp/bot/simulate', async (req, res) => {
   try {
@@ -2069,7 +2053,7 @@ app.post('/api/staff/attendance', async (req, res) => {
     }
 
     const updateTime = timestamp || new Date().toISOString();
-    const formattedTime = new Date(updateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const formattedTime = new Date(updateTime).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
 
     let updateFields = {
       timestamp: updateTime,
@@ -2096,7 +2080,7 @@ app.post('/api/staff/attendance', async (req, res) => {
 
     try {
       let actionText = status === 'IN' ? 'Checked In' : status === 'OUT' ? 'Checked Out' : 'been marked Absent';
-      const timeString = new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const timeString = new Date(record.timestamp).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
       const message = `Dear Parent, ${student.name} has ${actionText} at ${timeString}.`;
 
       // Create a Notification for the parent portal
@@ -2117,7 +2101,7 @@ app.post('/api/staff/attendance', async (req, res) => {
           parentPhone: student.parentPhone,
           studentName: student.name,
           type: status === 'IN' ? 'IN' : status === 'OUT' ? 'OUT' : 'ABSENT',
-          detail: new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          detail: new Date(record.timestamp).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })
         });
       }
     } catch (notifyErr) {

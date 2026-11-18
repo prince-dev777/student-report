@@ -232,8 +232,8 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 
     if (staffMember) {
       const resolvedInstituteId = staffMember.instituteId;
-      const todayStr = punchDate && punchDate.length === 10 ? punchDate.replace(/\//g, '-') : new Date().toISOString().split('T')[0];
-      const formattedTime = punchTime || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const todayStr = punchDate && punchDate.length === 10 ? punchDate.replace(/\//g, '-') : new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      const formattedTime = punchTime || new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
 
       let staffRecord = await StaffAttendance.findOne({
         isDeleted: { $ne: true },
@@ -321,8 +321,8 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     }
 
     const resolvedInstituteId = student.instituteId;
-    const todayStr = punchDate && punchDate.length === 10 ? punchDate.replace(/\//g, '-') : new Date().toISOString().split('T')[0];
-    const formattedTime = punchTime || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const todayStr = punchDate && punchDate.length === 10 ? punchDate.replace(/\//g, '-') : new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const formattedTime = punchTime || new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
 
     let record = await Attendance.findOne({
       isDeleted: { $ne: true },
@@ -620,8 +620,8 @@ export async function syncBiometricLogs(ip, port = 71, instituteId = null) {
           if (logItem.recordTime) {
             const d = new Date(logItem.recordTime);
             if (!isNaN(d.getTime())) {
-              punchDate = d.toISOString().split('T')[0];
-              punchTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+              punchDate = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+              punchTime = d.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
             }
           }
 

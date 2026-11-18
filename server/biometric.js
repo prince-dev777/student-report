@@ -51,7 +51,7 @@ const recentPunches = [];
 let latestBiometricEvent = null;
 
 // Cutoff Date for accepting biometric punches (defaults to today or configured date)
-let biometricCutoffDate = process.env.BIOMETRIC_CUTOFF_DATE || new Date().toISOString().split('T')[0];
+let biometricCutoffDate = process.env.BIOMETRIC_CUTOFF_DATE || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 // ADMS & FK Live Push Receiver Status
 const admsStatus = {
@@ -86,7 +86,7 @@ export function recordAdmsActivity(sn, rawDataLength = 0, clientIp = '') {
   admsStatus.lastSeenTime = new Date().toISOString();
   admsStatus.clientIp = clientIp || admsStatus.clientIp;
   admsStatus.totalPushesReceived += 1;
-  admsStatus.lastPushStatus = `Received ${rawDataLength} bytes at ${new Date().toLocaleTimeString('en-IN')}`;
+  admsStatus.lastPushStatus = `Received ${rawDataLength} bytes at ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}`;
 
   lastSyncStatus.connected = true;
   lastSyncStatus.error = null;
@@ -140,7 +140,7 @@ export function parseFkTimestamp(rawTime) {
         return {
           dateObj: parsedDate,
           dateStr: `${year}-${month}-${day}`,
-          formattedTime: parsedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+          formattedTime: parsedDate.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })
         };
       }
     }
@@ -158,15 +158,15 @@ export function parseFkTimestamp(rawTime) {
       return {
         dateObj: d,
         dateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-        formattedTime: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+        formattedTime: d.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })
       };
     }
   } catch (e) {}
   const now = new Date();
   return {
     dateObj: now,
-    dateStr: now.toISOString().split('T')[0],
-    formattedTime: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+    dateStr: now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
+    formattedTime: now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })
   };
 }
 
@@ -335,7 +335,7 @@ const hardwarePunchDebounceMap = new Map();
 
 export function isRecentHardwarePunch(id, dateStr = null) {
   if (!id) return false;
-  const todayStr = dateStr || new Date().toISOString().split('T')[0];
+  const todayStr = dateStr || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
   const raw = String(id || '').trim();
   const clean = raw.replace(/[^0-9]/g, '').replace(/^0+/, '') || raw;
   const k1 = `${clean}_${todayStr}`;
@@ -355,8 +355,8 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
     const numericId = rawId.replace(/[^0-9]/g, '');
     const cleanId = (numericId ? numericId.replace(/^0+/, '') : rawId.replace(/^0+/, '')) || rawId;
 
-    const todayStr = punchDate && punchDate.length === 10 ? punchDate.replace(/\//g, '-') : new Date().toISOString().split('T')[0];
-    const formattedTime = punchTime || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const todayStr = punchDate && punchDate.length === 10 ? punchDate.replace(/\//g, '-') : new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const formattedTime = punchTime || new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
 
     // 🛡️ Rapid Hardware Echo Debounce: If the exact same user punched within 3000ms on physical hardware with the same direction, return the cached result
     const isManualEntry = deviceSN === 'Manual Web Entry' || deviceSN === 'Verification Suite' || deviceSN === 'Manual Test Script' || deviceSN === 'Telegram Remote' || deviceSN === 'Biomax Remote';
@@ -379,20 +379,11 @@ export async function processPunchRecord({ rollNumber, type = 'IN', punchTime, p
 
     if (isExplicitStaff) {
       if (staffTargetId === '340' || cleanStaffTarget === '340') {
-        isStaff = true;
-        staffMember = await Staff.findOne({ staffId: '340' });
-        if (!staffMember) {
-          staffMember = await Staff.create({
-            id: 'STAFF_340',
-            staffId: '340',
-            name: 'Prince Kumar',
-            designation: 'Software Engineer / Admin',
-            department: 'Engineering',
-            phone: '9876543210',
-            role: 'admin',
-            status: 'active'
-          });
-        }
+        staffMember = await Staff.findOne({
+          staffId: '340',
+          isDeleted: { $ne: true }
+        });
+        if (staffMember) isStaff = true;
       } else {
         staffMember = await Staff.findOne({
           isDeleted: { $ne: true },
@@ -1449,22 +1440,34 @@ export function setupBiometricRoutes(app) {
   app.delete('/api/staff-members/:staffId', async (req, res) => {
     try {
       const { staffId } = req.params;
-      const cleanStaffId = String(staffId).replace(/^#+/, '').trim();
+      const cleanStaffId = String(staffId).replace(/^#+/, '').replace(/^STAFF_/i, '').trim();
       const isPermanent = req.query.permanent === 'true' || req.body?.permanent === true;
 
       const deleteFilter = {
         $or: [
           { staffId: cleanStaffId },
+          { staffId: `#${cleanStaffId}` },
+          { staffId: `STAFF_${cleanStaffId}` },
           { id: `STAFF_${cleanStaffId}` },
           { id: cleanStaffId },
-          ...(mongoose.Types.ObjectId.isValid(cleanStaffId) ? [{ _id: cleanStaffId }] : [])
+          ...(mongoose.Types.ObjectId.isValid(cleanStaffId) ? [{ _id: cleanStaffId }] : []),
+          ...(mongoose.Types.ObjectId.isValid(staffId) ? [{ _id: staffId }] : [])
         ]
       };
 
       if (isPermanent) {
         // 🛡️ Permanent removal: purge from local and Cloud MongoDB, purge attendance records, record durable tombstones
         await dualDelete('staffs', deleteFilter, [
-          { collection: 'staffattendances', filter: { staffId: cleanStaffId } }
+          {
+            collection: 'staffattendances',
+            filter: {
+              $or: [
+                { staffId: cleanStaffId },
+                { staffId: `#${cleanStaffId}` },
+                { staffId: `STAFF_${cleanStaffId}` }
+              ]
+            }
+          }
         ]);
         logInfo('BIOMETRIC', `🗑️ Staff #${cleanStaffId} permanently deleted from local & cloud DB`);
         return res.json({ success: true, message: `Staff #${cleanStaffId} permanently deleted from local and cloud database` });
@@ -1519,7 +1522,7 @@ export function setupBiometricRoutes(app) {
         return res.json({ success: true, history: true, records: cleanRecords, total: cleanRecords.length });
       }
 
-      const date = req.query.date || new Date().toISOString().split('T')[0];
+      const date = req.query.date || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       const attendance = await StaffAttendance.find({
         isDeleted: { $ne: true },
         date: date
@@ -1642,7 +1645,7 @@ export function setupBiometricRoutes(app) {
   // --- REST API: Clean Old Backlog Data ---
   app.post('/api/biometric/clean-history', async (req, res) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       // Keep Prince Kumar (#340) and today's records
       const attResult = await Attendance.deleteMany({
         date: { $lt: today }
@@ -1670,7 +1673,7 @@ export function setupBiometricRoutes(app) {
       res.json({
         success: true,
         message: `✅ Biometric Machine Push Receiver is LIVE on ${clientIp}:8000 & Port 5000! Real-time attendance synced.`,
-        syncedAt: new Date().toLocaleTimeString(),
+        syncedAt: new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }),
         port: 8000,
         status: 'Online'
       });

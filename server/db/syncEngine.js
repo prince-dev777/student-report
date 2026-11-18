@@ -377,16 +377,19 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
     const buildOrQuery = (keys, fallback) => {
       const orClauses = [];
       const objIds = Array.from(keys._ids).filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
-      const strIds = Array.from(keys._ids);
-      if (objIds.length > 0 || strIds.length > 0) {
-        orClauses.push({ _id: { $in: [...objIds, ...strIds] } });
+      if (keys._ids?.size > 0) {
+        const objIds = Array.from(keys._ids).filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
+        const strIds = Array.from(keys._ids);
+        if (objIds.length > 0 || strIds.length > 0) {
+          orClauses.push({ _id: { $in: [...objIds, ...strIds] } });
+        }
       }
-      if (keys.ids.size > 0) orClauses.push({ id: { $in: Array.from(keys.ids) } });
-      if (collectionName === 'students' && keys.rollNos.size > 0) orClauses.push({ rollNo: { $in: Array.from(keys.rollNos) } });
-      if ((collectionName === 'users' || collectionName === 'students') && keys.usernames.size > 0) orClauses.push({ username: { $in: Array.from(keys.usernames) } });
-      if (collectionName === 'students' && keys.studentIds.size > 0) orClauses.push({ studentId: { $in: Array.from(keys.studentIds) } });
-      if (collectionName === 'tests' && keys.testIds.size > 0) orClauses.push({ testId: { $in: Array.from(keys.testIds) } });
-      if ((collectionName === 'staffs' || collectionName === 'staffattendances') && keys.staffIds.size > 0) orClauses.push({ staffId: { $in: Array.from(keys.staffIds) } });
+      if (keys.ids?.size > 0) orClauses.push({ id: { $in: Array.from(keys.ids) } });
+      if (collectionName === 'students' && keys.rollNos?.size > 0) orClauses.push({ rollNo: { $in: Array.from(keys.rollNos) } });
+      if ((collectionName === 'users' || collectionName === 'students') && keys.usernames?.size > 0) orClauses.push({ username: { $in: Array.from(keys.usernames) } });
+      if (collectionName === 'students' && keys.studentIds?.size > 0) orClauses.push({ studentId: { $in: Array.from(keys.studentIds) } });
+      if (collectionName === 'tests' && keys.testIds?.size > 0) orClauses.push({ testId: { $in: Array.from(keys.testIds) } });
+      if ((collectionName === 'staffs' || collectionName === 'staffattendances') && keys.staffIds?.size > 0) orClauses.push({ staffId: { $in: Array.from(keys.staffIds) } });
       return orClauses.length > 0 ? { $or: orClauses } : fallback;
     };
 
@@ -492,7 +495,8 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
           rollNos: new Set(relLocalDocs.map(d => d.rollNo ? String(d.rollNo) : null).filter(Boolean)),
           usernames: new Set(relLocalDocs.map(d => d.username ? String(d.username) : null).filter(Boolean)),
           studentIds: new Set(relLocalDocs.map(d => d.studentId ? String(d.studentId) : null).filter(Boolean)),
-          testIds: new Set(relLocalDocs.map(d => d.testId ? String(d.testId) : null).filter(Boolean))
+          testIds: new Set(relLocalDocs.map(d => d.testId ? String(d.testId) : null).filter(Boolean)),
+          staffIds: new Set(relLocalDocs.map(d => d.staffId ? String(d.staffId) : null).filter(Boolean))
         };
 
         const extractRelFilterKeys = (f) => {
@@ -509,6 +513,14 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
             if (Array.isArray(f.testId?.$in)) f.testId.$in.forEach(t => relKeys.testIds.add(String(t)));
             else relKeys.testIds.add(String(f.testId));
           }
+          if (f.staffId) {
+            if (Array.isArray(f.staffId?.$in)) f.staffId.$in.forEach(s => relKeys.staffIds.add(String(s)));
+            else relKeys.staffIds.add(String(f.staffId));
+          }
+          if (f.id) {
+            if (Array.isArray(f.id?.$in)) f.id.$in.forEach(id => relKeys.ids.add(String(id)));
+            else relKeys.ids.add(String(f.id));
+          }
           if (Array.isArray(f.$or)) f.$or.forEach(extractRelFilterKeys);
         };
         extractRelFilterKeys(fixedRelFilter);
@@ -523,6 +535,7 @@ export async function dualDelete(collectionName, filter, cascadeRelations = []) 
             if (cd.username) relKeys.usernames.add(String(cd.username));
             if (cd.studentId) relKeys.studentIds.add(String(cd.studentId));
             if (cd.testId) relKeys.testIds.add(String(cd.testId));
+            if (cd.staffId) relKeys.staffIds.add(String(cd.staffId));
           });
         }
 
@@ -1447,14 +1460,64 @@ export async function restoreLocalFromSnapshot() {
     const snap = JSON.parse(raw);
     if (!snap.data) return { success: false, error: 'Invalid snapshot' };
 
+    // Fetch all tombstones to ensure deleted records are NEVER restored from snapshot
+    let tombstones = [];
+    try {
+      const localCollTomb = mongoose.connection.collection('pending_tombstones');
+      const localT = await localCollTomb.find({}).toArray().catch(() => []);
+      tombstones.push(...localT);
+    } catch (_) {}
+    const PENDING_TOMBSTONES_FILE = path.join(process.cwd(), 'server', 'data', 'pending_tombstones.json');
+    if (fs.existsSync(PENDING_TOMBSTONES_FILE)) {
+      try {
+        const filePending = JSON.parse(fs.readFileSync(PENDING_TOMBSTONES_FILE, 'utf8')) || [];
+        tombstones.push(...filePending);
+      } catch (_) {}
+    }
+    try {
+      const cloudConn = await connectCloudDb();
+      if (cloudConn && cloudConn.readyState === 1) {
+        const cloudT = await cloudConn.useDb('test').collection('deletedrecords').find({}).toArray().catch(() => []);
+        tombstones.push(...cloudT);
+      }
+    } catch (_) {}
+
     let totalRestored = 0;
     for (const [collName, docs] of Object.entries(snap.data)) {
       if (!docs || docs.length === 0) continue;
       const localColl = mongoose.connection.collection(collName);
       const fixedDocs = docs.map(fixObjectIds);
 
-      for (let i = 0; i < fixedDocs.length; i += 500) {
-        const batch = fixedDocs.slice(i, i + 500).map(doc => ({
+      // Build tombstone filter sets for this collection
+      const collTombstones = tombstones.filter(t => t.collectionName === collName);
+      const tDocIds = new Set(collTombstones.map(t => t.docId).filter(Boolean).map(String));
+      const tCustomIds = new Set(collTombstones.map(t => t.customId).filter(Boolean).map(String));
+      const tRollNos = new Set(collTombstones.map(t => t.rollNo).filter(Boolean).map(String));
+      const tUsernames = new Set(collTombstones.map(t => t.username).filter(Boolean).map(String));
+      const tStudentIds = new Set(collTombstones.map(t => t.studentId).filter(Boolean).map(String));
+      const tTestIds = new Set(collTombstones.map(t => t.testId).filter(Boolean).map(String));
+      const tStaffIds = new Set(collTombstones.map(t => t.staffId).filter(Boolean).map(String));
+
+      const isDocTombstoned = (d) => {
+        if (!d) return false;
+        if (d._id && tDocIds.has(String(d._id))) return true;
+        if (d.id && tCustomIds.has(String(d.id))) return true;
+        if (collName === 'students') {
+          if (d.rollNo && tRollNos.has(String(d.rollNo))) return true;
+          if (d.studentId && tStudentIds.has(String(d.studentId))) return true;
+          if (d.username && tUsernames.has(String(d.username))) return true;
+        }
+        if (collName === 'users' && d.username && tUsernames.has(String(d.username))) return true;
+        if (collName === 'tests' && d.testId && tTestIds.has(String(d.testId))) return true;
+        if ((collName === 'staffs' || collName === 'staffattendances') && d.staffId && tStaffIds.has(String(d.staffId))) return true;
+        return false;
+      };
+
+      const validDocs = fixedDocs.filter(d => !d.isDeleted && !isDocTombstoned(d));
+      if (validDocs.length === 0) continue;
+
+      for (let i = 0; i < validDocs.length; i += 500) {
+        const batch = validDocs.slice(i, i + 500).map(doc => ({
           replaceOne: {
             filter: { _id: doc._id },
             replacement: doc,
@@ -1463,7 +1526,7 @@ export async function restoreLocalFromSnapshot() {
         }));
         await localColl.bulkWrite(batch, { ordered: false });
       }
-      totalRestored += docs.length;
+      totalRestored += validDocs.length;
     }
 
     // Automatic Deduplication Guard after Snapshot Restore

@@ -52,6 +52,9 @@ export function saveDeviceNodeConfig(newConfig) {
  * Returns true if this physical PC is designated as the active Master Messaging Node
  */
 export function isCurrentMachineMaster() {
+  if (process.env.RENDER || process.env.IS_CLOUD_DEPLOYMENT === 'true') {
+    return false;
+  }
   const config = getDeviceNodeConfig();
   const currentHost = os.hostname().toUpperCase();
   const targetHost = (config.masterHostname || 'PRINCE').toUpperCase();

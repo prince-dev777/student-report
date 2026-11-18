@@ -85,12 +85,12 @@ function copyBuildToPendrive() {
 
   console.log(`🎉 SUCCESS: ${exeFile} copied to ${target.drive} and 100% verified!`);
 
-  // Also sync portable WhatsApp Backup & Restore Tools to pendrive root
+  // Also sync portable WhatsApp Backup & Restore Tools to pendrive root if not already present
   try {
     const toolsSrc = path.join(__dirname, 'whatsapp_tools');
     const toolsDst = path.join(target.drive, 'whatsapp_tools');
-    if (fs.existsSync(toolsSrc)) {
-      fs.cpSync(toolsSrc, toolsDst, { recursive: true, force: true });
+    if (fs.existsSync(toolsSrc) && !fs.existsSync(toolsDst)) {
+      fs.cpSync(toolsSrc, toolsDst, { recursive: true });
       console.log(`🛠️ Portable WhatsApp Tools synced to ${toolsDst}`);
     }
   } catch (_) {}

@@ -47,10 +47,15 @@ export default function StaffProfileModal({
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [attendanceHistory, setAttendanceHistory] = useState([]);
   const [historyStats, setHistoryStats] = useState({ presentCount: 0, totalRecords: 0 });
-  // ID Card Custom Dimension State (User controllable Width, Height & Presets)
-  const [modalCardSizePreset, setModalCardSizePreset] = useState('standard'); // 'standard' | 'compact' | 'small' | 'mini' | 'custom'
-  const [modalCardWidth, setModalCardWidth] = useState(260);
-  const [modalCardHeight, setModalCardHeight] = useState(390);
+  // ID Card Custom Dimension State (User controllable Width, Height & Presets in MM and PX)
+  const MM_TO_PX = 96 / 25.4; // 3.779527559
+  const PX_TO_MM = 25.4 / 96; // 0.264583333
+  const [modalCardUnit, setModalCardUnit] = useState('mm'); // 'mm' | 'px'
+  const [modalCardSizePreset, setModalCardSizePreset] = useState('cr80'); // 'cr80' | 'standard' | 'compact' | 'small' | 'mini' | 'custom'
+  const [modalCardWidth, setModalCardWidth] = useState(209);
+  const [modalCardHeight, setModalCardHeight] = useState(327);
+  const [modalCardWidthMm, setModalCardWidthMm] = useState(55.26);
+  const [modalCardHeightMm, setModalCardHeightMm] = useState(86.58);
   const [modalLockRatio, setModalLockRatio] = useState(true);
 
   const handleDeleteStaff = async () => {
@@ -83,36 +88,85 @@ export default function StaffProfileModal({
 
   const handleModalPresetChange = (presetId) => {
     setModalCardSizePreset(presetId);
-    if (presetId === 'standard') {
+    if (presetId === 'cr80') {
+      setModalCardWidthMm(55.26);
+      setModalCardHeightMm(86.58);
+      setModalCardWidth(209);
+      setModalCardHeight(327);
+    } else if (presetId === 'standard') {
+      setModalCardWidthMm(68.79);
+      setModalCardHeightMm(103.19);
       setModalCardWidth(260);
       setModalCardHeight(390);
     } else if (presetId === 'compact') {
+      setModalCardWidthMm(60.85);
+      setModalCardHeightMm(93.93);
       setModalCardWidth(230);
       setModalCardHeight(355);
     } else if (presetId === 'small') {
+      setModalCardWidthMm(54.24);
+      setModalCardHeightMm(83.34);
       setModalCardWidth(205);
       setModalCardHeight(315);
     } else if (presetId === 'mini') {
+      setModalCardWidthMm(48.95);
+      setModalCardHeightMm(74.08);
       setModalCardWidth(185);
       setModalCardHeight(280);
     }
   };
 
+  const handleModalWidthMmChange = (val) => {
+    const num = parseFloat(val);
+    if (isNaN(num)) return;
+    const wMm = Math.max(25, Math.min(150, num));
+    setModalCardWidthMm(wMm);
+    const px = Math.round(wMm * MM_TO_PX);
+    setModalCardWidth(px);
+    if (modalLockRatio) {
+      const hMm = parseFloat((wMm * (86.58 / 55.26)).toFixed(2));
+      setModalCardHeightMm(hMm);
+      setModalCardHeight(Math.round(hMm * MM_TO_PX));
+    }
+    setModalCardSizePreset('custom');
+  };
+
+  const handleModalHeightMmChange = (val) => {
+    const num = parseFloat(val);
+    if (isNaN(num)) return;
+    const hMm = Math.max(35, Math.min(220, num));
+    setModalCardHeightMm(hMm);
+    const px = Math.round(hMm * MM_TO_PX);
+    setModalCardHeight(px);
+    if (modalLockRatio) {
+      const wMm = parseFloat((hMm * (55.26 / 86.58)).toFixed(2));
+      setModalCardWidthMm(wMm);
+      setModalCardWidth(Math.round(wMm * MM_TO_PX));
+    }
+    setModalCardSizePreset('custom');
+  };
+
   const handleModalWidthChange = (val) => {
     const num = Math.max(140, Math.min(500, parseInt(val, 10) || 140));
     setModalCardWidth(num);
+    setModalCardWidthMm(parseFloat((num * PX_TO_MM).toFixed(2)));
     setModalCardSizePreset('custom');
     if (modalLockRatio) {
-      setModalCardHeight(Math.round(num * 1.5));
+      const h = Math.round(num * 1.5);
+      setModalCardHeight(h);
+      setModalCardHeightMm(parseFloat((h * PX_TO_MM).toFixed(2)));
     }
   };
 
   const handleModalHeightChange = (val) => {
     const num = Math.max(200, Math.min(750, parseInt(val, 10) || 200));
     setModalCardHeight(num);
+    setModalCardHeightMm(parseFloat((num * PX_TO_MM).toFixed(2)));
     setModalCardSizePreset('custom');
     if (modalLockRatio) {
-      setModalCardWidth(Math.round(num / 1.5));
+      const w = Math.round(num / 1.5);
+      setModalCardWidth(w);
+      setModalCardWidthMm(parseFloat((w * PX_TO_MM).toFixed(2)));
     }
   };
 
@@ -1297,6 +1351,7 @@ export default function StaffProfileModal({
                     <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-secondary)' }}>📏 SIZE PRESETS:</span>
                     <div style={{ display: 'inline-flex', background: 'var(--bg-card, #ffffff)', padding: 3, borderRadius: 8, border: '1px solid var(--border-color, #e2e8f0)', flexWrap: 'wrap', gap: 2 }}>
                       {[
+                        { id: 'cr80', label: '🪪 Standard Card (55.26×86.58 mm)' },
                         { id: 'standard', label: '🌟 Standard (260×390)' },
                         { id: 'compact', label: '📏 Compact (230×355)' },
                         { id: 'small', label: '🪪 Pocket (205×315)' },
@@ -1323,6 +1378,46 @@ export default function StaffProfileModal({
                         </button>
                       ))}
                     </div>
+
+                    {/* Unit Selector Toggle: mm vs px */}
+                    <div style={{ display: 'inline-flex', background: 'var(--bg-card, #ffffff)', padding: 2, borderRadius: 7, border: '1.5px solid var(--border-color, #cbd5e1)' }}>
+                      <button
+                        type="button"
+                        onClick={() => setModalCardUnit('mm')}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: 5,
+                          border: 'none',
+                          fontSize: '0.70rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          background: modalCardUnit === 'mm' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
+                          color: modalCardUnit === 'mm' ? '#ffffff' : 'var(--text-secondary)',
+                          boxShadow: modalCardUnit === 'mm' ? '0 2px 5px rgba(16, 185, 129, 0.3)' : 'none'
+                        }}
+                        title="Customize in millimeters (mm)"
+                      >
+                        📐 mm
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalCardUnit('px')}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: 5,
+                          border: 'none',
+                          fontSize: '0.70rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          background: modalCardUnit === 'px' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
+                          color: modalCardUnit === 'px' ? '#ffffff' : 'var(--text-secondary)',
+                          boxShadow: modalCardUnit === 'px' ? '0 2px 5px rgba(59, 130, 246, 0.3)' : 'none'
+                        }}
+                        title="Customize in pixels (px)"
+                      >
+                        🖥️ px
+                      </button>
+                    </div>
                   </div>
 
                   {/* Dimension Controls: Width & Height Inputs */}
@@ -1330,51 +1425,101 @@ export default function StaffProfileModal({
                     {/* Width */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)' }}>↔️ Width:</span>
-                      <input
-                        type="number"
-                        min="140"
-                        max="500"
-                        step="5"
-                        value={modalCardWidth}
-                        onChange={(e) => handleModalWidthChange(e.target.value)}
-                        style={{
-                          width: '70px',
-                          padding: '4px 8px',
-                          borderRadius: 6,
-                          border: '1.5px solid var(--border-color, #cbd5e1)',
-                          background: 'var(--bg-card, #ffffff)',
-                          fontSize: '0.78rem',
-                          fontWeight: 800,
-                          textAlign: 'center',
-                          color: 'var(--text-primary)'
-                        }}
-                      />
-                      <span style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 700 }}>px (~{(modalCardWidth * 0.208).toFixed(0)}mm)</span>
+                      {modalCardUnit === 'mm' ? (
+                        <input
+                          type="number"
+                          min="25"
+                          max="150"
+                          step="0.01"
+                          value={modalCardWidthMm}
+                          onChange={(e) => handleModalWidthMmChange(e.target.value)}
+                          style={{
+                            width: '75px',
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1.5px solid var(--border-color, #cbd5e1)',
+                            background: 'var(--bg-card, #ffffff)',
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            textAlign: 'center',
+                            color: 'var(--text-primary)'
+                          }}
+                        />
+                      ) : (
+                        <input
+                          type="number"
+                          min="140"
+                          max="500"
+                          step="1"
+                          value={modalCardWidth}
+                          onChange={(e) => handleModalWidthChange(e.target.value)}
+                          style={{
+                            width: '70px',
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1.5px solid var(--border-color, #cbd5e1)',
+                            background: 'var(--bg-card, #ffffff)',
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            textAlign: 'center',
+                            color: 'var(--text-primary)'
+                          }}
+                        />
+                      )}
+                      <span style={{ fontSize: '0.70rem', color: '#10b981', fontWeight: 800 }}>{modalCardUnit}</span>
+                      <span style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                        {modalCardUnit === 'mm' ? `(~${modalCardWidth}px)` : `(~${modalCardWidthMm}mm)`}
+                      </span>
                     </div>
 
                     {/* Height / Length */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)' }}>↕️ Length:</span>
-                      <input
-                        type="number"
-                        min="200"
-                        max="750"
-                        step="5"
-                        value={modalCardHeight}
-                        onChange={(e) => handleModalHeightChange(e.target.value)}
-                        style={{
-                          width: '70px',
-                          padding: '4px 8px',
-                          borderRadius: 6,
-                          border: '1.5px solid var(--border-color, #cbd5e1)',
-                          background: 'var(--bg-card, #ffffff)',
-                          fontSize: '0.78rem',
-                          fontWeight: 800,
-                          textAlign: 'center',
-                          color: 'var(--text-primary)'
-                        }}
-                      />
-                      <span style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 700 }}>px (~{(modalCardHeight * 0.208).toFixed(0)}mm)</span>
+                      {modalCardUnit === 'mm' ? (
+                        <input
+                          type="number"
+                          min="35"
+                          max="220"
+                          step="0.01"
+                          value={modalCardHeightMm}
+                          onChange={(e) => handleModalHeightMmChange(e.target.value)}
+                          style={{
+                            width: '75px',
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1.5px solid var(--border-color, #cbd5e1)',
+                            background: 'var(--bg-card, #ffffff)',
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            textAlign: 'center',
+                            color: 'var(--text-primary)'
+                          }}
+                        />
+                      ) : (
+                        <input
+                          type="number"
+                          min="200"
+                          max="750"
+                          step="1"
+                          value={modalCardHeight}
+                          onChange={(e) => handleModalHeightChange(e.target.value)}
+                          style={{
+                            width: '70px',
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1.5px solid var(--border-color, #cbd5e1)',
+                            background: 'var(--bg-card, #ffffff)',
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            textAlign: 'center',
+                            color: 'var(--text-primary)'
+                          }}
+                        />
+                      )}
+                      <span style={{ fontSize: '0.70rem', color: '#10b981', fontWeight: 800 }}>{modalCardUnit}</span>
+                      <span style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                        {modalCardUnit === 'mm' ? `(~${modalCardHeight}px)` : `(~${modalCardHeightMm}mm)`}
+                      </span>
                     </div>
 
                     {/* Ratio Lock */}
@@ -1405,14 +1550,14 @@ export default function StaffProfileModal({
                       onClick={() => window.print()}
                       className="btn btn-sm"
                       style={{
-                        background: '#dc2626',
+                        background: '#2563eb',
                         color: '#ffffff',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 6,
                         fontWeight: 800,
                         padding: '5px 14px',
-                        boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
+                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
                       }}
                     >
                       <Printer size={14} />

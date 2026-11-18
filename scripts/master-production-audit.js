@@ -229,7 +229,7 @@ async function runMasterProductionAudit() {
 
   const serverProcess = spawn('node', ['server.js'], {
     cwd: serverDir,
-    env: { ...process.env, PORT: String(TEST_PORT), IS_AUDIT_RUN: '1' },
+    env: { ...process.env, PORT: String(TEST_PORT), IS_AUDIT_RUN: '1', MONGODB_URI: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27018/student-report' },
     stdio: 'pipe'
   });
   serverProcess.stdout.resume();

@@ -91,12 +91,12 @@ cd ..
 6. **"Publish release"** button dabao
 
 
-
+# version ko change nahi krna hai version 42 hi rakhna hai bhai 
 git add .
-git commit -m "Version 1.0.39"
-git tag v1.0.39
+git commit -m "Version 1.0.42"
+git tag v1.0.42
 git push origin master
-git push origin v1.0.39
+git push origin v1.0.42
 
 
 

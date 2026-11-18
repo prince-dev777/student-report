@@ -276,7 +276,7 @@ app.post('/api/parent/login', authRateLimiter, async (req, res) => {
     const presentAtt = attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length;
     const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     const upcomingTests = await Test.find({
       isDeleted: { $ne: true },
       date: { $gte: todayStr },
@@ -354,7 +354,7 @@ app.get('/api/parent/data', async (req, res) => {
     const presentAtt = attendanceRecords.filter(a => String(a.status).toLowerCase() === 'present').length;
     const attPercentage = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     const upcomingTests = await Test.find({
       isDeleted: { $ne: true },
       date: { $gte: todayStr },

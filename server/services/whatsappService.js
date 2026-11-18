@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
 import SMSLog from '../models/SMSLog.js';
 import MessageLock from '../models/MessageLock.js';
 import { getWhatsAppClientState } from './whatsappClient.js';
@@ -139,10 +140,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   const isWhatsAppAllowed = WHATSAPP_ALLOWED_TYPES.includes(type);
 
   // 1. Check if this machine is designated Master Node
-  if (!isCurrentMachineMaster()) {
-    console.log(`[WhatsAppService] ℹ️ Outbound WhatsApp skipped: Current PC (${os.hostname()}) is in Client Node mode. Only Master PC sends messages.`);
-    return { success: true, skipped: true, reason: 'Client Node: Outbound messaging handled by Master PC' };
-  }
+  const isMasterNode = isCurrentMachineMaster();
 
   // 1b. Check persistent Master Messaging Switch
   const isMessagingPaused = !getOutboundMessagingStatus();
@@ -168,12 +166,15 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   // Acquire lock synchronously right now to block any concurrent request arriving within milliseconds!
   recordSentAlert(studentId, type, todayStr, resolvedSessionName, effectiveRound, detail);
 
+  // Safe ObjectId for instituteId (avoid BSON casting error if custom string passed)
+  const safeInstituteId = (instituteId && mongoose.Types.ObjectId.isValid(instituteId)) ? instituteId : null;
+
   // 3. 🛡️ ATOMIC MULTI-PC DISTRIBUTED LOCK (Database-Level Guarantee)
   const lockKey = getLockKey(studentId, type, todayStr, resolvedSessionName, effectiveRound, detail);
   try {
     await MessageLock.create({
       lockKey,
-      instituteId,
+      instituteId: safeInstituteId,
       studentId,
       type,
       sessionName: resolvedSessionName || 'General',
@@ -235,13 +236,16 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   }
 
   const phoneNumbers = parentPhone ? parentPhone.split(',').map(p => p.trim()).filter(Boolean) : [];
+  const smsLogId = `SMS${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
   if (isMessagingPaused) {
+    status = 'pending';
     console.log(`[WhatsAppService] ⏸️ Outbound messaging is PAUSED. Logging SMS in SMS Center as pending for ${studentName} (${type}).`);
+  } else if (!isMasterNode) {
+    status = 'pending';
+    console.log(`[WhatsAppService] ℹ️ Current node (${os.hostname()}) is in Client/Cloud mode. Queued WhatsApp alert as 'pending' in database for Master PC to dispatch.`);
   } else if (isWhatsAppAllowed) {
     // Route through Anti-Ban Message Queue for safe, rate-limited delivery
-    const smsLogId = `SMS${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-
     for (const phone of phoneNumbers) {
       let formattedPhone = phone.replace(/\D/g, '').replace(/^0+/, '');
       if (formattedPhone.length === 10) {
@@ -334,7 +338,7 @@ export async function sendWhatsAppAlert({ instituteId, studentId, parentPhone, s
   // Create Log in SMSLog DB Collection
   try {
     const log = new SMSLog({
-      instituteId,
+      instituteId: safeInstituteId,
       id: typeof smsLogId !== 'undefined' ? smsLogId : `SMS${Date.now()}`,
       type: type === 'WELCOME' ? 'welcome' : (type === 'ABSENT' ? 'absent' : (type === 'TEST_RESULT' ? 'test-result' : (type === 'OUT' ? 'attendance-exit' : 'attendance-entry'))),
       studentId,

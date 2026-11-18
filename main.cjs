@@ -782,6 +782,65 @@ app.whenReady().then(async () => {
     }
   });
 
+  ipcMain.handle('file:saveText', async (event, payload) => {
+    try {
+      const { content, defaultName, filters, title } = payload || {};
+      const { filePath } = await dialog.showSaveDialog(mainWindow, {
+        title: title || 'Save File',
+        defaultPath: path.join(app.getPath('downloads'), defaultName || 'export.svg'),
+        filters: filters || [
+          { name: 'CorelDRAW Vector Graphic (*.svg)', extensions: ['svg'] },
+          { name: 'All Files (*.*)', extensions: ['*'] }
+        ]
+      });
+
+      if (filePath) {
+        fs.writeFileSync(filePath, content || '', 'utf8');
+        try {
+          const { shell } = require('electron');
+          shell.openPath(filePath);
+        } catch (e) {}
+        return { success: true, filePath };
+      }
+      return { success: false, cancelled: true };
+    } catch (err) {
+      console.error('file:saveText error:', err);
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('export:corelSvg', async (event, payload) => {
+    try {
+      delete require.cache[require.resolve('./pdfTemplate.cjs')];
+      const { generateIdCardSheetSvg } = require('./pdfTemplate.cjs');
+      const { students, logoBase64, defaultName, side, cardsPerPage, cardWidth, cardHeight } = payload || {};
+      const svgContent = generateIdCardSheetSvg(students, logoBase64 || '', side || 'front', cardsPerPage || 4, cardWidth, cardHeight);
+
+      const targetName = defaultName || 'CareerXone_ID_Cards_CorelDRAW.svg';
+      const { filePath } = await dialog.showSaveDialog(mainWindow, {
+        title: 'Export for CorelDRAW (.svg Vector)',
+        defaultPath: path.join(app.getPath('downloads'), targetName),
+        filters: [
+          { name: 'CorelDRAW Vector (*.svg)', extensions: ['svg'] },
+          { name: 'All Files (*.*)', extensions: ['*'] }
+        ]
+      });
+
+      if (filePath) {
+        fs.writeFileSync(filePath, svgContent, 'utf8');
+        try {
+          const { shell } = require('electron');
+          shell.openPath(filePath);
+        } catch (e) {}
+        return { success: true, filePath };
+      }
+      return { success: false, cancelled: true };
+    } catch (err) {
+      console.error('export:corelSvg error:', err);
+      return { success: false, error: err.message };
+    }
+  });
+
   createSplashWindow();
   createWindow();
   createTray();

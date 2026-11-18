@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Fingerprint,
@@ -171,52 +171,109 @@ export default function Attendance() {
   const [idCardPreviewPage, setIdCardPreviewPage] = useState(1);
   const [idCardShowAll, setIdCardShowAll] = useState(false);
   const [idCardRepeatFill, setIdCardRepeatFill] = useState(false);
+  const [selectedIdCardIds, setSelectedIdCardIds] = useState(new Set());
+  const [idCardFilterSelectedOnly, setIdCardFilterSelectedOnly] = useState(false);
 
-  // 📏 ID Card Custom Sizing & Dimension Controls (Length & Width Customization)
-  const [idCardWidth, setIdCardWidth] = useState(260); // in px (e.g., 160 to 320)
-  const [idCardHeight, setIdCardHeight] = useState(390); // in px (e.g., 240 to 480)
+  // 📏 ID Card Custom Sizing & Dimension Controls (Length & Width Customization in MM and PX)
+  const MM_TO_PX = 96 / 25.4; // 3.779527559
+  const PX_TO_MM = 25.4 / 96; // 0.264583333
+  const [idCardUnit, setIdCardUnit] = useState('mm'); // 'mm' | 'px'
+  const [idCardWidth, setIdCardWidth] = useState(209); // in px (default 55.26mm -> 209px)
+  const [idCardHeight, setIdCardHeight] = useState(327); // in px (default 86.58mm -> 327px)
+  const [idCardWidthMm, setIdCardWidthMm] = useState(55.26); // in mm
+  const [idCardHeightMm, setIdCardHeightMm] = useState(86.58); // in mm
   const [idCardScale, setIdCardScale] = useState(100); // 60% to 125%
   const [idCardLockRatio, setIdCardLockRatio] = useState(true);
-  const [idCardSizePreset, setIdCardSizePreset] = useState('standard'); // 'standard' | 'compact' | 'small' | 'mini' | 'custom'
+  const [idCardSizePreset, setIdCardSizePreset] = useState('cr80'); // 'cr80' | 'standard' | 'compact' | 'small' | 'mini' | 'custom'
 
   const handleSizePresetChange = (preset) => {
     setIdCardSizePreset(preset);
-    if (preset === 'standard') {
+    if (preset === 'cr80') {
+      setIdCardWidthMm(55.26);
+      setIdCardHeightMm(86.58);
+      setIdCardWidth(209);
+      setIdCardHeight(327);
+      setIdCardScale(80);
+    } else if (preset === 'standard') {
+      setIdCardWidthMm(68.79);
+      setIdCardHeightMm(103.19);
       setIdCardWidth(260);
       setIdCardHeight(390);
       setIdCardScale(100);
     } else if (preset === 'compact') {
+      setIdCardWidthMm(60.85);
+      setIdCardHeightMm(93.93);
       setIdCardWidth(230);
       setIdCardHeight(355);
       setIdCardScale(88);
     } else if (preset === 'small') {
+      setIdCardWidthMm(54.24);
+      setIdCardHeightMm(83.34);
       setIdCardWidth(205);
       setIdCardHeight(315);
       setIdCardScale(79);
     } else if (preset === 'mini') {
+      setIdCardWidthMm(48.95);
+      setIdCardHeightMm(74.08);
       setIdCardWidth(185);
       setIdCardHeight(280);
       setIdCardScale(71);
     }
   };
 
+  const handleWidthMmChange = (newVal) => {
+    const val = parseFloat(newVal);
+    if (isNaN(val)) return;
+    const wMm = Math.max(25, Math.min(150, val));
+    setIdCardWidthMm(wMm);
+    const px = Math.round(wMm * MM_TO_PX);
+    setIdCardWidth(px);
+    if (idCardLockRatio) {
+      const hMm = parseFloat((wMm * (86.58 / 55.26)).toFixed(2));
+      setIdCardHeightMm(hMm);
+      setIdCardHeight(Math.round(hMm * MM_TO_PX));
+    }
+    setIdCardSizePreset('custom');
+  };
+
+  const handleHeightMmChange = (newVal) => {
+    const val = parseFloat(newVal);
+    if (isNaN(val)) return;
+    const hMm = Math.max(35, Math.min(220, val));
+    setIdCardHeightMm(hMm);
+    const px = Math.round(hMm * MM_TO_PX);
+    setIdCardHeight(px);
+    if (idCardLockRatio) {
+      const wMm = parseFloat((hMm * (55.26 / 86.58)).toFixed(2));
+      setIdCardWidthMm(wMm);
+      setIdCardWidth(Math.round(wMm * MM_TO_PX));
+    }
+    setIdCardSizePreset('custom');
+  };
+
   const handleWidthChange = (newW) => {
-    const w = Math.max(160, Math.min(340, Number(newW) || 160));
+    const w = Math.max(140, Math.min(450, Number(newW) || 140));
     setIdCardWidth(w);
+    const wMm = parseFloat((w * PX_TO_MM).toFixed(2));
+    setIdCardWidthMm(wMm);
     if (idCardLockRatio) {
       const h = Math.round(w * 1.5);
       setIdCardHeight(h);
+      setIdCardHeightMm(parseFloat((h * PX_TO_MM).toFixed(2)));
       setIdCardScale(Math.round((w / 260) * 100));
     }
     setIdCardSizePreset('custom');
   };
 
   const handleHeightChange = (newH) => {
-    const h = Math.max(240, Math.min(500, Number(newH) || 240));
+    const h = Math.max(200, Math.min(650, Number(newH) || 200));
     setIdCardHeight(h);
+    const hMm = parseFloat((h * PX_TO_MM).toFixed(2));
+    setIdCardHeightMm(hMm);
     if (idCardLockRatio) {
       const w = Math.round(h / 1.5);
       setIdCardWidth(w);
+      setIdCardWidthMm(parseFloat((w * PX_TO_MM).toFixed(2)));
       setIdCardScale(Math.round((w / 260) * 100));
     }
     setIdCardSizePreset('custom');
@@ -225,22 +282,21 @@ export default function Attendance() {
   const handleScaleChange = (newScale) => {
     const s = Math.max(60, Math.min(125, Number(newScale) || 100));
     setIdCardScale(s);
-    const w = Math.round(260 * (s / 100));
-    const h = Math.round(390 * (s / 100));
+    const baseW = idCardSizePreset === 'cr80' ? 209 : 260;
+    const baseH = idCardSizePreset === 'cr80' ? 327 : 390;
+    const w = Math.round(baseW * (s / 100));
+    const h = Math.round(baseH * (s / 100));
     setIdCardWidth(w);
     setIdCardHeight(h);
-    if (s === 100) setIdCardSizePreset('standard');
-    else if (s === 88 && w === 230) setIdCardSizePreset('compact');
-    else setIdCardSizePreset('custom');
+    setIdCardWidthMm(parseFloat((w * PX_TO_MM).toFixed(2)));
+    setIdCardHeightMm(parseFloat((h * PX_TO_MM).toFixed(2)));
+    setIdCardSizePreset('custom');
   };
 
   const handleResetCardSize = () => {
-    setIdCardSizePreset('standard');
-    setIdCardWidth(260);
-    setIdCardHeight(390);
-    setIdCardScale(100);
+    handleSizePresetChange('cr80');
     setIdCardLockRatio(true);
-    toast.success('Card dimensions reset to Standard PVC (260 × 390 px)!');
+    toast.success('Card dimensions reset to Standard Card (55.26 × 86.58 mm)!');
   };
   const [lastPunch, setLastPunch] = useState(null);
   const [lastScannedMap, setLastScannedMap] = useState({});
@@ -1378,18 +1434,73 @@ export default function Attendance() {
     });
   }, [activeStudents, staffRoster, idCardsModalMode, selectedStaffDept, selectedIdCardBatch, idCardSearch]);
 
+  // Unique identification key for student or staff member in ID cards modal
+  const getIdCardUniqueKey = useCallback((item) => {
+    if (!item) return '';
+    if (idCardsModalMode === 'staff') {
+      const raw = item.staffId || item.id || item._id || '';
+      return String(raw).replace(/^#+/, '').replace(/^STAFF_/i, '').trim();
+    }
+    return String(item.id || item.studentId || item.rollNo || item._id || '').trim();
+  }, [idCardsModalMode]);
+
+  // Toggle individual card selection
+  const toggleSelectIdCard = useCallback((key) => {
+    if (!key) return;
+    setSelectedIdCardIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
+  // Select all currently filtered cards
+  const selectAllIdCards = useCallback(() => {
+    const next = new Set();
+    filteredIdCardStudents.forEach((st) => {
+      const key = getIdCardUniqueKey(st);
+      if (key) next.add(key);
+    });
+    setSelectedIdCardIds(next);
+    toast.success(`Selected all ${next.size} ${idCardsModalMode === 'staff' ? 'staff members' : 'students'}!`);
+  }, [filteredIdCardStudents, getIdCardUniqueKey, idCardsModalMode]);
+
+  // Clear card selection
+  const clearIdCardSelection = useCallback(() => {
+    setSelectedIdCardIds(new Set());
+    setIdCardFilterSelectedOnly(false);
+    toast.info('Card selection cleared');
+  }, []);
+
   // Reset page when batch or search changes
   useEffect(() => {
     setIdCardPreviewPage(1);
   }, [selectedIdCardBatch, selectedStaffDept, idCardsModalMode, idCardSearch]);
 
+  const isSelectedOnlyActive = idCardFilterSelectedOnly && selectedIdCardIds.size > 0;
+
+  // Base list honoring "View Selected Only" toggle
+  const baseIdCardList = useMemo(() => {
+    if (isSelectedOnlyActive) {
+      return filteredIdCardStudents.filter((st) => {
+        const key = getIdCardUniqueKey(st);
+        return selectedIdCardIds.has(key);
+      });
+    }
+    return filteredIdCardStudents;
+  }, [filteredIdCardStudents, isSelectedOnlyActive, selectedIdCardIds, getIdCardUniqueKey]);
+
   // Preview Pagination Constants
   const PREVIEW_PAGE_SIZE = 24; // 6 sheets in 4-card mode, 4 sheets in 6-card mode
-  const totalIdCardPages = Math.ceil(filteredIdCardStudents.length / PREVIEW_PAGE_SIZE) || 1;
+  const totalIdCardPages = Math.ceil(baseIdCardList.length / PREVIEW_PAGE_SIZE) || 1;
 
   // Displayed students for butter-smooth 60fps screen rendering
   const displayedIdCardStudents = useMemo(() => {
-    let list = filteredIdCardStudents;
+    let list = baseIdCardList;
     const shouldRepeat = idCardRepeatFill || (idCardCardsPerPage === 6 && list.length < 6);
     if (shouldRepeat && list.length > 0 && list.length < idCardCardsPerPage) {
       const repeated = [];
@@ -1398,18 +1509,18 @@ export default function Attendance() {
         const item = list[idx % list.length];
         repeated.push({
           ...item,
-          _repeatKey: `${item.staffId || item.id || idx}_rep_${repeated.length}`
+          _repeatKey: `${getIdCardUniqueKey(item) || idx}_rep_${repeated.length}`
         });
         idx++;
       }
       list = repeated;
     }
-    if (idCardSearch.trim() || idCardShowAll || list.length <= PREVIEW_PAGE_SIZE) {
+    if (idCardSearch.trim() || idCardShowAll || isSelectedOnlyActive || list.length <= PREVIEW_PAGE_SIZE) {
       return list;
     }
     const start = (idCardPreviewPage - 1) * PREVIEW_PAGE_SIZE;
     return list.slice(start, start + PREVIEW_PAGE_SIZE);
-  }, [filteredIdCardStudents, idCardSearch, idCardShowAll, idCardPreviewPage, idCardRepeatFill, idCardCardsPerPage]);
+  }, [baseIdCardList, idCardSearch, idCardShowAll, isSelectedOnlyActive, idCardPreviewPage, idCardRepeatFill, idCardCardsPerPage, getIdCardUniqueKey]);
 
   // 📥 High-Res Vector PDF via Master Template (Clean JSON Payload + Base64 Embedded Fonts)
   const handleSaveAsPdf = async () => {
@@ -1433,6 +1544,12 @@ export default function Attendance() {
       // 2. Student / Staff data prepare karo (Pure JSON, Zero DOM dependency)
       const isStaffMode = idCardsModalMode === 'staff';
       let sourceList = filteredIdCardStudents;
+      if (selectedIdCardIds.size > 0) {
+        sourceList = sourceList.filter(s => {
+          const key = getIdCardUniqueKey(s);
+          return selectedIdCardIds.has(key);
+        });
+      }
       if (idCardCardsPerPage === 6 || idCardRepeatFill) {
         if (sourceList.length > 0 && sourceList.length < idCardCardsPerPage) {
           const repeated = [];
@@ -1447,11 +1564,14 @@ export default function Attendance() {
 
       const studentData = sourceList.map(s => {
         if (isStaffMode) {
+          const rawId = s.staffId || s.id || s._id || '';
+          const cleanStaffId = String(rawId).replace(/^#+/, '').replace(/^STAFF_/i, '').trim();
           return {
             id: s.staffId || s.id || s._id || '',
             studentId: s.staffId || '',
+            staffId: cleanStaffId,
             name: s.name || '',
-            rollNo: s.staffId || '',
+            rollNo: cleanStaffId || s.staffId || '',
             photo: s.photo || '',
             parentName: s.designation || 'Faculty / Staff',
             parentPhone: s.phone || 'N/A',
@@ -1492,11 +1612,13 @@ export default function Attendance() {
         ? (selectedStaffDept === 'all' ? 'All_Departments' : selectedStaffDept.replace(/\s+/g, '_'))
         : (selectedIdCardBatch === 'all' ? 'All_Students' : selectedIdCardBatch.replace(/\s+/g, '_'));
 
+      const selectionCount = selectedIdCardIds.size;
+      const countLabel = selectionCount > 0 ? `_${selectionCount}_Selected` : '';
       const defaultFilename = isStaffMode
-        ? `CareerXone_Staff_ID_Cards_${batchLabel}_${idCardCardsPerPage}perSheet.pdf`
-        : `CareerXone_ID_Cards_${batchLabel}_${idCardCardsPerPage}perSheet.pdf`;
+        ? `CareerXone_Staff_ID_Cards_${batchLabel}${countLabel}_${idCardCardsPerPage}perSheet_${idCardSide}.pdf`
+        : `CareerXone_ID_Cards_${batchLabel}${countLabel}_${idCardCardsPerPage}perSheet_${idCardSide}.pdf`;
 
-      toast.loading(`Generating ${studentData.length} vector ${isStaffMode ? 'staff' : 'student'} cards...`, { id: toastId });
+      toast.loading(`Generating ${studentData.length} vector ${isStaffMode ? 'staff' : 'student'} cards${selectionCount > 0 ? ` (${selectionCount} selected)` : ''}...`, { id: toastId });
 
       // 4. Electron Native IPC call — Data bhejo, HTML aur Vector PDF wahan banega
       if (window.electronAPI && typeof window.electronAPI.printToPDF === 'function') {
@@ -1514,7 +1636,7 @@ export default function Attendance() {
         });
 
         if (result.success) {
-          toast.success(`✅ Vector PDF Saved! (${studentData.length} ${isStaffMode ? 'Staff' : 'Student'} Cards)`, { id: toastId });
+          toast.success(`✅ Vector PDF Saved! (${studentData.length} ${isStaffMode ? 'Staff' : 'Student'} Cards${selectionCount > 0 ? `, ${selectionCount} selected` : ''})`, { id: toastId });
         } else if (result.cancelled) {
           toast.info('PDF export cancelled', { id: toastId });
         } else {
@@ -1532,13 +1654,144 @@ export default function Attendance() {
     }
   };
 
-  // 🖨️ Direct System Printer Dialog (All Students)
+  // 🎨 Direct CorelDRAW Vector Export (.svg)
+  const handleSaveAsCorelSvg = async () => {
+    const toastId = toast.loading('Preparing CorelDRAW vector export (.svg)...');
+
+    try {
+      let logoB64 = '';
+      try {
+        const resp = await fetch(idLogo);
+        const blob = await resp.blob();
+        logoB64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.warn('Logo conversion failed:', e);
+      }
+
+      const isStaffMode = idCardsModalMode === 'staff';
+      let sourceList = [...filteredIdCardStudents];
+      if (selectedIdCardIds.size > 0) {
+        sourceList = sourceList.filter(s => {
+          const key = getIdCardUniqueKey(s);
+          return selectedIdCardIds.has(key);
+        });
+      }
+
+      if (idCardCardsPerPage === 6 || idCardRepeatFill) {
+        if (sourceList.length > 0 && sourceList.length < idCardCardsPerPage) {
+          const repeated = [];
+          let idx = 0;
+          while (repeated.length < idCardCardsPerPage) {
+            repeated.push(sourceList[idx % sourceList.length]);
+            idx++;
+          }
+          sourceList.length = 0;
+          sourceList.push(...repeated);
+        }
+      }
+
+      const studentData = sourceList.map(s => {
+        if (isStaffMode) {
+          const rawId = s.staffId || s.id || s._id || '';
+          const cleanStaffId = String(rawId).replace(/^#+/, '').replace(/^STAFF_/i, '').trim();
+          return {
+            id: s.staffId || s.id || s._id || '',
+            studentId: s.staffId || '',
+            staffId: cleanStaffId,
+            name: s.name || '',
+            rollNo: cleanStaffId || s.staffId || '',
+            photo: s.photo || '',
+            parentName: s.designation || 'Faculty / Staff',
+            parentPhone: s.phone || 'N/A',
+            phone: s.phone || '',
+            className: s.designation || 'Staff / Faculty',
+            batch: s.department || 'General',
+            course: s.designation || 'Staff',
+            department: s.department || 'General',
+            designation: s.designation || 'Staff / Faculty',
+            role: s.role || 'staff',
+            isStaff: true
+          };
+        }
+        return {
+          id: s.id || '',
+          studentId: s.studentId || s.id || '',
+          name: s.name || '',
+          rollNo: s.rollNo || s.id || '',
+          photo: s.photo || '',
+          parentName: s.parentName || s.guardianName || 'N/A',
+          parentPhone: s.parentPhone || s.phone || 'N/A',
+          phone: s.phone || '',
+          className: s.class || formatBatchName(s.batch || s.targetClass || s.course, batches) || 'General',
+          batch: s.batch || '',
+          course: s.course || '',
+          targetClass: s.targetClass || '',
+          isStaff: false
+        };
+      });
+
+      if (studentData.length === 0) {
+        toast.error(`No ${isStaffMode ? 'staff members' : 'students'} found to export`, { id: toastId });
+        return;
+      }
+
+      const batchLabel = isStaffMode
+        ? (selectedStaffDept === 'all' ? 'All_Departments' : selectedStaffDept.replace(/\s+/g, '_'))
+        : (selectedIdCardBatch === 'all' ? 'All_Students' : selectedIdCardBatch.replace(/\s+/g, '_'));
+
+      const selectionCount = selectedIdCardIds.size;
+      const countLabel = selectionCount > 0 ? `_${selectionCount}_Selected` : '';
+      const defaultFilename = isStaffMode
+        ? `CareerXone_Staff_Cards_${batchLabel}${countLabel}_CorelDRAW_${idCardCardsPerPage}perSheet.svg`
+        : `CareerXone_Cards_${batchLabel}${countLabel}_CorelDRAW_${idCardCardsPerPage}perSheet.svg`;
+
+      const effectiveW = idCardCardsPerPage === 6 ? Math.min(225, idCardWidth) : idCardWidth;
+      const effectiveH = idCardCardsPerPage === 6 ? Math.min(330, idCardHeight) : idCardHeight;
+
+      if (window.electronAPI && typeof window.electronAPI.exportCorelSvg === 'function') {
+        const result = await window.electronAPI.exportCorelSvg({
+          students: studentData,
+          logoBase64: logoB64,
+          side: idCardSide,
+          cardsPerPage: idCardCardsPerPage,
+          defaultName: defaultFilename,
+          cardWidth: effectiveW,
+          cardHeight: effectiveH
+        });
+
+        if (result.success) {
+          toast.success(`✅ CorelDRAW SVG Saved! (${studentData.length} Cards${selectionCount > 0 ? `, ${selectionCount} selected` : ''})`, { id: toastId });
+        } else if (result.cancelled) {
+          toast.info('Export cancelled', { id: toastId });
+        } else {
+          throw new Error(result.error || 'Failed to export SVG');
+        }
+      } else {
+        toast.error('Native CorelDRAW SVG export requires desktop mode', { id: toastId });
+      }
+    } catch (err) {
+      console.error('CorelDRAW SVG Export Error:', err);
+      toast.error(`❌ ${err.message}`, { id: toastId });
+    }
+  };
+
+  // 🖨️ Direct System Printer Dialog (All Students or Selected)
   const handlePrintSystem = async () => {
     const prevShowAll = idCardShowAll;
+    const prevFilterSelected = idCardFilterSelectedOnly;
+
+    // If cards are selected, automatically render only selected cards for print
+    if (selectedIdCardIds.size > 0 && !idCardFilterSelectedOnly) {
+      setIdCardFilterSelectedOnly(true);
+    }
     if (!prevShowAll) {
       setIdCardShowAll(true);
-      await new Promise((r) => setTimeout(r, 300));
     }
+    await new Promise((r) => setTimeout(r, 350));
 
     document.body.classList.add('printing-id-cards');
     requestAnimationFrame(() => {
@@ -1546,6 +1799,9 @@ export default function Attendance() {
       setTimeout(() => {
         document.body.classList.remove('printing-id-cards');
         if (!prevShowAll) setIdCardShowAll(false);
+        if (selectedIdCardIds.size > 0 && !prevFilterSelected) {
+          setIdCardFilterSelectedOnly(false);
+        }
       }, 1500);
     });
   };
@@ -6828,9 +7084,32 @@ export default function Attendance() {
                           gap: 8,
                           boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
                         }}
+                        title={selectedIdCardIds.size > 0 ? `Save ${selectedIdCardIds.size} selected cards as PDF` : 'Save all filtered cards as PDF'}
                       >
                         <Download size={16} />
-                        <span>📥 Save as PDF (A4)</span>
+                        <span>{selectedIdCardIds.size > 0 ? `📥 Save PDF (${selectedIdCardIds.size})` : '📥 Save as PDF (A4)'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSaveAsCorelSvg}
+                        style={{
+                          padding: '9px 16px',
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontWeight: 800,
+                          fontSize: '0.86rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)'
+                        }}
+                        title={selectedIdCardIds.size > 0 ? `Export ${selectedIdCardIds.size} selected cards to CorelDRAW SVG` : 'Export native vector graphic (.svg) ready to open directly in CorelDRAW'}
+                      >
+                        <span>{selectedIdCardIds.size > 0 ? `🎨 CorelDRAW (${selectedIdCardIds.size})` : '🎨 CorelDRAW (.svg)'}</span>
                       </button>
 
                       <button
@@ -6850,9 +7129,10 @@ export default function Attendance() {
                           gap: 8,
                           boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)'
                         }}
+                        title={selectedIdCardIds.size > 0 ? `Print ${selectedIdCardIds.size} selected cards to printer` : 'Open print dialog for all filtered cards'}
                       >
                         <Printer size={16} />
-                        <span>🖨️ Print Dialog</span>
+                        <span>{selectedIdCardIds.size > 0 ? `🖨️ Print (${selectedIdCardIds.size})` : '🖨️ Print Dialog'}</span>
                       </button>
                     </div>
 
@@ -6913,7 +7193,11 @@ export default function Attendance() {
                       <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
                         <button
                           type="button"
-                          onClick={() => setIdCardsModalMode('student')}
+                          onClick={() => {
+                            setIdCardsModalMode('student');
+                            setSelectedIdCardIds(new Set());
+                            setIdCardFilterSelectedOnly(false);
+                          }}
                           style={{
                             padding: '5px 12px',
                             borderRadius: 6,
@@ -6930,7 +7214,11 @@ export default function Attendance() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setIdCardsModalMode('staff')}
+                          onClick={() => {
+                            setIdCardsModalMode('staff');
+                            setSelectedIdCardIds(new Set());
+                            setIdCardFilterSelectedOnly(false);
+                          }}
                           style={{
                             padding: '5px 12px',
                             borderRadius: 6,
@@ -7020,8 +7308,105 @@ export default function Attendance() {
                         />
                       </div>
 
+                      {/* 🪪 Card Selection Controls (Select individual cards for print/PDF/SVG) */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        background: selectedIdCardIds.size > 0 ? 'rgba(16, 185, 129, 0.18)' : '#1e293b',
+                        border: selectedIdCardIds.size > 0 ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid rgba(255, 255, 255, 0.15)',
+                        padding: '3px 8px',
+                        borderRadius: 8,
+                        transition: 'all 0.2s ease'
+                      }}>
+                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: selectedIdCardIds.size > 0 ? '#34d399' : '#94a3b8', whiteSpace: 'nowrap' }}>
+                          {selectedIdCardIds.size > 0 ? `☑️ ${selectedIdCardIds.size} Selected` : '☐ Selection:'}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={selectAllIdCards}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: 'rgba(59, 130, 246, 0.25)',
+                            color: '#60a5fa',
+                            whiteSpace: 'nowrap'
+                          }}
+                          title="Select all cards in current view"
+                        >
+                          Select All ({filteredIdCardStudents.length})
+                        </button>
+
+                        {selectedIdCardIds.size > 0 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={clearIdCardSelection}
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: 6,
+                                border: 'none',
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                background: 'rgba(239, 68, 68, 0.22)',
+                                color: '#f87171',
+                                whiteSpace: 'nowrap'
+                              }}
+                              title="Clear all selected cards"
+                            >
+                              Clear
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setIdCardFilterSelectedOnly(!idCardFilterSelectedOnly)}
+                              style={{
+                                padding: '4px 9px',
+                                borderRadius: 6,
+                                border: isSelectedOnlyActive ? '1px solid #10b981' : '1px solid rgba(255, 255, 255, 0.2)',
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                background: isSelectedOnlyActive ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#334155',
+                                color: '#ffffff',
+                                boxShadow: isSelectedOnlyActive ? '0 2px 8px rgba(16, 185, 129, 0.35)' : 'none',
+                                whiteSpace: 'nowrap'
+                              }}
+                              title="Toggle between showing only selected cards and showing all cards"
+                            >
+                              {isSelectedOnlyActive ? '👁️ Show All' : `🎯 Show Selected (${selectedIdCardIds.size})`}
+                            </button>
+                          </>
+                        )}
+                      </div>
+
                       {/* Side Switcher Buttons */}
                       <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIdCardSide('single_back')}
+                          style={{
+                            padding: '5px 11px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '0.76rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardSide === 'single_back' ? 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)' : 'transparent',
+                            color: idCardSide === 'single_back' ? '#ffffff' : '#94a3b8',
+                            boxShadow: idCardSide === 'single_back' ? '0 2px 8px rgba(139, 92, 246, 0.35)' : 'none'
+                          }}
+                          title="Page 1: Front, Page 2: 1 Master Back Sheet, Page 3+: Fronts only (Saves paper!)"
+                        >
+                          🗂️ Fronts + 1 Master Back
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => setIdCardSide('duplex')}
@@ -7092,8 +7477,8 @@ export default function Attendance() {
                         </button>
                       </div>
 
-                      {/* Cards Per Sheet Density Toggle (Duplex, Front, or Back) */}
-                      {['duplex', 'front', 'back'].includes(idCardSide) && (
+                      {/* Cards Per Sheet Density Toggle (Duplex, Single Back, Front, or Back) */}
+                      {['duplex', 'single_back', 'front', 'back'].includes(idCardSide) && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', background: '#1e293b', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }}>
                             <button
@@ -7234,16 +7619,18 @@ export default function Attendance() {
                       <div style={{
                         fontSize: '0.80rem',
                         fontWeight: 800,
-                        color: '#60a5fa',
-                        background: 'rgba(59, 130, 246, 0.18)',
-                        border: '1px solid rgba(59, 130, 246, 0.35)',
+                        color: selectedIdCardIds.size > 0 ? '#34d399' : '#60a5fa',
+                        background: selectedIdCardIds.size > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(59, 130, 246, 0.18)',
+                        border: selectedIdCardIds.size > 0 ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(59, 130, 246, 0.35)',
                         padding: '5px 12px',
                         borderRadius: 20,
                         whiteSpace: 'nowrap'
                       }}>
                         {idCardSide === 'duplex'
-                          ? `${displayedIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'}${idCardRepeatFill ? ' (Repeat Fill)' : ''} (${Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage)} A4 Sheets / ${Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage) * 2} Pages)`
-                          : `Showing ${displayedIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'}${idCardRepeatFill ? ' (Repeat Fill)' : ''} (${idCardSide === 'both' ? displayedIdCardStudents.length * 2 : displayedIdCardStudents.length} Cards)`}
+                          ? `${displayedIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'}${idCardRepeatFill ? ' (Repeat Fill)' : ''}${selectedIdCardIds.size > 0 ? ` [${selectedIdCardIds.size} Selected]` : ''} (${Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage)} A4 Sheets / ${Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage) * 2} Pages)`
+                          : idCardSide === 'single_back'
+                          ? `${displayedIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'}${idCardRepeatFill ? ' (Repeat Fill)' : ''}${selectedIdCardIds.size > 0 ? ` [${selectedIdCardIds.size} Selected]` : ''} (${Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage) + 1} A4 Sheets • 1 Master Back + Fronts)`
+                          : `Showing ${displayedIdCardStudents.length} ${idCardsModalMode === 'staff' ? 'Staff' : 'Students'}${idCardRepeatFill ? ' (Repeat Fill)' : ''}${selectedIdCardIds.size > 0 ? ` [${selectedIdCardIds.size} Selected]` : ''} (${idCardSide === 'both' ? displayedIdCardStudents.length * 2 : displayedIdCardStudents.length} Cards)`}
                       </div>
                     </div>
                   </div>
@@ -7262,18 +7649,19 @@ export default function Attendance() {
                       flexWrap: 'wrap'
                     }}
                   >
-                    {/* Left: Size Presets */}
+                    {/* Left: Size Presets & Unit Toggle */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.04em' }}>
                         📏 CARD SIZE:
                       </span>
                       <div style={{ display: 'flex', background: '#0b1120', padding: 2, borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)' }}>
                         {[
+                          { id: 'cr80', label: '🪪 Standard Card (55.26×86.58 mm)', sub: '55.3×86.6mm' },
                           { id: 'standard', label: '🌟 Standard PVC', sub: '260×390' },
                           { id: 'compact', label: '📏 Compact A4', sub: '230×355' },
                           { id: 'small', label: '🪪 Pocket Size', sub: '205×315' },
                           { id: 'mini', label: '🤏 Mini Badge', sub: '185×280' },
-                          { id: 'custom', label: '⚙️ Custom', sub: `${idCardWidth}×${idCardHeight}` }
+                          { id: 'custom', label: '⚙️ Custom', sub: `${idCardWidthMm}×${idCardHeightMm}mm` }
                         ].map(p => (
                           <button
                             key={p.id}
@@ -7290,11 +7678,51 @@ export default function Attendance() {
                               color: idCardSizePreset === p.id ? '#ffffff' : '#94a3b8',
                               boxShadow: idCardSizePreset === p.id ? '0 2px 6px rgba(2, 132, 199, 0.35)' : 'none'
                             }}
-                            title={`${p.label} (${p.sub}px)`}
+                            title={`${p.label} (${p.sub})`}
                           >
                             {p.label}
                           </button>
                         ))}
+                      </div>
+
+                      {/* Unit Selector Toggle: mm vs px */}
+                      <div style={{ display: 'inline-flex', background: '#0b1120', padding: 2, borderRadius: 7, border: '1px solid rgba(255,255,255,0.18)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIdCardUnit('mm')}
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 5,
+                            border: 'none',
+                            fontSize: '0.70rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardUnit === 'mm' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
+                            color: idCardUnit === 'mm' ? '#ffffff' : '#94a3b8',
+                            boxShadow: idCardUnit === 'mm' ? '0 2px 5px rgba(16, 185, 129, 0.3)' : 'none'
+                          }}
+                          title="Customize dimensions directly in millimeters (mm)"
+                        >
+                          📐 mm
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIdCardUnit('px')}
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 5,
+                            border: 'none',
+                            fontSize: '0.70rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: idCardUnit === 'px' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
+                            color: idCardUnit === 'px' ? '#ffffff' : '#94a3b8',
+                            boxShadow: idCardUnit === 'px' ? '0 2px 5px rgba(59, 130, 246, 0.3)' : 'none'
+                          }}
+                          title="Customize dimensions in pixels (px)"
+                        >
+                          🖥️ px
+                        </button>
                       </div>
                     </div>
 
@@ -7306,28 +7734,49 @@ export default function Attendance() {
                           ↔️ Width:
                         </label>
                         <div style={{ display: 'flex', alignItems: 'center', background: '#0b1120', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', padding: '2px 6px' }}>
-                          <input
-                            type="number"
-                            min="160"
-                            max="340"
-                            step="5"
-                            value={idCardWidth}
-                            onChange={(e) => handleWidthChange(e.target.value)}
-                            style={{
-                              width: 48,
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#38bdf8',
-                              fontSize: '0.80rem',
-                              fontWeight: 800,
-                              textAlign: 'center',
-                              outline: 'none'
-                            }}
-                          />
-                          <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700 }}>px</span>
+                          {idCardUnit === 'mm' ? (
+                            <input
+                              type="number"
+                              min="25"
+                              max="150"
+                              step="0.01"
+                              value={idCardWidthMm}
+                              onChange={(e) => handleWidthMmChange(e.target.value)}
+                              style={{
+                                width: 56,
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#38bdf8',
+                                fontSize: '0.80rem',
+                                fontWeight: 800,
+                                textAlign: 'center',
+                                outline: 'none'
+                              }}
+                            />
+                          ) : (
+                            <input
+                              type="number"
+                              min="140"
+                              max="450"
+                              step="1"
+                              value={idCardWidth}
+                              onChange={(e) => handleWidthChange(e.target.value)}
+                              style={{
+                                width: 48,
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#38bdf8',
+                                fontSize: '0.80rem',
+                                fontWeight: 800,
+                                textAlign: 'center',
+                                outline: 'none'
+                              }}
+                            />
+                          )}
+                          <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 800 }}>{idCardUnit}</span>
                         </div>
                         <span style={{ fontSize: '0.66rem', color: '#94a3b8', fontWeight: 600 }}>
-                          (~{(idCardWidth / 3.78).toFixed(1)} mm)
+                          {idCardUnit === 'mm' ? `(~${idCardWidth} px)` : `(~${idCardWidthMm} mm)`}
                         </span>
                       </div>
 
@@ -7337,28 +7786,49 @@ export default function Attendance() {
                           ↕️ Length:
                         </label>
                         <div style={{ display: 'flex', alignItems: 'center', background: '#0b1120', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', padding: '2px 6px' }}>
-                          <input
-                            type="number"
-                            min="240"
-                            max="500"
-                            step="5"
-                            value={idCardHeight}
-                            onChange={(e) => handleHeightChange(e.target.value)}
-                            style={{
-                              width: 48,
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#38bdf8',
-                              fontSize: '0.80rem',
-                              fontWeight: 800,
-                              textAlign: 'center',
-                              outline: 'none'
-                            }}
-                          />
-                          <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700 }}>px</span>
+                          {idCardUnit === 'mm' ? (
+                            <input
+                              type="number"
+                              min="35"
+                              max="220"
+                              step="0.01"
+                              value={idCardHeightMm}
+                              onChange={(e) => handleHeightMmChange(e.target.value)}
+                              style={{
+                                width: 56,
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#38bdf8',
+                                fontSize: '0.80rem',
+                                fontWeight: 800,
+                                textAlign: 'center',
+                                outline: 'none'
+                              }}
+                            />
+                          ) : (
+                            <input
+                              type="number"
+                              min="200"
+                              max="650"
+                              step="1"
+                              value={idCardHeight}
+                              onChange={(e) => handleHeightChange(e.target.value)}
+                              style={{
+                                width: 48,
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#38bdf8',
+                                fontSize: '0.80rem',
+                                fontWeight: 800,
+                                textAlign: 'center',
+                                outline: 'none'
+                              }}
+                            />
+                          )}
+                          <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 800 }}>{idCardUnit}</span>
                         </div>
                         <span style={{ fontSize: '0.66rem', color: '#94a3b8', fontWeight: 600 }}>
-                          (~{(idCardHeight / 3.78).toFixed(1)} mm)
+                          {idCardUnit === 'mm' ? `(~${idCardHeight} px)` : `(~${idCardHeightMm} mm)`}
                         </span>
                       </div>
 
@@ -7425,8 +7895,8 @@ export default function Attendance() {
                   {/* ID Cards Printable Sheet Grid */}
                   <div style={{ flex: 1, overflowY: 'auto', padding: 24, background: '#090d16' }}>
                     <div id="printable-id-cards">
-                      {/* ================= MODE 1: DUPLEX A4 SHEETS ================= */}
-                      {idCardSide === 'duplex' && (
+                      {/* ================= MODE 1: DUPLEX A4 SHEETS OR SINGLE MASTER BACK ================= */}
+                      {(idCardSide === 'duplex' || idCardSide === 'single_back') && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 36, alignItems: 'center' }}>
                           {Array.from({ length: Math.ceil(displayedIdCardStudents.length / idCardCardsPerPage) }).map((_, sheetIdx) => {
                             const chunk = displayedIdCardStudents.slice(sheetIdx * idCardCardsPerPage, sheetIdx * idCardCardsPerPage + idCardCardsPerPage);
@@ -7469,8 +7939,8 @@ export default function Attendance() {
                                       fontWeight: 800
                                     }}
                                   >
-                                    <span>📄 SHEET {sheetIdx + 1} • PAGE {sheetIdx * 2 + 1} — FRONT FACES ({idCardsModalMode === 'staff' ? 'STAFF' : 'STUDENTS'} {sheetIdx * idCardCardsPerPage + 1} TO {sheetIdx * idCardCardsPerPage + chunk.length})</span>
-                                    <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>A4 Duplex Front Side</span>
+                                    <span>📄 SHEET {sheetIdx + 1} • PAGE {idCardSide === 'single_back' ? (sheetIdx === 0 ? 1 : sheetIdx + 2) : sheetIdx * 2 + 1} — FRONT FACES ({idCardsModalMode === 'staff' ? 'STAFF' : 'STUDENTS'} {sheetIdx * idCardCardsPerPage + 1} TO {sheetIdx * idCardCardsPerPage + chunk.length})</span>
+                                    <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>{idCardSide === 'single_back' ? 'A4 Front Sheet' : 'A4 Duplex Front Side'}</span>
                                   </div>
 
                                   {/* Page A: FRONT SHEET (PURE A4 PRINT CONTENT) */}
@@ -7501,8 +7971,62 @@ export default function Attendance() {
                                     >
                                       {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
                                         const st = chunk[slotIdx] || null;
+                                        const key = getIdCardUniqueKey(st);
+                                        const isSelected = key && selectedIdCardIds.has(key);
                                         return (
-                                          <div key={st?._repeatKey || slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
+                                          <div
+                                            key={st?._repeatKey || (key ? `${key}_front_${slotIdx}` : slotIdx)}
+                                            className={`a4-card-slot ${isSelected ? 'selected-card-slot' : ''}`}
+                                            onClick={st ? () => toggleSelectIdCard(key) : undefined}
+                                            style={{
+                                              position: 'relative',
+                                              display: 'flex',
+                                              justifyContent: 'center',
+                                              cursor: st ? 'pointer' : 'default',
+                                              borderRadius: 12,
+                                              outline: isSelected ? '3px solid #10b981' : 'none',
+                                              outlineOffset: 2,
+                                              transition: 'outline 0.15s ease'
+                                            }}
+                                          >
+                                            {st && (
+                                              <div
+                                                className="a4-card-select-overlay"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  toggleSelectIdCard(key);
+                                                }}
+                                                style={{
+                                                  position: 'absolute',
+                                                  top: 6,
+                                                  left: 6,
+                                                  zIndex: 35,
+                                                  cursor: 'pointer',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  gap: 5,
+                                                  padding: '3px 8px',
+                                                  borderRadius: 6,
+                                                  background: isSelected ? 'rgba(16, 185, 129, 0.95)' : 'rgba(15, 23, 42, 0.78)',
+                                                  color: '#ffffff',
+                                                  border: isSelected ? '1.5px solid #059669' : '1px solid rgba(255, 255, 255, 0.4)',
+                                                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                                                  transition: 'all 0.15s ease',
+                                                  userSelect: 'none'
+                                                }}
+                                                title={isSelected ? 'Click to deselect' : 'Click to select'}
+                                              >
+                                                <input
+                                                  type="checkbox"
+                                                  checked={!!isSelected}
+                                                  onChange={() => {}}
+                                                  style={{ cursor: 'pointer', width: 14, height: 14, accentColor: '#10b981', margin: 0 }}
+                                                />
+                                                <span style={{ fontSize: '0.68rem', fontWeight: 800 }}>
+                                                  {isSelected ? 'Selected' : 'Select'}
+                                                </span>
+                                              </div>
+                                            )}
                                             {st ? (
                                               idCardsModalMode === 'staff' ? (
                                                 <StaffIdCard staff={st} side="front" isCompact={isCompact} customWidth={effectiveWidth} customHeight={effectiveHeight} />
@@ -7564,95 +8088,151 @@ export default function Attendance() {
                                   </div>
                                 </div>
 
-                                {/* Back Sheet Container */}
-                                <div style={{ width: '100%', maxWidth: '794px' }}>
-                                  {/* Screen Header Banner (OUTSIDE .a4-print-sheet) */}
-                                  <div
-                                    className="a4-print-header-banner"
-                                    style={{
-                                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                                      color: '#ffffff',
-                                      padding: '8px 16px',
-                                      borderRadius: '10px 10px 0 0',
-                                      display: 'flex',
-                                      justifyContent: 'space-between',
-                                      alignItems: 'center',
-                                      fontSize: '0.82rem',
-                                      fontWeight: 800
-                                    }}
-                                  >
-                                    <span>📜 SHEET {sheetIdx + 1} • PAGE {sheetIdx * 2 + 2} — BACK FACES (TERMS &amp; CONDITIONS — MIRRORED DUPLEX ALIGNED)</span>
-                                    <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>A4 Duplex Back (Reverse Side)</span>
-                                  </div>
-
-                                  {/* Page B: BACK SHEET (PURE A4 PRINT CONTENT) */}
-                                  <div
-                                    className="a4-print-sheet"
-                                    style={{
-                                      background: '#ffffff',
-                                      borderRadius: '0 0 12px 12px',
-                                      padding: '24px 30px',
-                                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-                                      width: '100%',
-                                      minHeight: '1123px',
-                                      boxSizing: 'border-box',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      justifyContent: 'center',
-                                      alignItems: 'center'
-                                    }}
-                                  >
+                                {/* Back Sheet Container (Shown on all sheets in duplex, or only sheet 0 in single_back) */}
+                                {(idCardSide === 'duplex' || (idCardSide === 'single_back' && sheetIdx === 0)) && (
+                                  <div style={{ width: '100%', maxWidth: '794px' }}>
+                                    {/* Screen Header Banner (OUTSIDE .a4-print-sheet) */}
                                     <div
-                                      className="a4-print-grid"
+                                      className="a4-print-header-banner"
                                       style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: gridCols,
-                                        gap: gridGap,
-                                        justifyContent: 'center'
+                                        background: idCardSide === 'single_back' ? 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)' : 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                                        color: '#ffffff',
+                                        padding: '8px 16px',
+                                        borderRadius: '10px 10px 0 0',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        fontSize: '0.82rem',
+                                        fontWeight: 800
                                       }}
                                     >
-                                      {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
-                                        const st = mirroredChunk[slotIdx] || null;
-                                        return (
-                                          <div key={st?._repeatKey || slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
-                                            {st ? (
-                                              idCardsModalMode === 'staff' ? (
-                                                <StaffIdCard staff={st} side="back" isCompact={isCompact} customWidth={effectiveWidth} customHeight={effectiveHeight} />
+                                      <span>{idCardSide === 'single_back' ? '📜 PAGE 2 — 1 MASTER BACK SHEET (COMMON TERMS & CONDITIONS FOR ALL CARDS)' : `📜 SHEET ${sheetIdx + 1} • PAGE ${sheetIdx * 2 + 2} — BACK FACES (TERMS & CONDITIONS — MIRRORED DUPLEX ALIGNED)`}</span>
+                                      <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>{idCardSide === 'single_back' ? 'Single Master Back Template' : 'A4 Duplex Back (Reverse Side)'}</span>
+                                    </div>
+
+                                    {/* Page B: BACK SHEET (PURE A4 PRINT CONTENT) */}
+                                    <div
+                                      className="a4-print-sheet"
+                                      style={{
+                                        background: '#ffffff',
+                                        borderRadius: '0 0 12px 12px',
+                                        padding: '24px 30px',
+                                        boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                                        width: '100%',
+                                        minHeight: '1123px',
+                                        boxSizing: 'border-box',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'center',
+                                        alignItems: 'center'
+                                      }}
+                                    >
+                                      <div
+                                        className="a4-print-grid"
+                                        style={{
+                                          display: 'grid',
+                                          gridTemplateColumns: gridCols,
+                                          gap: gridGap,
+                                          justifyContent: 'center'
+                                        }}
+                                      >
+                                        {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
+                                          const st = mirroredChunk[slotIdx] || null;
+                                          const key = getIdCardUniqueKey(st);
+                                          const isSelected = key && selectedIdCardIds.has(key);
+                                          return (
+                                            <div
+                                              key={st?._repeatKey || (key ? `${key}_back_${slotIdx}` : slotIdx)}
+                                              className={`a4-card-slot ${isSelected ? 'selected-card-slot' : ''}`}
+                                              onClick={st ? () => toggleSelectIdCard(key) : undefined}
+                                              style={{
+                                                position: 'relative',
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                cursor: st ? 'pointer' : 'default',
+                                                borderRadius: 12,
+                                                outline: isSelected ? '3px solid #10b981' : 'none',
+                                                outlineOffset: 2,
+                                                transition: 'outline 0.15s ease'
+                                              }}
+                                            >
+                                              {st && (
+                                                <div
+                                                  className="a4-card-select-overlay"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleSelectIdCard(key);
+                                                  }}
+                                                  style={{
+                                                    position: 'absolute',
+                                                    top: 6,
+                                                    left: 6,
+                                                    zIndex: 35,
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 5,
+                                                    padding: '3px 8px',
+                                                    borderRadius: 6,
+                                                    background: isSelected ? 'rgba(16, 185, 129, 0.95)' : 'rgba(15, 23, 42, 0.78)',
+                                                    color: '#ffffff',
+                                                    border: isSelected ? '1.5px solid #059669' : '1px solid rgba(255, 255, 255, 0.4)',
+                                                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                                                    transition: 'all 0.15s ease',
+                                                    userSelect: 'none'
+                                                  }}
+                                                  title={isSelected ? 'Click to deselect' : 'Click to select'}
+                                                >
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={!!isSelected}
+                                                    onChange={() => {}}
+                                                    style={{ cursor: 'pointer', width: 14, height: 14, accentColor: '#10b981', margin: 0 }}
+                                                  />
+                                                  <span style={{ fontSize: '0.68rem', fontWeight: 800 }}>
+                                                    {isSelected ? 'Selected' : 'Select'}
+                                                  </span>
+                                                </div>
+                                              )}
+                                              {st ? (
+                                                idCardsModalMode === 'staff' ? (
+                                                  <StaffIdCard staff={st} side="back" isCompact={isCompact} customWidth={effectiveWidth} customHeight={effectiveHeight} />
+                                                ) : (
+                                                  <StudentIdCard student={st} side="back" isCompact={isCompact} batches={batches} customWidth={effectiveWidth} customHeight={effectiveHeight} />
+                                                )
                                               ) : (
-                                                <StudentIdCard student={st} side="back" isCompact={isCompact} batches={batches} customWidth={effectiveWidth} customHeight={effectiveHeight} />
-                                              )
-                                            ) : (
-                                              <div
-                                                className="print-id-card-empty"
-                                                style={{
-                                                  width: cardWidth,
-                                                  height: cardHeight,
-                                                  border: '2px dashed #94a3b8',
-                                                  borderRadius: 12,
-                                                  background: '#f8fafc',
-                                                  display: 'flex',
-                                                  flexDirection: 'column',
-                                                  alignItems: 'center',
-                                                  justifyContent: 'center',
-                                                  gap: 6,
-                                                  color: '#64748b',
-                                                  padding: 12,
-                                                  textAlign: 'center',
-                                                  boxSizing: 'border-box'
-                                                }}
-                                              >
-                                                <span style={{ fontSize: '1.6rem' }}>📜</span>
-                                                <span style={{ fontWeight: 800, fontSize: '0.80rem', color: '#1e293b' }}>
-                                                  Slot {slotIdx + 1} of {idCardCardsPerPage} (Empty Back)
-                                                </span>
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
+                                                <div
+                                                  className="print-id-card-empty"
+                                                  style={{
+                                                    width: cardWidth,
+                                                    height: cardHeight,
+                                                    border: '2px dashed #94a3b8',
+                                                    borderRadius: 12,
+                                                    background: '#f8fafc',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: 6,
+                                                    color: '#64748b',
+                                                    padding: 12,
+                                                    textAlign: 'center',
+                                                    boxSizing: 'border-box'
+                                                  }}
+                                                >
+                                                  <span style={{ fontSize: '1.6rem' }}>📜</span>
+                                                  <span style={{ fontWeight: 800, fontSize: '0.80rem', color: '#1e293b' }}>
+                                                    Slot {slotIdx + 1} of {idCardCardsPerPage} (Empty Back)
+                                                  </span>
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
+                                )}
                               </div>
                             );
                           })}
@@ -7721,8 +8301,62 @@ export default function Attendance() {
                                     >
                                       {Array.from({ length: idCardCardsPerPage }).map((_, slotIdx) => {
                                         const st = chunk[slotIdx] || null;
+                                        const key = getIdCardUniqueKey(st);
+                                        const isSelected = key && selectedIdCardIds.has(key);
                                         return (
-                                          <div key={st?._repeatKey || slotIdx} className="a4-card-slot" style={{ display: 'flex', justifyContent: 'center' }}>
+                                          <div
+                                            key={st?._repeatKey || (key ? `${key}_single_${slotIdx}` : slotIdx)}
+                                            className={`a4-card-slot ${isSelected ? 'selected-card-slot' : ''}`}
+                                            onClick={st ? () => toggleSelectIdCard(key) : undefined}
+                                            style={{
+                                              position: 'relative',
+                                              display: 'flex',
+                                              justifyContent: 'center',
+                                              cursor: st ? 'pointer' : 'default',
+                                              borderRadius: 12,
+                                              outline: isSelected ? '3px solid #10b981' : 'none',
+                                              outlineOffset: 2,
+                                              transition: 'outline 0.15s ease'
+                                            }}
+                                          >
+                                            {st && (
+                                              <div
+                                                className="a4-card-select-overlay"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  toggleSelectIdCard(key);
+                                                }}
+                                                style={{
+                                                  position: 'absolute',
+                                                  top: 6,
+                                                  left: 6,
+                                                  zIndex: 35,
+                                                  cursor: 'pointer',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  gap: 5,
+                                                  padding: '3px 8px',
+                                                  borderRadius: 6,
+                                                  background: isSelected ? 'rgba(16, 185, 129, 0.95)' : 'rgba(15, 23, 42, 0.78)',
+                                                  color: '#ffffff',
+                                                  border: isSelected ? '1.5px solid #059669' : '1px solid rgba(255, 255, 255, 0.4)',
+                                                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                                                  transition: 'all 0.15s ease',
+                                                  userSelect: 'none'
+                                                }}
+                                                title={isSelected ? 'Click to deselect' : 'Click to select'}
+                                              >
+                                                <input
+                                                  type="checkbox"
+                                                  checked={!!isSelected}
+                                                  onChange={() => {}}
+                                                  style={{ cursor: 'pointer', width: 14, height: 14, accentColor: '#10b981', margin: 0 }}
+                                                />
+                                                <span style={{ fontSize: '0.68rem', fontWeight: 800 }}>
+                                                  {isSelected ? 'Selected' : 'Select'}
+                                                </span>
+                                              </div>
+                                            )}
                                             {st ? (
                                               idCardsModalMode === 'staff' ? (
                                                 <StaffIdCard staff={st} side={idCardSide} isCompact={isCompact} customWidth={effectiveWidth} customHeight={effectiveHeight} />
@@ -7799,31 +8433,79 @@ export default function Attendance() {
                             justifyContent: 'center'
                           }}
                         >
-                          {displayedIdCardStudents.map((st) => (
-                            <div
-                              key={st.id || st.staffId}
-                              className="print-id-card-pair"
-                              style={{
-                                display: 'flex',
-                                gap: 20,
-                                flexWrap: 'wrap',
-                                justifyContent: 'center',
-                                alignItems: 'flex-start'
-                              }}
-                            >
-                              {idCardsModalMode === 'staff' ? (
-                                <>
-                                  <StaffIdCard staff={st} side="front" isCompact={false} customWidth={idCardWidth} customHeight={idCardHeight} />
-                                  <StaffIdCard staff={st} side="back" isCompact={false} customWidth={idCardWidth} customHeight={idCardHeight} />
-                                </>
-                              ) : (
-                                <>
-                                  <StudentIdCard student={st} side="front" isCompact={false} batches={batches} customWidth={idCardWidth} customHeight={idCardHeight} />
-                                  <StudentIdCard student={st} side="back" isCompact={false} batches={batches} customWidth={idCardWidth} customHeight={idCardHeight} />
-                                </>
-                              )}
-                            </div>
-                          ))}
+                          {displayedIdCardStudents.map((st) => {
+                            const key = getIdCardUniqueKey(st);
+                            const isSelected = key && selectedIdCardIds.has(key);
+                            return (
+                              <div
+                                key={st.id || st.staffId || key}
+                                className={`print-id-card-pair ${isSelected ? 'selected-card-pair' : ''}`}
+                                onClick={() => toggleSelectIdCard(key)}
+                                style={{
+                                  position: 'relative',
+                                  display: 'flex',
+                                  gap: 20,
+                                  flexWrap: 'wrap',
+                                  justifyContent: 'center',
+                                  alignItems: 'flex-start',
+                                  padding: 10,
+                                  borderRadius: 14,
+                                  outline: isSelected ? '3px solid #10b981' : 'none',
+                                  outlineOffset: 4,
+                                  background: isSelected ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                              >
+                                <div
+                                  className="a4-card-select-overlay"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleSelectIdCard(key);
+                                  }}
+                                  style={{
+                                    position: 'absolute',
+                                    top: 14,
+                                    left: 14,
+                                    zIndex: 35,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                    padding: '3px 8px',
+                                    borderRadius: 6,
+                                    background: isSelected ? 'rgba(16, 185, 129, 0.95)' : 'rgba(15, 23, 42, 0.78)',
+                                    color: '#ffffff',
+                                    border: isSelected ? '1.5px solid #059669' : '1px solid rgba(255, 255, 255, 0.4)',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                                    userSelect: 'none'
+                                  }}
+                                  title={isSelected ? 'Click to deselect' : 'Click to select'}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={!!isSelected}
+                                    onChange={() => {}}
+                                    style={{ cursor: 'pointer', width: 14, height: 14, accentColor: '#10b981', margin: 0 }}
+                                  />
+                                  <span style={{ fontSize: '0.68rem', fontWeight: 800 }}>
+                                    {isSelected ? 'Selected' : 'Select'}
+                                  </span>
+                                </div>
+                                {idCardsModalMode === 'staff' ? (
+                                  <>
+                                    <StaffIdCard staff={st} side="front" isCompact={false} customWidth={idCardWidth} customHeight={idCardHeight} />
+                                    <StaffIdCard staff={st} side="back" isCompact={false} customWidth={idCardWidth} customHeight={idCardHeight} />
+                                  </>
+                                ) : (
+                                  <>
+                                    <StudentIdCard student={st} side="front" isCompact={false} batches={batches} customWidth={idCardWidth} customHeight={idCardHeight} />
+                                    <StudentIdCard student={st} side="back" isCompact={false} batches={batches} customWidth={idCardWidth} customHeight={idCardHeight} />
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -7857,7 +8539,9 @@ export default function Attendance() {
                 body.printing-id-cards nav,
                 body.printing-id-cards .no-print,
                 body.printing-id-cards .id-cards-modal-header,
-                body.printing-id-cards .id-cards-modal-toolbar {
+                body.printing-id-cards .id-cards-modal-toolbar,
+                body.printing-id-cards .id-cards-modal-size-toolbar,
+                .a4-card-select-overlay {
                   display: none !important;
                 }
                 body.printing-id-cards #root,
@@ -7939,6 +8623,8 @@ export default function Attendance() {
                   align-items: center !important;
                   page-break-inside: avoid !important;
                   break-inside: avoid !important;
+                  outline: none !important;
+                  box-shadow: none !important;
                 }
                 .print-id-card-pair {
                   page-break-inside: avoid !important;
@@ -7947,6 +8633,9 @@ export default function Attendance() {
                   gap: 16px !important;
                   margin-bottom: 20px !important;
                   justify-content: center !important;
+                  outline: none !important;
+                  box-shadow: none !important;
+                  background: transparent !important;
                   -webkit-print-color-adjust: exact !important;
                   print-color-adjust: exact !important;
                 }
@@ -7962,6 +8651,7 @@ export default function Attendance() {
                   border: 2px solid #2563eb !important;
                   -webkit-print-color-adjust: exact !important;
                   print-color-adjust: exact !important;
+                  font-family: Arial, sans-serif !important;
                 }
                 .print-id-card.print-staff-id-card,
                 .print-id-card.print-staff-id-card-back {

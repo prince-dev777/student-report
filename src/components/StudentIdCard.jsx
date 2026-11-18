@@ -79,7 +79,7 @@ export default function StudentIdCard({
           justifyContent: 'space-between',
           border: '2px solid #2563eb',
           position: 'relative',
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          fontFamily: "'Arial', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
         }}
       >
         {/* Top Banner with Brand Logo */}
@@ -300,7 +300,7 @@ export default function StudentIdCard({
             flexShrink: 0,
             background: 'linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)',
             borderTop: '1.5px solid #f59e0b',
-            fontFamily: "'Inter', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
+            fontFamily: "'Arial', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
           }}
         >
           <span>CAREER XONE • सब संभव है</span>
@@ -328,7 +328,7 @@ export default function StudentIdCard({
         justifyContent: 'space-between',
         border: '2px solid #2563eb',
         position: 'relative',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        fontFamily: "'Arial', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
       }}
     >
       {/* Back Header Strip */}
@@ -451,7 +451,7 @@ export default function StudentIdCard({
           flexShrink: 0,
           background: 'linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)',
           borderTop: '1.5px solid #f59e0b',
-          fontFamily: "'Inter', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
+          fontFamily: "'Arial', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif"
         }}
       >
         CAREER XONE • सब संभव है
